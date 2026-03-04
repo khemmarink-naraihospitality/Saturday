@@ -50,15 +50,19 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 <div style={{
                     width: '32px',
                     height: '32px',
-                    background: 'linear-gradient(135deg, #0073ea 0%, #00c875 100%)',
                     borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                    backgroundColor: 'white'
                 }}>
-                    <LayoutGrid size={20} strokeWidth={2.5} />
+                    <img
+                        src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
+                        alt="Logo"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                 </div>
                 <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>Saturday.com</span>
             </div>

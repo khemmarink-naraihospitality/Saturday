@@ -60,7 +60,7 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 }}>
                     <LayoutGrid size={20} strokeWidth={2.5} />
                 </div>
-                <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>Workera</span>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>Saturday.com</span>
             </div>
 
             {/* Admin Link (Only for System Admins) */}

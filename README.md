@@ -1,4 +1,4 @@
-# Workera - Work Management Platform
+# Saturday.com - Modern Project Management Platform
 
 A modern, collaborative work management platform inspired by Monday.com, built with React, TypeScript, and Supabase.
 

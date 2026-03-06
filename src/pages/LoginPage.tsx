@@ -177,7 +177,7 @@ export const LoginPage = () => {
 
                 <div style={{ textAlign: 'center' }}>
                     <button
-                        onClick={() => setIsSignUp(!isSignUp)}
+                        onClick={() => window.open('https://rebrand.ly/nhgcts', '_blank')}
                         style={{
                             background: 'none',
                             border: 'none',
@@ -187,7 +187,7 @@ export const LoginPage = () => {
                             fontWeight: 500
                         }}
                     >
-                        {isSignUp ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
+                        Need an account? Sign Up
                     </button>
                 </div>
 

@@ -64,7 +64,7 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
                 </div>
-                <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>Saturday.com</span>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG Saturday.com</span>
             </div>
 
             {/* Admin Link (Only for System Admins) */}

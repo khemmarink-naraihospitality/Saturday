@@ -78,8 +78,8 @@ export const LoginPage = () => {
                             style={{ width: '80%', height: '80%', objectFit: 'contain' }}
                         />
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em' }}>
-                        Saturday.com
+                    <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.025em' }}>
+                        NHG Saturday.com
                     </h1>
                     <p style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
                         Log in to your workspace
@@ -157,7 +157,10 @@ export const LoginPage = () => {
                                 fontWeight: 600,
                                 cursor: loading ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.2s',
-                                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
+                                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}
                         >
                             {loading ? 'Processing...' : 'Log In'}

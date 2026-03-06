@@ -6,8 +6,6 @@ export const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();

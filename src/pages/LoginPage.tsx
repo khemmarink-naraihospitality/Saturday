@@ -6,7 +6,8 @@ export const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -14,21 +15,12 @@ export const LoginPage = () => {
         setError(null);
 
         try {
-            if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                alert('Check your email for the login link!');
-            } else {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                window.history.replaceState(null, '', '/');
-            }
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+            if (error) throw error;
+            window.history.replaceState(null, '', '/');
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -92,7 +84,7 @@ export const LoginPage = () => {
                         Saturday.com
                     </h1>
                     <p style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
-                        {isSignUp ? 'Create your platform account' : 'Log in to your workspace'}
+                        Log in to your workspace
                     </p>
                 </div>
 
@@ -170,7 +162,7 @@ export const LoginPage = () => {
                                 boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
                             }}
                         >
-                            {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Log In')}
+                            {loading ? 'Processing...' : 'Log In'}
                         </button>
                     </div>
                 </form>

@@ -21,6 +21,7 @@ import { useUserStore } from '../../../store/useUserStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { ConfirmModal } from '../../ui/ConfirmModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
+import { ShareBoardModal } from '../../workspace/ShareBoardModal';
 import { BoardIcon, WorkspaceIcon } from './SidebarIcons';
 import { SortableBoardItem } from './SortableBoardItem';
 
@@ -62,6 +63,7 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
 
     // Share workspace modal
     const [shareWorkspaceId, setShareWorkspaceId] = useState<string | null>(null);
+    const [shareBoardId, setShareBoardId] = useState<string | null>(null);
 
     // Tree expansion state
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set([workspaces[0]?.id].filter(Boolean)));
@@ -76,7 +78,12 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
 
     // Filter workspaces based on active tab and search query
     const filteredWorkspaces = (activeTab === 'my-workspaces'
-        ? workspaces.filter(w => w.owner_id === user?.id)
+        ? workspaces.filter(w => {
+            const isOwner = w.owner_id === user?.id;
+            const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
+            const containsSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
+            return isOwner || isWorkspaceShared || containsSharedBoard;
+        })
         : workspaces.filter(w => {
             if (w.owner_id === user?.id) return false;
             const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
@@ -344,6 +351,13 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                         <Edit2 size={14} /> Rename
                     </div>
 
+                    <div className="menu-item" onClick={() => {
+                        setShareBoardId(activeBoardMenu);
+                        setActiveBoardMenu(null);
+                    }} onMouseEnter={() => setActiveSubmenu(null)}>
+                        <Users size={14} /> Share
+                    </div>
+
                     {/* Move To Submenu */}
                     <div
                         className="menu-item"
@@ -510,6 +524,13 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                 <ShareWorkspaceModal
                     workspaceId={shareWorkspaceId}
                     onClose={() => setShareWorkspaceId(null)}
+                />
+            )}
+
+            {shareBoardId && (
+                <ShareBoardModal
+                    boardId={shareBoardId}
+                    onClose={() => setShareBoardId(null)}
                 />
             )}
 

@@ -57,6 +57,7 @@ export const createMemberSlice: StateCreator<
     },
 
     inviteToBoard: async (boardId, email, role) => {
+        const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
         const { data: foundUser } = await supabase.from('profiles').select('id, full_name').eq('email', email).single();
         if (foundUser) {
             // Send Invite Notification ONLY - Do not add member directly
@@ -65,7 +66,7 @@ export const createMemberSlice: StateCreator<
                 'board_invite',
                 `You have been invited to join board`,
                 boardId,
-                { role, boardName: 'Board' }
+                { role, boardName: boardData?.title || 'Board', workspaceId: boardData?.workspace_id }
             );
         }
     },
@@ -195,6 +196,28 @@ export const createMemberSlice: StateCreator<
                         user_id: user.id,
                         role
                     });
+
+                    // Add to workspace as board-guest to ensure visibility
+                    let workspaceId = data?.workspaceId;
+                    if (!workspaceId) {
+                        const { data: boardData } = await supabase.from('boards').select('workspace_id').eq('id', entity_id).single();
+                        workspaceId = boardData?.workspace_id;
+                    }
+
+                    if (workspaceId) {
+                        const { count: wsCount } = await supabase.from('workspace_members')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('workspace_id', workspaceId)
+                            .eq('user_id', user.id);
+
+                        if (!wsCount) {
+                            await supabase.from('workspace_members').insert({
+                                workspace_id: workspaceId,
+                                user_id: user.id,
+                                role: 'board-guest'
+                            });
+                        }
+                    }
                 }
             } else if (type === 'workspace_invite' && entity_id) {
                 const { count } = await supabase.from('workspace_members').select('*', { count: 'exact', head: true })

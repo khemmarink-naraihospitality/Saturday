@@ -77,9 +77,8 @@ export const createBoardSlice: StateCreator<
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
                 supabase.from('items').select('*').order('order'),
-                supabase.from('items').select('*').order('order'),
                 supabase.from('board_members').select('board_id, last_viewed_at').eq('user_id', user.id),
-                supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id)
+                supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id)
             ]);
 
             // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
@@ -220,7 +219,7 @@ export const createBoardSlice: StateCreator<
                 })),
                 boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],
-                sharedWorkspaceIds: sharedWorkspacesData?.map((r: any) => r.workspace_id) || [],
+                sharedWorkspaceIds: sharedWorkspacesData?.filter((r: any) => r.role !== 'board-guest').map((r: any) => r.workspace_id) || [],
                 isLoading: false,
                 activeWorkspaceId,
                 activeBoardId

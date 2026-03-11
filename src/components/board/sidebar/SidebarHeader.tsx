@@ -118,7 +118,7 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         transition: 'all 0.2s'
                     }}
                 >
-                    My Workspaces
+                    Workspaces
                 </button>
                 <button
                     onClick={() => setActiveTab('shared')}

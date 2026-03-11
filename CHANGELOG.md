@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.0-beta] - 2026-03-11
+
+### 🚀 New Features & Enhancements
+-   **Granular Board Sharing**: You can now explicitly share specific boards with users without sharing the entire workspace. Shared users will only see the workspace context and the explicit boards they have access to.
+-   **Security/Backend**: Refactored PostgreSQL RLS policies to safely resolve nested workspace-to-board access permissions and removed redundant legacy migration scripts.
+-   **UI & Routing Fixes**: 
+    - Fixed Deep Link routing occasionally resolving to identically named boards (e.g. "Starting Board") across different workspaces.
+    - Re-aligned the "Search" button icon and text in the Board Header.
+    - Improved `WorkspaceList` frontend store logic to correctly fetch and filter isolated shared boards.
+
 ## [v1.1.1-beta] - 2026-02-17
 
 ### 🌓 Dark Mode Fixes

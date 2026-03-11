@@ -150,21 +150,22 @@ function MainApp() {
     const parts = path.split('/').filter(Boolean);
 
     if (parts.length >= 3) {
+      const targetWorkspaceSlug = parts[1];
       const targetBoardSlug = parts[2];
-      // const targetWorkspaceSlug = parts[1]; // Verify workspace matches if needed
 
-      // Find board by fuzzy slug match
-      const matchedBoard = boards.find(b => slugify(b.title) === targetBoardSlug);
+      // Find workspace by fuzzy slug match
+      const matchedWorkspace = useBoardStore.getState().workspaces.find(w => slugify(w.title) === targetWorkspaceSlug);
 
-      if (matchedBoard && matchedBoard.id !== activeBoardId) {
-        console.log('Deep Link: Found board', matchedBoard.title);
-        // We also need to set the active workspace?
-        // setActiveBoard will trigger workspace switch if configured?
-        // useBoardStore's setActiveBoard doesn't automatically switch activeWorkspaceId usually, 
-        // unless we built that. Let's check. 
-        // Looking at previous specificiations, we often need to switch both.
-        // But for now, setActiveBoard triggers the view.
-        useBoardStore.getState().setActiveBoard(matchedBoard.id);
+      if (matchedWorkspace) {
+        // Find board by matching BOTH workspace ID and fuzzy slug match
+        const matchedBoard = boards.find(b => b.workspaceId === matchedWorkspace.id && slugify(b.title) === targetBoardSlug);
+
+        if (matchedBoard && matchedBoard.id !== activeBoardId) {
+          console.log('Deep Link: Found board in workspace', matchedBoard.title);
+          useBoardStore.getState().setActiveBoard(matchedBoard.id);
+          // Also set active workspace implicitly so sidebar highlights correctly
+          useBoardStore.setState({ activeWorkspaceId: matchedWorkspace.id });
+        }
       }
     }
   }, [isLoading, boards]); // simplistic dependency

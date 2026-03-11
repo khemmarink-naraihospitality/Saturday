@@ -72,7 +72,7 @@
 
 ## 🏗️ ขั้นตอนที่ 5: ติดตั้ง Schema (ตาราง) ใน Database
 
-1. **เปิดไฟล์ SQL**: ใน VS Code ให้เปิดไฟล์ `scripts/setup_complete.sql`
+1. **เปิดไฟล์ SQL**: ใน VS Code ให้เปิดไฟล์ `scripts/setup_fresh_install.sql`
 2. **Copy Code**: คลุมดำทั้งหมด (Ctrl + A) และ Copy (Ctrl + C)
 3. **ไปที่ Supabase SQL Editor**:
    - ในหน้าเว็บ Supabase เลือกเมนู **SQL Editor** (รูปปุ่ม `>_` ด้านซ้าย)
@@ -120,21 +120,12 @@
 # Copy และรัน script นี้:
 ```
 
-เลือก 1 ใน 2 วิธี:
+เลือกใช้วิธีรันไฟล์:
 
-**วิธีที่ 1: ใช้ All-in-One Script (แนะนำ)**
+**ใช้ All-in-One Clean Install Script (แนะนำ)**
 ```bash
-# รัน scripts/setup_complete.sql ใน Supabase SQL Editor
-```
-
-**วิธีที่ 2: รันทีละไฟล์**
-```bash
-# รันตามลำดับ:
-1. db_schema.sql
-2. scripts/activity_logs_schema.sql
-3. scripts/delete_user_function.sql
-4. scripts/trigger_user_signup_log.sql
-5. scripts/trigger_workspace_board_logs.sql
+# รัน scripts/setup_fresh_install.sql ใน Supabase SQL Editor
+# (ไฟล์นี้จะทำการลบข้อมูลเก่าและสร้างตารางใหม่ทั้งหมด)
 ```
 
 ### Step 5: รัน Development Server
@@ -186,7 +177,7 @@ cp .env.example .env
 
 ### Step 4: Setup Database และรัน
 
-ทำตาม Step 4-5 ของวิธีที่ 1
+ทำตาม Step 4-5 ด้านบน
 
 ---
 
@@ -207,7 +198,7 @@ cp .env.example .env
 
 3. **Setup Database Schema**
    - ไปที่ SQL Editor ใน Supabase
-   - รัน `scripts/setup_complete.sql`
+   - รัน `scripts/setup_fresh_install.sql`
 
 4. **Restart Development Server**
    ```bash
@@ -233,7 +224,7 @@ cp .env.example .env
 
 2. **รัน Schema ใหม่**
    ```bash
-   # รัน scripts/setup_complete.sql
+   # รัน scripts/setup_fresh_install.sql
    ```
 
 ---
@@ -301,8 +292,7 @@ npm install
 ### ปัญหา: Database Schema Error
 
 **แก้ไข:**
-- ตรวจสอบว่ารัน SQL scripts ครบทุกไฟล์
-- ลองรัน `scripts/setup_complete.sql` ใหม่
+- ลองรัน `scripts/setup_fresh_install.sql` ใหม่อีกครั้ง
 - ตรวจสอบ Supabase logs ใน Dashboard → Logs
 
 ### ปัญหา: Login ไม่ได้
@@ -342,7 +332,7 @@ cp .env.example .env
 # แก้ไข .env ให้ตรงกับ Supabase ของคุณ
 
 # 4. Setup Database
-# รัน scripts/setup_complete.sql ใน Supabase SQL Editor
+# รัน scripts/setup_fresh_install.sql ใน Supabase SQL Editor
 
 # 5. Run
 npm run dev

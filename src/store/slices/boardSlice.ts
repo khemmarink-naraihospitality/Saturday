@@ -62,7 +62,6 @@ export const createBoardSlice: StateCreator<
                 return;
             }
 
-            // Using full typed response validation would be better but keeping structure
             const [
                 { data: workspaces },
                 { data: boards },
@@ -76,7 +75,6 @@ export const createBoardSlice: StateCreator<
                 supabase.from('boards').select('*').order('order'),
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
-                supabase.from('items').select('*').order('order'),
                 supabase.from('items').select('*').order('order'),
                 supabase.from('board_members').select('board_id, last_viewed_at').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id)
@@ -137,7 +135,12 @@ export const createBoardSlice: StateCreator<
                 });
             }
 
-            const fullBoards: Board[] = boards.map(b => {
+            const fullBoards: Board[] = boards.filter(b => {
+                const ownsWorkspace = workspaces.some((w: any) => w.id === b.workspace_id && w.owner_id === user.id);
+                const hasWorkspaceAccess = sharedWorkspacesData?.some((r: any) => r.workspace_id === b.workspace_id);
+                const hasBoardAccess = sharedBoardsData?.some((r: any) => r.board_id === b.id);
+                return ownsWorkspace || hasWorkspaceAccess || hasBoardAccess;
+            }).map(b => {
                 const bGroups = (groups || []).filter(g => g.board_id === b.id);
                 const bColumns = (columns || []).filter(c => c.board_id === b.id);
                 const bItems = (items || []).filter(i => i.board_id === b.id);
@@ -187,9 +190,6 @@ export const createBoardSlice: StateCreator<
                 };
             });
 
-            // ... (Active Workspace/Board determination) ...
-            // Simplified for brevity in replacement constraint
-
             // Determine Active Workspace
             const currentWorkspaceId = get().activeWorkspaceId;
             const validCurrentWorkspace = workspaces.find((w: any) => w.id === currentWorkspaceId);
@@ -216,7 +216,7 @@ export const createBoardSlice: StateCreator<
                     title: w.title,
                     order: w.order,
                     owner_id: w.owner_id,
-                    ownerName: ownerProfilesMap[w.owner_id] // Add ownerName
+                    ownerName: ownerProfilesMap[w.owner_id]
                 })),
                 boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],

@@ -156,7 +156,13 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                     const wsBoards = boards.filter(b => {
                         if (b.workspaceId !== ws.id) return false;
 
-                        const isAccessible = ws.owner_id === user?.id || sharedWorkspaceIds.includes(ws.id) || sharedBoardIds.includes(b.id);
+                        // Strict check: if they own the workspace, or the workspace is shared with them, they see all boards.
+                        // If they only have board-level access, they ONLY see boards explicitly shared with them.
+                        const ownsWorkspace = ws.owner_id === user?.id;
+                        const hasWorkspaceAccess = sharedWorkspaceIds.includes(ws.id);
+                        const hasBoardAccess = sharedBoardIds.includes(b.id);
+
+                        const isAccessible = ownsWorkspace || hasWorkspaceAccess || hasBoardAccess;
                         if (!isAccessible) return false;
 
                         if (searchQuery.trim()) {

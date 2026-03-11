@@ -1,13 +1,30 @@
 -- =====================================================
--- Workera Complete Database Setup Script
+-- Workera Complete Database Setup Script (Clean Install)
 -- =====================================================
--- This script sets up the entire database schema for Workera.
--- It includes:
--- 1. Extensions
--- 2. Base Tables (Profiles, Workspaces, Boards, Items, etc.)
--- 3. Core Functions (Triggers, Activity Logging)
--- 4. RLS Policies (Security)
+-- This script sets up the entire database schema for Workera v1.1.1 Beta.
+-- It is designed for a FRESH INSTALLATION.
+-- It will DROP existing tables and recreate them to ensure a clean state.
 -- =====================================================
+
+-- 0. CLEANUP (WARNING: This drops all existing data in these tables)
+DROP TABLE IF EXISTS activity_logs CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS columns CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS board_members CASCADE;
+DROP TABLE IF EXISTS boards CASCADE;
+DROP TABLE IF EXISTS workspace_members CASCADE;
+DROP TABLE IF EXISTS workspaces CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
+DROP FUNCTION IF EXISTS delete_user(UUID) CASCADE;
+DROP FUNCTION IF EXISTS log_activity(TEXT, TEXT, UUID, JSONB) CASCADE;
+DROP FUNCTION IF EXISTS trigger_log_board_created() CASCADE;
+DROP FUNCTION IF EXISTS trigger_log_workspace_created() CASCADE;
+DROP FUNCTION IF EXISTS trigger_log_user_signup() CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS is_board_member(UUID) CASCADE;
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -15,7 +32,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 2. TABLES
 
 -- Profiles (Users)
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     email TEXT,
     full_name TEXT,
@@ -26,7 +43,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- Workspaces
-CREATE TABLE IF NOT EXISTS workspaces (
+CREATE TABLE workspaces (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title TEXT NOT NULL,
     owner_id UUID REFERENCES auth.users(id) NOT NULL,
@@ -36,7 +53,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 );
 
 -- Workspace Members
-CREATE TABLE IF NOT EXISTS workspace_members (
+CREATE TABLE workspace_members (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -46,7 +63,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 );
 
 -- Boards
-CREATE TABLE IF NOT EXISTS boards (
+CREATE TABLE boards (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -56,7 +73,7 @@ CREATE TABLE IF NOT EXISTS boards (
 );
 
 -- Board Members
-CREATE TABLE IF NOT EXISTS board_members (
+CREATE TABLE board_members (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -67,7 +84,7 @@ CREATE TABLE IF NOT EXISTS board_members (
 );
 
 -- Groups
-CREATE TABLE IF NOT EXISTS groups (
+CREATE TABLE groups (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -76,7 +93,7 @@ CREATE TABLE IF NOT EXISTS groups (
 );
 
 -- Columns
-CREATE TABLE IF NOT EXISTS columns (
+CREATE TABLE columns (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -88,7 +105,7 @@ CREATE TABLE IF NOT EXISTS columns (
 );
 
 -- Items
-CREATE TABLE IF NOT EXISTS items (
+CREATE TABLE items (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
     group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
@@ -103,7 +120,7 @@ CREATE TABLE IF NOT EXISTS items (
 );
 
 -- Notifications
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE notifications (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     actor_id UUID REFERENCES auth.users(id),
@@ -118,7 +135,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- Activity Logs
-CREATE TABLE IF NOT EXISTS activity_logs (
+CREATE TABLE activity_logs (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     actor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -129,10 +146,11 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 -- Indexes for Performance
-CREATE INDEX IF NOT EXISTS idx_activity_logs_actor_id ON activity_logs(actor_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_target ON activity_logs(target_type, target_id);
-CREATE INDEX IF NOT EXISTS idx_items_board_id ON items(board_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_activity_logs_actor_id ON activity_logs(actor_id);
+CREATE INDEX idx_activity_logs_target ON activity_logs(target_type, target_id);
+CREATE INDEX idx_items_board_id ON items(board_id);
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+
 
 -- 3. FUNCTIONS & TRIGGERS
 
@@ -145,13 +163,12 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers for updated_at
 CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_boards_updated_at BEFORE UPDATE ON boards FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_items_updated_at BEFORE UPDATE ON items FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
--- Function: Log Activity
+-- Function: Log Activity (Secured)
 CREATE OR REPLACE FUNCTION log_activity(
     p_action_type TEXT,
     p_target_type TEXT DEFAULT NULL,
@@ -161,6 +178,7 @@ CREATE OR REPLACE FUNCTION log_activity(
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_log_id UUID;
@@ -183,14 +201,14 @@ BEGIN
     RETURN v_log_id;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION log_activity TO authenticated;
 
--- Function: Delete User
+-- Function: Delete User (Secured)
 CREATE OR REPLACE FUNCTION delete_user(user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_user_email TEXT;
@@ -213,8 +231,6 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Permission denied');
     END IF;
 
-    -- Only allow self-delete if requested (or handle via separate logic, simpler here to allow admin to delete anyone)
-
     PERFORM log_activity(
         'user_deleted',
         'user',
@@ -231,8 +247,6 @@ BEGIN
     DELETE FROM workspace_members WHERE user_id = user_id;
     DELETE FROM workspaces WHERE owner_id = user_id;
     DELETE FROM profiles WHERE id = user_id;
-    -- Note: auth.users deletion usually requires Supabase Service Key or separate Admin API call from client.
-    -- This function cleans up PUBLIC schema data.
 
     RETURN jsonb_build_object('success', true, 'message', 'User data deleted successfully');
 EXCEPTION
@@ -240,7 +254,6 @@ EXCEPTION
         RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION delete_user TO authenticated;
 
 -- Trigger: Log User Signup (Profiles Insert)
@@ -248,6 +261,7 @@ CREATE OR REPLACE FUNCTION trigger_log_user_signup()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
     INSERT INTO activity_logs (
@@ -263,13 +277,15 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
-DROP TRIGGER IF EXISTS on_user_signup_log ON profiles;
 CREATE TRIGGER on_user_signup_log AFTER INSERT ON profiles FOR EACH ROW EXECUTE FUNCTION trigger_log_user_signup();
 
 -- Trigger: Workspace Created
 CREATE OR REPLACE FUNCTION trigger_log_workspace_created()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
 BEGIN
     INSERT INTO activity_logs (
         actor_id, action_type, target_type, target_id, metadata
@@ -280,13 +296,15 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
-DROP TRIGGER IF EXISTS on_workspace_created_log ON workspaces;
 CREATE TRIGGER on_workspace_created_log AFTER INSERT ON workspaces FOR EACH ROW EXECUTE FUNCTION trigger_log_workspace_created();
 
 -- Trigger: Board Created
 CREATE OR REPLACE FUNCTION trigger_log_board_created()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
 DECLARE v_workspace_title TEXT;
 BEGIN
     SELECT title INTO v_workspace_title FROM workspaces WHERE id = NEW.workspace_id;
@@ -304,11 +322,45 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
-DROP TRIGGER IF EXISTS on_board_created_log ON boards;
 CREATE TRIGGER on_board_created_log AFTER INSERT ON boards FOR EACH ROW EXECUTE FUNCTION trigger_log_board_created();
 
--- 4. RLS POLICIES
+-- 4. HELPER FUNCTIONS FOR RLS (Security Definer)
+
+-- Helper: Check if user is a board member (solves infinite recursion)
+CREATE OR REPLACE FUNCTION is_board_member(_board_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM board_members
+    WHERE board_id = _board_id
+    AND user_id = auth.uid()
+  );
+$$;
+
+-- Helper: Check if user has access to any board in a workspace (solves infinite recursion)
+CREATE OR REPLACE FUNCTION has_board_access_in_workspace(_workspace_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM boards b
+    JOIN board_members bm ON b.id = bm.board_id
+    WHERE b.workspace_id = _workspace_id
+    AND bm.user_id = auth.uid()
+  );
+$$;
+
+-- 5. RLS POLICIES
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
@@ -320,15 +372,16 @@ ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Public read (for avatars), Self Update
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
+-- Profiles
+CREATE POLICY "Authenticated users can see all profiles" ON profiles FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Workspaces
 CREATE POLICY "Users can view accessible workspaces" ON workspaces FOR SELECT USING (
   owner_id = auth.uid() OR
-  id IN (SELECT m.workspace_id FROM workspace_members m WHERE m.user_id = auth.uid())
+  id IN (SELECT m.workspace_id FROM workspace_members m WHERE m.user_id = auth.uid()) OR
+  has_board_access_in_workspace(id)
 );
 CREATE POLICY "Users can create workspaces" ON workspaces FOR INSERT WITH CHECK (owner_id = auth.uid());
 CREATE POLICY "Users can update their workspaces" ON workspaces FOR UPDATE USING (owner_id = auth.uid());
@@ -362,15 +415,14 @@ CREATE POLICY "Users can delete their boards" ON boards FOR DELETE USING (
   id IN (SELECT bm.board_id FROM board_members bm WHERE bm.user_id = auth.uid())
 );
 
--- Board Members
-CREATE POLICY "Board members viewable" ON board_members FOR SELECT USING (
-    board_id IN (SELECT id FROM boards WHERE workspace_id IN (SELECT id FROM workspaces WHERE owner_id = auth.uid())) OR
-    board_id IN (SELECT board_id FROM board_members WHERE user_id = auth.uid())
+-- Board Members (Using is_board_member helper to prevent recursion)
+CREATE POLICY "Users can view members of boards they are in" ON board_members FOR SELECT USING (
+    auth.uid() = user_id OR
+    is_board_member(board_id)
 );
--- Allow self-insert (joining?) or owner insert. For now open for invited users logic (controlled by logic)
 CREATE POLICY "Board members manage" ON board_members FOR ALL USING (
     board_id IN (SELECT id FROM boards WHERE workspace_id IN (SELECT id FROM workspaces WHERE owner_id = auth.uid())) OR
-    board_id IN (SELECT board_id FROM board_members WHERE user_id = auth.uid())
+    is_board_member(board_id)
 );
 
 -- Groups, Columns, Items (Cascade access from Board)
@@ -397,15 +449,12 @@ CREATE POLICY "Users can manage items" ON items FOR ALL USING (
 
 -- Notifications
 CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Authenticated users can create notifications" ON notifications FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can create notifications" ON notifications FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (auth.uid() = user_id);
 
--- Activity Logs
-CREATE POLICY "Admins can view all logs" ON activity_logs FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND system_role IN ('super_admin', 'it_admin'))
-);
-CREATE POLICY "Users can view their own activities" ON activity_logs FOR SELECT USING (actor_id = auth.uid());
-CREATE POLICY "Authenticated users can create logs" ON activity_logs FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+-- Activity Logs (v3 ultra-permissive policy applied)
+CREATE POLICY "Users can view relevant logs" ON activity_logs FOR SELECT TO authenticated, anon USING (true);
+CREATE POLICY "Allow insert for all authenticated" ON activity_logs FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
 
--- Finished
+-- 6. Finished

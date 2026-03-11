@@ -166,7 +166,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         <button
                             className="btn-ghost"
                             title="Search / Filter"
-                            style={{ padding: '8px' }}
+                            style={{ padding: '8px', display: 'flex', alignItems: 'center' }}
                             onClick={() => setShowSearch(true)}
                         >
                             <Search size={16} />

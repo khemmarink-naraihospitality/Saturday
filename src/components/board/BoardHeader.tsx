@@ -13,7 +13,7 @@ interface BoardHeaderProps {
 }
 
 export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
-    const { boards, updateBoard, deleteBoard, activeBoardMembers, activeWorkspaceId, workspaces } = useBoardStore();
+    const { boards, updateBoard, deleteBoard, activeBoardMembers } = useBoardStore();
     const board = boards.find(b => b.id === boardId);
 
     // Permission Hook
@@ -129,9 +129,6 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             <Star size={16} color="hsl(var(--color-text-tertiary))" style={{ cursor: 'pointer' }} />
                         </h1>
                     )}
-                    <span style={{ fontSize: '14px', color: 'hsl(var(--color-text-tertiary))' }}>
-                        {workspaces.find(w => w.id === activeWorkspaceId)?.title || "Workspace"}
-                    </span>
                 </div>
             </div>
 

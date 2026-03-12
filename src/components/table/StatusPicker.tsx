@@ -16,16 +16,29 @@ interface StatusPickerProps {
 export const StatusPicker = ({ columnId, options = [], onSelect, onClose, position }: StatusPickerProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const [isEditingLabels, setIsEditingLabels] = useState(false);
+    const [pickerHeight, setPickerHeight] = useState(0);
+
+    const safeOptions = Array.isArray(options) ? options : [];
+
+    // Measure height after render to handle overflow
+    useEffect(() => {
+        if (menuRef.current) {
+            setPickerHeight(menuRef.current.offsetHeight);
+        }
+    }, [safeOptions, isEditingLabels]);
+
+    // Calculate vertical position
+    const spaceBelow = window.innerHeight - position.bottom;
+    const shouldShowAbove = spaceBelow < (isEditingLabels ? 400 : 250) && position.top > (isEditingLabels ? 400 : 250);
+
+    const topPos = shouldShowAbove 
+        ? position.top - (pickerHeight || (isEditingLabels ? 400 : 220)) - 8 
+        : position.bottom + 8;
 
     // Store actions
     const addColumnOption = useBoardStore(state => state.addColumnOption);
     const updateColumnOption = useBoardStore(state => state.updateColumnOption);
     const deleteColumnOption = useBoardStore(state => state.deleteColumnOption);
-
-    // Temp state for keydown buffer etc, but mostly we can edit directly store or local
-    // For "Apply" feel, ideally we do local state, but store is easier. 
-    // Screenshot has "Apply", which usually implies saving. 
-    // IF we edit DIRECTLY, "Apply" just means Close.
 
     // Handle click outside to close
     useEffect(() => {
@@ -44,8 +57,6 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
         '#a25ddc', '#ffcb00', '#c4c4c4', '#333333', '#784bd1'
     ];
 
-    const safeOptions = Array.isArray(options) ? options : [];
-
     const handleAddLabel = () => {
         addColumnOption(columnId, 'New Label', '#c4c4c4');
     };
@@ -56,7 +67,7 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                 ref={menuRef}
                 style={{
                     position: 'fixed',
-                    top: position.bottom + 8,
+                    top: topPos,
                     left: position.left - (280 - position.width) / 2, // Wider for edit mode
                     width: '280px',
                     backgroundColor: 'white',
@@ -73,23 +84,22 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                 {/* Pointer triangle */}
                 <div style={{
                     position: 'absolute',
-                    top: '-6px',
+                    top: shouldShowAbove ? 'auto' : '-6px',
+                    bottom: shouldShowAbove ? '-6px' : 'auto',
                     left: '50%',
                     transform: 'translateX(-50%) rotate(45deg)',
                     width: '12px',
                     height: '12px',
                     backgroundColor: 'white',
-                    borderLeft: '1px solid hsl(var(--color-border))',
-                    borderTop: '1px solid hsl(var(--color-border))',
+                    borderLeft: shouldShowAbove ? 'none' : '1px solid hsl(var(--color-border))',
+                    borderTop: shouldShowAbove ? 'none' : '1px solid hsl(var(--color-border))',
+                    borderRight: shouldShowAbove ? '1px solid hsl(var(--color-border))' : 'none',
+                    borderBottom: shouldShowAbove ? '1px solid hsl(var(--color-border))' : 'none',
                 }} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
                     {safeOptions.map((opt) => (
                         <div key={opt.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            {/* Color Swatch / Paint Bucket - simplified for MVP to just cycle or random? 
-                                Let's make it a small square that triggers a color menu? 
-                                Or simpler: just match screenshot design: Icon on left.
-                             */}
                             <div style={{
                                 width: '24px',
                                 height: '24px',
@@ -103,7 +113,6 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                                 flexShrink: 0
                             }}
                                 onClick={() => {
-                                    // Cycle colors for simple MVP
                                     const idx = LABEL_COLORS.indexOf(opt.color);
                                     const nextColor = LABEL_COLORS[(idx + 1) % LABEL_COLORS.length];
                                     updateColumnOption(columnId, opt.id, { color: nextColor });
@@ -189,8 +198,8 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
             ref={menuRef}
             style={{
                 position: 'fixed',
-                top: position.bottom + 8,
-                left: position.left - (340 - position.width) / 2, // Slightly narrower
+                top: topPos,
+                left: position.left - (340 - position.width) / 2,
                 width: '340px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
@@ -205,14 +214,17 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
             {/* Pointer triangle */}
             <div style={{
                 position: 'absolute',
-                top: '-6px',
+                top: shouldShowAbove ? 'auto' : '-6px',
+                bottom: shouldShowAbove ? '-6px' : 'auto',
                 left: '50%',
                 transform: 'translateX(-50%) rotate(45deg)',
                 width: '12px',
                 height: '12px',
                 backgroundColor: 'white',
-                borderLeft: '1px solid #e1e1e1',
-                borderTop: '1px solid #e1e1e1',
+                borderLeft: shouldShowAbove ? 'none' : '1px solid #e1e1e1',
+                borderTop: shouldShowAbove ? 'none' : '1px solid #e1e1e1',
+                borderRight: shouldShowAbove ? '1px solid #e1e1e1' : 'none',
+                borderBottom: shouldShowAbove ? '1px solid #e1e1e1' : 'none',
             }} />
 
             <div style={{ padding: '16px 16px 8px 16px' }}>

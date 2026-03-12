@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Share2, Activity, X, MoreHorizontal, Star, Search, Trash2, Edit2, Plus, Download } from 'lucide-react';
+import { Share2, Activity, X, MoreHorizontal, Star, Trash2, Edit2, Plus, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
@@ -13,7 +13,7 @@ interface BoardHeaderProps {
 }
 
 export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
-    const { boards, updateBoard, deleteBoard, searchQuery, setSearchQuery, activeBoardMembers, activeWorkspaceId, workspaces } = useBoardStore();
+    const { boards, updateBoard, deleteBoard, activeBoardMembers, activeWorkspaceId, workspaces } = useBoardStore();
     const board = boards.find(b => b.id === boardId);
 
     // Permission Hook
@@ -21,7 +21,6 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     const [showShareModal, setShowShareModal] = useState(false);
     const [showActivityLog, setShowActivityLog] = useState(false);
-    const [showSearch, setShowSearch] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
 
@@ -141,38 +140,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
                 {/* Search / Filter */}
                 <div style={{ position: 'relative' }}>
-                    {showSearch ? (
-                        <div style={{ display: 'flex', alignItems: 'center', background: 'hsl(var(--color-bg-subtle))', borderRadius: '6px', padding: '4px 8px' }}>
-                            <Search size={14} style={{ marginRight: '6px', color: 'hsl(var(--color-text-tertiary))' }} />
-                            <input
-                                autoFocus
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search tasks..."
-                                style={{
-                                    border: 'none',
-                                    background: 'transparent',
-                                    outline: 'none',
-                                    fontSize: '14px',
-                                    width: '120px'
-                                }}
-                                onBlur={() => !searchQuery && setShowSearch(false)}
-                            />
-                            <button onClick={() => { setSearchQuery(''); setShowSearch(false); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}>
-                                <X size={14} color="hsl(var(--color-text-tertiary))" />
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            className="btn-ghost"
-                            title="Search / Filter"
-                            style={{ padding: '8px' }}
-                            onClick={() => setShowSearch(true)}
-                        >
-                            <Search size={16} />
-                            <span style={{ marginLeft: '6px', fontSize: '14px' }}>Search</span>
-                        </button>
-                    )}
+                    {/* Search removed per user request */}
                 </div>
 
                 <div style={{ height: '24px', width: '1px', background: 'hsl(var(--color-border))', margin: '0 8px' }} />

@@ -39,6 +39,7 @@ export const UserTable = () => {
 
     // Role Change State
     const [roleChangeModal, setRoleChangeModal] = useState<{ userId: string; currentRole: string } | null>(null);
+    const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
     const fetchProfiles = async () => {
         setIsLoading(true);
@@ -106,6 +107,7 @@ export const UserTable = () => {
                 p.id === userId ? { ...p, system_role: newRole as any } : p
             ));
             setRoleChangeModal(null);
+            setSelectedRole(null);
             setOpenPopoverId(null);
         } catch (err: any) {
             alert('Failed to update role: ' + err.message);
@@ -288,6 +290,7 @@ export const UserTable = () => {
                                                                 <button
                                                                     onClick={() => {
                                                                         setRoleChangeModal({ userId: profile.id, currentRole: profile.system_role });
+                                                                        setSelectedRole(profile.system_role);
                                                                         setOpenPopoverId(null);
                                                                     }}
                                                                     style={{
@@ -409,45 +412,68 @@ export const UserTable = () => {
                         <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#64748b' }}>
                             Select a new role for this user:
                         </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
                             {(['user', 'it_admin', 'super_admin'] as const).map((role) => (
                                 <button
                                     key={role}
-                                    onClick={() => handleRoleUpdate(roleChangeModal.userId, role)}
-                                    disabled={role === roleChangeModal.currentRole}
+                                    onClick={() => setSelectedRole(role)}
                                     style={{
                                         padding: '12px 16px',
-                                        border: role === roleChangeModal.currentRole ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                                        border: selectedRole === role ? '2px solid #6366f1' : '1px solid #e2e8f0',
                                         borderRadius: '8px',
-                                        backgroundColor: role === roleChangeModal.currentRole ? '#eef2ff' : 'white',
-                                        cursor: role === roleChangeModal.currentRole ? 'default' : 'pointer',
+                                        backgroundColor: selectedRole === role ? '#eef2ff' : 'white',
+                                        cursor: 'pointer',
                                         fontSize: '14px',
                                         fontWeight: 500,
                                         color: '#0f172a',
                                         textAlign: 'left',
-                                        opacity: role === roleChangeModal.currentRole ? 0.7 : 1
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
                                     }}
                                 >
-                                    {ROLE_LABELS[role]} {role === roleChangeModal.currentRole && '(Current)'}
+                                    <span>{ROLE_LABELS[role]} {role === roleChangeModal.currentRole && <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '4px' }}>(Current)</span>}</span>
+                                    {selectedRole === role && <Shield size={16} color="#6366f1" />}
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={() => setRoleChangeModal(null)}
-                            style={{
-                                width: '100%',
-                                padding: '8px 16px',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                backgroundColor: 'white',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                color: '#475569'
-                            }}
-                        >
-                            Cancel
-                        </button>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setRoleChangeModal(null)}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 16px',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'white',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    color: '#475569'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleRoleUpdate(roleChangeModal.userId, selectedRole!)}
+                                disabled={selectedRole === roleChangeModal.currentRole}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 16px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    backgroundColor: selectedRole === roleChangeModal.currentRole ? '#cbd5e1' : '#6366f1',
+                                    color: 'white',
+                                    cursor: selectedRole === roleChangeModal.currentRole ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    transition: 'background-color 0.2s'
+                                }}
+                            >
+                                Save Changes
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

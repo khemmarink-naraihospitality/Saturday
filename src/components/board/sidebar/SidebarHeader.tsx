@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, MoreHorizontal, Archive, Users } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Archive, Users, Home, Star } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 
@@ -11,13 +11,12 @@ interface SidebarHeaderProps {
 }
 
 export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQuery }: SidebarHeaderProps) => {
-    const { addWorkspace, navigateTo } = useBoardStore();
+    const { addWorkspace, navigateTo, activePage } = useBoardStore();
 
     const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showSearch, setShowSearch] = useState(false);
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -50,12 +49,12 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
     };
 
     return (
-        <div className="sidebar-header" style={{ padding: '0 16px', marginBottom: '12px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div className="sidebar-header" style={{ padding: '0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
             <div
                 onClick={() => navigateTo('home')}
                 style={{
-                    marginBottom: '16px',
-                    marginTop: '12px',
+                    marginBottom: '6px',
+                    marginTop: '6px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
@@ -64,9 +63,9 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 }}
             >
                 <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -80,9 +79,80 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
                 </div>
-                <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG Saturday.com</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>
+                    <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px' }}>Saturday.com</span>
+                </div>
             </div>
 
+            {/* Main Navigation */}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 8px', marginBottom: '8px' }}>
+                <button
+                    onClick={() => navigateTo('home')}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: activePage === 'home' ? 'hsl(var(--color-bg-hover))' : 'transparent',
+                        color: activePage === 'home' ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))',
+                        cursor: 'pointer',
+                        transition: 'all 0.1s ease',
+                        textAlign: 'left'
+                    }}
+                    onMouseOver={(e) => {
+                        if (activePage !== 'home') {
+                            e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))';
+                            e.currentTarget.style.color = 'hsl(var(--color-text-primary))';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (activePage !== 'home') {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'hsl(var(--color-text-secondary))';
+                        }
+                    }}
+                >
+                    <Home size={18} />
+                    <span style={{ fontSize: '12px', fontWeight: activePage === 'home' ? 600 : 400 }}>Home</span>
+                </button>
+
+                <button
+                    onClick={() => navigateTo('favorites')}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: activePage === 'favorites' ? 'hsl(var(--color-bg-hover))' : 'transparent',
+                        color: activePage === 'favorites' ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))',
+                        cursor: 'pointer',
+                        transition: 'all 0.1s ease',
+                        textAlign: 'left'
+                    }}
+                    onMouseOver={(e) => {
+                        if (activePage !== 'favorites') {
+                            e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))';
+                            e.currentTarget.style.color = 'hsl(var(--color-text-primary))';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (activePage !== 'favorites') {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = 'hsl(var(--color-text-secondary))';
+                        }
+                    }}
+                >
+                    <Star size={18} />
+                    <span style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
+                </button>
+            </div>
 
             {/* Workspaces Tabs */}
             <div style={{ display: 'flex', padding: '0 4px', width: '100%', marginBottom: '4px', borderBottom: '1px solid #f0f0f0' }}>
@@ -127,7 +197,7 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
             </div>
 
             {/* Workspaces Title & Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '8px' }}>
                 <span style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -146,147 +216,92 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         </button>
                         
                         {isMenuOpen && (
-                            <div 
-                                style={{
-                                    position: 'absolute', top: '100%', left: '0', 
-                                    backgroundColor: 'white', border: '1px solid hsl(var(--color-border))',
-                                    borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                    zIndex: 100, width: '220px', padding: '8px 4px', marginTop: '4px'
-                                }}
-                            >
-                                <div 
-                                    className="sidebar-more-menu-item"
-                                    onClick={() => { setIsMenuOpen(false); setIsCreatingWorkspace(true); }}
-                                >
-                                    <Plus size={14} /> Add new workspace
-                                </div>
-                                <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }}></div>
-                                <div 
-                                    className="sidebar-more-menu-item"
-                                    onClick={() => { setIsMenuOpen(false); setIsArchiveModalOpen(true); }}
-                                >
-                                    <Archive size={14} /> View archive/trash
+                            <div style={{
+                                position: 'absolute', top: '100%', right: 0, marginTop: '4px', backgroundColor: 'white',
+                                borderRadius: '8px', boxShadow: 'var(--shadow-lg)', border: '1px solid #eee', width: '200px', zIndex: 100, overflow: 'hidden'
+                            }}>
+                                <div style={{ padding: '8px' }}>
+                                    <button
+                                        onClick={() => { setIsMenuOpen(false); setIsCreatingWorkspace(true); }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: 'none', background: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', color: '#444' }}
+                                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        <Plus size={16} />
+                                        <span style={{ fontSize: '14px' }}>Create Workspace</span>
+                                    </button>
+                                    <button
+                                        onClick={() => { setIsMenuOpen(false); setIsArchiveModalOpen(true); }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: 'none', background: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', color: '#444' }}
+                                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        <Archive size={16} />
+                                        <span style={{ fontSize: '14px' }}>Archive/Trash</span>
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </div>
-
-                    {/* Search Icon */}
-                    <button
-                        onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearchQuery(''); }}
-                        style={{
-                            background: showSearch ? 'hsl(var(--color-bg-hover))' : 'transparent', 
-                            border: 'none', cursor: 'pointer', padding: '4px',
-                            borderRadius: '4px', color: 'hsl(var(--color-text-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                        onMouseOver={(e) => { if (!showSearch) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))' }}
-                        onMouseOut={(e) => { if (!showSearch) e.currentTarget.style.backgroundColor = 'transparent' }}
-                    >
-                        <Search size={16} />
-                    </button>
                 </div>
             </div>
 
-            {/* Search Input (Toggled) */}
-            {showSearch && (
-                <div style={{ display: 'flex', gap: '8px', position: 'relative', width: '100%', marginBottom: '12px', padding: '0 4px' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#676879' }} />
-                        <input
-                            autoFocus
-                            type="text"
-                            placeholder="Search workspaces..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '6px 8px 6px 30px',
-                                borderRadius: '4px',
-                                border: '1px solid hsl(var(--color-border))',
-                                backgroundColor: 'hsl(var(--color-bg-surface))',
-                                fontSize: '13px',
-                                outline: 'none',
-                                color: 'hsl(var(--color-text-primary))'
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Search Input */}
+            <div style={{ width: '100%', padding: '0 4px', marginBottom: '8px', display: 'flex', alignItems: 'center', backgroundColor: 'hsl(var(--color-bg-hover))', borderRadius: '6px', border: '1px solid hsl(var(--color-border))' }}>
+                <Search size={16} style={{ color: 'hsl(var(--color-text-secondary))', marginLeft: '8px' }} />
+                <input
+                    type="text"
+                    placeholder="Search workspaces..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: 'none',
+                        background: 'transparent',
+                        fontSize: '13px',
+                        outline: 'none',
+                        color: 'hsl(var(--color-text-primary))'
+                    }}
+                />
+            </div>
 
+            {/* Modals */}
             {isArchiveModalOpen && (
-                <ArchiveTrashModal onClose={() => setIsArchiveModalOpen(false)} />
+                <ArchiveTrashModal isOpen={isArchiveModalOpen} onClose={() => setIsArchiveModalOpen(false)} />
             )}
 
-            <style>{`
-                .sidebar-more-menu-item {
-                    padding: 8px 12px;
-                    display: flex;
-                    alignItems: center;
-                    gap: 8px;
-                    cursor: pointer;
-                    font-size: 13px;
-                    border-radius: 4px;
-                    color: hsl(var(--color-text-primary));
-                    transition: background-color 0.2s;
-                }
-                .sidebar-more-menu-item:hover {
-                    background-color: hsl(var(--color-bg-hover));
-                }
-            `}</style>
-
-
-            {/* Workspace Creation Modal */}
             {isCreatingWorkspace && (
                 <div style={{
-                    position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 2000
-                }} onClick={() => setIsCreatingWorkspace(false)}>
-                    <div style={{
-                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                        padding: '24px',
-                        borderRadius: '8px',
-                        width: '320px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                    }} onClick={e => e.stopPropagation()}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '18px' }}>Create Workspace</h3>
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '32px', width: '400px', boxShadow: 'var(--shadow-xl)' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px' }}>Create new workspace</h2>
                         <form onSubmit={handleCreateWorkspace}>
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Workspace Name (e.g. Marketing)"
+                                placeholder="Workspace title"
                                 value={newWorkspaceTitle}
                                 onChange={(e) => setNewWorkspaceTitle(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    marginBottom: '16px',
-                                    borderRadius: '4px',
-                                    border: '1px solid hsl(var(--color-border))',
-                                    backgroundColor: 'hsl(var(--color-bg-canvas))',
-                                    color: 'hsl(var(--color-text-primary))'
-                                }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '15px', marginBottom: '24px', outline: 'none' }}
                             />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                                 <button
                                     type="button"
                                     onClick={() => setIsCreatingWorkspace(false)}
-                                    style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                                    style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting}
+                                    disabled={!newWorkspaceTitle.trim() || isSubmitting}
                                     style={{
-                                        padding: '6px 12px',
-                                        background: isSubmitting ? '#ccc' : '#0073ea',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                                        padding: '10px 20px', borderRadius: '6px', border: 'none',
+                                        backgroundColor: !newWorkspaceTitle.trim() || isSubmitting ? '#ddd' : '#0073ea',
+                                        color: 'white', cursor: !newWorkspaceTitle.trim() || isSubmitting ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 500
                                     }}
                                 >
                                     {isSubmitting ? 'Creating...' : 'Create'}

@@ -20,6 +20,7 @@ const NotificationPage = lazy(() => import('./pages/NotificationPage').then(m =>
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const BoardPage = lazy(() => import('./pages/BoardPage').then(m => ({ default: m.BoardPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
 
 // Loading fallback component
 function PageLoader() {
@@ -227,9 +228,18 @@ function MainApp() {
   }
 
   return (
-    <div className="app-container" style={{ height: '100vh', display: 'flex' }}>
+    <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-surface))' }}>
       <Sidebar />
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>
+      <main style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden', 
+          backgroundColor: 'hsl(var(--color-bg-canvas))',
+          borderRadius: '12px 0 0 0',
+          borderLeft: '1px solid hsl(var(--color-border))',
+          boxShadow: '-4px 0 15px rgba(0,0,0,0.03)'
+      }}>
         <TopBar />
 
         {activePage === 'admin' ? (
@@ -241,6 +251,10 @@ function MainApp() {
         ) : activePage === 'notifications' ? (
           <Suspense fallback={<PageLoader />}>
             <NotificationPage />
+          </Suspense>
+        ) : activePage === 'favorites' ? (
+          <Suspense fallback={<PageLoader />}>
+            <FavoritesPage />
           </Suspense>
         ) : activePage === 'board' && activeBoard ? (
           <Suspense fallback={<PageLoader />}>

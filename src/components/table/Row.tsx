@@ -28,7 +28,7 @@ export const Row = React.memo(({
     item,
     columns,
     groupColor,
-    itemColumnWidth = 240,
+    itemColumnWidth = 520,
     dragHandleProps
 }: {
     item: Item,

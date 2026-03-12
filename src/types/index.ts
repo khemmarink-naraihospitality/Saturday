@@ -88,6 +88,7 @@ export interface Board {
     id: string;
     workspaceId?: string; // Link to specific Workspace
     subWorkspaceId?: string; // Optional: Link to a SubWorkspace
+    isFavorite?: boolean;
     title: string;
     columns: Column[];
     groups: Group[]; // Ordered list of groups

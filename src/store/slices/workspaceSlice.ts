@@ -36,80 +36,116 @@ export const createWorkspaceSlice: StateCreator<
     },
 
     addWorkspace: async (title) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const newWsId = uuidv4();
-        const { workspaces } = get();
-        const order = workspaces.length;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('[AddWorkspace] No authenticated user found');
+                return;
+            }
+            
+            const newWsId = uuidv4();
+            const { workspaces } = get();
+            const order = workspaces.length;
 
-        const newWorkspace: Workspace = { id: newWsId, title, order, owner_id: user.id };
-        set(state => ({
-            workspaces: [...state.workspaces, newWorkspace],
-            activeWorkspaceId: newWsId
-        }));
-        await supabase.from('workspaces').insert({ id: newWsId, title, owner_id: user.id, order });
+            const newWorkspace: Workspace = { id: newWsId, title, order, owner_id: user.id };
+            
+            // Optimistic update
+            set(state => ({
+                workspaces: [...state.workspaces, newWorkspace],
+                activeWorkspaceId: newWsId
+            }));
 
-        // Create Default Template for new Workspace
-        const boardId = uuidv4();
-        const groupId = uuidv4();
-        const itemId = uuidv4();
+            // 1. Create Workspace
+            const { error: wsError } = await supabase.from('workspaces').insert({ id: newWsId, title, owner_id: user.id, order });
+            if (wsError) {
+                console.error('[AddWorkspace] Failed to create workspace row:', wsError);
+                throw wsError;
+            }
 
-        const defaultColumns = [
-            { id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [{ id: uuidv4(), label: 'Done', color: '#00c875' }, { id: uuidv4(), label: 'Working', color: '#fdab3d' }, { id: uuidv4(), label: 'Stuck', color: '#e2445c' }] },
-            { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 1, width: 140 },
-            { id: uuidv4(), title: 'Priority', type: 'status' as ColumnType, order: 2, width: 140, options: [{ id: uuidv4(), label: 'High', color: '#e2445c' }, { id: uuidv4(), label: 'Medium', color: '#fdab3d' }, { id: uuidv4(), label: 'Low', color: '#579bfc' }] },
-        ];
+            // Create Default Template for new Workspace
+            const boardId = uuidv4();
+            const groupId = uuidv4();
+            const itemId = uuidv4();
 
-        const defaultGroups = [
-            { id: groupId, title: 'Getting Started', color: '#579bfc', order: 0 }
-        ];
+            const defaultColumns = [
+                { id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [{ id: uuidv4(), label: 'Done', color: '#00c875' }, { id: uuidv4(), label: 'Working', color: '#fdab3d' }, { id: uuidv4(), label: 'Stuck', color: '#e2445c' }] },
+                { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 1, width: 140 },
+                { id: uuidv4(), title: 'Priority', type: 'status' as ColumnType, order: 2, width: 140, options: [{ id: uuidv4(), label: 'High', color: '#e2445c' }, { id: uuidv4(), label: 'Medium', color: '#fdab3d' }, { id: uuidv4(), label: 'Low', color: '#579bfc' }] },
+            ];
 
-        const statusCol = defaultColumns[0];
-        const priorityCol = defaultColumns[2];
-        const defaultValues = {
-            [statusCol.id]: statusCol.options?.[1].id,
-            [priorityCol.id]: priorityCol.options?.[1].id,
-            [defaultColumns[1].id]: new Date().toISOString().split('T')[0]
-        };
+            const defaultGroups = [
+                { id: groupId, title: 'Getting Started', color: '#579bfc', order: 0 }
+            ];
 
-        const newItem: Item = {
-            id: itemId,
-            title: 'My First Task',
-            boardId: boardId,
-            groupId: groupId,
-            values: defaultValues,
-            order: 0,
-            updates: []
-        };
+            const statusCol = defaultColumns[0];
+            const priorityCol = defaultColumns[2];
+            const defaultValues = {
+                [statusCol.id]: statusCol.options?.[1].id,
+                [priorityCol.id]: priorityCol.options?.[1].id,
+                [defaultColumns[1].id]: new Date().toISOString().split('T')[0]
+            };
 
-        const newBoard: Board = {
-            id: boardId,
-            workspaceId: newWsId,
-            title: 'Starting Board',
-            columns: defaultColumns,
-            groups: defaultGroups.map(g => ({ ...g, items: [newItem] })),
-            items: [newItem]
-        };
+            const newItem: Item = {
+                id: itemId,
+                title: 'My First Task',
+                boardId: boardId,
+                groupId: groupId,
+                values: defaultValues,
+                order: 0,
+                updates: []
+            };
 
-        set(state => ({
-            boards: [...state.boards, newBoard],
-            activeBoardId: boardId
-        }));
+            const newBoard: Board = {
+                id: boardId,
+                workspaceId: newWsId,
+                title: 'Starting Board',
+                columns: defaultColumns,
+                groups: defaultGroups.map(g => ({ ...g, items: [newItem] })),
+                items: [newItem]
+            };
 
-        await supabase.from('boards').insert({ id: boardId, workspace_id: newWsId, title: 'Starting Board', order: 0 });
-        await supabase.from('groups').insert(defaultGroups.map(g => ({ id: g.id, board_id: boardId, title: g.title, color: g.color, order: g.order })));
-        await supabase.from('columns').insert(defaultColumns.map(c => ({ id: c.id, board_id: boardId, title: c.title, type: c.type, order: c.order, width: c.width, options: c.options || [] })));
-        await supabase.from('items').insert({
-            id: itemId,
-            board_id: boardId,
-            group_id: groupId,
-            title: 'My First Task',
-            values: defaultValues,
-            order: 0
-        });
+            set(state => ({
+                boards: [...state.boards, newBoard],
+                activeBoardId: boardId
+            }));
 
-        await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
-        get().loadUserData(true);
+            // 2. Create Board
+            const { error: brdError } = await supabase.from('boards').insert({ id: boardId, workspace_id: newWsId, title: 'Starting Board', order: 0 });
+            if (brdError) {
+                console.error('[AddWorkspace] Failed to create default board:', brdError);
+                throw brdError;
+            }
+
+            // 3. Create Groups
+            const { error: grpError } = await supabase.from('groups').insert(defaultGroups.map(g => ({ id: g.id, board_id: boardId, title: g.title, color: g.color, order: g.order })));
+            if (grpError) console.error('[AddWorkspace] Group insertion error (non-fatal for UI):', grpError);
+
+            // 4. Create Columns
+            const { error: colError } = await supabase.from('columns').insert(defaultColumns.map(c => ({ id: c.id, board_id: boardId, title: c.title, type: c.type, order: c.order, width: c.width, options: c.options || [] })));
+            if (colError) console.error('[AddWorkspace] Column insertion error (non-fatal for UI):', colError);
+
+            // 5. Create Item
+            const { error: itemError } = await supabase.from('items').insert({
+                id: itemId,
+                board_id: boardId,
+                group_id: groupId,
+                title: 'My First Task',
+                values: defaultValues,
+                order: 0
+            });
+            if (itemError) console.error('[AddWorkspace] Item insertion error (non-fatal for UI):', itemError);
+
+            // 6. Create Board Member
+            const { error: memError } = await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
+            if (memError) console.error('[AddWorkspace] Board member creation error:', memError);
+
+            get().loadUserData(true);
+        } catch (err) {
+            console.error('[AddWorkspace] Full Error context:', err);
+            // Re-load to undo optimistic state if needed
+            get().loadUserData(true);
+            throw err;
+        }
     },
 
     deleteWorkspace: async (id) => {

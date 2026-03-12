@@ -43,6 +43,9 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 await addWorkspace(newWorkspaceTitle);
                 setNewWorkspaceTitle('');
                 setIsCreatingWorkspace(false);
+            } catch (error: any) {
+                console.error('[SidebarHeader] Workspace creation error:', error);
+                alert(`Failed to create workspace: ${error.message || 'Unknown error'}. Please check your internet connection or database permissions.`);
             } finally {
                 setIsSubmitting(false);
             }

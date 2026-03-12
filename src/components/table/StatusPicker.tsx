@@ -189,82 +189,134 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
             ref={menuRef}
             style={{
                 position: 'fixed',
-                top: position.bottom + 8, // Exact bottom of trigger + 8px gap
-                left: position.left - (200 - position.width) / 2, // Center relative to cell
-                width: '200px',
+                top: position.bottom + 8,
+                left: position.left - (380 - position.width) / 2, // Wider for 2-column
+                width: '380px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                zIndex: 9999, // Ensure it's on top of everything
-                padding: '8px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                zIndex: 9999,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
-                border: '1px solid hsl(var(--color-border))'
+                border: '1px solid #e1e1e1',
+                overflow: 'hidden'
             }}
         >
-            {/* Pointer triangle - Adjusted for portal/fixed context */}
+            {/* Pointer triangle */}
             <div style={{
                 position: 'absolute',
                 top: '-6px',
                 left: '50%',
-                transform: 'translateX(-50%) rotate(45deg)', // Combine transforms
+                transform: 'translateX(-50%) rotate(45deg)',
                 width: '12px',
                 height: '12px',
                 backgroundColor: 'white',
-                borderLeft: '1px solid hsl(var(--color-border))',
-                borderTop: '1px solid hsl(var(--color-border))',
+                borderLeft: '1px solid #e1e1e1',
+                borderTop: '1px solid #e1e1e1',
             }} />
 
-            {safeOptions.map((opt) => (
+            <div style={{ padding: '20px 20px 12px 20px' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '12px',
+                    marginBottom: '16px'
+                }}>
+                    {safeOptions.map((opt) => (
+                        <button
+                            key={opt.id}
+                            onClick={() => onSelect(opt.id)}
+                            style={{
+                                backgroundColor: opt.color,
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '8px 12px',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'opacity 0.15s, transform 0.1s',
+                                height: '34px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = '0.9';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = '1';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <button
+                        className="status-picker-edit-btn"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#323338',
+                            cursor: 'pointer',
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            fontWeight: 400
+                        }}
+                        onClick={() => setIsEditingLabels(true)}
+                    >
+                        <Pencil size={16} strokeWidth={1.5} />
+                        Edit Labels
+                    </button>
+                </div>
+            </div>
+
+            <div style={{
+                borderTop: '1px solid #e1e1e1',
+                padding: '12px',
+                backgroundColor: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
                 <button
-                    key={opt.id}
-                    onClick={() => onSelect(opt.id)}
                     style={{
-                        backgroundColor: opt.color,
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '8px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'transform 0.1s',
-                        height: '36px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        gap: '10px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#323338',
+                        cursor: 'pointer',
+                        fontSize: '14px'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    {opt.label}
+                    <div style={{
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%)',
+                        borderRadius: '50%',
+                        color: 'white'
+                    }}>
+                        <Plus size={12} strokeWidth={3} />
+                    </div>
+                    Auto-assign labels
                 </button>
-            ))}
-
-
-
-
-
-            <button
-                className="status-picker-edit-btn"
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'hsl(var(--color-text-secondary))',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    fontSize: '13px'
-                }}
-                onClick={() => setIsEditingLabels(true)}
-            >
-                <Pencil size={12} />
-                Edit Labels
-            </button>
+            </div>
         </div>,
         document.body
     );

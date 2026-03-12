@@ -62,10 +62,11 @@ export const Row = React.memo(({
 
     return (
         <div ref={rowRef} className={`table-row ${isSelected ? 'selected' : ''}`} style={{
-            height: '100%',
+            height: '30px',
+            maxHeight: '30px',
+            boxSizing: 'border-box',
             position: 'relative',
             display: 'flex',
-            borderBottom: '1px solid hsl(var(--color-border-hover))',
             opacity: item.isHidden ? 0.5 : 1,
             backgroundColor: isSelected
                 ? 'hsl(var(--color-brand-primary-subtle))'
@@ -78,7 +79,7 @@ export const Row = React.memo(({
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    bottom: 0,
+                    bottom: '-1px', // Extends over the row border
                     width: '6px',
                     backgroundColor: groupColor,
                     zIndex: 65
@@ -130,8 +131,8 @@ export const Row = React.memo(({
                         });
                     }}
                     style={{
-                        width: '16px',
-                        height: '16px',
+                        width: '14px',
+                        height: '14px',
                         border: '1px solid hsl(var(--color-border))',
                         borderRadius: '3px',
                         cursor: 'pointer',
@@ -201,8 +202,8 @@ export const Row = React.memo(({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '28px',
-                        height: '28px',
+                        width: '24px',
+                        height: '24px',
                         borderRadius: '4px',
                         // Blue if updates, else gray
                         color: (item.updates && item.updates.length > 0) ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))',

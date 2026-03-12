@@ -45,7 +45,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
         <>
             <div
                 ref={cellRef}
-                className="table-cell"
+                className="table-cell status-cell-full"
                 onClick={() => !isEditing && startEditing()}
                 style={{
                     width: '100%',

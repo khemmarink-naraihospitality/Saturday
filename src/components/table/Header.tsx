@@ -327,14 +327,15 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
-            <div className="table-header-row" style={{
-                position: 'relative',
-                display: 'flex',
-                backgroundColor: 'hsl(var(--color-table-header-bg))',
-                borderBottom: '1px solid hsl(var(--color-border))',
-                height: '36px',
-                alignItems: 'center'
-            }}>
+                <div className="table-header-row" style={{
+                    position: 'relative',
+                    display: 'flex',
+                    backgroundColor: 'hsl(var(--color-table-header-bg))',
+                    borderBottom: '1px solid hsl(var(--color-border))',
+                    boxSizing: 'border-box',
+                    height: '36px',
+                    alignItems: 'center'
+                }}>
                 {groupColor && (
                     <div style={{
                         position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px',

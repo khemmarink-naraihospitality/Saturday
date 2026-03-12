@@ -168,9 +168,9 @@ export const Table = ({ boardId }: { boardId: string }) => {
         estimateSize: (index) => {
             const type = virtualItems[index]?.type;
             if (type === 'group') return 60;
-            if (type === 'header') return 40;
+            if (type === 'header') return 36;
             if (type === 'footer') return 80;
-            return 40; // item
+            return 30; // item
         },
         overscan: 5,
     });
@@ -315,8 +315,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         <div style={{
                                                             position: 'absolute',
                                                             left: 0,
-                                                            top: '16px',
-                                                            bottom: 0,
+                                                            top: '0px',
+                                                            bottom: '-1px',
                                                             width: '6px',
                                                             backgroundColor: vItem.groupColor,
                                                             borderRadius: '6px 6px 0 0',
@@ -373,7 +373,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     {can('edit_items') && (
                                                                         <input
                                                                             type="text"
-                                                                            placeholder=" + Add New"
+                                                                            placeholder=" + Add Item"
                                                                             className="cell-input"
                                                                             style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', width: '100%', background: 'transparent', height: '100%' }}
                                                                             onKeyDown={(e) => {

@@ -268,7 +268,7 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
 
             {/* Modals */}
             {isArchiveModalOpen && (
-                <ArchiveTrashModal isOpen={isArchiveModalOpen} onClose={() => setIsArchiveModalOpen(false)} />
+                <ArchiveTrashModal onClose={() => setIsArchiveModalOpen(false)} />
             )}
 
             {isCreatingWorkspace && (

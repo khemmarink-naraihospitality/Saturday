@@ -17,6 +17,7 @@ export interface BoardSlice {
     // Board Actions
     addBoard: (title: string, subWorkspaceId?: string) => Promise<void>;
     deleteBoard: (id: string) => Promise<void>;
+    restoreBoard: (id: string) => Promise<void>;
     setActiveBoard: (id: string | null) => Promise<void>;
     updateBoard: (boardId: string, updates: Partial<Board>) => Promise<void>;
     duplicateBoard: (boardId: string) => Promise<void>;
@@ -73,7 +74,7 @@ export const createBoardSlice: StateCreator<
                 { data: sharedWorkspacesData }
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
-                supabase.from('boards').select('*').order('order'),
+                supabase.from('boards').select('*, is_archived').order('order'),
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
                 supabase.from('items').select('*').order('order'),
@@ -145,6 +146,7 @@ export const createBoardSlice: StateCreator<
                     id: b.id,
                     workspaceId: b.workspace_id,
                     title: b.title,
+                    is_archived: b.is_archived,
                     lastViewedAt: lastViewedMap[b.id] || undefined,
                     columns: bColumns.map(c => ({
                         id: c.id,
@@ -338,8 +340,18 @@ export const createBoardSlice: StateCreator<
     },
 
     deleteBoard: async (id) => {
-        set(state => ({ boards: state.boards.filter(b => b.id !== id), activeBoardId: state.activeBoardId === id ? null : state.activeBoardId }));
-        await supabase.from('boards').delete().eq('id', id);
+        set(state => ({
+            boards: state.boards.map(b => b.id === id ? { ...b, is_archived: true } : b),
+            activeBoardId: state.activeBoardId === id ? null : state.activeBoardId
+        }));
+        await supabase.from('boards').update({ is_archived: true }).eq('id', id);
+    },
+
+    restoreBoard: async (id) => {
+        set(state => ({
+            boards: state.boards.map(b => b.id === id ? { ...b, is_archived: false } : b)
+        }));
+        await supabase.from('boards').update({ is_archived: false }).eq('id', id);
     },
 
     updateBoard: async (boardId, updates) => {

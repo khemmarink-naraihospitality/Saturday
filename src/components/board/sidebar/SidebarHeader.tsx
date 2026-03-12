@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Plus, Search, Users } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Search, MoreHorizontal, Archive, Users } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { useUserStore } from '../../../store/useUserStore';
+import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 
 interface SidebarHeaderProps {
     activeTab: 'my-workspaces' | 'shared';
@@ -18,6 +19,21 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
     const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+    const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        if (isMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isMenuOpen]);
 
     const handleCreateWorkspace = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -96,14 +112,8 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 </div>
             )}
 
-            {/* Tab Switcher - Simple Buttons */}
-            <div style={{
-                display: 'flex',
-                padding: '0 4px',
-                marginBottom: '16px',
-                width: '100%',
-                borderBottom: '1px solid #f0f0f0'
-            }}>
+            {/* Workspaces Tabs */}
+            <div style={{ display: 'flex', padding: '0 4px', width: '100%', marginBottom: '4px', borderBottom: '1px solid #f0f0f0' }}>
                 <button
                     onClick={() => setActiveTab('my-workspaces')}
                     style={{
@@ -115,7 +125,8 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         fontWeight: activeTab === 'my-workspaces' ? 600 : 400,
                         cursor: 'pointer',
                         borderBottom: activeTab === 'my-workspaces' ? '2px solid #0073ea' : 'none',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        marginBottom: '-1px'
                     }}
                 >
                     Workspaces
@@ -134,7 +145,8 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        marginBottom: '-1px'
                     }}
                 >
                     <Users size={14} />
@@ -142,57 +154,113 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', position: 'relative', width: '100%', marginBottom: '8px' }}>
-                <div style={{ position: 'relative', flex: 1 }}>
-                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#676879' }} />
-                    <input
-                        type="text"
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+            {/* Workspaces Title & Actions */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '12px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {/* More Menu (...) */}
+                    <div style={{ position: 'relative' }} ref={menuRef}>
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            style={{
+                                background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px',
+                                borderRadius: '4px', color: 'hsl(var(--color-text-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <MoreHorizontal size={16} />
+                        </button>
+                        
+                        {isMenuOpen && (
+                            <div 
+                                style={{
+                                    position: 'absolute', top: '100%', left: '0', 
+                                    backgroundColor: 'white', border: '1px solid hsl(var(--color-border))',
+                                    borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    zIndex: 100, width: '220px', padding: '8px 4px', marginTop: '4px'
+                                }}
+                            >
+                                <div 
+                                    className="sidebar-more-menu-item"
+                                    onClick={() => { setIsMenuOpen(false); setIsCreatingWorkspace(true); }}
+                                >
+                                    <Plus size={14} /> Add new workspace
+                                </div>
+                                <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }}></div>
+                                <div 
+                                    className="sidebar-more-menu-item"
+                                    onClick={() => { setIsMenuOpen(false); setIsArchiveModalOpen(true); }}
+                                >
+                                    <Archive size={14} /> View archive/trash
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Search Icon */}
+                    <button
+                        onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearchQuery(''); }}
                         style={{
-                            width: '100%',
-                            padding: '8px 8px 8px 30px',
-                            borderRadius: '6px',
-                            border: '1px solid hsl(var(--color-border))',
-                            backgroundColor: 'hsl(var(--color-bg-surface))',
-                            fontSize: '13px',
-                            outline: 'none',
-                            color: 'hsl(var(--color-text-primary))'
+                            background: showSearch ? 'hsl(var(--color-bg-hover))' : 'transparent', 
+                            border: 'none', cursor: 'pointer', padding: '4px',
+                            borderRadius: '4px', color: 'hsl(var(--color-text-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}
-                    />
+                        onMouseOver={(e) => { if (!showSearch) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))' }}
+                        onMouseOut={(e) => { if (!showSearch) e.currentTarget.style.backgroundColor = 'transparent' }}
+                    >
+                        <Search size={16} />
+                    </button>
                 </div>
             </div>
 
-            {/* Add Workspace Button Row */}
-            <div style={{ marginBottom: '12px' }}>
-                <button
-                    onClick={() => setIsCreatingWorkspace(true)}
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        border: 'none',
-                        background: 'none',
-                        color: 'hsl(var(--color-text-secondary))',
-                        fontSize: '13.5px',
-                        cursor: 'pointer',
-                        borderRadius: '6px',
-                        transition: 'background-color 0.2s'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                    <Plus size={16} />
-                    <span>Add New Workspace</span>
-                </button>
-
-                <div style={{ position: 'relative' }}>
-                    {/* Import Board Removed for Normal Users per Request */}
+            {/* Search Input (Toggled) */}
+            {showSearch && (
+                <div style={{ display: 'flex', gap: '8px', position: 'relative', width: '100%', marginBottom: '12px', padding: '0 4px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#676879' }} />
+                        <input
+                            autoFocus
+                            type="text"
+                            placeholder="Search workspaces..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '6px 8px 6px 30px',
+                                borderRadius: '4px',
+                                border: '1px solid hsl(var(--color-border))',
+                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                fontSize: '13px',
+                                outline: 'none',
+                                color: 'hsl(var(--color-text-primary))'
+                            }}
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {isArchiveModalOpen && (
+                <ArchiveTrashModal onClose={() => setIsArchiveModalOpen(false)} />
+            )}
+
+            <style>{`
+                .sidebar-more-menu-item {
+                    padding: 8px 12px;
+                    display: flex;
+                    alignItems: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    border-radius: 4px;
+                    color: hsl(var(--color-text-primary));
+                    transition: background-color 0.2s;
+                }
+                .sidebar-more-menu-item:hover {
+                    background-color: hsl(var(--color-bg-hover));
+                }
+            `}</style>
 
 
             {/* Workspace Creation Modal */}

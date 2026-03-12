@@ -101,6 +101,7 @@ export interface Board {
     sort?: SortState | null;
     filters?: FilterState[]; // Support multiple column filters
     lastViewedAt?: string; // Captured from board_members
+    is_archived?: boolean;
 }
 
 export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention';

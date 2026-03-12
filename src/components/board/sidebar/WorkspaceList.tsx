@@ -90,10 +90,12 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
             const containsSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
             return isWorkspaceShared || containsSharedBoard;
         })
-    ).filter(w => {
+    ).filter((w, index, self) => {
+        return self.findIndex(i => i.id === w.id) === index;
+    }).filter(w => {
         if (!searchQuery.trim()) return true;
         const wsMatch = w.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const boardMatch = boards.some(b => b.workspaceId === w.id && b.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        const boardMatch = boards.some(b => b.workspaceId === w.id && b.title.toLowerCase().includes(searchQuery.toLowerCase()) && !b.is_archived);
         return wsMatch || boardMatch;
     });
 
@@ -162,6 +164,7 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
 
                     const wsBoards = boards.filter(b => {
                         if (b.workspaceId !== ws.id) return false;
+                        if (b.is_archived) return false;
 
                         const isAccessible = ws.owner_id === user?.id || sharedWorkspaceIds.includes(ws.id) || sharedBoardIds.includes(b.id);
                         if (!isAccessible) return false;

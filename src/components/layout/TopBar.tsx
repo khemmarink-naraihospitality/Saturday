@@ -64,8 +64,8 @@ export const TopBar = () => {
         <div style={{
             height: '54px',
             width: '100%',
-            backgroundColor: 'transparent',
-            borderBottom: 'none',
+            backgroundColor: 'hsl(var(--color-bg-surface))',
+            borderBottom: '1px solid hsl(var(--color-border))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',

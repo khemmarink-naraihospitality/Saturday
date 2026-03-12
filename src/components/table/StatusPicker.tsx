@@ -190,8 +190,8 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
             style={{
                 position: 'fixed',
                 top: position.bottom + 8,
-                left: position.left - (380 - position.width) / 2, // Wider for 2-column
-                width: '380px',
+                left: position.left - (340 - position.width) / 2, // Slightly narrower
+                width: '340px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
@@ -215,12 +215,12 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                 borderTop: '1px solid #e1e1e1',
             }} />
 
-            <div style={{ padding: '20px 20px 12px 20px' }}>
+            <div style={{ padding: '16px 16px 8px 16px' }}>
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
-                    gap: '12px',
-                    marginBottom: '16px'
+                    gap: '8px',
+                    marginBottom: '8px'
                 }}>
                     {safeOptions.map((opt) => (
                         <button
@@ -231,12 +231,12 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '4px',
-                                padding: '8px 12px',
+                                padding: '6px 10px',
                                 fontSize: '13px',
                                 fontWeight: 500,
                                 cursor: 'pointer',
                                 transition: 'opacity 0.15s, transform 0.1s',
-                                height: '34px',
+                                height: '32px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -265,57 +265,21 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '8px',
+                            gap: '6px',
                             background: 'transparent',
                             border: 'none',
-                            color: '#323338',
+                            color: '#676879',
                             cursor: 'pointer',
-                            padding: '8px 16px',
-                            fontSize: '14px',
+                            padding: '6px 12px',
+                            fontSize: '13px',
                             fontWeight: 400
                         }}
                         onClick={() => setIsEditingLabels(true)}
                     >
-                        <Pencil size={16} strokeWidth={1.5} />
+                        <Pencil size={14} strokeWidth={1.5} />
                         Edit Labels
                     </button>
                 </div>
-            </div>
-
-            <div style={{
-                borderTop: '1px solid #e1e1e1',
-                padding: '12px',
-                backgroundColor: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <button
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#323338',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                    }}
-                >
-                    <div style={{
-                        width: '20px',
-                        height: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%)',
-                        borderRadius: '50%',
-                        color: 'white'
-                    }}>
-                        <Plus size={12} strokeWidth={3} />
-                    </div>
-                    Auto-assign labels
-                </button>
             </div>
         </div>,
         document.body

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Archive, Users } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
-import { useUserStore } from '../../../store/useUserStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 
 interface SidebarHeaderProps {
@@ -13,8 +12,6 @@ interface SidebarHeaderProps {
 
 export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQuery }: SidebarHeaderProps) => {
     const { addWorkspace, navigateTo } = useBoardStore();
-    const { currentUser } = useUserStore();
-    const user = currentUser;
 
     const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,34 +83,6 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 <span style={{ fontSize: '22px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG Saturday.com</span>
             </div>
 
-            {/* Admin Link (Only for System Admins) */}
-            {(user?.system_role === 'super_admin' || user?.system_role === 'it_admin') && (
-                <div style={{ padding: '0 4px', marginBottom: '8px' }}>
-                    <button
-                        onClick={() => navigateTo('admin')}
-                        style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #6366f1',
-                            borderRadius: '4px',
-                            backgroundColor: '#e0e7ff',
-                            color: '#4338ca',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s',
-                            boxShadow: '0 1px 2px rgba(99, 102, 241, 0.1)'
-                        }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                        <span>Admin Console</span>
-                    </button>
-                </div>
-            )}
 
             {/* Workspaces Tabs */}
             <div style={{ display: 'flex', padding: '0 4px', width: '100%', marginBottom: '4px', borderBottom: '1px solid #f0f0f0' }}>

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, Bell, Sun, Moon } from 'lucide-react'; // Added Sun, Moon
+import { LogOut, Bell, Sun, Moon, ShieldCheck } from 'lucide-react'; // Added Sun, Moon, ShieldCheck
 import { motion } from 'framer-motion';
 import { CloudStatus } from './CloudStatus';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useThemeStore } from '../../store/useThemeStore'; // Added Theme Store
 import { NotificationItem } from '../notifications/NotificationItem';
+import { useUserStore } from '../../store/useUserStore';
 
 export const TopBar = () => {
     const { user, signOut } = useAuth();
@@ -14,6 +15,7 @@ export const TopBar = () => {
     const navigateTo = useBoardStore(state => state.navigateTo);
 
     const { theme, toggleTheme } = useThemeStore(); // Theme Hook
+    const { currentUser } = useUserStore();
 
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -255,6 +257,37 @@ export const TopBar = () => {
                                 {user?.email}
                             </div>
                         </div>
+
+                        {/* Admin Console Button (Only for admins) */}
+                        {(currentUser?.system_role === 'super_admin' || currentUser?.system_role === 'it_admin') && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setShowProfileMenu(false);
+                                        navigateTo('admin');
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 16px',
+                                        border: 'none',
+                                        backgroundColor: 'transparent',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        fontSize: '14px',
+                                        color: 'hsl(var(--color-text-primary))',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    <ShieldCheck size={16} color="#6366f1" />
+                                    <span style={{ fontWeight: 500 }}>Admin Console</span>
+                                </button>
+                                <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
+                            </>
+                        )}
 
                         {/* Logout Button */}
                         <button

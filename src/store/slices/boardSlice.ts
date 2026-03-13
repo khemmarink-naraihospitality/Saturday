@@ -24,6 +24,7 @@ export interface BoardSlice {
     moveBoard: (activeId: string, overId: string) => void;
     duplicateBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
     moveBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
+    toggleFavorite: (boardId: string) => Promise<void>;
     navigateTo: (page: string) => void;
     setActivePage: (page: string) => void;
 
@@ -74,7 +75,7 @@ export const createBoardSlice: StateCreator<
                 { data: sharedWorkspacesData }
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
-                supabase.from('boards').select('*, is_archived').order('order'),
+                supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
                 supabase.from('items').select('*').order('order'),
@@ -147,6 +148,7 @@ export const createBoardSlice: StateCreator<
                     workspaceId: b.workspace_id,
                     title: b.title,
                     is_archived: b.is_archived,
+                    isFavorite: b.is_favorite,
                     lastViewedAt: lastViewedMap[b.id] || undefined,
                     columns: bColumns.map(c => ({
                         id: c.id,
@@ -520,6 +522,38 @@ export const createBoardSlice: StateCreator<
         if (error) {
             console.error('[Move] Failed to move board:', error);
             get().loadUserData(true);
+        }
+    },
+
+    toggleFavorite: async (boardId) => {
+        const { boards } = get();
+        const board = boards.find(b => b.id === boardId);
+        if (!board) return;
+
+        const newFavoriteStatus = !board.isFavorite;
+
+        // Optimistic update
+        set(state => ({
+            boards: state.boards.map(b => 
+                b.id === boardId ? { ...b, isFavorite: newFavoriteStatus } : b
+            )
+        }));
+
+        try {
+            const { error } = await supabase
+                .from('boards')
+                .update({ is_favorite: newFavoriteStatus })
+                .eq('id', boardId);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('[Favorite] Failed to toggle favorite:', err);
+            // Revert on error
+            set(state => ({
+                boards: state.boards.map(b => 
+                    b.id === boardId ? { ...b, isFavorite: !newFavoriteStatus } : b
+                )
+            }));
         }
     },
 });

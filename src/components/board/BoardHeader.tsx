@@ -126,7 +126,19 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             }}
                         >
                             {board.title}
-                            <Star size={16} color="hsl(var(--color-text-tertiary))" style={{ cursor: 'pointer' }} />
+                            <Star 
+                                size={18} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    useBoardStore.getState().toggleFavorite(board.id);
+                                }}
+                                style={{ 
+                                    cursor: 'pointer',
+                                    fill: board.isFavorite ? 'hsl(var(--color-brand-primary))' : 'transparent',
+                                    color: board.isFavorite ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))',
+                                    transition: 'all 0.2s ease'
+                                }} 
+                            />
                         </h1>
                     )}
                 </div>

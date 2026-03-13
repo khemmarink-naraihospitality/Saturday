@@ -186,7 +186,7 @@ export const createBoardSlice: StateCreator<
                         files: i.files || []
                     })),
                     itemColumnTitle: 'Item',
-                    itemColumnWidth: 520
+                    itemColumnWidth: 500
                 };
             });
 

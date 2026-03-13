@@ -79,7 +79,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
-    const itemColumnWidth = board?.itemColumnWidth || 520;
+    const itemColumnWidth = board?.itemColumnWidth || 500;
 
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -227,6 +227,12 @@ export const Table = ({ boardId }: { boardId: string }) => {
     // }, [virtualItems.length]); // logs too often?
 
 
+    const totalWidth = useMemo(() => {
+        if (!board) return 0;
+        const columnsWidth = board.columns.reduce((sum, col) => sum + (col.width || 150), 0);
+        return itemColumnWidth + columnsWidth + 50; // Add 50 for the add column btn/last spacer
+    }, [board, itemColumnWidth]);
+
     if (!board) return null;
 
     const activeItem = activeId ? board.items.find(i => i.id === activeId) : null;
@@ -247,7 +253,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     className="table-content"
                     style={{
                         height: `${rowVirtualizer.getTotalSize()}px`,
-                        width: '100%',
+                        width: `${totalWidth}px`, // Use calculated total width
                         position: 'relative',
                     }}
                 >
@@ -291,7 +297,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
-                                        width: '100%',
+                                        width: `${totalWidth}px`, // Ensure row wrapper spans full content width
                                         height: `${virtualRow.size}px`,
                                         transform: `translateY(${virtualRow.start}px)`,
                                         zIndex: isDragging ? 99 : 1

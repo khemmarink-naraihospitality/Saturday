@@ -8,9 +8,10 @@ import { TimelinePicker } from '../TimelinePicker';
 interface TimelineCellProps {
     item: Item;
     column: Column;
+    groupColor?: string;
 }
 
-export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
+export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupColor }) => {
     const value = item.values[column.id];
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
@@ -43,13 +44,10 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
         return Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
     };
 
-    const group = useBoardStore(state => 
-        state.boards.find(b => b.id === item.boardId)?.groups.find(g => g.id === item.groupId)
-    );
-    const groupColor = group?.color || '#ff158a';
-
     const displayValue = formatRange(value);
     const days = countDays(value);
+
+    const barColor = groupColor || '#ff158a';
 
     return (
         <>
@@ -84,7 +82,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
             >
                 {displayValue ? (
                     <div style={{
-                        backgroundColor: groupColor,
+                        backgroundColor: barColor,
                         color: 'white',
                         padding: '0 12px',
                         borderRadius: '16px',
@@ -96,6 +94,8 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
                         justifyContent: 'center',
                         width: '90%',
                         height: '19px',
+                        minHeight: '19px',
+                        maxHeight: '19px',
                         position: 'relative',
                         overflow: 'hidden',
                         transition: 'all 0.2s ease',

@@ -262,7 +262,7 @@ export const Row = React.memo(({
                         display: 'flex',
                         flexDirection: 'column'
                     }}>
-                        <Cell item={item} column={col} />
+                        <Cell item={item} column={col} groupColor={groupColor} />
                     </div>
                 ))
             }

@@ -9,7 +9,7 @@ import { FilesCell } from './cells/FilesCell';
 import { CheckboxCell } from './cells/CheckboxCell';
 import { DropdownCell } from './cells/DropdownCell';
 
-export const Cell = memo(({ item, column }: { item: Item, column: Column }) => {
+export const Cell = memo(({ item, column, groupColor }: { item: Item, column: Column, groupColor?: string }) => {
     // Dispatch to specific cell type components
     switch (column.type) {
         case 'status':
@@ -19,7 +19,7 @@ export const Cell = memo(({ item, column }: { item: Item, column: Column }) => {
         case 'date':
             return <DateCell item={item} column={column} />;
         case 'timeline':
-            return <TimelineCell item={item} column={column} />;
+            return <TimelineCell item={item} column={column} groupColor={groupColor} />;
         case 'files':
             return <FilesCell item={item} column={column} />;
         case 'checkbox':

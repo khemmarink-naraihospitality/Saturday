@@ -43,6 +43,11 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
         return Math.round((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
     };
 
+    const group = useBoardStore(state => 
+        state.boards.find(b => b.id === item.boardId)?.groups.find(g => g.id === item.groupId)
+    );
+    const groupColor = group?.color || '#ff158a';
+
     const displayValue = formatRange(value);
     const days = countDays(value);
 
@@ -70,7 +75,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
                     width: '100%',
                     height: '100%',
                     borderRight: '1px solid hsl(var(--color-cell-border))',
-                    padding: '0 8px',
+                    padding: '0 10px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -79,23 +84,25 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column }) => {
             >
                 {displayValue ? (
                     <div style={{
-                        backgroundColor: '#ff158a',
+                        backgroundColor: groupColor,
                         color: 'white',
                         padding: '0 12px',
                         borderRadius: '16px',
-                        fontSize: '12px',
-                        fontWeight: 500,
+                        fontSize: '11px',
+                        fontWeight: 600,
                         whiteSpace: 'nowrap',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '100%',
-                        height: '24px',
+                        width: '90%',
+                        height: '19px',
                         position: 'relative',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                     }} title={`${displayValue} (${days} days)`}>
                         {isHovered ? (
-                            <span style={{ fontWeight: 600 }}>{days}d</span>
+                            <span style={{ fontWeight: 700 }}>{days}d</span>
                         ) : (
                             <span style={{
                                 textOverflow: 'ellipsis',

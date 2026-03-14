@@ -170,7 +170,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             if (type === 'group') return 60;
             if (type === 'header') return 36;
             if (type === 'footer') return 80;
-            return 30; // item
+            return 28; // item
         },
         overscan: 5,
     });

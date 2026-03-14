@@ -79,11 +79,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     return (
         <header style={{
-            minHeight: '54px',
+            minHeight: '48px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 32px',
+            padding: '4px 32px',
             backgroundColor: 'hsl(var(--color-bg-subtle))', // Darkened from surface
             borderBottom: '1px solid hsl(var(--color-border))',
             position: 'relative'

@@ -62,7 +62,7 @@ export const TopBar = () => {
 
     return (
         <div style={{
-            height: '54px',
+            height: '48px',
             width: '100%',
             backgroundColor: 'hsl(var(--color-bg-surface))',
             borderBottom: '1px solid hsl(var(--color-border))',

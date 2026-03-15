@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, MoreHorizontal, Eye, EyeOff } from 'lucide-react';
+import { Plus, MoreHorizontal } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -12,10 +12,7 @@ import { ColumnMenu } from './ColumnMenu';
 import { FilterMenu } from './FilterMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
-const ShowHiddenState = () => {
-    const showHiddenItems = useBoardStore(state => state.showHiddenItems);
-    return showHiddenItems ? <Eye size={14} color="hsl(var(--color-brand-primary))" /> : <EyeOff size={14} />;
-};
+
 
 // Sortable Header Cell Component
 const SortableHeaderCell = ({
@@ -375,18 +372,7 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                         </span>
                     )}
 
-                    <button
-                        onClick={() => {
-                            import('../../store/useBoardStore').then(({ useBoardStore }) => {
-                                useBoardStore.getState().toggleShowHiddenItems();
-                            });
-                        }}
-                        title="Show/Hide Hidden Items"
-                        className="icon-btn"
-                        style={{ opacity: 0.5, marginRight: '8px' }}
-                    >
-                        <ShowHiddenState />
-                    </button>
+
 
                     {can('manage_columns') && (
                         <div

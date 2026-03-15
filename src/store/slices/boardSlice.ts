@@ -27,6 +27,8 @@ export interface BoardSlice {
     updateBoard: (boardId: string, updates: Partial<Board>) => Promise<void>;
     duplicateBoard: (boardId: string) => Promise<void>;
     moveBoard: (activeId: string, overId: string) => void;
+    toggleGroup: (boardId: string, groupId: string) => void;
+    toggleItemExpansion: (boardId: string, itemId: string) => void;
     duplicateBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
     moveBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
     toggleFavorite: (boardId: string) => Promise<void>;
@@ -58,6 +60,30 @@ export const createBoardSlice: StateCreator<
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
 
+    toggleGroup: (boardId, groupId) => {
+        set(state => ({
+            boards: state.boards.map(b => {
+                if (b.id !== boardId) return b;
+                const next = new Set(b.collapsedGroups || []);
+                if (next.has(groupId)) next.delete(groupId);
+                else next.add(groupId);
+                return { ...b, collapsedGroups: Array.from(next) };
+            })
+        }));
+    },
+
+    toggleItemExpansion: (boardId, itemId) => {
+        set(state => ({
+            boards: state.boards.map(b => {
+                if (b.id !== boardId) return b;
+                const next = new Set(b.expandedItemIds || []);
+                if (next.has(itemId)) next.delete(itemId);
+                else next.add(itemId);
+                return { ...b, expandedItemIds: Array.from(next) };
+            })
+        }));
+    },
+
     loadUserData: async (isSilent = false) => {
         if (get().isInitializing) return;
 
@@ -87,7 +113,7 @@ export const createBoardSlice: StateCreator<
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
-                supabase.from('items').select('*').order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id)
             ]);
@@ -181,7 +207,8 @@ export const createBoardSlice: StateCreator<
                             isHidden: i.is_hidden,
                             updates: i.updates || [],
                             files: i.files || [],
-                            order: i.order
+                            order: i.order,
+                            parentId: i.parent_id
                         })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
                     })),
                     items: bItems.map(i => ({
@@ -192,7 +219,8 @@ export const createBoardSlice: StateCreator<
                         values: i.values || {},
                         isHidden: i.is_hidden,
                         updates: i.updates || [],
-                        files: i.files || []
+                        files: i.files || [],
+                        parentId: i.parent_id
                     })),
                     itemColumnTitle: 'Item',
                     itemColumnWidth: 500
@@ -447,7 +475,8 @@ export const createBoardSlice: StateCreator<
                 boardId: newBoardId,
                 groupId: groupIdMap[item.groupId] || item.groupId,
                 values: newValues,
-                order: item.order ?? idx
+                order: item.order ?? idx,
+                parentId: item.parentId
             };
         });
 
@@ -518,7 +547,8 @@ export const createBoardSlice: StateCreator<
                     group_id: i.groupId,
                     title: i.title,
                     values: i.values,
-                    order: i.order
+                    order: i.order,
+                    parent_id: i.parentId
                 })));
             }
 

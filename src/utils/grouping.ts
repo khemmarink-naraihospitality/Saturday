@@ -1,7 +1,7 @@
 import type { Item, Group } from '../types';
 
-// 1. Add 'header' and 'footer' to type
-export type VirtualItemType = 'group' | 'header' | 'item' | 'footer';
+// 1. Add 'header', 'footer', and sub-item types to type
+export type VirtualItemType = 'group' | 'header' | 'item' | 'footer' | 'subitem-header' | 'subitem' | 'subitem-footer';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface VirtualItemData {
@@ -17,7 +17,8 @@ export const groupItems = (
     items: Item[],
     groups: Group[],
     groupByColumnId: string | null,
-    collapsedGroups: string[] = []
+    collapsedGroups: string[] = [],
+    expandedItemIds: string[] = []
 ): VirtualItemData[] => {
     // 1. Dynamic Grouping (Future/Partial Support)
     if (groupByColumnId) {
@@ -88,6 +89,9 @@ export const groupItems = (
 
             // Items
             groupItems.forEach(item => {
+                // Only consider main items (no parentId)
+                if (item.parentId) return;
+
                 result.push({
                     type: 'item',
                     id: item.id,
@@ -95,6 +99,41 @@ export const groupItems = (
                     depth: 0,
                     groupColor: group.color
                 });
+
+                // If expanded, add sub-items
+                const isExpanded = expandedItemIds.includes(item.id);
+                const subItems = items.filter(si => si.parentId === item.id);
+
+                if (isExpanded) {
+                    // Sub-item Header
+                    result.push({
+                        type: 'subitem-header',
+                        id: `${item.id}-sub-header`,
+                        data: { parentId: item.id },
+                        depth: 1,
+                        groupColor: group.color
+                    });
+
+                    // Sub-item Rows
+                    subItems.forEach(si => {
+                        result.push({
+                            type: 'subitem',
+                            id: si.id,
+                            data: si,
+                            depth: 1,
+                            groupColor: group.color
+                        });
+                    });
+
+                    // Sub-item Footer (+ Add Subitem)
+                    result.push({
+                        type: 'subitem-footer',
+                        id: `${item.id}-sub-footer`,
+                        data: { parentId: item.id, groupId: group.id },
+                        depth: 1,
+                        groupColor: group.color
+                    });
+                }
             });
 
             // Footer (Add Item Row)

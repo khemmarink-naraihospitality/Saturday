@@ -62,6 +62,7 @@ export interface Item {
     isHidden?: boolean;
     order?: number;
     createdAt?: string;
+    parentId?: string; // Link to parent Item for sub-items
 }
 
 export interface SortState {
@@ -97,6 +98,7 @@ export interface Board {
     itemColumnWidth?: number; // Custom width for the first column
     groupByColumnId?: string | null; // For dynamic view overrides (optional future)
     collapsedGroups?: string[];
+    expandedItemIds?: string[]; // Tracking which items have their sub-items visible
 
     // View State (Transient or Persistent)
     sort?: SortState | null;

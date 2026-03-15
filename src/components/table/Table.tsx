@@ -159,8 +159,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
             }
         }
 
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || []);
-    }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, searchQuery, board?.sort, board?.filters, showHiddenItems]);
+        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || []);
+    }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({
         count: virtualItems.length,
@@ -168,9 +168,9 @@ export const Table = ({ boardId }: { boardId: string }) => {
         estimateSize: (index) => {
             const type = virtualItems[index]?.type;
             if (type === 'group') return 60;
-            if (type === 'header') return 36;
-            if (type === 'footer') return 80;
-            return 30; // item
+            if (type === 'header' || type === 'subitem-header') return 36;
+            if (type === 'footer' || type === 'subitem-footer') return 40;
+            return 30; // item or subitem
         },
         overscan: 5,
     });
@@ -571,13 +571,92 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                ) : vItem.type === 'subitem-header' ? (
+                                                    <div className="table-row subitem-header" style={{
+                                                        height: '36px',
+                                                        display: 'flex',
+                                                        paddingLeft: 0, // Indentation moved to cell level for alignment
+                                                        backgroundColor: 'hsl(var(--color-bg-canvas))',
+                                                        borderBottom: '1px solid hsl(var(--color-border))',
+                                                        fontSize: '11px',
+                                                        fontWeight: 500,
+                                                        color: 'hsl(var(--color-text-secondary))',
+                                                        position: 'relative'
+                                                    }}>
+                                                        {vItem.groupColor && (
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 0.5 }} />
+                                                        )}
+                                                        <div className="table-cell sticky-col" style={{ 
+                                                            width: `${itemColumnWidth}px`, 
+                                                            position: 'sticky', 
+                                                            left: 0, 
+                                                            zIndex: 5, 
+                                                            backgroundColor: 'inherit', 
+                                                            display: 'flex', 
+                                                            alignItems: 'center', 
+                                                            justifyContent: 'center',
+                                                            paddingLeft: 0,
+                                                            fontWeight: 400,
+                                                            fontSize: '11px' // Explicitly set to match other columns
+                                                        }}>
+                                                            {board.itemColumnTitle}
+                                                        </div>
+                                                        {board.columns.map(col => (
+                                                            <div key={col.id} className="table-cell" style={{ 
+                                                                width: `${col.width || 150}px`, 
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                justifyContent: 'center', 
+                                                                borderRight: '1px solid hsl(var(--color-border-subtle))',
+                                                                fontSize: '11px',
+                                                                color: 'hsl(var(--color-text-secondary))',
+                                                                fontWeight: 400
+                                                            }}>
+                                                                {col.title}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : vItem.type === 'subitem-footer' ? (
+                                                    <div className="table-row subitem-footer" style={{
+                                                        height: '40px',
+                                                        display: 'flex',
+                                                        paddingLeft: 0,
+                                                        backgroundColor: 'transparent',
+                                                        position: 'relative',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        {vItem.groupColor && (
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 0.5 }} />
+                                                        )}
+                                                        <div
+                                                            onClick={() => useBoardStore.getState().addItem('New Sub-item', vItem.data.groupId, vItem.data.parentId)}
+                                                            style={{
+                                                                cursor: 'pointer',
+                                                                fontSize: '13px',
+                                                                color: 'hsl(var(--color-text-tertiary))',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px',
+                                                                padding: '4px 8px',
+                                                                borderRadius: '4px',
+                                                                marginLeft: vItem.groupColor ? '78px' : '68px' // Indent further (match Row.tsx + extra step)
+                                                            }}
+                                                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; e.currentTarget.style.color = 'hsl(var(--color-text-secondary))'; }}
+                                                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))'; }}
+                                                        >
+                                                            <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span> Add subitem
+                                                        </div>
+                                                    </div>
                                                 ) : (
                                                     <Row
                                                         item={vItem.data as any}
                                                         columns={board.columns}
                                                         groupColor={vItem.groupColor}
                                                         itemColumnWidth={itemColumnWidth}
-                                                        dragHandleProps={listeners} // Pass listeners to Row
+                                                        dragHandleProps={listeners}
+                                                        isSubItem={vItem.type === 'subitem'}
+                                                        isExpanded={(board.expandedItemIds || []).includes(vItem.id)}
+                                                        onToggleExpand={() => useBoardStore.getState().toggleItemExpansion(board.id, vItem.id)}
                                                     />
                                                 )}
                                             </motion.div>

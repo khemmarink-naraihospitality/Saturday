@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import type { Item, Column } from '../../types';
 import { Cell } from './Cell';
-import { GripVertical, MessageSquare } from 'lucide-react';
+import { GripVertical, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useBoardStore } from '../../store/useBoardStore';
 import { Check } from 'lucide-react';
@@ -29,13 +29,19 @@ export const Row = React.memo(({
     columns,
     groupColor,
     itemColumnWidth = 520,
-    dragHandleProps
+    dragHandleProps,
+    isSubItem,
+    isExpanded,
+    onToggleExpand
 }: {
     item: Item,
     columns: Column[],
     groupColor?: string,
     itemColumnWidth?: number,
-    dragHandleProps?: any
+    dragHandleProps?: any,
+    isSubItem?: boolean,
+    isExpanded?: boolean,
+    onToggleExpand?: () => void
 }) => {
     const { can } = usePermission();
     const rowRef = useRef<HTMLDivElement>(null);
@@ -94,7 +100,7 @@ export const Row = React.memo(({
                 zIndex: 5,
                 backgroundColor: isSelected ? 'hsl(var(--color-brand-primary-subtle))' : (item.isHidden ? 'hsl(var(--color-bg-subtle))' : 'hsl(var(--color-bg-canvas))'),
                 borderRight: '1px solid hsl(var(--color-border))',
-                paddingLeft: groupColor ? '18px' : '8px',
+                paddingLeft: groupColor ? (isSubItem ? '46px' : '18px') : '8px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
@@ -113,7 +119,7 @@ export const Row = React.memo(({
                             opacity: 0, // Hidden by default, shown on hover via CSS
                             transition: 'opacity 0.2s',
                             width: '16px',
-                            marginLeft: '-4px'
+                            marginLeft: '-4px' // Pull slightly left to align with group border area
                         }}
                     >
                         <GripVertical size={14} />
@@ -141,14 +147,39 @@ export const Row = React.memo(({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        // Dynamic styling based on selection would require reactivity, 
-                        // better to use a hook in the component or pass it down.
-                        // For now, let's use a subscribed component for the checkbox to avoid re-rendering the whole row?
-                        // Or just subscribe Row to the specific selection state.
+                        marginLeft: '4px' // Space from drag handle
                     }}
                 >
                     <CheckboxState itemId={item.id} />
                 </div>
+
+                {/* Expand Chevron (Visible on hover if has subitems or when expanded) */}
+                {!isSubItem && (
+                    <div
+                        className="expand-chevron"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleExpand?.();
+                        }}
+                        style={{
+                            cursor: 'pointer',
+                            color: 'hsl(var(--color-text-tertiary))',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: isExpanded ? 1 : 0, // Hidden until hover or expanded
+                            transition: 'opacity 0.2s, transform 0.2s, color 0.2s',
+                            zIndex: 100,
+                            width: '20px',
+                            height: '30px',
+                            marginLeft: '4px' // Space from checkbox
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = 'hsl(var(--color-brand-primary))'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))'; }}
+                    >
+                        {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+                    </div>
+                )}
 
                 <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <input
@@ -179,7 +210,7 @@ export const Row = React.memo(({
                             background: 'transparent',
                             width: '100%',
                             fontSize: '13px',
-                            color: 'inherit',
+                            color: isSubItem ? 'hsl(var(--color-text-secondary))' : 'inherit',
                             outline: 'none',
                             cursor: can('edit_items') ? 'text' : 'default',
                             pointerEvents: can('edit_items') ? 'auto' : 'none' // Disable interaction cleanly
@@ -272,6 +303,9 @@ export const Row = React.memo(({
             {/* Inline Style for Hover Effect (simpler than global CSS for now) */}
             <style>{`
                 .table-row:hover .drag-handle {
+                    opacity: 1 !important;
+                }
+                .table-row:hover .expand-chevron {
                     opacity: 1 !important;
                 }
                 .table-row:hover .open-btn {

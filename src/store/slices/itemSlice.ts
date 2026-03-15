@@ -14,7 +14,7 @@ export interface ItemSlice {
     lastOptimisticUpdate: Record<string, number>;
 
     // Actions
-    addItem: (title: string, groupId: string) => Promise<void>;
+    addItem: (title: string, groupId: string, parentId?: string) => Promise<void>;
     updateItemValue: (itemId: string, columnId: string, value: any) => Promise<void>;
     updateItemTitle: (itemId: string, newTitle: string, shouldLog?: boolean) => Promise<void>;
     updateItemFiles: (itemId: string, files: FileLink[]) => Promise<void>;
@@ -69,7 +69,7 @@ export const createItemSlice: StateCreator<
         set(state => ({ lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [itemId]: timestamp } }));
     },
 
-    addItem: async (title, groupId) => {
+    addItem: async (title, groupId, parentId) => {
         const { activeBoardId } = get();
         if (!activeBoardId) return;
 
@@ -85,7 +85,8 @@ export const createItemSlice: StateCreator<
             values: {},
             updates: [],
             createdAt: new Date().toISOString(),
-            order: nextOrder
+            order: nextOrder,
+            parentId
         };
 
         set(state => ({
@@ -110,7 +111,8 @@ export const createItemSlice: StateCreator<
             board_id: activeBoardId,
             group_id: groupId,
             values: {},
-            order: nextOrder
+            order: nextOrder,
+            parent_id: parentId
         });
 
         if (!error) {

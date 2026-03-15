@@ -16,6 +16,8 @@ export interface BoardSlice {
 
     userBoardRoles: Record<string, string>;
     userWorkspaceRoles: Record<string, string>;
+    sharedBoardIds: string[];
+    sharedWorkspaceIds: string[];
 
     // Board Actions
     addBoard: (title: string, subWorkspaceId?: string) => Promise<void>;
@@ -50,6 +52,8 @@ export const createBoardSlice: StateCreator<
     activePage: 'board',
     userBoardRoles: {},
     userWorkspaceRoles: {},
+    sharedBoardIds: [],
+    sharedWorkspaceIds: [],
 
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
@@ -238,7 +242,7 @@ export const createBoardSlice: StateCreator<
                 })),
                 boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],
-                sharedWorkspaceIds: sharedWorkspacesData?.filter((r: any) => r.role !== 'board-guest').map((r: any) => r.workspace_id) || [],
+                sharedWorkspaceIds: sharedWorkspacesData?.map((r: any) => r.workspace_id) || [],
                 userBoardRoles: boardRoles,
                 userWorkspaceRoles: workspaceRoles,
                 isLoading: false,

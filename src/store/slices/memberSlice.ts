@@ -68,6 +68,16 @@ export const createMemberSlice: StateCreator<
                 boardId,
                 { role, boardName: boardData?.title || 'Board', workspaceId: boardData?.workspace_id }
             );
+        } else {
+            // Insert into pending_invites for New Users
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            await supabase.from('pending_invites').insert({
+                email,
+                board_id: boardId,
+                workspace_id: boardData?.workspace_id,
+                role,
+                invited_by: currentUser?.id
+            });
         }
     },
 

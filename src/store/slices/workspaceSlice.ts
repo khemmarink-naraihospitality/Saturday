@@ -227,8 +227,13 @@ export const createWorkspaceSlice: StateCreator<
                     { role, workspaceName: 'Workspace' }
                 );
             } else {
-                console.warn("User not found for invite");
-                // TODO: Handle email invite for non-existing users if needed
+                // Insert into pending_invites for New Users
+                await supabase.from('pending_invites').insert({
+                    email,
+                    workspace_id: workspaceId,
+                    role,
+                    invited_by: user.id
+                });
             }
 
         } catch (e) {

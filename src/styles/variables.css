@@ -59,10 +59,10 @@
 
   /* Typography */
   --font-family: 'Roboto', 'Inter', 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-md: 13px;
-  --font-size-lg: 15px;
+  --font-size-xs: 11.5px;
+  --font-size-sm: 12.5px;
+  --font-size-md: 13.5px;
+  --font-size-lg: 15.5px;
   --font-size-xl: 18px;
 }
 

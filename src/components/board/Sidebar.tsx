@@ -21,6 +21,11 @@ export const Sidebar = () => {
                 activeTab={activeTab}
                 searchQuery={searchQuery}
             />
+
+            <div className="sidebar-footer">
+                <span className="footer-power">Powered by jirawat.k</span>
+
+            </div>
         </aside>
     );
 };

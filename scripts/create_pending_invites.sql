@@ -22,24 +22,26 @@ WITH CHECK (auth.uid() = invited_by);
 CREATE OR REPLACE FUNCTION public.handle_auto_accept_invite()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Auto-join board
-  INSERT INTO board_members (board_id, user_id, role)
+  -- 1. Auto-join board (only if board_id is not null)
+  INSERT INTO public.board_members (board_id, user_id, role)
   SELECT board_id, NEW.id, role
-  FROM pending_invites
-  WHERE email = NEW.email;
+  FROM public.pending_invites
+  WHERE email = NEW.email AND board_id IS NOT NULL
+  ON CONFLICT (board_id, user_id) DO NOTHING;
 
-  -- Auto-join workspace
-  INSERT INTO workspace_members (workspace_id, user_id, role)
+  -- 2. Auto-join workspace (only if workspace_id is not null)
+  INSERT INTO public.workspace_members (workspace_id, user_id, role)
   SELECT workspace_id, NEW.id, role
-  FROM pending_invites
-  WHERE email = NEW.email;
+  FROM public.pending_invites
+  WHERE email = NEW.email AND workspace_id IS NOT NULL
+  ON CONFLICT (workspace_id, user_id) DO NOTHING;
 
-  -- Delete from pending once accepted
-  DELETE FROM pending_invites WHERE email = NEW.email;
+  -- 3. Delete from pending once accepted
+  DELETE FROM public.pending_invites WHERE email = NEW.email;
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 3. Create Trigger on profiles table
 -- Assuming profiles are created on auth.users signup

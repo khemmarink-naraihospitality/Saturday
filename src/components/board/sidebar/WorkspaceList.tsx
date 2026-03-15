@@ -25,11 +25,10 @@ import { BoardIcon, WorkspaceIcon } from './SidebarIcons';
 import { SortableBoardItem } from './SortableBoardItem';
 
 interface WorkspaceListProps {
-    activeTab: 'my-workspaces' | 'shared';
     searchQuery: string;
 }
 
-export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) => {
+export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     const {
         boards, activeBoardId, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
         workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds, sharedWorkspaceIds,
@@ -75,16 +74,14 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
         setExpandedWorkspaces(next);
     };
 
-    // Filter workspaces based on active tab and search query
-    const filteredWorkspaces = (activeTab === 'my-workspaces'
-        ? workspaces.filter(w => w.owner_id === user?.id)
-        : workspaces.filter(w => {
-            if (w.owner_id === user?.id) return false;
-            const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
-            const containsSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
-            return isWorkspaceShared || containsSharedBoard;
-        })
-    ).filter((w, index, self) => {
+    // Unified filtering: show everything the user has access to
+    const filteredWorkspaces = workspaces.filter(w => {
+        const isOwner = w.owner_id === user?.id;
+        const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
+        const hasSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
+
+        return isOwner || isWorkspaceShared || hasSharedBoard;
+    }).filter((w, index, self) => {
         return self.findIndex(i => i.id === w.id) === index;
     }).filter(w => {
         if (!searchQuery.trim()) return true;
@@ -160,18 +157,16 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                         if (b.workspaceId !== ws.id) return false;
                         if (b.is_archived) return false;
 
-                        // Permission check: 
-                        // If it's the 'my-workspaces' tab, we only show boards in owned workspaces (handled by filteredWorkspaces)
-                        // If it's the 'shared' tab, we ONLY show boards specifically shared OR all boards if the workspace itself is shared
+                        // Boards are visible if:
+                        // 1. User owns the workspace
+                        // 2. Workspace itself is shared with the user (Member/Admin)
+                        // 3. User is a Guest explicitly invited to this specific board
                         const isOwner = ws.owner_id === user?.id;
                         const isWorkspaceShared = sharedWorkspaceIds.includes(ws.id);
                         const isBoardShared = sharedBoardIds.includes(b.id);
 
                         const isAccessible = isOwner || isWorkspaceShared || isBoardShared;
                         if (!isAccessible) return false;
-
-                        // In 'shared' tab, if workspace isn't shared as a whole, ONLY show shared boards
-                        if (activeTab === 'shared' && !isWorkspaceShared && !isBoardShared) return false;
 
                         if (searchQuery.trim()) {
                             const workspaceMatches = ws.title.toLowerCase().includes(searchQuery.toLowerCase());

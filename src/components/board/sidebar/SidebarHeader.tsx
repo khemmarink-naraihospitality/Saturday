@@ -1,16 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, MoreHorizontal, Archive, Users, Home, Star } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Archive, Home, Star } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 
 interface SidebarHeaderProps {
-    activeTab: 'my-workspaces' | 'shared';
-    setActiveTab: (tab: 'my-workspaces' | 'shared') => void;
     searchQuery: string;
     setSearchQuery: (query: string) => void;
 }
 
-export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQuery }: SidebarHeaderProps) => {
+export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProps) => {
     const { addWorkspace, navigateTo, activePage } = useBoardStore();
 
     const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -154,47 +152,6 @@ export const SidebarHeader = ({ activeTab, setActiveTab, searchQuery, setSearchQ
                 </button>
             </div>
 
-            {/* Workspaces Tabs */}
-            <div style={{ display: 'flex', padding: '0 4px', width: '100%', marginBottom: '4px', borderBottom: '1px solid #f0f0f0' }}>
-                <button
-                    onClick={() => setActiveTab('my-workspaces')}
-                    style={{
-                        padding: '8px 12px',
-                        border: 'none',
-                        background: 'none',
-                        color: activeTab === 'my-workspaces' ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))',
-                        fontSize: '13px',
-                        fontWeight: activeTab === 'my-workspaces' ? 600 : 400,
-                        cursor: 'pointer',
-                        borderBottom: activeTab === 'my-workspaces' ? '2px solid #0073ea' : 'none',
-                        transition: 'all 0.2s',
-                        marginBottom: '-1px'
-                    }}
-                >
-                    Workspaces
-                </button>
-                <button
-                    onClick={() => setActiveTab('shared')}
-                    style={{
-                        padding: '8px 12px',
-                        border: 'none',
-                        background: 'none',
-                        color: activeTab === 'shared' ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))',
-                        fontSize: '13px',
-                        fontWeight: activeTab === 'shared' ? 600 : 400,
-                        cursor: 'pointer',
-                        borderBottom: activeTab === 'shared' ? '2px solid #0073ea' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s',
-                        marginBottom: '-1px'
-                    }}
-                >
-                    <Users size={14} />
-                    <span>Shared</span>
-                </button>
-            </div>
 
             {/* Workspaces Title & Actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '8px' }}>

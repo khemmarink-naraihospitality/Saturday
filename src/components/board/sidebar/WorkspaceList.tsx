@@ -18,7 +18,6 @@ import {
 
 import { useBoardStore } from '../../../store/useBoardStore';
 import { useUserStore } from '../../../store/useUserStore';
-import { usePermission } from '../../../hooks/usePermission';
 import { ConfirmModal } from '../../ui/ConfirmModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
 import { ShareBoardModal } from '../../workspace/ShareBoardModal';
@@ -33,11 +32,11 @@ interface WorkspaceListProps {
 export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) => {
     const {
         boards, activeBoardId, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
-        workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds, sharedWorkspaceIds
+        workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds, sharedWorkspaceIds,
+        userBoardRoles, userWorkspaceRoles
     } = useBoardStore();
 
     const { currentUser } = useUserStore();
-    const { can } = usePermission();
     const user = currentUser;
 
     const [creatingBoardInWorkspaceId, setCreatingBoardInWorkspaceId] = useState<string | null>(null);
@@ -78,12 +77,7 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
 
     // Filter workspaces based on active tab and search query
     const filteredWorkspaces = (activeTab === 'my-workspaces'
-        ? workspaces.filter(w => {
-            const isOwner = w.owner_id === user?.id;
-            const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
-            const containsSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
-            return isOwner || isWorkspaceShared || containsSharedBoard;
-        })
+        ? workspaces.filter(w => w.owner_id === user?.id)
         : workspaces.filter(w => {
             if (w.owner_id === user?.id) return false;
             const isWorkspaceShared = sharedWorkspaceIds.includes(w.id);
@@ -166,8 +160,18 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                         if (b.workspaceId !== ws.id) return false;
                         if (b.is_archived) return false;
 
-                        const isAccessible = ws.owner_id === user?.id || sharedWorkspaceIds.includes(ws.id) || sharedBoardIds.includes(b.id);
+                        // Permission check: 
+                        // If it's the 'my-workspaces' tab, we only show boards in owned workspaces (handled by filteredWorkspaces)
+                        // If it's the 'shared' tab, we ONLY show boards specifically shared OR all boards if the workspace itself is shared
+                        const isOwner = ws.owner_id === user?.id;
+                        const isWorkspaceShared = sharedWorkspaceIds.includes(ws.id);
+                        const isBoardShared = sharedBoardIds.includes(b.id);
+
+                        const isAccessible = isOwner || isWorkspaceShared || isBoardShared;
                         if (!isAccessible) return false;
+
+                        // In 'shared' tab, if workspace isn't shared as a whole, ONLY show shared boards
+                        if (activeTab === 'shared' && !isWorkspaceShared && !isBoardShared) return false;
 
                         if (searchQuery.trim()) {
                             const workspaceMatches = ws.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -210,21 +214,24 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                                 ) : (
                                     <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {ws.title}
+                                        {ws.owner_id !== user?.id && <span style={{ fontSize: '10px', color: 'hsl(var(--color-text-secondary))', marginLeft: '6px', opacity: 0.7 }}>({userWorkspaceRoles[ws.id] || 'Guest'})</span>}
                                     </span>
                                 )}
 
-                                {/* Workspace Actions */}
-                                <div className="sidebar-item-action" onClick={(e) => e.stopPropagation()}>
-                                    <MoreHorizontal
-                                        size={14}
-                                        onClick={(e) => {
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setMenuPosition({ top: rect.bottom, left: rect.left });
-                                            setActiveWorkspaceMenu(activeWorkspaceMenu === ws.id ? null : ws.id);
-                                            setActiveBoardMenu(null);
-                                        }}
-                                    />
-                                </div>
+                                 {/* Workspace Actions */}
+                                {(ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin') && (
+                                    <div className="sidebar-item-action" onClick={(e) => e.stopPropagation()}>
+                                        <MoreHorizontal
+                                            size={14}
+                                            onClick={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setMenuPosition({ top: rect.bottom, left: rect.left });
+                                                setActiveWorkspaceMenu(activeWorkspaceMenu === ws.id ? null : ws.id);
+                                                setActiveBoardMenu(null);
+                                            }}
+                                        />
+                                    </div>
+                                )}
 
                                 <ChevronRight size={16} className="chevron" />
                             </div>
@@ -258,7 +265,14 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                                                         setActiveBoardMenu(activeBoardMenu === id ? null : id);
                                                         setActiveWorkspaceMenu(null);
                                                     }}
-                                                    can={can as any}
+                                                    can={(action) => {
+                                                        const role = userBoardRoles[board.id] || userWorkspaceRoles[ws.id] || (ws.owner_id === user?.id ? 'owner' : 'viewer');
+                                                        if (role === 'owner' || role === 'admin') return true;
+                                                        if (role === 'member' || role === 'editor') {
+                                                            return ['view_board', 'edit_items', 'manage_columns', 'group_ungroup'].includes(action);
+                                                        }
+                                                        return action === 'view_board';
+                                                    }}
                                                     isLastChild={index === wsBoards.length - 1}
                                                 />
                                             ))}
@@ -266,7 +280,7 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                                     </DndContext>
 
                                     {/* Add Board Button Inside Tree */}
-                                    {!searchActive && (
+                                    {!searchActive && (ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin') && (
                                         <div className="tree-node-leaf last-child">
                                             {creatingBoardInWorkspaceId === ws.id ? (
                                                 <div className="tree-sidebar-item" style={{ paddingLeft: '4px', cursor: 'default' }}>
@@ -343,118 +357,145 @@ export const WorkspaceList = ({ activeTab, searchQuery }: WorkspaceListProps) =>
                 }} onClick={(e) => e.stopPropagation()}
                     onMouseLeave={() => setActiveSubmenu(null)}
                 >
-                    <div className="menu-item" onClick={() => {
-                        const b = boards.find(b => b.id === activeBoardMenu);
-                        if (b) {
-                            setEditingBoardId(b.id);
-                            setEditTitle(b.title);
-                        }
-                        setActiveBoardMenu(null);
-                    }} onMouseEnter={() => setActiveSubmenu(null)}>
-                        <Edit2 size={14} /> Rename
-                    </div>
+                    {(() => {
+                        const board = boards.find(b => b.id === activeBoardMenu);
+                        const ws = workspaces.find(w => w.id === board?.workspaceId);
+                        const role = userBoardRoles[activeBoardMenu!] || userWorkspaceRoles[ws?.id || ''] || (ws?.owner_id === user?.id ? 'owner' : 'viewer');
+                        const isOwnerAdmin = role === 'owner' || role === 'admin';
+                        const isEditor = isOwnerAdmin || role === 'member' || role === 'editor';
 
-                    <div className="menu-item" onClick={() => {
-                        setShareBoardId(activeBoardMenu);
-                        setActiveBoardMenu(null);
-                    }} onMouseEnter={() => setActiveSubmenu(null)}>
-                        <Users size={14} /> Share
-                    </div>
-
-                    {/* Move To Submenu */}
-                    <div
-                        className="menu-item"
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}
-                        onMouseEnter={() => setActiveSubmenu('move')}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <LayoutDashboard size={14} /> Move to
-                        </div>
-                        <ChevronRight size={14} />
-
-                        {activeSubmenu === 'move' && (
-                            <div style={{
-                                position: 'absolute',
-                                left: '100%',
-                                top: 0,
-                                width: '180px',
-                                backgroundColor: 'hsl(var(--color-bg-surface))',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                borderRadius: '4px',
-                                padding: '4px',
-                                marginLeft: '4px',
-                                maxHeight: '200px',
-                                overflowY: 'auto',
-                                border: '1px solid hsl(var(--color-border))'
-                            }}>
-                                {allAccessibleWorkspaces.map(ws => (
-                                    <div
-                                        key={ws.id}
-                                        className="menu-item"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveBoardToWorkspace(activeBoardMenu, ws.id);
-                                            setActiveBoardMenu(null);
-                                            setActiveSubmenu(null);
-                                        }}
-                                    >
-                                        {ws.title}
+                        return (
+                            <>
+                                {isEditor && (
+                                    <div className="menu-item" onClick={() => {
+                                        if (board) {
+                                            setEditingBoardId(board.id);
+                                            setEditTitle(board.title);
+                                        }
+                                        setActiveBoardMenu(null);
+                                    }} onMouseEnter={() => setActiveSubmenu(null)}>
+                                        <Edit2 size={14} /> Rename
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                )}
 
-                    {/* Duplicate To Submenu */}
-                    <div
-                        className="menu-item"
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}
-                        onMouseEnter={() => setActiveSubmenu('duplicate')}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Copy size={14} /> Duplicate to
-                        </div>
-                        <ChevronRight size={14} />
-
-                        {activeSubmenu === 'duplicate' && (
-                            <div style={{
-                                position: 'absolute',
-                                left: '100%',
-                                top: 0,
-                                width: '180px',
-                                backgroundColor: 'hsl(var(--color-bg-surface))',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                borderRadius: '4px',
-                                padding: '4px',
-                                marginLeft: '4px',
-                                maxHeight: '200px',
-                                overflowY: 'auto',
-                                border: '1px solid hsl(var(--color-border))'
-                            }}>
-                                {allAccessibleWorkspaces.map(ws => (
-                                    <div
-                                        key={ws.id}
-                                        className="menu-item"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            duplicateBoardToWorkspace(activeBoardMenu, ws.id);
-                                            setActiveBoardMenu(null);
-                                            setActiveSubmenu(null);
-                                        }}
-                                    >
-                                        {ws.title}
+                                {isOwnerAdmin && (
+                                    <div className="menu-item" onClick={() => {
+                                        setShareBoardId(activeBoardMenu);
+                                        setActiveBoardMenu(null);
+                                    }} onMouseEnter={() => setActiveSubmenu(null)}>
+                                        <Users size={14} /> Share
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                )}
 
-                    <div className="menu-item delete" onClick={() => {
-                        setBoardToDelete(activeBoardMenu);
-                        setActiveBoardMenu(null);
-                    }} onMouseEnter={() => setActiveSubmenu(null)}>
-                        <Trash2 size={14} /> Delete
-                    </div>
+                                {/* Move To Submenu */}
+                                {isOwnerAdmin && (
+                                    <div
+                                        className="menu-item"
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}
+                                        onMouseEnter={() => setActiveSubmenu('move')}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <LayoutDashboard size={14} /> Move to
+                                        </div>
+                                        <ChevronRight size={14} />
+
+                                        {activeSubmenu === 'move' && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '100%',
+                                                top: 0,
+                                                width: '180px',
+                                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                borderRadius: '4px',
+                                                padding: '4px',
+                                                marginLeft: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                border: '1px solid hsl(var(--color-border))'
+                                            }}>
+                                                {allAccessibleWorkspaces.map(ws => (
+                                                    <div
+                                                        key={ws.id}
+                                                        className="menu-item"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            moveBoardToWorkspace(activeBoardMenu!, ws.id);
+                                                            setActiveBoardMenu(null);
+                                                            setActiveSubmenu(null);
+                                                        }}
+                                                    >
+                                                        {ws.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Duplicate To Submenu */}
+                                {isEditor && (
+                                    <div
+                                        className="menu-item"
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}
+                                        onMouseEnter={() => setActiveSubmenu('duplicate')}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Copy size={14} /> Duplicate to
+                                        </div>
+                                        <ChevronRight size={14} />
+
+                                        {activeSubmenu === 'duplicate' && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '100%',
+                                                top: 0,
+                                                width: '180px',
+                                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                borderRadius: '4px',
+                                                padding: '4px',
+                                                marginLeft: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                border: '1px solid hsl(var(--color-border))'
+                                            }}>
+                                                {allAccessibleWorkspaces.map(ws => (
+                                                    <div
+                                                        key={ws.id}
+                                                        className="menu-item"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            duplicateBoardToWorkspace(activeBoardMenu!, ws.id);
+                                                            setActiveBoardMenu(null);
+                                                            setActiveSubmenu(null);
+                                                        }}
+                                                    >
+                                                        {ws.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {isOwnerAdmin && (
+                                    <div className="menu-item delete" onClick={() => {
+                                        setBoardToDelete(activeBoardMenu);
+                                        setActiveBoardMenu(null);
+                                    }} onMouseEnter={() => setActiveSubmenu(null)}>
+                                        <Trash2 size={14} /> Delete
+                                    </div>
+                                )}
+
+                                {!isEditor && (
+                                    <div style={{ padding: '8px', fontSize: '11px', color: 'hsl(var(--color-text-secondary))', fontStyle: 'italic' }}>
+                                        View only access
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
                 </div>
             )}
 

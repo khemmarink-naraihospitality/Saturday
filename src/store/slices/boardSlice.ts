@@ -14,6 +14,9 @@ export interface BoardSlice {
     error: string | null;
     activePage: string;
 
+    userBoardRoles: Record<string, string>;
+    userWorkspaceRoles: Record<string, string>;
+
     // Board Actions
     addBoard: (title: string, subWorkspaceId?: string) => Promise<void>;
     deleteBoard: (id: string) => Promise<void>;
@@ -45,6 +48,8 @@ export const createBoardSlice: StateCreator<
     isInitializing: false,
     error: null,
     activePage: 'board',
+    userBoardRoles: {},
+    userWorkspaceRoles: {},
 
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
@@ -79,7 +84,7 @@ export const createBoardSlice: StateCreator<
                 supabase.from('groups').select('*').order('order'),
                 supabase.from('columns').select('*').order('order'),
                 supabase.from('items').select('*').order('order'),
-                supabase.from('board_members').select('board_id, last_viewed_at').eq('user_id', user.id),
+                supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id)
             ]);
 
@@ -213,6 +218,16 @@ export const createBoardSlice: StateCreator<
                 activeBoardId = validBoard ? validBoard.id : null;
             }
 
+            const boardRoles: Record<string, string> = {};
+            sharedBoardsData?.forEach((r: any) => {
+                if (r.board_id) boardRoles[r.board_id] = r.role || 'viewer';
+            });
+
+            const workspaceRoles: Record<string, string> = {};
+            sharedWorkspacesData?.forEach((r: any) => {
+                if (r.workspace_id) workspaceRoles[r.workspace_id] = r.role || 'member';
+            });
+
             set({
                 workspaces: workspaces.map((w: any) => ({
                     id: w.id,
@@ -224,6 +239,8 @@ export const createBoardSlice: StateCreator<
                 boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],
                 sharedWorkspaceIds: sharedWorkspacesData?.filter((r: any) => r.role !== 'board-guest').map((r: any) => r.workspace_id) || [],
+                userBoardRoles: boardRoles,
+                userWorkspaceRoles: workspaceRoles,
                 isLoading: false,
                 activeWorkspaceId,
                 activeBoardId

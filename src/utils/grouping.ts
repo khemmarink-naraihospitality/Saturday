@@ -20,21 +20,75 @@ export const groupItems = (
     collapsedGroups: string[] = [],
     expandedItemIds: string[] = []
 ): VirtualItemData[] => {
-    // 1. Dynamic Grouping (Future/Partial Support)
+    // 1. Dynamic Grouping (Status, Dropdown, Person, etc.)
     if (groupByColumnId) {
-        const dynamicColor = '#579bfc';
-        return [
-            {
+        // Collect unique values for the group-by column
+        const valuesMap: Record<string, Item[]> = {};
+        const emptyItems: Item[] = [];
+
+        items.forEach(item => {
+            const val = item.values[groupByColumnId];
+            if (val === undefined || val === null || val === '') {
+                emptyItems.push(item);
+            } else {
+                // Handle status/dropdown (single value for now)
+                const key = String(val);
+                if (!valuesMap[key]) valuesMap[key] = [];
+                valuesMap[key].push(item);
+            }
+        });
+
+        const result: VirtualItemData[] = [];
+        
+        // Helper to add a group to result
+        const addGroup = (title: string, groupItems: Item[], groupId: string, color: string = '#c4c4c4') => {
+            const isCollapsed = collapsedGroups.includes(groupId);
+            result.push({
                 type: 'group',
-                id: 'dynamic-group',
-                data: { title: 'Dynamic Group', count: items.length, color: dynamicColor },
+                id: groupId,
+                data: { title, count: groupItems.length, color },
                 depth: 0,
-                groupColor: dynamicColor
-            } as VirtualItemData,
-            { type: 'header', id: 'dynamic-header', data: {}, depth: 0, groupColor: dynamicColor } as VirtualItemData,
-            ...items.map(item => ({ type: 'item', id: item.id, data: item, depth: 0, groupColor: dynamicColor } as VirtualItemData)),
-            { type: 'footer', id: 'dynamic-footer', data: { groupId: 'dynamic-group' }, depth: 0, groupColor: dynamicColor } as VirtualItemData
-        ];
+                groupColor: color
+            });
+
+            if (!isCollapsed) {
+                result.push({
+                    type: 'header',
+                    id: `${groupId}-header`,
+                    data: { groupId },
+                    depth: 0,
+                    groupColor: color
+                });
+
+                groupItems.forEach(item => {
+                    if (item.parentId) return;
+                    result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: color });
+                    
+                    const isExpanded = expandedItemIds.includes(item.id);
+                    if (isExpanded) {
+                        const subItems = items.filter(si => si.parentId === item.id);
+                        result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: color });
+                        subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: color }));
+                        result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId }, depth: 1, groupColor: color });
+                    }
+                });
+
+                result.push({ type: 'footer', id: `${groupId}-footer`, data: { groupId }, depth: 0, groupColor: color });
+            }
+        };
+
+        // If it's a status column, try to maintain option order
+        // For now, simple grouping.
+        
+        Object.entries(valuesMap).forEach(([key, groupItems]) => {
+            addGroup(key, groupItems, `group-${key}`);
+        });
+
+        if (emptyItems.length > 0) {
+            addGroup('Empty', emptyItems, 'group-empty');
+        }
+
+        return result;
     }
 
     // 2. Manual Grouping (Default View)

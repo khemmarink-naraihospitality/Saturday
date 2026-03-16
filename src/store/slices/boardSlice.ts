@@ -34,6 +34,10 @@ export interface BoardSlice {
     toggleFavorite: (boardId: string) => Promise<void>;
     navigateTo: (page: string) => void;
     setActivePage: (page: string) => void;
+    setActiveView: (boardId: string, viewId: string) => void;
+    setSort: (boardId: string, sort: { columnId: string; direction: 'asc' | 'desc' } | null) => void;
+    setBoardFilters: (boardId: string, filters: { columnId: string; values: string[] }[]) => void;
+    setBoardGroupBy: (boardId: string, columnId: string | null) => void;
 
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
@@ -59,6 +63,18 @@ export const createBoardSlice: StateCreator<
 
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
+    setActiveView: (boardId, viewId) => set(state => ({
+        boards: state.boards.map(b => b.id === boardId ? { ...b, activeViewId: viewId } : b)
+    })),
+    setSort: (boardId, sort) => set(state => ({
+        boards: state.boards.map(b => b.id === boardId ? { ...b, sort } : b)
+    })),
+    setBoardFilters: (boardId, filters) => set(state => ({
+        boards: state.boards.map(b => b.id === boardId ? { ...b, filters } : b)
+    })),
+    setBoardGroupBy: (boardId, columnId) => set(state => ({
+        boards: state.boards.map(b => b.id === boardId ? { ...b, groupByColumnId: columnId } : b)
+    })),
 
     toggleGroup: (boardId, groupId) => {
         set(state => ({

@@ -101,6 +101,7 @@ export interface Board {
     expandedItemIds?: string[]; // Tracking which items have their sub-items visible
 
     // View State (Transient or Persistent)
+    activeViewId?: string; // Current view (main_table, timeline, etc.)
     sort?: SortState | null;
     filters?: FilterState[]; // Support multiple column filters
     lastViewedAt?: string; // Captured from board_members

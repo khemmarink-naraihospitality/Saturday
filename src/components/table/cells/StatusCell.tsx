@@ -50,8 +50,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
                 style={{
                     width: '100%',
                     height: '100%',
-                    borderRight: '1px solid hsl(var(--color-cell-border))',
-                    padding: 0,
+                    padding: '0 8px',
                     backgroundColor: backgroundColor,
                     color: textColor,
                     display: 'flex',
@@ -63,7 +62,8 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    letterSpacing: '0.01em'
                 }}
             >
                 {content}

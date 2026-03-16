@@ -8,6 +8,8 @@ import { ShareBoardModal } from '../workspace/ShareBoardModal';
 import { SidePanel } from '../ui/SidePanel';
 import { ExportBoardModal } from './ExportBoardModal';
 
+import { BoardViewsTabs } from './BoardViewsTabs';
+
 interface BoardHeaderProps {
     boardId: string;
 }
@@ -78,16 +80,15 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     const remainingMembers = uniqueMembers.length - 4;
 
     return (
-        <header style={{
-            minHeight: '50px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '6px 32px',
-            backgroundColor: 'hsl(var(--color-bg-subtle))', // Darkened from surface
-            borderBottom: '1px solid hsl(var(--color-border))',
-            position: 'relative'
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
+            <header style={{
+                height: '64px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 32px',
+                position: 'relative'
+            }}>
             {/* Left Side: Title & Description */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div>
@@ -426,6 +427,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                     }}
                 />
             )}
-        </header>
+            </header>
+            <BoardViewsTabs />
+        </div>
     );
 };

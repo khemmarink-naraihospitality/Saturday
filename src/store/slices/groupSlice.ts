@@ -24,11 +24,14 @@ export const createGroupSlice: StateCreator<
         const color = '#579bfc';
 
         const board = get().boards.find(b => b.id === activeBoardId);
-        const order = board ? board.groups.length : 0;
+        const minOrder = board && board.groups.length > 0 
+            ? Math.min(...board.groups.map(g => g.order || 0))
+            : 0;
+        const order = minOrder - 1;
         const newGroup = { id: newGroupId, title, color, items: [], order };
 
         set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, groups: [...b.groups, newGroup] } : b)
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, groups: [newGroup, ...b.groups] } : b)
         }));
         await supabase.from('groups').insert({ id: newGroupId, board_id: activeBoardId, title, color, order });
 

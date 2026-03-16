@@ -46,7 +46,7 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                 alignItems: 'center',
                 height: '100%',
                 paddingLeft: '32px',
-                marginTop: '16px',
+                marginTop: '0',
                 marginBottom: '4px',
                 position: 'relative'
             }}>

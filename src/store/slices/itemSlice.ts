@@ -74,8 +74,10 @@ export const createItemSlice: StateCreator<
         if (!activeBoardId) return;
 
         const currentGroupItems = get().boards.find(b => b.id === activeBoardId)?.groups.find(g => g.id === groupId)?.items || [];
-        const maxOrder = currentGroupItems.reduce((max, item) => Math.max(max, item.order || 0), -1);
-        const nextOrder = maxOrder + 1;
+        const minOrder = currentGroupItems.length > 0 
+            ? Math.min(...currentGroupItems.map(item => item.order || 0))
+            : 0;
+        const nextOrder = minOrder - 1;
 
         const newItem: Item = {
             id: uuidv4(),
@@ -94,10 +96,10 @@ export const createItemSlice: StateCreator<
                 b.id === activeBoardId
                     ? {
                         ...b,
-                        items: [...b.items, newItem],
+                        items: [newItem, ...b.items],
                         groups: b.groups.map(g =>
                             g.id === groupId
-                                ? { ...g, items: [...g.items, newItem] }
+                                ? { ...g, items: [newItem, ...g.items] }
                                 : g
                         )
                     }

@@ -57,36 +57,61 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                 }}
             >
                 {selectedIds.length > 0 ? (
-                    selectedIds.map((userId: string, idx: number) => {
-                        const member = activeBoardMembers.find(m => m.user_id === userId);
-                        const profile = member?.profiles || {};
-                        const initial = (profile.full_name || profile.email || '?')[0].toUpperCase();
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {selectedIds.slice(0, 2).map((userId: string, idx: number) => {
+                            const member = activeBoardMembers.find(m => m.user_id === userId);
+                            const profile = member?.profiles || {};
+                            const name = profile.full_name || profile.email || 'Unknown';
+                            const initial = name[0].toUpperCase();
 
-                        return (
-                            <div key={idx} style={{
-                                width: '24px',
-                                height: '24px',
+                            return (
+                                <div key={idx} style={{
+                                    width: '26px',
+                                    height: '26px',
+                                    borderRadius: '50%',
+                                    backgroundColor: member?.profiles?.avatar_url ? 'transparent' : '#0073ea',
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    border: '2px solid white',
+                                    marginLeft: idx > 0 ? '-10px' : '0',
+                                    zIndex: idx + 1,
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                }} title={name}>
+                                    {member?.profiles?.avatar_url ? (
+                                        <img src={member.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        initial
+                                    )}
+                                </div>
+                            );
+                        })}
+                        {selectedIds.length > 2 && (
+                            <div style={{
+                                width: '26px',
+                                height: '26px',
                                 borderRadius: '50%',
-                                backgroundColor: member?.profiles?.avatar_url ? 'transparent' : '#0073ea',
-                                color: 'white',
+                                backgroundColor: '#e5e7eb',
+                                color: '#6b7280',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontSize: '11px',
                                 fontWeight: 600,
-                                border: '1px solid white',
-                                marginLeft: idx > 0 ? '-8px' : '0',
-                                zIndex: 10 - idx,
-                                overflow: 'hidden'
-                            }} title={member?.profiles?.full_name || userId}>
-                                {member?.profiles?.avatar_url ? (
-                                    <img src={member.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%' }} />
-                                ) : (
-                                    initial
-                                )}
+                                border: '2px solid white',
+                                marginLeft: '-10px',
+                                zIndex: 10,
+                                position: 'relative'
+                            }}>
+                                +{selectedIds.length - 2}
                             </div>
-                        );
-                    })
+                        )}
+                    </div>
                 ) : (
                     <span style={{ color: 'hsl(var(--color-text-tertiary))', fontSize: '18px', opacity: 0.5 }}>+</span>
                 )}

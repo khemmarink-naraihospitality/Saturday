@@ -40,15 +40,27 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
     };
 
     return (
-        <>
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            height: '100%',
+            position: 'relative',
+            backgroundColor: 'hsl(var(--color-bg-canvas))',
+            width: '100%', // Group row spans the whole table row width
+        }}>
+            {/* Sticky Group Title Container */}
             <div style={{
+                position: 'sticky',
+                left: 0,
+                zIndex: 60,
+                backgroundColor: 'hsl(var(--color-bg-canvas))',
+                width: '520px', // Match default itemColumnWidth or pass it as prop
+                height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                height: '100%',
                 paddingLeft: '32px',
-                marginTop: '0',
-                marginBottom: '4px',
-                position: 'relative'
+                borderRight: '1px solid hsl(var(--color-border))',
+                boxSizing: 'border-box'
             }}>
                 {/* Color Picker / Expand Trigger */}
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
@@ -60,7 +72,6 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                         {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>
 
-                    {/* Hidden clickable area for color picker (the colored icon itself) */}
                     <div
                         onClick={(e) => {
                             e.stopPropagation();
@@ -79,7 +90,6 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                         title="Change Group Color"
                     />
 
-                    {/* Visual Color Dot */}
                     <div
                         ref={colorBtnRef}
                         style={{
@@ -91,10 +101,8 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                         }}
                     />
 
-                    {/* Portal for Color Picker */}
                     {showColorPicker && colorBtnRef.current && createPortal(
                         <>
-                            {/* Backdrop to close */}
                             <div
                                 style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
                                 onClick={() => setShowColorPicker(false)}
@@ -181,7 +189,6 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                     {data.count} items
                 </span>
 
-                {/* Group Actions (Delete) */}
                 {can('group_ungroup') && (
                     <div className="group-actions" style={{ marginLeft: '12px', display: 'flex', gap: '4px', opacity: 0.2 }}>
                         <button
@@ -194,6 +201,9 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                     </div>
                 )}
             </div>
+            
+            {/* The rest of the row will be empty for GroupRow but spans the full table width */}
+            <div style={{ flex: 1 }} />
 
             <ConfirmModal
                 isOpen={showDeleteConfirm}
@@ -207,6 +217,6 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                 }}
                 onCancel={() => setShowDeleteConfirm(false)}
             />
-        </>
+        </div>
     );
 };

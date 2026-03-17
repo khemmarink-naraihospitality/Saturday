@@ -360,7 +360,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 position: 'sticky',
                                                                 left: 0,
                                                                 zIndex: 55,
-                                                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                                                backgroundColor: 'hsl(var(--color-bg-canvas))',
                                                                 borderRight: '1px solid hsl(var(--color-border))',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
@@ -368,7 +368,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 borderBottom: '1px solid hsl(var(--color-border))',
                                                                 boxSizing: 'border-box',
                                                                 flexShrink: 0,
-                                                                gap: '8px'
+                                                                gap: '8px',
+                                                                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
                                                             }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', gap: '8px' }}>
                                                                     <div style={{
@@ -418,8 +419,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 position: 'sticky',
                                                                 left: 0,
                                                                 zIndex: 55,
-                                                                backgroundColor: 'transparent',
-                                                                flexShrink: 0
+                                                                backgroundColor: 'hsl(var(--color-bg-canvas))',
+                                                                flexShrink: 0,
+                                                                borderRight: '1px solid hsl(var(--color-border))',
+                                                                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
                                                             }} />
                                                             <div style={{
                                                                 display: 'flex',
@@ -591,13 +594,15 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             position: 'sticky', 
                                                             left: 0, 
                                                             zIndex: 5, 
-                                                            backgroundColor: 'inherit', 
+                                                            backgroundColor: 'hsl(var(--color-bg-canvas))', 
                                                             display: 'flex', 
                                                             alignItems: 'center', 
                                                             justifyContent: 'center',
                                                             paddingLeft: 0,
                                                             fontWeight: 400,
-                                                            fontSize: '11px' // Explicitly set to match other columns
+                                                            fontSize: '11px',
+                                                            borderRight: '1px solid hsl(var(--color-border))',
+                                                            boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
                                                         }}>
                                                             {board.itemColumnTitle}
                                                         </div>

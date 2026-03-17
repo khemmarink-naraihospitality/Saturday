@@ -103,7 +103,8 @@ export const Row = React.memo(({
                 paddingLeft: groupColor ? (isSubItem ? '46px' : '18px') : '8px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
             }}>
                 {/* Drag Handle (Visible on Hover via CSS) */}
                 {can('edit_items') && (

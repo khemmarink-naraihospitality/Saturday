@@ -347,7 +347,8 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                     backgroundColor: 'hsl(var(--color-table-header-bg))',
                     borderRight: '1px solid hsl(var(--color-border))',
                     paddingLeft: groupColor ? '14px' : '8px',
-                    display: 'flex', alignItems: 'center', gap: '8px'
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
                 }}>
                     {isEditingItemCol ? (
                         <input

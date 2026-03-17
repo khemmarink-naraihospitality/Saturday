@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const TimelineView = () => {

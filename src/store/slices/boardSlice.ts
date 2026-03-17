@@ -104,7 +104,13 @@ export const createBoardSlice: StateCreator<
         if (get().isInitializing) return;
 
         if (!isSilent) {
-            set({ isLoading: true, error: null, isInitializing: true });
+            // Only show full loading if we have NO data yet
+            const currentBoards = get().boards;
+            if (currentBoards.length === 0) {
+                set({ isLoading: true, error: null, isInitializing: true });
+            } else {
+                set({ isSyncing: true, error: null, isInitializing: true });
+            }
         } else {
             set({ isSyncing: true, error: null, isInitializing: true });
         }

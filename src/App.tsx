@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, useRef } from 'react';
 import { slugify } from './lib/utils';
 import { Sidebar } from './components/board/Sidebar'
 // BoardHeader, Table, BatchActionsBar moved to BoardPage lazy chunk
@@ -55,9 +55,20 @@ function MainApp() {
   const { session } = useAuth();
   const setUser = useUserStore(state => state.setUser); // Import setter
 
+  const lastUserIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
-    console.log('MainApp: session changed', session);
-    if (session) {
+    console.log('MainApp: session changed', session?.user?.id);
+    
+    if (session?.user?.id) {
+      // Only re-initialize if the user ID actually changed
+      if (lastUserIdRef.current === session.user.id) {
+        console.log('MainApp: session refreshed but user ID same, skipping init');
+        return;
+      }
+      
+      lastUserIdRef.current = session.user.id;
+      
       const initUser = async () => {
         // Fetch full profile to get system_role
         const { data: profile } = await supabase.from('profiles').select('system_role').eq('id', session.user.id).single();
@@ -72,19 +83,22 @@ function MainApp() {
           system_role: (profile?.system_role as any) || 'user'
         });
 
-        // Requirement: Always go to Home on fresh login
-        // We force the URL to / to prevent deep linking logic from picking up stale URLs
-        window.history.replaceState(null, '', '/');
-        navigateTo('home');
+        // Deep linking logic: 
+        // Only go to home if the current path is '/' and we don't have an active page set.
+        // Otherwise, let the existing routing logic handle things.
+        if (window.location.pathname === '/' && activePage === 'home') {
+           console.log('MainApp: Already at home, staying there');
+        }
 
         console.log('MainApp: calling loadUserData');
         loadUserData();
       };
 
       initUser();
-    } else {
+    } else if (!session) {
       // Handle logout - clear all state
       console.log('MainApp: session cleared (logged out)');
+      lastUserIdRef.current = null;
       window.history.replaceState(null, '', '/');
 
       // Clear board store state
@@ -94,17 +108,13 @@ function MainApp() {
         boards: [],
         workspaces: [],
         activePage: 'home',
-        activeBoardMembers: [], // Clear members to prevent showing wrong owner
+        activeBoardMembers: [], 
         notifications: [],
         selectedItemIds: [],
         activeItemId: null
       });
-
-      // Clear user store (setUser expects User object, use DEFAULT_USER or just skip)
-      // Since we're logging out, we don't need to clear the user store explicitly
-      // The AuthContext will handle the session state
     }
-  }, [session]);
+  }, [session?.user?.id]);
 
   // URL Sync and Popstate Handler
   useEffect(() => {

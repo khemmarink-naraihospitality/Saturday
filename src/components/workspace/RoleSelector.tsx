@@ -17,8 +17,8 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles }
 
     const roleLabels: Record<string, string> = {
         viewer: 'Viewer',
-        member: 'Member',
-        admin: 'Admin',
+        member: 'Editor',
+        admin: 'Member',
         owner: 'Owner'
     };
 

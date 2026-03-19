@@ -84,7 +84,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                 borderRadius: '8px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                 width: '90%',
-                maxWidth: '600px',
+                maxWidth: '700px',
                 maxHeight: '80vh',
                 display: 'flex',
                 flexDirection: 'column',
@@ -95,7 +95,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '20px 24px',
+                    padding: '16px 20px',
                     borderBottom: '1px solid hsl(var(--color-border))'
                 }}>
                     <div>
@@ -138,7 +138,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                     flexDirection: 'column'
                 }}>
                     <div style={{
-                        padding: '16px 24px',
+                        padding: '12px 20px',
                         fontWeight: 600,
                         fontSize: '14px',
                         borderBottom: '1px solid hsl(var(--color-border))'

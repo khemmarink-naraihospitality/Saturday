@@ -20,12 +20,12 @@ export const BoardViewsTabs = () => {
         <div style={{
             display: 'flex',
             alignItems: 'center',
-            padding: '0 32px',
-            gap: '24px',
+            padding: '0 24px',
+            gap: '16px',
             borderBottom: '1px solid hsl(var(--color-border))',
             backgroundColor: 'hsl(var(--color-bg-subtle))',
-            height: '40px',
-            minHeight: '40px'
+            height: '32px',
+            minHeight: '32px'
         }}>
             {views.map(view => {
                 const isActive = activeViewId === view.id;

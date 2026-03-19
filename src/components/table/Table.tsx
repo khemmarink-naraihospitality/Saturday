@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -167,9 +168,9 @@ export const Table = ({ boardId }: { boardId: string }) => {
         getScrollElement: () => parentRef.current,
         estimateSize: (index) => {
             const type = virtualItems[index]?.type;
-            if (type === 'group') return 60;
-            if (type === 'header' || type === 'subitem-header') return 36;
-            if (type === 'footer' || type === 'subitem-footer') return 40;
+            if (type === 'group') return 44; // Compact-ish group row
+            if (type === 'header' || type === 'subitem-header') return 34; // Compact-ish header
+            if (type === 'footer' || type === 'subitem-footer') return 36;
             return 30; // item or subitem
         },
         overscan: 5,
@@ -322,10 +323,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             position: 'absolute',
                                                             left: 0,
                                                             top: '0px',
-                                                            bottom: '-1px',
+                                                            bottom: '0px',
                                                             width: '6px',
                                                             backgroundColor: vItem.groupColor,
-                                                            borderRadius: '6px 6px 0 0',
+                                                            borderRadius: '8px 0 0 0',
                                                             zIndex: 10
                                                         }} />
                                                         <GroupRow
@@ -335,7 +336,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         />
                                                     </div>
                                                 ) : isHeader ? (
-                                                    <Header columns={board.columns} groupColor={vItem.groupColor} />
+                                                    <Header columns={board.columns} groupColor={vItem.groupColor} groupId={vItem.data.groupId} />
                                                 ) : isFooter ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                         <div style={{
@@ -352,7 +353,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     width: '6px',
                                                                     backgroundColor: vItem.groupColor,
                                                                     zIndex: 65,
-                                                                    borderRadius: '0 0 0 6px'
+                                                                    borderRadius: '0 0 0 8px'
                                                                 }} />
                                                             )}
                                                             <div className="sticky-col" style={{
@@ -456,7 +457,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     width: '100%',
                                                                                     height: '24px',
                                                                                     display: 'flex',
-                                                                                    borderRadius: '4px',
+                                                                                    borderRadius: '6px',
                                                                                     overflow: 'hidden',
                                                                                     position: 'relative'
                                                                                 }}>
@@ -701,15 +702,14 @@ export const Table = ({ boardId }: { boardId: string }) => {
                 )}
 
                 <div style={{
-                    padding: '16px 32px',
+                    paddingTop: '80px',
+                    paddingBottom: '120px',
+                    paddingLeft: '32px',
                     display: 'flex',
                     justifyContent: 'flex-start'
                 }}>
                     {can('group_ungroup') && (
-                        <motion.button
-                            whileHover={{ scale: 1.02, backgroundColor: 'hsl(var(--color-bg-hover))' }}
-                            whileTap={{ scale: 0.98 }}
-                            className="btn-secondary"
+                        <button
                             onClick={() => {
                                 useBoardStore.getState().addGroup("New Group");
                             }}
@@ -717,17 +717,22 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                padding: '8px 16px',
-                                borderRadius: '4px',
-                                border: '1px solid hsl(var(--color-border))',
-                                backgroundColor: 'hsl(var(--color-bg-surface))',
-                                color: 'hsl(var(--color-text-primary))',
+                                padding: '6px 16px',
+                                borderRadius: '6px',
+                                border: '1px solid #c3c6d4',
+                                backgroundColor: '#ffffff',
+                                color: '#323338',
                                 cursor: 'pointer',
-                                transition: 'none' // Disable CSS transition to let motion handle it
+                                transition: 'background-color 0.2s',
+                                fontWeight: 400,
+                                fontSize: '14px'
                             }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f6f8'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                         >
-                            <span>+ Add New Group</span>
-                        </motion.button>
+                            <Plus size={16} strokeWidth={1.5} />
+                            <span>Add new group</span>
+                        </button>
                     )}
                 </div>
             </div>

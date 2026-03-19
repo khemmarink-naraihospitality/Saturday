@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RoleSelector } from './RoleSelector';
@@ -39,6 +39,20 @@ export const MembersList = ({
         top: number;
         left: number;
     } | null>(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
+    const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
+
+    // Ensure valid page if items are removed
+    if (currentPage > totalPages && totalPages > 0) {
+        setCurrentPage(totalPages);
+    }
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedMembers = members.slice(startIndex, endIndex);
 
     const canManageMembers = currentUserRole === 'owner' || currentUserRole === 'admin';
     const isOwner = currentUserRole === 'owner';
@@ -97,10 +111,12 @@ export const MembersList = ({
     };
 
     return (
-        <div style={{
-            maxHeight: '300px',
-            overflowY: 'auto'
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{
+                maxHeight: '400px',
+                overflowY: 'auto',
+                flex: 1
+            }}>
             {members.length === 0 ? (
                 <div style={{
                     padding: '32px',
@@ -111,7 +127,7 @@ export const MembersList = ({
                     No members yet
                 </div>
             ) : (
-                members.map(member => {
+                paginatedMembers.map(member => {
                     const displayRole = getMemberDisplayRole(member);
                     const profile = member.profiles || {};
                     const memberName = profile.full_name || (profile.email ? profile.email.split('@')[0] : 'Unknown');
@@ -124,14 +140,14 @@ export const MembersList = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '12px',
-                                padding: '12px 16px',
+                                padding: '8px 20px',
                                 borderBottom: '1px solid hsl(var(--color-border))'
                             }}
                         >
                             {/* Avatar */}
                             <div style={{
-                                width: '36px',
-                                height: '36px',
+                                width: '32px',
+                                height: '32px',
                                 borderRadius: '50%',
                                 backgroundColor: profile.avatar_url ? 'transparent' : '#0073ea',
                                 color: 'white',
@@ -194,7 +210,7 @@ export const MembersList = ({
                                 <button
                                     onClick={(e) => handleDeleteClick(member.id, e)}
                                     style={{
-                                        padding: '8px',
+                                        padding: '6px',
                                         border: 'none',
                                         backgroundColor: 'transparent',
                                         color: 'hsl(var(--color-text-tertiary))',
@@ -220,6 +236,69 @@ export const MembersList = ({
                         </div>
                     );
                 })
+            )}
+            </div>
+
+            {/* Pagination Footer */}
+            {members.length > ITEMS_PER_PAGE && (
+                <div style={{
+                    padding: '12px 20px',
+                    borderTop: '1px solid hsl(var(--color-border))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: 'white'
+                }}>
+                    <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
+                        Showing {startIndex + 1}-{Math.min(endIndex, members.length)} of {members.length}
+                    </span>
+                    
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            style={{
+                                padding: '4px 8px',
+                                border: '1px solid hsl(var(--color-border))',
+                                backgroundColor: currentPage === 1 ? '#f5f6f8' : 'white',
+                                color: currentPage === 1 ? '#a0a0a0' : 'hsl(var(--color-text-primary))',
+                                borderRadius: '4px',
+                                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '13px'
+                            }}
+                        >
+                            <ChevronLeft size={16} />
+                            Prev
+                        </button>
+                        
+                        <div style={{ fontSize: '13px', fontWeight: 500, padding: '0 8px' }}>
+                            {currentPage} / {totalPages}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            style={{
+                                padding: '4px 8px',
+                                border: '1px solid hsl(var(--color-border))',
+                                backgroundColor: currentPage === totalPages ? '#f5f6f8' : 'white',
+                                color: currentPage === totalPages ? '#a0a0a0' : 'hsl(var(--color-text-primary))',
+                                borderRadius: '4px',
+                                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '13px'
+                            }}
+                        >
+                            Next
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
             )}
 
             {/* Delete Confirmation Popover - PORTALED */}

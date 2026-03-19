@@ -38,11 +38,11 @@ export const BoardViewsToolbar = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 32px', // Symmetric padding for perfect gap balance
+            padding: '4px 24px', // Reduced vertical and horizontal padding
             backgroundColor: 'hsl(var(--color-bg-canvas))',
         }}>
             {/* Toolbar Items: Primary Action & Tools */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ display: 'flex', height: '32px', position: 'relative' }}>
                     <button
                         onClick={handleAddItem}

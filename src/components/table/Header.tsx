@@ -132,7 +132,7 @@ const SortableHeaderCell = ({
     );
 };
 
-export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?: string }) => {
+export const Header = ({ columns, groupColor, groupId }: { columns: Column[], groupColor?: string, groupId?: string }) => {
     const addColumn = useBoardStore(state => state.addColumn);
     const deleteColumn = useBoardStore(state => state.deleteColumn);
     const updateColumnTitle = useBoardStore(state => state.updateColumnTitle);
@@ -318,72 +318,70 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
     }, [activeFilters, activeFilterColumn]);
 
 
-    return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-        >
-                <div className="table-header-row" style={{
-                    position: 'relative',
-                    display: 'flex',
-                    backgroundColor: 'hsl(var(--color-table-header-bg))',
-                    borderBottom: '1px solid hsl(var(--color-border))',
-                    boxSizing: 'border-box',
-                    height: '36px',
-                    alignItems: 'center'
-                }}>
-                {groupColor && (
-                    <div style={{
-                        position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px',
-                        backgroundColor: groupColor, zIndex: 65
-                    }} />
+    const isFirstGroup = !groupId || (activeBoard?.groups[0]?.id === groupId);
+    const content = (
+        <div className="table-header-row" style={{
+            position: 'relative',
+            display: 'flex',
+            backgroundColor: 'hsl(var(--color-table-header-bg))',
+            borderBottom: '1px solid hsl(var(--color-border))',
+            boxSizing: 'border-box',
+            height: '34px', // Compact height
+            alignItems: 'center'
+        }}>
+            {groupColor && (
+                <div style={{
+                    position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px',
+                    backgroundColor: groupColor, zIndex: 65
+                }} />
+            )}
+
+            {/* Frozen First Column */}
+            <div className="table-cell table-header-cell sticky-col" style={{
+                width: `${itemColumnWidth}px`,
+                position: 'sticky', left: 0, zIndex: 60,
+                backgroundColor: 'hsl(var(--color-table-header-bg))',
+                borderRight: '1px solid hsl(var(--color-border))',
+                paddingLeft: groupColor ? '14px' : '8px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                fontSize: '13px'
+            }}>
+                {isEditingItemCol ? (
+                    <input
+                        autoFocus
+                        value={itemColValue}
+                        onChange={(e) => setItemColValue(e.target.value)}
+                        onBlur={saveItemColTitle}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveItemColTitle();
+                            if (e.key === 'Escape') { setItemColValue(itemColumnTitle); setIsEditingItemCol(false); }
+                        }}
+                        className="cell-input"
+                        style={{ fontWeight: 500, padding: 0 }}
+                    />
+                ) : (
+                    <span
+                        onDoubleClick={() => setIsEditingItemCol(true)}
+                        title="Double click to rename"
+                        style={{ cursor: 'text', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                        {itemColumnTitle}
+                    </span>
                 )}
 
-                {/* Frozen First Column */}
-                <div className="table-cell table-header-cell sticky-col" style={{
-                    width: `${itemColumnWidth}px`,
-                    position: 'sticky', left: 0, zIndex: 60,
-                    backgroundColor: 'hsl(var(--color-table-header-bg))',
-                    borderRight: '1px solid hsl(var(--color-border))',
-                    paddingLeft: groupColor ? '14px' : '8px',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
-                }}>
-                    {isEditingItemCol ? (
-                        <input
-                            autoFocus
-                            value={itemColValue}
-                            onChange={(e) => setItemColValue(e.target.value)}
-                            onBlur={saveItemColTitle}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') saveItemColTitle();
-                                if (e.key === 'Escape') { setItemColValue(itemColumnTitle); setIsEditingItemCol(false); }
-                            }}
-                            className="cell-input"
-                            style={{ fontWeight: 500, padding: 0 }}
-                        />
-                    ) : (
-                        <span
-                            onDoubleClick={() => setIsEditingItemCol(true)}
-                            title="Double click to rename"
-                            style={{ cursor: 'text', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        >
-                            {itemColumnTitle}
-                        </span>
-                    )}
 
 
+                {can('manage_columns') && isFirstGroup && (
+                    <div
+                        onMouseDown={(e) => handleResizeStart(e, 'item-col', itemColumnWidth, true)}
+                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
+                        className="resize-handle"
+                    />
+                )}
+            </div>
 
-                    {can('manage_columns') && (
-                        <div
-                            onMouseDown={(e) => handleResizeStart(e, 'item-col', itemColumnWidth, true)}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
-                            className="resize-handle"
-                        />
-                    )}
-                </div>
-
+            {isFirstGroup ? (
                 <SortableContext items={columns} strategy={horizontalListSortingStrategy}>
                     {columns.map((col, index) => (
                         <SortableHeaderCell
@@ -405,8 +403,51 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                         />
                     ))}
                 </SortableContext>
+            ) : (
+                columns.map((col) => (
+                    <div
+                        key={col.id}
+                        style={{ width: `${col.width || 150}px`, justifyContent: 'space-between' }}
+                        className="table-cell table-header-cell"
+                    >
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {col.title}
+                        </span>
+                    </div>
+                ))
+            )}
 
-                {/* Render Menu */}
+            {/* Add Column Button */}
+            {can('manage_columns') && isFirstGroup && (
+                <div className="table-cell table-header-cell" style={{ width: '50px', justifyContent: 'center', padding: 0, position: 'relative' }}>
+                    <button
+                        ref={addBtnRef}
+                        className="icon-btn"
+                        onClick={() => {
+                            setShowAddMenu(true);
+                            setInsertColIndex(null); 
+                            setAddMenuPos(null);
+                        }}
+                        title="Add Column"
+                        style={{ width: '100%', height: '100%', borderRadius: 0 }}
+                    >
+                        <Plus size={16} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+
+    if (isFirstGroup) {
+        return (
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                {content}
+                
+                {/* Menus and Modals (only once) */}
                 {activeMenuColId && menuPos && activeMenuColumn && (
                     <ColumnMenu
                         isOpen={true}
@@ -432,7 +473,6 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                     />
                 )}
 
-                {/* Filter Menu */}
                 {activeFilterColId && menuPos && activeFilterColumn && (
                     <FilterMenu
                         isOpen={true}
@@ -445,38 +485,20 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                     />
                 )}
 
-                {/* Add Column Button */}
-                {can('manage_columns') && (
-                    <div className="table-cell table-header-cell" style={{ width: '50px', justifyContent: 'center', padding: 0, position: 'relative' }}>
-                        <button
-                            ref={addBtnRef}
-                            className="icon-btn"
-                            onClick={() => {
-                                setShowAddMenu(true);
-                                setInsertColIndex(null); // Default to end
-                                setAddMenuPos(null); // Use button ref
-                            }}
-                            title="Add Column"
-                            style={{ width: '100%', height: '100%', borderRadius: 0 }}
-                        >
-                            <Plus size={16} />
-                        </button>
-                        {showAddMenu && (
-                            <AddColumnMenu
-                                onSelect={handleAddColumn}
-                                onClose={() => {
-                                    setShowAddMenu(false);
-                                    setInsertColIndex(null);
-                                    setAddMenuPos(null);
-                                }}
-                                position={addMenuPos || (addBtnRef.current ? {
-                                    top: addBtnRef.current.getBoundingClientRect().top,
-                                    bottom: addBtnRef.current.getBoundingClientRect().bottom,
-                                    left: addBtnRef.current.getBoundingClientRect().left
-                                } : { top: 0, bottom: 0, left: 0 })}
-                            />
-                        )}
-                    </div>
+                {showAddMenu && (
+                    <AddColumnMenu
+                        onSelect={handleAddColumn}
+                        onClose={() => {
+                            setShowAddMenu(false);
+                            setInsertColIndex(null);
+                            setAddMenuPos(null);
+                        }}
+                        position={addMenuPos || (addBtnRef.current ? {
+                            top: addBtnRef.current.getBoundingClientRect().top,
+                            bottom: addBtnRef.current.getBoundingClientRect().bottom,
+                            left: addBtnRef.current.getBoundingClientRect().left
+                        } : { top: 0, bottom: 0, left: 0 })}
+                    />
                 )}
 
                 <ConfirmModal
@@ -491,10 +513,11 @@ export const Header = ({ columns, groupColor }: { columns: Column[], groupColor?
                     confirmText="Delete Column"
                     variant="danger"
                 />
+            </DndContext>
+        );
+    }
 
-            </div>
-        </DndContext>
-    );
+    return content;
 };
 
 

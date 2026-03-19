@@ -58,7 +58,7 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                paddingLeft: '32px',
+                paddingLeft: '24px', // Reduced padding
                 borderRight: '1px solid hsl(var(--color-border))',
                 boxSizing: 'border-box'
             }}>
@@ -158,7 +158,7 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                         onBlur={handleSave}
                         onKeyDown={handleKeyDown}
                         style={{
-                            fontSize: '18px',
+                            fontSize: '15px',
                             fontWeight: 600,
                             color: data.color || '#579bfc',
                             background: 'transparent',
@@ -171,7 +171,7 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                 ) : (
                     <span
                         style={{
-                            fontSize: '18px',
+                            fontSize: '15px',
                             fontWeight: 600,
                             color: data.color || '#579bfc',
                             cursor: can('group_ungroup') ? 'text' : 'default'

@@ -66,7 +66,7 @@ export const InviteMemberForm = ({ onInvite, defaultRole = 'member' }: InviteMem
             <form onSubmit={handleSubmit} style={{
                 display: 'flex',
                 gap: '8px',
-                padding: '16px',
+                padding: '12px 20px',
                 borderBottom: '1px solid hsl(var(--color-border))'
             }}>
                 <div style={{ flex: 1, position: 'relative' }}>

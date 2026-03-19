@@ -51,11 +51,11 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
             <div
                 onClick={() => navigateTo('home')}
                 style={{
-                    marginBottom: '6px',
-                    marginTop: '6px',
+                    marginBottom: '4px',
+                    marginTop: '2px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: '8px',
                     cursor: 'pointer',
                     userSelect: 'none'
                 }}
@@ -84,7 +84,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
             </div>
 
             {/* Main Navigation */}
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 8px', marginBottom: '8px' }}>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1px', padding: '0 8px', marginBottom: '6px' }}>
                 <button
                     onClick={() => navigateTo('home')}
                     style={{
@@ -92,7 +92,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
                         alignItems: 'center',
                         gap: '8px',
                         width: '100%',
-                        padding: '6px 8px',
+                        padding: '4px 8px',
                         borderRadius: '6px',
                         border: 'none',
                         backgroundColor: activePage === 'home' ? 'hsl(var(--color-bg-hover))' : 'transparent',
@@ -125,7 +125,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
                         alignItems: 'center',
                         gap: '8px',
                         width: '100%',
-                        padding: '6px 8px',
+                        padding: '4px 8px',
                         borderRadius: '6px',
                         border: 'none',
                         backgroundColor: activePage === 'favorites' ? 'hsl(var(--color-bg-hover))' : 'transparent',
@@ -154,8 +154,8 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
 
 
             {/* Workspaces Title & Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '8px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '6px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {/* More Menu (...) */}
@@ -213,7 +213,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
                         width: '100%',
-                        padding: '8px',
+                        padding: '6px 8px',
                         border: 'none',
                         background: 'transparent',
                         fontSize: '13px',

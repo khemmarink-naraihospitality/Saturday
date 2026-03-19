@@ -7,6 +7,7 @@ import { useUserStore } from './store/useUserStore';
 
 
 import { SidePanel } from './components/ui/SidePanel';
+import { ContactSupportButton } from './components/ui/ContactSupportButton';
 import { TaskDetail } from './components/task/TaskDetail';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
@@ -238,7 +239,7 @@ function MainApp() {
   }
 
   return (
-    <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-surface))' }}>
+    <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', overflow: 'hidden' }}>
       <Sidebar />
       <main style={{ 
           flex: 1, 
@@ -284,7 +285,9 @@ function MainApp() {
         </SidePanel>
 
         {/* BatchActionsBar moved to BoardPage */}
+
       </main>
+      <ContactSupportButton />
     </div>
   )
 }

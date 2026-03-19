@@ -82,11 +82,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
             <header style={{
-                height: '64px',
+                height: '48px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0 32px',
+                padding: '0 24px',
                 position: 'relative'
             }}>
             {/* Left Side: Title & Description */}
@@ -100,7 +100,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             onBlur={handleRename}
                             onKeyDown={handleKeyDown}
                             style={{
-                                fontSize: '24px',
+                                fontSize: '18px',
                                 fontWeight: 600,
                                 letterSpacing: '-0.02em',
                                 border: '1px solid hsl(var(--color-brand-primary))',
@@ -109,21 +109,21 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                 outline: 'none',
                                 background: 'white',
                                 color: 'hsl(var(--color-text-primary))',
-                                minWidth: '200px'
+                                minWidth: '150px'
                             }}
                         />
                     ) : (
                         <h1
                             onClick={() => can('create_board') && setIsEditing(true)}
                             style={{
-                                fontSize: '24px',
+                                fontSize: '18px',
                                 fontWeight: 600,
                                 margin: 0,
                                 color: 'hsl(var(--color-text-primary))',
                                 cursor: can('create_board') ? 'pointer' : 'default',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '8px'
+                                gap: '6px'
                             }}
                         >
                             {board.title}
@@ -171,11 +171,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                         key={member.user_id || index}
                                         title={`${name} (${member.role})`}
                                         style={{
-                                            width: '32px', height: '32px', borderRadius: '50%',
+                                            width: '28px', height: '28px', borderRadius: '50%',
                                             background: isOwner ? 'hsl(var(--color-brand-primary))' : '#9ca3af',
                                             color: 'white',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '12px', border: '2px solid white', marginLeft: index === 0 ? 0 : '-8px',
+                                            fontSize: '11px', border: '2px solid white', marginLeft: index === 0 ? 0 : '-6px',
                                             cursor: 'pointer',
                                             position: 'relative',
                                             overflow: 'hidden'
@@ -195,10 +195,10 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             })}
                             {remainingMembers > 0 && (
                                 <div style={{
-                                    width: '32px', height: '32px', borderRadius: '50%',
+                                    width: '28px', height: '28px', borderRadius: '50%',
                                     background: '#e5e7eb', color: '#6b7280',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '11px', border: '2px solid white', marginLeft: '-8px',
+                                    fontSize: '10px', border: '2px solid white', marginLeft: '-6px',
                                     fontWeight: 600
                                 }}>
                                     +{remainingMembers}
@@ -209,11 +209,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             <button
                                 onClick={() => can('invite_members') && setShowShareModal(true)}
                                 style={{
-                                    width: '32px', height: '32px', borderRadius: '50%',
+                                    width: '28px', height: '28px', borderRadius: '50%',
                                     background: 'hsl(var(--color-bg-subtle))',
                                     color: 'hsl(var(--color-text-secondary))',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '16px', border: '2px solid white', marginLeft: '-8px',
+                                    fontSize: '14px', border: '2px solid white', marginLeft: '-6px',
                                     cursor: can('invite_members') ? 'pointer' : 'not-allowed',
                                     zIndex: 0
                                 }}
@@ -312,16 +312,16 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        padding: '8px 16px',
+                        padding: '6px 12px',
                         backgroundColor: 'hsl(var(--color-brand-primary))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
-                        fontSize: '14px',
+                        fontSize: '13px',
                         fontWeight: 500,
                         cursor: can('invite_members') ? 'pointer' : 'not-allowed',
                         opacity: can('invite_members') ? 1 : 0.7,
-                        marginLeft: '8px'
+                        marginLeft: '4px'
                     }}
                 >
                     <Share2 size={16} />

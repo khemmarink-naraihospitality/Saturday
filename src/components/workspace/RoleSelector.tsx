@@ -1,5 +1,6 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { ChevronDown } from 'lucide-react';
 
 interface RoleSelectorProps {
     value: string;
@@ -123,17 +124,22 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles }
                 disabled={disabled}
                 style={{
                     padding: '6px 12px',
-                    border: '1px solid hsl(var(--color-border))',
+                    border: disabled ? 'none' : '1px solid hsl(var(--color-border))',
                     borderRadius: '4px',
-                    backgroundColor: 'white',
+                    backgroundColor: disabled ? 'transparent' : 'white',
                     cursor: disabled ? 'not-allowed' : 'pointer',
                     fontSize: '13px',
                     color: disabled ? 'hsl(var(--color-text-tertiary))' : 'hsl(var(--color-text-primary))',
                     minWidth: '100px',
-                    textAlign: 'left'
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px'
                 }}
             >
-                {roleLabels[value] || value}
+                <span style={{ fontWeight: disabled ? 400 : 500 }}>{roleLabels[value] || value}</span>
+                {!disabled && <ChevronDown size={14} color="hsl(var(--color-text-tertiary))" />}
             </button>
             {dropdown && createPortal(dropdown, document.body)}
         </>

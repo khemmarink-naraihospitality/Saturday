@@ -187,9 +187,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             <div
                                 className={clsx('tree-node-parent', { expanded: isExpanded, active: isActive })}
                                 style={{
-                                    backgroundColor: isActive ? 'hsl(var(--color-brand-light))' : 'transparent',
-                                    color: isActive ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-primary))',
-                                    borderTop: dragOverWorkspaceId === ws.id && draggedWorkspaceId !== ws.id ? '2px solid hsl(var(--color-brand-primary))' : 'none',
+                                    backgroundColor: isActive ? '#f3e8ff' : 'transparent',
+                                    color: isActive ? '#7c3aed' : 'hsl(var(--color-text-primary))',
+                                    borderTop: dragOverWorkspaceId === ws.id && draggedWorkspaceId !== ws.id ? '2px solid #7c3aed' : 'none',
                                     opacity: draggedWorkspaceId === ws.id ? 0.3 : 1
                                 }}
                                 draggable={!searchActive && !editingWorkspaceId}
@@ -327,7 +327,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                         <div className="tree-node-leaf last-child">
                                             {creatingBoardInWorkspaceId === ws.id ? (
                                                 <div className="tree-sidebar-item" style={{ paddingLeft: '4px', cursor: 'default' }}>
-                                                    <BoardIcon size={16} style={{ color: '#0073ea' }} />
+                                                    <BoardIcon size={16} style={{ color: '#7c3aed' }} />
                                                     <form
                                                         onSubmit={(e) => {
                                                             e.preventDefault();
@@ -360,7 +360,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                             ) : (
                                                 <div
                                                     className="tree-sidebar-item"
-                                                    style={{ color: 'hsl(var(--color-brand-primary))', opacity: 0.8 }}
+                                                    style={{ color: '#7c3aed', opacity: 0.8 }}
                                                     onClick={() => {
                                                         setActiveWorkspace(ws.id);
                                                         setCreatingBoardInWorkspaceId(ws.id);

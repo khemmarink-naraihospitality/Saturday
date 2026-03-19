@@ -280,11 +280,8 @@ export const createWorkspaceSlice: StateCreator<
         set({ workspaces: updatedWorkspaces });
 
         try {
-            await Promise.all(
-                updatedWorkspaces.map(w => 
-                    supabase.from('workspaces').update({ order: w.order }).eq('id', w.id)
-                )
-            );
+            const workspaceIds = updatedWorkspaces.map(w => w.id);
+            await supabase.rpc('reorder_workspaces', { _workspace_ids: workspaceIds });
         } catch (error) {
             console.error('[ReorderWorkspaces] Failed to save new order:', error);
             get().loadUserData(true);

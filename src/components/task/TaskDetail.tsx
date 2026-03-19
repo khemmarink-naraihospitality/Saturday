@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, Send, MessageSquare, FileText, Trash2, Plus, ExternalLink } from 'lucide-react';
+import { X, Send, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2 } from 'lucide-react';
 import { RichTextEditor } from '../ui/RichTextEditor';
 import { isValidGoogleDriveUrl, getGoogleDriveFileName } from '../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +12,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const activeItem = board?.items.find(i => i.id === itemId);
     const addUpdate = useBoardStore(state => state.addUpdate);
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
+    const editUpdate = useBoardStore(state => state.editUpdate);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
 
     // Global Draft State (Persistence)
@@ -22,6 +23,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const [activeTab, setActiveTab] = useState<'updates' | 'files'>('updates');
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
+    const [editUpdateContent, setEditUpdateContent] = useState<string>('');
 
     // File Tab State
     const [fileUrl, setFileUrl] = useState('');
@@ -290,9 +293,27 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 </div>
                                             </div>
 
-                                            {/* Delete Action (Own comment or Admin/Owner) */}
+                                            {/* Delete and Edit Actions */}
                                             {(update.author === currentUser.name || currentUser.role === 'owner' || currentUser.role === 'admin') && (
-                                                <div style={{ position: 'relative' }}>
+                                                <div style={{ position: 'relative', display: 'flex', gap: '4px' }}>
+                                                    {update.author === currentUser.name && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingUpdateId(update.id);
+                                                                setEditUpdateContent(update.content);
+                                                            }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                color: '#9ca3af',
+                                                                padding: '4px'
+                                                            }}
+                                                            title="Edit Update"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleDeleteClick(update.id)}
                                                         style={{
@@ -359,12 +380,59 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 </div>
                                             )}
                                         </div>
-                                        {/* Render HTML Content */}
-                                        <div
-                                            className="prose prose-sm max-w-none"
-                                            style={{ color: 'hsl(var(--color-text-primary))' }}
-                                            dangerouslySetInnerHTML={{ __html: update.content }}
-                                        />
+                                        {/* Render HTML Content or Editor */}
+                                        {editingUpdateId === update.id ? (
+                                            <div style={{ marginTop: '12px' }}>
+                                                <RichTextEditor
+                                                    value={editUpdateContent}
+                                                    onChange={(val) => setEditUpdateContent(val)}
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+                                                    <button
+                                                        onClick={() => setEditingUpdateId(null)}
+                                                        style={{
+                                                            backgroundColor: 'transparent',
+                                                            color: 'hsl(var(--color-text-secondary))',
+                                                            border: 'none',
+                                                            padding: '6px 16px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '13px',
+                                                            fontWeight: 500
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            editUpdate(itemId, update.id, editUpdateContent);
+                                                            setEditingUpdateId(null);
+                                                        }}
+                                                        style={{
+                                                            backgroundColor: 'hsl(var(--color-brand-primary))',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            padding: '6px 16px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            fontSize: '13px',
+                                                            fontWeight: 500
+                                                        }}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="prose prose-sm max-w-none"
+                                                style={{ color: 'hsl(var(--color-text-primary))' }}
+                                                dangerouslySetInnerHTML={{ __html: update.content }}
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>

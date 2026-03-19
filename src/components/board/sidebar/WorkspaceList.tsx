@@ -32,7 +32,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     const {
         boards, activeBoardId, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
         workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds, sharedWorkspaceIds,
-        userBoardRoles, userWorkspaceRoles
+        userBoardRoles, userWorkspaceRoles, reorderWorkspaces
     } = useBoardStore();
 
     const { currentUser } = useUserStore();
@@ -44,6 +44,11 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     // Deletion State
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
     const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null);
+
+    // Drag and Drop Workspace State
+    const [draggedWorkspaceId, setDraggedWorkspaceId] = useState<string | null>(null);
+    const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
+    const [dragGhostState, setDragGhostState] = useState<{ id: string, x: number, y: number, title: string } | null>(null);
 
     // Renaming State
     const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
@@ -184,6 +189,49 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 style={{
                                     backgroundColor: isActive ? 'hsl(var(--color-brand-light))' : 'transparent',
                                     color: isActive ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-primary))',
+                                    borderTop: dragOverWorkspaceId === ws.id && draggedWorkspaceId !== ws.id ? '2px solid hsl(var(--color-brand-primary))' : 'none',
+                                    opacity: draggedWorkspaceId === ws.id ? 0.3 : 1
+                                }}
+                                draggable={!searchActive && !editingWorkspaceId}
+                                onDragStart={(e) => {
+                                    e.stopPropagation();
+                                    setDraggedWorkspaceId(ws.id);
+                                    
+                                    // Custom drag image hook
+                                    const img = new Image();
+                                    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                                    e.dataTransfer.setDragImage(img, 0, 0);
+                                    
+                                    setDragGhostState({ id: ws.id, x: e.clientX, y: e.clientY, title: ws.title });
+                                }}
+                                onDrag={(e) => {
+                                    if (e.clientX === 0 && e.clientY === 0) return;
+                                    setDragGhostState(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggedWorkspaceId && draggedWorkspaceId !== ws.id) {
+                                        setDragOverWorkspaceId(ws.id);
+                                    }
+                                }}
+                                onDragLeave={() => {
+                                    if (dragOverWorkspaceId === ws.id) setDragOverWorkspaceId(null);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggedWorkspaceId && draggedWorkspaceId !== ws.id) {
+                                        reorderWorkspaces(draggedWorkspaceId, ws.id);
+                                    }
+                                    setDraggedWorkspaceId(null);
+                                    setDragOverWorkspaceId(null);
+                                    setDragGhostState(null);
+                                }}
+                                onDragEnd={() => {
+                                    setDraggedWorkspaceId(null);
+                                    setDragOverWorkspaceId(null);
+                                    setDragGhostState(null);
                                 }}
                                 onClick={() => {
                                     toggleWorkspace(ws.id);
@@ -336,6 +384,33 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                     </div>
                 )}
             </div>
+
+            {/* Custom Drag Overlay for Workspaces */}
+            {dragGhostState && (
+                <div style={{
+                    position: 'fixed',
+                    top: dragGhostState.y,
+                    left: dragGhostState.x,
+                    transform: 'translate(-20px, -20px)',
+                    pointerEvents: 'none',
+                    zIndex: 99999,
+                    backgroundColor: 'hsl(var(--color-bg-surface, #ffffff))',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontWeight: 500,
+                    color: 'hsl(var(--color-text-primary))',
+                    border: '1px solid hsl(var(--color-border))',
+                    fontSize: '14px',
+                    minWidth: '200px'
+                }}>
+                    <WorkspaceIcon title={dragGhostState.title} isActive={false} />
+                    {dragGhostState.title}
+                </div>
+            )}
 
             {/* Board Context Menu */}
             {activeBoardMenu && (

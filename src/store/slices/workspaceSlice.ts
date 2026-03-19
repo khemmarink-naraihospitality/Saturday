@@ -18,6 +18,7 @@ export interface WorkspaceSlice {
     renameWorkspace: (id: string, newTitle: string) => Promise<void>;
     inviteToWorkspace: (workspaceId: string, email: string, role: string) => Promise<void>;
     getWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
+    reorderWorkspaces: (sourceId: string, destinationId: string) => Promise<void>;
 }
 
 export const createWorkspaceSlice: StateCreator<
@@ -262,5 +263,31 @@ export const createWorkspaceSlice: StateCreator<
 
         if (error) throw error;
         return data || [];
+    },
+
+    reorderWorkspaces: async (sourceId, destinationId) => {
+        const { workspaces } = get();
+        const sourceIndex = workspaces.findIndex(w => w.id === sourceId);
+        const destIndex = workspaces.findIndex(w => w.id === destinationId);
+        
+        if (sourceIndex === -1 || destIndex === -1 || sourceIndex === destIndex) return;
+
+        const newWorkspaces = [...workspaces];
+        const [moved] = newWorkspaces.splice(sourceIndex, 1);
+        newWorkspaces.splice(destIndex, 0, moved);
+
+        const updatedWorkspaces = newWorkspaces.map((w, index) => ({ ...w, order: index }));
+        set({ workspaces: updatedWorkspaces });
+
+        try {
+            await Promise.all(
+                updatedWorkspaces.map(w => 
+                    supabase.from('workspaces').update({ order: w.order }).eq('id', w.id)
+                )
+            );
+        } catch (error) {
+            console.error('[ReorderWorkspaces] Failed to save new order:', error);
+            get().loadUserData(true);
+        }
     }
 });

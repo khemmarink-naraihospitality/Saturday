@@ -18,12 +18,17 @@
     color: #323338;
     font-weight: 500;
     font-size: 14px;
-    transition: background-color 0.1s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     gap: 10px;
+    position: relative;
+    z-index: 1;
 }
 
 .tree-node-parent:hover {
-    background-color: #f5f6f8;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Lighter and elevated */
+    transform: translateY(-1px);
+    z-index: 10;
 }
 
 .tree-node-parent .chevron {

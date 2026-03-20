@@ -43,10 +43,12 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
 
     // Helper to get display name (prefer email username)
     const getDisplayName = (member: any) => {
-        if (member.profiles?.email) {
-            return member.profiles.email.split('@')[0];
+        const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+        const profile = profileData || {};
+        if (profile.email) {
+            return profile.email.split('@')[0];
         }
-        return member.profiles?.full_name || 'Unknown';
+        return profile.full_name || 'Unknown';
     };
 
     const filteredMembers = mentionQuery !== null
@@ -480,11 +482,20 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: '10px', color: '#3730a3', fontWeight: 'bold'
                                 }}>
-                                    {member.profiles?.avatar_url ? (
-                                        <img src={member.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        (member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || '?').toUpperCase()
-                                    )}
+                                    {(() => {
+                                        const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                                        const profile = profileData || {};
+                                        return profile.avatar_url ? (
+                                            <img 
+                                                src={profile.avatar_url} 
+                                                alt="" 
+                                                referrerPolicy="no-referrer"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                            />
+                                        ) : (
+                                            (profile.full_name?.[0] || profile.email?.[0] || '?').toUpperCase()
+                                        );
+                                    })()}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-primary))', fontWeight: 500 }}>

@@ -189,6 +189,7 @@ const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: 
                         <img
                             src={actor_avatar}
                             alt=""
+                            referrerPolicy="no-referrer"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             onError={() => setImgError(true)}
                         />

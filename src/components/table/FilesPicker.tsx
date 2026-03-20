@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, FileText } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
+import { useGooglePicker } from '../../hooks/useGooglePicker';
 
 interface FilesPickerProps {
     files: FileLink[];
@@ -13,18 +14,10 @@ interface FilesPickerProps {
 
 export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPickerProps) => {
     const [localFiles, setLocalFiles] = useState<FileLink[]>(files || []);
-    const [inputValue, setInputValue] = useState('');
-    const [inputName, setInputName] = useState('');
-    const [error, setError] = useState<string | null>(null);
     const pickerRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const { openPicker } = useGooglePicker();
 
     useEffect(() => {
-        // Focus input on mount
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
-
         // Click outside handler
         const handleClickOutside = (event: MouseEvent) => {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
@@ -39,65 +32,8 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         };
     }, [localFiles, onSave, onClose]);
 
-    const handleAddFile = () => {
-        if (!inputValue.trim()) return;
-
-        let url = inputValue.trim();
-        if (!url.startsWith('http')) {
-            url = `https://${url}`;
-        }
-
-        // Validate Google Drive Link
-        const isGoogleDrive = url.includes('drive.google.com') || url.includes('docs.google.com');
-
-        if (!isGoogleDrive) {
-            setError('Only Google Drive links are allowed.');
-            return;
-        }
-
-        setError(null);
-
-        // Simple extraction of name from URL if name is empty
-        let name = inputName.trim();
-        if (!name) {
-            try {
-                // Try to guess from URL
-                const urlObj = new URL(url);
-                if (url.includes('drive.google.com')) {
-                    name = 'Google Drive File';
-                } else if (url.includes('docs.google.com')) {
-                    name = 'Google Doc';
-                } else {
-                    name = urlObj.hostname;
-                }
-            } catch (e) {
-                name = 'Google Drive Link';
-            }
-        }
-
-        const newFile: FileLink = {
-            id: uuidv4(),
-            name: name,
-            url: url,
-            type: 'google-drive'
-        };
-
-        setLocalFiles([...localFiles, newFile]);
-        setInputValue('');
-        setInputName('');
-        // Keep focus
-        inputRef.current?.focus();
-    };
-
     const handleRemoveFile = (id: string) => {
         setLocalFiles(localFiles.filter(f => f.id !== id));
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddFile();
-        }
     };
 
     // Calculate position (similar to other pickers)
@@ -129,11 +65,6 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
     const pickerWidth = 320; // Approx width
     if ((style.left as number) + pickerWidth > window.innerWidth) {
         style.left = undefined;
-        style.right = 8; // align to right edge with padding
-        // OR align to the right of the cell: 
-        // style.left = position.left + position.width - pickerWidth;
-
-        // Let's try to flip it to the left of the click if possible, or just clamp to window
         const newLeft = window.innerWidth - pickerWidth - 16;
         style.left = Math.max(16, newLeft);
     }
@@ -177,7 +108,19 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 maxWidth: '240px'
                             }}
                         >
-                            <FileText size={14} />
+                            {file.type === 'google-drive' ? (
+                                <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="m6.6 66.85 15.4-26.75h58.7l-15.4 26.75z" fill="#0066da" />
+                                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#00ac47" />
+                                    <path d="m0 53.45 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ea4335" />
+                                    <path d="m6.6 66.85 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ffbc00" />
+                                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#2eb0cd" />
+                                    <path d="m22 40.1 15.4-26.75 30.8 53.5-15.4 26.75z" fill="#0066da" />
+                                    <path d="m52.8 0 15.4 26.75-30.8 53.5-15.4-26.75z" fill="#ffbc00" />
+                                </svg>
+                            ) : (
+                                <FileText size={14} />
+                            )}
                             <span title={file.name}>{file.name}</span>
                         </a>
                         <button
@@ -199,61 +142,64 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
 
             <div style={{ height: '1px', backgroundColor: '#e1e4e8', margin: '4px 0' }} />
 
-            {/* Add New File */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {error && (
-                    <div style={{ color: '#e11d48', fontSize: '11px', fontWeight: 500, padding: '0 2px' }}>
-                        {error}
-                    </div>
-                )}
-                <input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="Paste Google Drive Link..."
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    style={{
-                        padding: '6px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #d0d4e4',
-                        fontSize: '12px',
-                        width: '100%'
-                    }}
-                />
-                <input
-                    type="text"
-                    placeholder="File Name (Optional)"
-                    value={inputName}
-                    onChange={(e) => setInputName(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    style={{
-                        padding: '6px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #d0d4e4',
-                        fontSize: '12px',
-                        width: '100%'
-                    }}
-                />
+            {/* Google Drive Picker Button */}
+            <button
+                onClick={() => {
+                    openPicker((result) => {
+                        const newFile = {
+                            id: uuidv4(),
+                            name: result.name,
+                            url: result.url,
+                            type: 'google-drive',
+                            iconUrl: result.iconUrl,
+                            mimeType: result.mimeType
+                        } as FileLink;
+                        const updatedFiles = [...localFiles, newFile];
+                        onSave(updatedFiles);
+                        onClose();
+                    });
+                }}
+                style={{
+                    backgroundColor: 'white',
+                    color: '#333',
+                    border: '1px solid #d0d4e4',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginBottom: '4px'
+                }}
+            >
+                <svg width="18" height="18" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m6.6 66.85 15.4-26.75h58.7l-15.4 26.75z" fill="#0066da" />
+                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#00ac47" />
+                    <path d="m0 53.45 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ea4335" />
+                    <path d="m6.6 66.85 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ffbc00" />
+                </svg>
+                Select from Google Drive
+            </button>
+
+            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '12px' }}>
                 <button
-                    onClick={handleAddFile}
-                    disabled={!inputValue.trim()}
+                    onClick={onClose}
                     style={{
-                        backgroundColor: inputValue.trim() ? '#0073ea' : '#cce5ff',
+                        padding: '6px 20px',
+                        backgroundColor: 'hsl(var(--color-primary))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        padding: '6px',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        cursor: inputValue.trim() ? 'pointer' : 'default',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px'
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s'
                     }}
                 >
-                    <Plus size={14} /> Add Link
+                    OK
                 </button>
             </div>
         </div>,

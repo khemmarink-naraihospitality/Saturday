@@ -10,7 +10,9 @@ export interface FileLink {
     id: string;
     name: string;
     url: string;
-    type: 'google-drive'; // Prepared for future expansion
+    type: 'google-drive';
+    iconUrl?: string;
+    mimeType?: string;
 }
 
 export interface Column {

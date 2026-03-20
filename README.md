@@ -45,7 +45,7 @@ A modern, collaborative work management platform inspired by Monday.com, built w
 
 ```bash
 git clone https://github.com/Jirawat209/Workera.git
-cd Workera
+cd Saturday-com
 ```
 
 ### 2. Install Dependencies
@@ -149,7 +149,7 @@ All logs are visible in the Admin Console with human-readable descriptions.
 ## 📁 Project Structure
 
 ```
-Workera/
+Saturday.com/
 ├── src/
 │   ├── components/
 │   │   ├── admin/          # Admin console components

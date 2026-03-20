@@ -1,4 +1,4 @@
-# 🚀 คู่มือการย้าย Workera ไปเครื่องใหม่ (Step-by-Step)
+# 🚀 คู่มือการย้าย Saturday.com ไปเครื่องใหม่ (Step-by-Step)
 
 คู่มือนี้จะสอนวิธี "ยกโปรเจค" จากเครื่องเดิม ไปรันในเครื่องใหม่ พร้อมวิธีเปลี่ยน Database (Supabase) Account อย่างละเอียด
 
@@ -11,7 +11,7 @@
    ```bash
    npm run package
    ```
-3. **ตรวจสอบไฟล์**: คุณจะได้ไฟล์ชื่อ `workera-package-XXXXXXXX.zip` อยู่ในโฟลเดอร์หลักของโปรเจค
+3. **ตรวจสอบไฟล์**: คุณจะได้ไฟล์ชื่อ `saturday-com-package-XXXXXXXX.zip` อยู่ในโฟลเดอร์หลักของโปรเจค
 4. **Copy ไฟล์**: นำไฟล์ `.zip` นี้ใส่ Flash Drive หรืออัปโหลดขึ้น Cloud เพื่อย้ายไปยังเครื่องใหม่
 
 ---
@@ -160,7 +160,7 @@ npm run package
 
 ```bash
 # สร้าง zip ไม่รวม node_modules และ .git
-zip -r workera-package.zip . -x "node_modules/*" ".git/*" "dist/*" ".env"
+zip -r saturday-com-package.zip . -x "node_modules/*" ".git/*" "dist/*" ".env"
 ```
 
 ### Step 2: ย้ายไปเครื่องใหม่
@@ -168,8 +168,8 @@ zip -r workera-package.zip . -x "node_modules/*" ".git/*" "dist/*" ".env"
 1. Copy `workera-package.zip` ไปเครื่องใหม่
 2. แตก zip:
    ```bash
-   unzip workera-package.zip -d Workera
-   cd Workera
+   unzip saturday-com-package.zip -d Saturday-com
+   cd Saturday-com
    ```
 
 ### Step 3: ติดตั้งและ Setup
@@ -332,7 +332,7 @@ npm install
 ```bash
 # 1. Clone
 git clone https://github.com/Jirawat209/Workera.git
-cd Workera
+cd Saturday-com
 
 # 2. Install
 npm install
@@ -354,4 +354,4 @@ npm run dev
 
 - **Documentation:** [README.md](./README.md)
 - **Deployment Guide:** [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-- **GitHub Issues:** [Workera Issues](https://github.com/Jirawat209/Workera/issues)
+- **GitHub Issues:** [Saturday.com Issues](https://github.com/Jirawat209/Workera/issues)

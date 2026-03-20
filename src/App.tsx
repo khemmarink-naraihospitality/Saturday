@@ -150,13 +150,10 @@ function MainApp() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 3. Deep Link Resolution (Depends on Boards Loading)
+  // 3. Deep Link Resolution (On Initial Data Load ONLY)
+  const hasResolvedDeepLink = useRef(false);
   useEffect(() => {
-    // Only run if we are in 'loading' state effectively (or just check if we have boards and activePage is default)
-    // Actually, we can run this check whenever boards change, but strictly only ONCE per app load is safer to avoid overriding user navigation.
-    // Let's use a session-like flag or just check if valid URL matches current state.
-
-    if (isLoading) return; // Wait for data
+    if (isLoading || boards.length === 0 || hasResolvedDeepLink.current) return;
 
     const path = window.location.pathname;
     const parts = path.split('/').filter(Boolean);
@@ -165,7 +162,6 @@ function MainApp() {
       const targetWorkspaceSlug = parts[1];
       const targetBoardSlug = parts[2];
 
-      // Find board by matching BOTH workspace slug and board slug
       const matchedBoard = boards.find(b => {
         const workspace = useBoardStore.getState().workspaces.find(w => w.id === b.workspaceId);
         return slugify(workspace?.title || '') === targetWorkspaceSlug && slugify(b.title) === targetBoardSlug;
@@ -176,7 +172,8 @@ function MainApp() {
         useBoardStore.getState().setActiveBoard(matchedBoard.id);
       }
     }
-  }, [isLoading, boards]); // simplistic dependency
+    hasResolvedDeepLink.current = true;
+  }, [isLoading, boards.length]);
 
   // 4. State -> URL Sync
   useEffect(() => {

@@ -1,4 +1,4 @@
-# Workera - Deployment & Sharing Guide
+# Saturday.com - Deployment & Sharing Guide
 
 ## 📦 Option 1: Share via GitHub (Recommended)
 
@@ -13,7 +13,7 @@ https://github.com/Jirawat209/Workera
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/Jirawat209/Workera.git
-   cd Workera
+   cd Saturday-com
    ```
 
 2. **Install dependencies:**
@@ -50,11 +50,11 @@ If you want to share as a downloadable package:
 ```bash
 # Create a clean package (excludes node_modules, .git, etc.)
 cd /Users/jirawat/.gemini/antigravity/scratch
-zip -r Workera-Package.zip Workera \
-  -x "Workera/node_modules/*" \
-  -x "Workera/.git/*" \
-  -x "Workera/dist/*" \
-  -x "Workera/.env"
+zip -r Saturday-com-Package.zip Saturday-com \
+  -x "Saturday-com/node_modules/*" \
+  -x "Saturday-com/.git/*" \
+  -x "Saturday-com/dist/*" \
+  -x "Saturday-com/.env"
 ```
 
 ### Package Contents:
@@ -83,7 +83,7 @@ Deploy the app so your team can access it online:
 
 2. **Deploy:**
    ```bash
-   cd /Users/jirawat/.gemini/antigravity/scratch/Workera
+   cd /Users/jirawat/.gemini/antigravity/scratch/Saturday-com
    vercel
    ```
 
@@ -109,7 +109,7 @@ Deploy the app so your team can access it online:
 1. **Add to `vite.config.ts`:**
    ```typescript
    export default defineConfig({
-     base: '/Workera/',
+     base: '/Saturday-com/',
      // ... rest of config
    })
    ```
@@ -147,7 +147,7 @@ VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Optional: For development
-VITE_APP_NAME=Workera
+VITE_APP_NAME=Saturday.com
 VITE_APP_VERSION=1.0.0
 ```
 

@@ -1,11 +1,21 @@
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, GripVertical } from 'lucide-react';
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
-export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollapsed: boolean, onToggle: () => void }) => {
+export const GroupRow = ({ 
+    data, 
+    isCollapsed, 
+    onToggle,
+    dragHandleProps
+}: { 
+    data: any, 
+    isCollapsed: boolean, 
+    onToggle: () => void,
+    dragHandleProps?: any
+}) => {
     const updateGroupTitle = useBoardStore(state => state.updateGroupTitle);
     const deleteGroup = useBoardStore(state => state.deleteGroup);
     const updateGroupColor = useBoardStore(state => state.updateGroupColor);
@@ -48,6 +58,31 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
             backgroundColor: 'hsl(var(--color-bg-canvas))',
             width: '100%', // Group row spans the whole table row width
         }}>
+            {/* Hover Drag Handle */}
+            {can('group_ungroup') && (
+                <div 
+                    {...dragHandleProps}
+                    className="group-drag-handle"
+                    style={{
+                        position: 'absolute',
+                        left: '4px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        cursor: 'grab',
+                        color: 'hsl(var(--color-text-tertiary))',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        zIndex: 70,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px 2px'
+                    }}
+                >
+                    <GripVertical size={16} />
+                </div>
+            )}
+
             {/* Sticky Group Title Container */}
             <div style={{
                 position: 'sticky',
@@ -217,6 +252,18 @@ export const GroupRow = ({ data, isCollapsed, onToggle }: { data: any, isCollaps
                 }}
                 onCancel={() => setShowDeleteConfirm(false)}
             />
+
+            <style>{`
+                .table-content > div:hover .group-drag-handle {
+                    opacity: 1 !important;
+                }
+                .group-drag-handle:hover {
+                    color: hsl(var(--color-text-primary)) !important;
+                }
+                .group-drag-handle:active {
+                    cursor: grabbing;
+                }
+            `}</style>
         </div>
     );
 };

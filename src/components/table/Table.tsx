@@ -75,6 +75,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const toggleGroup = useBoardStore(state => state.toggleGroup);
     const moveItem = useBoardStore(state => state.moveItem);
+    const reorderGroups = useBoardStore(state => state.reorderGroups);
     const parentRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
 
@@ -214,9 +215,19 @@ export const Table = ({ boardId }: { boardId: string }) => {
         const { active, over } = event;
         setActiveId(null);
 
-        if (active.id !== over?.id) {
-            // Call store action
-            if (over) {
+        if (active.id !== over?.id && over) {
+            const activeVItem = virtualItems.find(i => i.id === active.id);
+            const overVItem = virtualItems.find(i => i.id === over.id);
+
+            if (activeVItem?.type === 'group') {
+                const targetGroupId = overVItem?.type === 'group' 
+                    ? overVItem.id 
+                    : (overVItem?.type === 'item' ? (overVItem.data as any).groupId : null);
+                
+                if (targetGroupId && active.id !== targetGroupId) {
+                    reorderGroups(active.id as string, targetGroupId);
+                }
+            } else {
                 moveItem(active.id as string, over.id as string);
             }
         }
@@ -258,27 +269,6 @@ export const Table = ({ boardId }: { boardId: string }) => {
                         position: 'relative',
                     }}
                 >
-                    {/* Permission Loading Overlay */}
-                    {useBoardStore(state => state.isLoadingMembers) && (
-                        <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: 'hsl(var(--color-bg-canvas) / 0.8)',
-                            backdropFilter: 'blur(2px)',
-                            zIndex: 9999,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#676879',
-                            fontSize: '14px',
-                            fontWeight: 500
-                        }}>
-                            Checking permissions...
-                        </div>
-                    )}
 
                     <SortableContext
                         items={virtualItems.map(i => i.id)}
@@ -333,6 +323,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             data={vItem.data as any}
                                                             isCollapsed={(board.collapsedGroups || []).includes(vItem.id)}
                                                             onToggle={() => toggleGroup(board.id, vItem.id)}
+                                                            dragHandleProps={listeners}
                                                         />
                                                     </div>
                                                 ) : isHeader ? (

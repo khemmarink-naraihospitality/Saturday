@@ -212,12 +212,12 @@ function MainApp() {
     if (activeWorkspaceId) {
       subscribeToRealtime();
 
-      // Polling Fallback to ensure consistency (30s) - running silently
+      // Polling Fallback to ensure consistency (5m) - running silently
       const intervalId = setInterval(() => {
         if (!document.hidden) {
           loadUserData(true);
         }
-      }, 30000);
+      }, 300000);
 
       return () => {
         unsubscribeFromRealtime();

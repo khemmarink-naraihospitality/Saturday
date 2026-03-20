@@ -3,6 +3,21 @@ import { supabase } from '../../lib/supabase';
 // import { v4 as uuidv4 } from 'uuid';
 import type { Notification } from '../../types';
 import type { BoardState } from '../useBoardStore';
+import type { Item } from '../../types';
+
+// Helper to map DB item to Store type
+const mapDbItemToLocal = (i: any): Item => ({
+    id: i.id,
+    title: i.title,
+    groupId: i.group_id,
+    boardId: i.board_id,
+    values: i.values || {},
+    isHidden: i.is_hidden,
+    updates: i.updates || [],
+    files: i.files || [],
+    order: i.order,
+    parentId: i.parent_id
+});
 
 export interface MemberSlice {
     activeBoardMembers: any[];
@@ -139,7 +154,7 @@ export const createMemberSlice: StateCreator<
         supabase.auth.getUser().then(({ data: { user } }) => {
             if (!user) return;
 
-            const channel = supabase.channel('member-realtime')
+            const channel = supabase.channel('app-realtime')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
@@ -148,6 +163,96 @@ export const createMemberSlice: StateCreator<
                 }, (payload) => {
                     const newNotification = payload.new as Notification;
                     set(state => ({ notifications: [newNotification, ...state.notifications] }));
+                })
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'items'
+                }, (payload) => {
+                    const { activeBoardId, lastOptimisticUpdate } = get();
+                    const item = (payload.new || payload.old) as any;
+                    
+                    // Skip if item doesn't belong to current board or if we just updated it optimistically
+                    if (item.board_id !== activeBoardId) return;
+                    if (payload.eventType === 'UPDATE' && lastOptimisticUpdate[item.id] && Date.now() - lastOptimisticUpdate[item.id] < 3000) {
+                        return;
+                    }
+
+                    set(state => ({
+                        boards: state.boards.map(b => {
+                            if (b.id !== item.board_id) return b;
+                            
+                            let newItems = [...b.items];
+                            if (payload.eventType === 'INSERT') {
+                                // Prevent duplicates
+                                if (!newItems.find(i => i.id === item.id)) {
+                                    newItems.push(mapDbItemToLocal(item));
+                                }
+                            } else if (payload.eventType === 'UPDATE') {
+                                newItems = newItems.map(i => i.id === item.id ? { ...i, ...mapDbItemToLocal(item) } : i);
+                            } else if (payload.eventType === 'DELETE') {
+                                newItems = newItems.filter(i => i.id !== item.id);
+                            }
+
+                            // Refresh groups to reflect item changes
+                            return {
+                                ...b,
+                                items: newItems,
+                                groups: b.groups.map(g => ({
+                                    ...g,
+                                    items: newItems.filter(i => i.groupId === g.id).sort((a, b) => (a.order || 0) - (b.order || 0))
+                                }))
+                            };
+                        })
+                    }));
+                })
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'groups'
+                }, (payload) => {
+                    const { activeBoardId } = get();
+                    const group = (payload.new || payload.old) as any;
+                    if (group.board_id !== activeBoardId) return;
+
+                    set(state => ({
+                        boards: state.boards.map(b => {
+                            if (b.id !== group.board_id) return b;
+
+                            let newGroups = [...b.groups];
+                            if (payload.eventType === 'INSERT') {
+                                if (!newGroups.find(g => g.id === group.id)) {
+                                    newGroups.push({ ...group, items: [] });
+                                }
+                            } else if (payload.eventType === 'UPDATE') {
+                                newGroups = newGroups.map(g => g.id === group.id ? { 
+                                    ...g, 
+                                    title: group.title, 
+                                    color: group.color, 
+                                    order: group.order 
+                                } : g);
+                            } else if (payload.eventType === 'DELETE') {
+                                newGroups = newGroups.filter(g => g.id !== group.id);
+                            }
+
+                            return { ...b, groups: newGroups.sort((a, b) => (a.order || 0) - (b.order || 0)) };
+                        })
+                    }));
+                })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'boards'
+                }, (payload) => {
+                    const board = payload.new as any;
+                    set(state => ({
+                        boards: state.boards.map(b => b.id === board.id ? { 
+                            ...b, 
+                            title: board.title, 
+                            is_archived: board.is_archived,
+                            isFavorite: board.is_favorite 
+                        } : b)
+                    }));
                 })
                 .subscribe();
 

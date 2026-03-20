@@ -6,6 +6,7 @@ export const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showEmailLogin, setShowEmailLogin] = useState(false);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -100,98 +101,8 @@ export const LoginPage = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Email Address</label>
-                        <input
-                            type="email"
-                            placeholder="name@company.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            style={{
-                                width: '100%',
-                                padding: '12px 14px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                fontSize: '15px',
-                                outline: 'none',
-                                transition: 'border-color 0.2s',
-                                backgroundColor: '#f8fafc'
-                            }}
-                        />
-                    </div>
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Password</label>
-                        <input
-                            type="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            style={{
-                                width: '100%',
-                                padding: '12px 14px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                fontSize: '15px',
-                                outline: 'none',
-                                backgroundColor: '#f8fafc'
-                            }}
-                        />
-                    </div>
-
-                    {/* Centered Login Button */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                backgroundColor: '#6366f1',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '15px',
-                                fontWeight: 600,
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s',
-                                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            {loading ? 'Processing...' : 'Log In'}
-                        </button>
-                    </div>
-                </form>
-
-                <div style={{ textAlign: 'center' }}>
-                    <button
-                        onClick={() => window.open('https://rebrand.ly/nhgcts', '_blank')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#6366f1',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 500
-                        }}
-                    >
-                        Need an account? Sign Up
-                    </button>
-                </div>
-
-                <div style={{ marginTop: '32px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e2e8f0' }}></div>
-                    <span style={{ position: 'relative', backgroundColor: 'white', padding: '0 12px', color: '#94a3b8', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase' }}>
-                        Or continue with
-                    </span>
-                </div>
-
-                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+                {/* Google Login (Now First) */}
+                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
                     <button
                         onClick={handleGoogleLogin}
                         type="button"
@@ -209,7 +120,8 @@ export const LoginPage = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '12px',
-                            transition: 'background-color 0.2s'
+                            transition: 'background-color 0.2s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                         }}
                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
@@ -223,6 +135,113 @@ export const LoginPage = () => {
                         Continue with Google
                     </button>
                 </div>
+
+                <div style={{ position: 'relative', marginBottom: '24px' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e2e8f0' }}></div>
+                    <span 
+                        onClick={() => setShowEmailLogin(!showEmailLogin)}
+                        style={{ 
+                            position: 'relative', 
+                            backgroundColor: 'white', 
+                            padding: '0 12px', 
+                            color: '#6366f1', 
+                            fontSize: '12px', 
+                            fontWeight: 600, 
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                        }}
+                    >
+                        {showEmailLogin ? 'HIDE EMAIL OPTION' : 'OR SIGN IN WITH EMAIL'}
+                    </span>
+                </div>
+
+                {showEmailLogin && (
+                    <>
+                        <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Email Address</label>
+                                <input
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 14px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '15px',
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s',
+                                        backgroundColor: '#f8fafc'
+                                    }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Password</label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 14px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '15px',
+                                        outline: 'none',
+                                        backgroundColor: '#f8fafc'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        backgroundColor: '#6366f1',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '15px',
+                                        fontWeight: 600,
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    {loading ? 'Processing...' : 'Log In'}
+                                </button>
+                            </div>
+                        </form>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                onClick={() => window.open('https://rebrand.ly/nhgcts', '_blank')}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#6366f1',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Need an account? Sign Up
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

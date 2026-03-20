@@ -212,6 +212,7 @@ export const TopBar = () => {
                         <img
                             src={userAvatar}
                             alt="Profile"
+                            referrerPolicy="no-referrer"
                             style={{
                                 width: '100%',
                                 height: '100%',

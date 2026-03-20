@@ -129,7 +129,8 @@ export const MembersList = ({
             ) : (
                 paginatedMembers.map(member => {
                     const displayRole = getMemberDisplayRole(member);
-                    const profile = member.profiles || {};
+                    const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                    const profile = profileData || {};
                     const memberName = profile.full_name || (profile.email ? profile.email.split('@')[0] : 'Unknown');
                     const initials = (memberName || '?').charAt(0).toUpperCase();
 
@@ -141,7 +142,7 @@ export const MembersList = ({
                                 alignItems: 'center',
                                 gap: '12px',
                                 padding: '8px 20px',
-                                borderBottom: '1px solid hsl(var(--color-border))'
+                                 borderBottom: '1px solid hsl(var(--color-border))'
                             }}
                         >
                             {/* Avatar */}
@@ -163,6 +164,7 @@ export const MembersList = ({
                                     <img
                                         src={profile.avatar_url}
                                         alt={memberName}
+                                        referrerPolicy="no-referrer"
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
                                 ) : (

@@ -30,8 +30,10 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
 
     // Filter MEMBERS
     const filteredMembers = activeBoardMembers.filter(m => {
-        const name = m.profiles.full_name || '';
-        const email = m.profiles.email || '';
+        const profileData = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        const profile = profileData || {};
+        const name = profile.full_name || '';
+        const email = profile.email || '';
         const search = searchTerm.toLowerCase();
         return name.toLowerCase().includes(search) || email.toLowerCase().includes(search);
     });
@@ -216,7 +218,9 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
                 </div>
                 {filteredMembers.map(member => {
                     const isSelected = currentValue.includes(member.user_id);
-                    const initial = (member.profiles.full_name || member.profiles.email || '?')[0]?.toUpperCase();
+                    const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                    const profile = profileData || {};
+                    const initial = (profile.full_name || profile.email || '?')[0]?.toUpperCase();
 
                     return (
                         <div
@@ -237,17 +241,22 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
                         >
                             <div style={{
                                 width: '24px', height: '24px', borderRadius: '50%',
-                                backgroundColor: member.profiles.avatar_url ? 'transparent' : '#0073ea',
+                                backgroundColor: profile.avatar_url ? 'transparent' : '#0073ea',
                                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0
                             }}>
-                                {member.profiles.avatar_url ? (
-                                    <img src={member.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%' }} />
+                                {profile.avatar_url ? (
+                                    <img 
+                                        src={profile.avatar_url} 
+                                        alt="" 
+                                        referrerPolicy="no-referrer"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
                                 ) : initial}
                             </div>
                             <div style={{ flex: 1, overflow: 'hidden' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {member.profiles.full_name || member.profiles.email}
+                                    {profile.full_name || profile.email}
                                 </div>
                             </div>
                             {isSelected && <Check size={14} className="text-brand-primary" />}
@@ -287,7 +296,12 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
                                         fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0
                                     }}>
                                         {user.avatar_url ? (
-                                            <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%' }} />
+                                            <img 
+                                                src={user.avatar_url} 
+                                                alt="" 
+                                                referrerPolicy="no-referrer"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                            />
                                         ) : initial}
                                     </div>
                                     <div style={{ flex: 1, overflow: 'hidden' }}>

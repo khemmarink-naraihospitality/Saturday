@@ -60,7 +60,8 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         {selectedIds.slice(0, 2).map((userId: string, idx: number) => {
                             const member = activeBoardMembers.find(m => m.user_id === userId);
-                            const profile = member?.profiles || {};
+                            const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
+                            const profile = profileData || {};
                             const name = profile.full_name || profile.email || 'Unknown';
                             const initial = name[0].toUpperCase();
 
@@ -69,7 +70,7 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                                     width: '26px',
                                     height: '26px',
                                     borderRadius: '50%',
-                                    backgroundColor: member?.profiles?.avatar_url ? 'transparent' : '#0073ea',
+                                    backgroundColor: profile?.avatar_url ? 'transparent' : '#0073ea',
                                     color: 'white',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -83,8 +84,13 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                                     position: 'relative',
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                                 }} title={name}>
-                                    {member?.profiles?.avatar_url ? (
-                                        <img src={member.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    {profile?.avatar_url ? (
+                                        <img 
+                                            src={profile.avatar_url} 
+                                            alt="" 
+                                            referrerPolicy="no-referrer"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
                                     ) : (
                                         initial
                                     )}

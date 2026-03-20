@@ -161,7 +161,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         <>
                             {displayMembers.map((member, index) => {
                                 const isOwner = member.role === 'owner';
-                                const profile = member.profiles || {};
+                                 const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                                const profile = profileData || {};
                                 const name = profile.full_name || member.full_name || profile.email || member.email || '?';
                                 const avatar = profile.avatar_url || member.avatar_url;
                                 const initials = name.substring(0, 2).toUpperCase();
@@ -175,16 +176,18 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                             background: isOwner ? 'hsl(var(--color-brand-primary))' : '#9ca3af',
                                             color: 'white',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '11px', border: '2px solid white', marginLeft: index === 0 ? 0 : '-6px',
+                                            fontSize: '11px', border: '2px solid white', marginLeft: index === 0 ? 0 : '-8px',
                                             cursor: 'pointer',
                                             position: 'relative',
-                                            overflow: 'hidden'
+                                            overflow: 'hidden',
+                                            zIndex: 5 - index
                                         }}
                                     >
                                         {avatar ? (
                                             <img
                                                 src={avatar}
                                                 alt={initials}
+                                                referrerPolicy="no-referrer"
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
                                         ) : (

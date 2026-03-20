@@ -175,12 +175,12 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                     marginBottom: '4px'
                 }}
             >
-                <svg width="18" height="18" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m6.6 66.85 15.4-26.75h58.7l-15.4 26.75z" fill="#0066da" />
-                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#00ac47" />
-                    <path d="m0 53.45 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ea4335" />
-                    <path d="m6.6 66.85 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ffbc00" />
-                </svg>
+                <img 
+                    src="https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg" 
+                    alt="Google Drive" 
+                    width="18" 
+                    height="18" 
+                />
                 Select from Google Drive
             </button>
 

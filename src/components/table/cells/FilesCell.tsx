@@ -64,7 +64,7 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
                 }}
             >
                 {files.length > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {(files.length > 4 ? files.slice(0, 3) : files).map((file, idx) => (
                             <a
                                 key={idx}
@@ -72,7 +72,11 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title={file.name}
-                                style={{ textDecoration: 'none' }}
+                                style={{ 
+                                    textDecoration: 'none',
+                                    marginLeft: idx > 0 ? '-10px' : '0',
+                                    zIndex: idx + 1
+                                }}
                             >
                                 {(() => {
                                     let iconUrl = file.iconUrl;
@@ -97,14 +101,16 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
 
                                     return (
                                         <div style={{
-                                            width: '24px',
-                                            height: '24px',
+                                            width: '26px',
+                                            height: '26px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: '#fff',
-                                            borderRadius: '4px',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                            borderRadius: '50%',
+                                            border: '2px solid white',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                            overflow: 'hidden'
                                         }}>
                                             {iconUrl ? (
                                                 <img
@@ -123,17 +129,20 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
                         ))}
                         {files.length > 4 && (
                             <div style={{
-                                width: '24px',
-                                height: '24px',
+                                width: '26px',
+                                height: '26px',
                                 borderRadius: '50%',
-                                backgroundColor: '#333',
-                                color: 'white',
-                                fontSize: '10px',
-                                fontWeight: 700,
+                                backgroundColor: '#e5e7eb',
+                                color: '#6b7280',
+                                fontSize: '11px',
+                                fontWeight: 600,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                flexShrink: 0
+                                border: '2px solid white',
+                                marginLeft: '-10px',
+                                zIndex: 10,
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                             }}>
                                 +{files.length - 3}
                             </div>

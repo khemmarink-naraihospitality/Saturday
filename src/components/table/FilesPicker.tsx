@@ -108,19 +108,38 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 maxWidth: '240px'
                             }}
                         >
-                            {file.type === 'google-drive' ? (
-                                <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="m6.6 66.85 15.4-26.75h58.7l-15.4 26.75z" fill="#0066da" />
-                                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#00ac47" />
-                                    <path d="m0 53.45 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ea4335" />
-                                    <path d="m6.6 66.85 15.4-26.75 15.4 26.75-15.4 26.75z" fill="#ffbc00" />
-                                    <path d="m22 40.1 15.4-26.75h58.7l-15.4 26.75z" fill="#2eb0cd" />
-                                    <path d="m22 40.1 15.4-26.75 30.8 53.5-15.4 26.75z" fill="#0066da" />
-                                    <path d="m52.8 0 15.4 26.75-30.8 53.5-15.4-26.75z" fill="#ffbc00" />
-                                </svg>
-                            ) : (
-                                <FileText size={14} />
-                            )}
+                            {(() => {
+                                let iconUrl = file.iconUrl;
+                                const mime = file.mimeType?.toLowerCase() || '';
+                                const name = file.name.toLowerCase();
+
+                                if (mime.includes('spreadsheet')) {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Sheets%202020%20Logo.svg";
+                                } else if (mime.includes('document')) {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Docs%202020%20Logo.svg";
+                                } else if (mime.includes('presentation')) {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Slides%202020%20Logo.svg";
+                                } else if (mime.includes('form')) {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Forms%202020%20Logo.svg";
+                                } else if (mime.includes('pdf') || name.endsWith('.pdf')) {
+                                    iconUrl = "https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg";
+                                } else if (mime.includes('image') || name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg')) {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Photos%20icon%20%282020-2025%29.svg";
+                                } else if (file.type === 'google-drive') {
+                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg";
+                                }
+
+                                return iconUrl ? (
+                                    <img 
+                                        src={iconUrl} 
+                                        alt="" 
+                                        referrerPolicy="no-referrer"
+                                        style={{ width: '14px', height: '14px', objectFit: 'contain' }} 
+                                    />
+                                ) : (
+                                    <FileText size={14} />
+                                );
+                            })()}
                             <span title={file.name}>{file.name}</span>
                         </a>
                         <button

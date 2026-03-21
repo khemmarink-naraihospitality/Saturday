@@ -257,14 +257,19 @@ function MainApp() {
             </Suspense>
           </div>
         ) : activePage === 'notifications' ? (
-          <Suspense fallback={<PageLoader />}>
-            <NotificationPage />
-          </Suspense>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <Suspense fallback={<PageLoader />}>
+              <NotificationPage />
+            </Suspense>
+          </div>
         ) : activePage === 'favorites' ? (
-          <Suspense fallback={<PageLoader />}>
-            <FavoritesPage />
-          </Suspense>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <Suspense fallback={<PageLoader />}>
+              <FavoritesPage />
+            </Suspense>
+          </div>
         ) : activePage === 'board' && activeBoard ? (
+
           <Suspense fallback={<PageLoader />}>
             <BoardPage />
           </Suspense>

@@ -75,6 +75,8 @@ export const HomePage = () => {
     const { boards, workspaces, setActiveBoard, toggleFavorite, activeWorkspaceId } = useBoardStore();
     const [showAllRecent, setShowAllRecent] = useState(false);
     const [showAllWorkspace, setShowAllWorkspace] = useState(false);
+    const [showAllFavorites, setShowAllFavorites] = useState(false);
+
 
 
     // Sort by lastViewedAt (descending) to show true recently visited
@@ -93,6 +95,11 @@ export const HomePage = () => {
     const myWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
     const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id);
     const displayedWorkspaceBoards = showAllWorkspace ? myWorkspaceBoards : myWorkspaceBoards.slice(0, 3);
+
+    // Filter boards that are favorited
+    const favoritedBoards = boards.filter(b => b.isFavorite);
+    const displayedFavoriteBoards = showAllFavorites ? favoritedBoards : favoritedBoards.slice(0, 3);
+
 
 
 
@@ -231,8 +238,64 @@ export const HomePage = () => {
                         </div>
                     )}
                 </section>
-
             )}
+            
+            {/* 4. Favorites */}
+            {favoritedBoards.length > 0 && (
+                <section style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                        <Star size={20} color="#ffcb00" fill="#ffcb00" />
+                        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Favorites</h2>
+                    </div>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gap: '24px',
+                        marginBottom: '20px'
+                    }}>
+                        {displayedFavoriteBoards.map(board => {
+                            const workspace = workspaces.find(w => w.id === board.workspaceId);
+                            return (
+                                <BoardCard 
+                                    key={board.id} 
+                                    board={board} 
+                                    workspace={workspace} 
+                                    onClick={() => setActiveBoard(board.id)} 
+                                    onToggleFavorite={toggleFavorite}
+                                />
+                            );
+                        })}
+                    </div>
+                    {favoritedBoards.length > 3 && (
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                onClick={() => setShowAllFavorites(!showAllFavorites)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'hsl(var(--color-text-secondary))',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    borderRadius: '4px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                {showAllFavorites ? 'Show less' : 'Show all'}
+                                {showAllFavorites ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                        </div>
+                    )}
+                </section>
+            )}
+
 
             {recentBoards.length === 0 && myWorkspaceBoards.length === 0 && (
                 <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', border: '1px dashed hsl(var(--color-border))' }}>

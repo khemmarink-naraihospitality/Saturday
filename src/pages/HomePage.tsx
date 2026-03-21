@@ -1,19 +1,94 @@
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Layout, Star, Bell, X, Check } from 'lucide-react';
+import { Clock, Layout, Star, Bell, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+
+const BoardCard = ({ board, workspace, onClick, onToggleFavorite }: any) => {
+    const ownerName = workspace?.ownerName || 'Unknown Owner';
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                backgroundColor: 'hsl(var(--color-bg-surface))',
+                borderRadius: '8px',
+                padding: '24px',
+                boxShadow: 'var(--shadow-sm)',
+                border: '1px solid hsl(var(--color-border))',
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                minHeight: '140px'
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '6px',
+                    backgroundColor: 'hsl(var(--color-brand-light))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'hsl(var(--color-brand-primary))'
+                }}>
+                    <Layout size={22} />
+                </div>
+                <Star 
+                    size={18} 
+                    color={board.isFavorite ? "#ffcb00" : "hsl(var(--color-text-tertiary))"} 
+                    fill={board.isFavorite ? "#ffcb00" : "none"}
+                    style={{ cursor: 'pointer', transition: 'all 0.2s' }} 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(board.id);
+                    }}
+                />
+            </div>
+
+            <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))' }}>
+                    {board.title}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
+                    <span>Work Management</span>
+                    <span>Workspace: {workspace?.title || 'Unknown Workspace'}</span>
+                    <span>Owner: {ownerName}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export const HomePage = () => {
     const { user } = useAuth();
-    const { boards, workspaces, setActiveBoard } = useBoardStore();
+    const { boards, workspaces, setActiveBoard, toggleFavorite, activeWorkspaceId } = useBoardStore();
+    const [showAllRecent, setShowAllRecent] = useState(false);
 
     // Sort by lastViewedAt (descending) to show true recently visited
-    const recentBoards = [...boards].sort((a, b) => {
-        const dateA = a.lastViewedAt ? new Date(a.lastViewedAt).getTime() : 0;
-        const dateB = b.lastViewedAt ? new Date(b.lastViewedAt).getTime() : 0;
-        return dateB - dateA;
-    }).slice(0, 3);
+    const recentBoards = [...boards]
+        .filter(b => b.lastViewedAt)
+        .sort((a, b) => {
+            const dateA = new Date(a.lastViewedAt!).getTime();
+            const dateB = new Date(b.lastViewedAt!).getTime();
+            return dateB - dateA;
+        });
+
+    const displayedRecentBoards = showAllRecent ? recentBoards.slice(0, 6) : recentBoards.slice(0, 3);
+
+    // My workspace boards
+    const myWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+    const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id);
 
     // Greeting based on time
     const hour = new Date().getHours();
@@ -35,88 +110,101 @@ export const HomePage = () => {
                 </p>
             </header>
 
-            <section style={{ marginBottom: '40px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                    <Clock size={20} color="hsl(var(--color-brand-primary))" />
-                    <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Recently visited</h2>
-                </div>
+            {/* 1. Update feed (Inbox) */}
+            <div style={{ marginBottom: '40px' }}>
+                <InboxFeed />
+            </div>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '24px'
-                }}>
-                    {recentBoards.length > 0 ? (
-                        recentBoards.map(board => {
+            {/* 2. Recently visited */}
+            {recentBoards.length > 0 && (
+                <section style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                        <Clock size={20} color="hsl(var(--color-brand-primary))" />
+                        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Recently visited</h2>
+                    </div>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gap: '24px',
+                        marginBottom: '20px'
+                    }}>
+                        {displayedRecentBoards.map(board => {
                             const workspace = workspaces.find(w => w.id === board.workspaceId);
-                            // Fallback owner name if not found (though loadUserData should have it)
-                            const ownerName = workspace?.ownerName || 'Unknown Owner';
-
                             return (
-                                <div
-                                    key={board.id}
-                                    onClick={() => setActiveBoard(board.id)}
-                                    style={{
-                                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                                        borderRadius: '8px',
-                                        padding: '24px',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        border: '1px solid hsl(var(--color-border))',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s, box-shadow 0.2s',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '12px',
-                                        minHeight: '140px'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '6px',
-                                            backgroundColor: 'hsl(var(--color-brand-light))',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'hsl(var(--color-brand-primary))'
-                                        }}>
-                                            <Layout size={22} />
-                                        </div>
-                                        <Star size={18} color="hsl(var(--color-text-tertiary))" style={{ cursor: 'pointer' }} />
-                                    </div>
-
-                                    <div>
-                                        <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))' }}>
-                                            {board.title}
-                                        </h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
-                                            <span>Work Management</span>
-                                            <span>Workspace: {workspace?.title || 'Unknown Workspace'}</span>
-                                            <span>Owner: {ownerName}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <BoardCard 
+                                    key={board.id} 
+                                    board={board} 
+                                    workspace={workspace} 
+                                    onClick={() => setActiveBoard(board.id)} 
+                                    onToggleFavorite={toggleFavorite}
+                                />
                             );
-                        })
-                    )
-                        : (
-                            <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', border: '1px dashed hsl(var(--color-border))' }}>
-                                <p style={{ color: 'hsl(var(--color-text-secondary))' }}>No boards found. Create or visit a board to get started!</p>
-                            </div>
-                        )}
-                </div>
-            </section>
+                        })}
+                    </div>
+                    {recentBoards.length > 3 && (
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                onClick={() => setShowAllRecent(!showAllRecent)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'hsl(var(--color-text-secondary))',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    borderRadius: '4px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                {showAllRecent ? 'Show less' : 'Show all'}
+                                {showAllRecent ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                        </div>
+                    )}
+                </section>
+            )}
 
-            <InboxFeed />
+            {/* 3. My workspace */}
+            {myWorkspaceBoards.length > 0 && (
+                <section style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                        <Layout size={20} color="hsl(var(--color-brand-primary))" />
+                        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>My workspace</h2>
+                    </div>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gap: '24px'
+                    }}>
+                        {myWorkspaceBoards.map(board => {
+                            const workspace = workspaces.find(w => w.id === board.workspaceId);
+                            return (
+                                <BoardCard 
+                                    key={board.id} 
+                                    board={board} 
+                                    workspace={workspace} 
+                                    onClick={() => setActiveBoard(board.id)} 
+                                    onToggleFavorite={toggleFavorite}
+                                />
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {recentBoards.length === 0 && myWorkspaceBoards.length === 0 && (
+                <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', border: '1px dashed hsl(var(--color-border))' }}>
+                    <p style={{ color: 'hsl(var(--color-text-secondary))' }}>No boards found. Create or visit a board to get started!</p>
+                </div>
+            )}
         </div>
     );
 };

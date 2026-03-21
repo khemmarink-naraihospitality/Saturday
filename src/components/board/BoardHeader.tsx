@@ -135,8 +135,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                 }}
                                 style={{ 
                                     cursor: 'pointer',
-                                    fill: board.isFavorite ? 'hsl(var(--color-brand-primary))' : 'transparent',
-                                    color: board.isFavorite ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))',
+                                    fill: board.isFavorite ? '#ffcb00' : 'transparent',
+                                    color: board.isFavorite ? '#ffcb00' : 'hsl(var(--color-text-tertiary))',
                                     transition: 'all 0.2s ease'
                                 }} 
                             />

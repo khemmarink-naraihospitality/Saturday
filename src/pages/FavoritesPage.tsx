@@ -2,7 +2,7 @@ import { useBoardStore } from '../store/useBoardStore';
 import { Star, Layout } from 'lucide-react';
 
 export const FavoritesPage = () => {
-    const { boards, workspaces, setActiveBoard } = useBoardStore();
+    const { boards, workspaces, setActiveBoard, toggleFavorite } = useBoardStore();
 
     // Filter boards that are favorited
     const favoritedBoards = boards.filter(b => b.isFavorite);
@@ -25,7 +25,7 @@ export const FavoritesPage = () => {
 
             <section style={{ marginBottom: '40px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                    <Star size={20} color="hsl(var(--color-brand-primary))" fill="hsl(var(--color-brand-primary))" />
+                    <Star size={20} color="#ffcb00" fill="#ffcb00" />
                     <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Favorited Boards</h2>
                 </div>
 
@@ -80,7 +80,16 @@ export const FavoritesPage = () => {
                                         }}>
                                             <Layout size={22} />
                                         </div>
-                                        <Star size={18} color="hsl(var(--color-brand-primary))" fill="hsl(var(--color-brand-primary))" />
+                                        <Star 
+                                            size={18} 
+                                            color="#ffcb00" 
+                                            fill="#ffcb00" 
+                                            style={{ cursor: 'pointer', transition: 'all 0.2s' }} 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleFavorite(board.id);
+                                            }}
+                                        />
                                     </div>
 
                                     <div>

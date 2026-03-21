@@ -129,7 +129,8 @@ export const createBoardSlice: StateCreator<
                 { data: columns },
                 { data: items },
                 { data: sharedBoardsData },
-                { data: sharedWorkspacesData }
+                { data: sharedWorkspacesData },
+                { data: userFavoritesData }
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
@@ -137,7 +138,8 @@ export const createBoardSlice: StateCreator<
                 supabase.from('columns').select('*').order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
-                supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id)
+                supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
+                supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
             ]);
 
             // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
@@ -195,6 +197,8 @@ export const createBoardSlice: StateCreator<
                 });
             }
 
+            const favoritedBoardIds = new Set(userFavoritesData?.map(f => f.board_id) || []);
+
             const fullBoards: Board[] = boards.map(b => {
                 const bGroups = (groups || []).filter(g => g.board_id === b.id);
                 const bColumns = (columns || []).filter(c => c.board_id === b.id);
@@ -205,7 +209,7 @@ export const createBoardSlice: StateCreator<
                     workspaceId: b.workspace_id,
                     title: b.title,
                     is_archived: b.is_archived,
-                    isFavorite: b.is_favorite,
+                    isFavorite: favoritedBoardIds.has(b.id),
                     lastViewedAt: lastViewedMap[b.id] || undefined,
                     columns: bColumns.map(c => ({
                         id: c.id,
@@ -613,12 +617,22 @@ export const createBoardSlice: StateCreator<
         }));
 
         try {
-            const { error } = await supabase
-                .from('boards')
-                .update({ is_favorite: newFavoriteStatus })
-                .eq('id', boardId);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not authenticated");
 
-            if (error) throw error;
+            if (newFavoriteStatus) {
+                const { error } = await supabase
+                    .from('user_favorites')
+                    .insert({ board_id: boardId, user_id: user.id });
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('user_favorites')
+                    .delete()
+                    .eq('board_id', boardId)
+                    .eq('user_id', user.id);
+                if (error) throw error;
+            }
         } catch (err) {
             console.error('[Favorite] Failed to toggle favorite:', err);
             // Revert on error

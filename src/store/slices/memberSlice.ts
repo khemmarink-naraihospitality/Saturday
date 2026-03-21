@@ -249,8 +249,7 @@ export const createMemberSlice: StateCreator<
                         boards: state.boards.map(b => b.id === board.id ? { 
                             ...b, 
                             title: board.title, 
-                            is_archived: board.is_archived,
-                            isFavorite: board.is_favorite 
+                            is_archived: board.is_archived
                         } : b)
                     }));
                 })

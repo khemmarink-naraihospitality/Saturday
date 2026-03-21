@@ -147,7 +147,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
                         }
                     }}
                 >
-                    <Star size={18} />
+                    <Star size={18} color="#ffcb00" fill={activePage === 'favorites' ? "#ffcb00" : "none"} />
                     <span style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
                 </button>
             </div>

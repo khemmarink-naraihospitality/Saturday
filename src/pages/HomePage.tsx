@@ -74,6 +74,8 @@ export const HomePage = () => {
     const { user } = useAuth();
     const { boards, workspaces, setActiveBoard, toggleFavorite, activeWorkspaceId } = useBoardStore();
     const [showAllRecent, setShowAllRecent] = useState(false);
+    const [showAllWorkspace, setShowAllWorkspace] = useState(false);
+
 
     // Sort by lastViewedAt (descending) to show true recently visited
     const recentBoards = [...boards]
@@ -84,11 +86,15 @@ export const HomePage = () => {
             return dateB - dateA;
         });
 
-    const displayedRecentBoards = showAllRecent ? recentBoards.slice(0, 6) : recentBoards.slice(0, 3);
+    const displayedRecentBoards = showAllRecent ? recentBoards : recentBoards.slice(0, 3);
+
 
     // My workspace boards
     const myWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
     const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id);
+    const displayedWorkspaceBoards = showAllWorkspace ? myWorkspaceBoards : myWorkspaceBoards.slice(0, 3);
+
+
 
     // Greeting based on time
     const hour = new Date().getHours();
@@ -182,9 +188,10 @@ export const HomePage = () => {
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                        gap: '24px'
+                        gap: '24px',
+                        marginBottom: '20px'
                     }}>
-                        {myWorkspaceBoards.map(board => {
+                        {displayedWorkspaceBoards.map(board => {
                             const workspace = workspaces.find(w => w.id === board.workspaceId);
                             return (
                                 <BoardCard 
@@ -197,7 +204,34 @@ export const HomePage = () => {
                             );
                         })}
                     </div>
+                    {myWorkspaceBoards.length > 3 && (
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                onClick={() => setShowAllWorkspace(!showAllWorkspace)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'hsl(var(--color-text-secondary))',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px',
+                                    padding: '8px 16px',
+                                    borderRadius: '4px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                {showAllWorkspace ? 'Show less' : 'Show all'}
+                                {showAllWorkspace ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                        </div>
+                    )}
                 </section>
+
             )}
 
             {recentBoards.length === 0 && myWorkspaceBoards.length === 0 && (

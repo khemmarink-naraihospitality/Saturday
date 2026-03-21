@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
-import { Star, Layout } from 'lucide-react';
+import { Star, Layout, ChevronDown, ChevronUp } from 'lucide-react';
+
 
 export const FavoritesPage = () => {
     const { boards, workspaces, setActiveBoard, toggleFavorite } = useBoardStore();
+    const [showAll, setShowAll] = useState(false);
 
     // Filter boards that are favorited
     const favoritedBoards = boards.filter(b => b.isFavorite);
+    const displayedBoards = showAll ? favoritedBoards : favoritedBoards.slice(0, 3);
+
+
 
     return (
         <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
@@ -32,10 +38,11 @@ export const FavoritesPage = () => {
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '24px'
+                    gap: '24px',
+                    marginBottom: '20px'
                 }}>
-                    {favoritedBoards.length > 0 ? (
-                        favoritedBoards.map(board => {
+                    {displayedBoards.length > 0 ? (
+                        displayedBoards.map(board => {
                             const workspace = workspaces.find(w => w.id === board.workspaceId);
                             const ownerName = workspace?.ownerName || 'Unknown Owner';
 
@@ -126,6 +133,33 @@ export const FavoritesPage = () => {
                             </div>
                         )}
                 </div>
+                {favoritedBoards.length > 3 && (
+                    <div style={{ textAlign: 'center' }}>
+                        <button
+                            onClick={() => setShowAll(!showAll)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'hsl(var(--color-text-secondary))',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                padding: '8px 16px',
+                                borderRadius: '4px',
+                                transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            {showAll ? 'Show less' : 'Show all'}
+                            {showAll ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                    </div>
+                )}
+
             </section>
         </div>
     );

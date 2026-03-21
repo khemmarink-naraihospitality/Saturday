@@ -92,9 +92,12 @@ export const HomePage = () => {
 
 
     // My workspace boards
-    const myWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+    const recentWorkspaceId = recentBoards[0]?.workspaceId;
+    const defaultWorkspaceId = activeWorkspaceId || recentWorkspaceId || workspaces[0]?.id;
+    const myWorkspace = workspaces.find(w => w.id === defaultWorkspaceId) || workspaces[0];
     const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id);
     const displayedWorkspaceBoards = showAllWorkspace ? myWorkspaceBoards : myWorkspaceBoards.slice(0, 3);
+
 
     // Filter boards that are favorited
     const favoritedBoards = boards.filter(b => b.isFavorite);

@@ -2,15 +2,14 @@
 
 /* Sidebar */
 .sidebar {
-    width: 260px;
-    /* Slightly narrower like the reference */
     background-color: hsl(var(--color-bg-surface));
     border-right: 1px solid hsl(var(--color-border));
-    /* Subtle border return */
     display: flex;
     flex-direction: column;
     height: 100%;
     padding-top: var(--spacing-md);
+    position: relative;
+    z-index: 10;
 }
 
 .sidebar-footer {

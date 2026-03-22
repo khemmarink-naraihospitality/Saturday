@@ -238,7 +238,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                     setActiveWorkspace(ws.id);
                                 }}
                             >
-                                <WorkspaceIcon title={ws.title} isActive={isExpanded} />
+                                {/* <WorkspaceIcon title={ws.title} isActive={isExpanded} /> */}
                                 {editingWorkspaceId === ws.id ? (
                                     <input
                                         autoFocus

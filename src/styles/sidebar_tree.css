@@ -47,7 +47,7 @@
 
 /* Children Container */
 .tree-node-children {
-    margin-left: 12px;
+    margin-left: 0px;
     /* Alignment for the vertical line */
     position: relative;
     padding-top: 4px;
@@ -55,36 +55,31 @@
 }
 
 /* The vertical line that spans all children */
-.tree-node-children::before {
+/* .tree-node-children::before {
     content: '';
     position: absolute;
     left: 10px;
-    /* Aligned to icon center (12px margin + 10px = 22px) */
     top: -10px;
-    /* Stop exactly at the bottom-center of the circle */
-    /* Connect to parent icon */
     bottom: 20px;
-    /* Ends at the middle of the last child */
     width: 1.5px;
     background-color: #e0e0e0;
     z-index: 1;
-}
+} */
 
 /* Leaf Node (Board) */
 .tree-node-leaf {
     position: relative;
-    padding-left: 28px;
+    padding-left: 8px;
     padding-top: 2px;
     padding-bottom: 2px;
     z-index: 2;
 }
 
 /* The curved connector line */
-.tree-node-leaf::after {
+/* .tree-node-leaf::after {
     content: '';
     position: absolute;
     left: 10px;
-    /* Match vertical line */
     top: -8px;
     width: 14px;
     height: 20px;
@@ -93,7 +88,7 @@
     border-bottom-left-radius: 8px;
     pointer-events: none;
     z-index: 1;
-}
+} */
 
 /* Adjusted sidebar-item for tree-view */
 .tree-sidebar-item {

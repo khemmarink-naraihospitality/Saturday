@@ -139,7 +139,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
                         style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
                     >
                         <option value="viewer">Viewer (Read Only)</option>
-                        <option value="editor">Editor</option>
+                        <option value="member">Editor</option>
                     </select>
                 </div>
 

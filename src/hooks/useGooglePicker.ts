@@ -57,15 +57,25 @@ export const useGooglePicker = () => {
         } else {
             const tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: GOOGLE_CLIENT_ID,
+                prompt: 'select_account', // Always show account selector to avoid multi-account confusion
                 scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
                 callback: (response: any) => {
+                    if (response.error) {
+                        console.error('Google OAuth Error:', response);
+                        alert(`Google Access Error: ${response.error_description || response.error}`);
+                        return;
+                    }
                     if (response.access_token) {
                         setAccessToken(response.access_token);
                         showPicker(response.access_token);
                     }
                 },
+                error_callback: (err: any) => {
+                    console.error('Google Auth Error:', err);
+                    alert('Could not authenticate with Google. Please check if your popup is blocked.');
+                }
             });
-            tokenClient.requestAccessToken();
+            tokenClient.requestAccessToken({ prompt: '' });
         }
     }, [accessToken]);
 

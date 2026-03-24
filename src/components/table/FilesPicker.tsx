@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, FileText } from 'lucide-react';
+import { X, Globe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
@@ -14,6 +14,10 @@ interface FilesPickerProps {
 
 export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPickerProps) => {
     const [localFiles, setLocalFiles] = useState<FileLink[]>(files || []);
+    const [isAddingUrl, setIsAddingUrl] = useState(false);
+    const [urlName, setUrlName] = useState('');
+    const [urlValue, setUrlValue] = useState('');
+    
     const pickerRef = useRef<HTMLDivElement>(null);
     const { openPicker } = useGooglePicker();
 
@@ -36,33 +40,48 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         setLocalFiles(localFiles.filter(f => f.id !== id));
     };
 
-    // Calculate position (similar to other pickers)
+    const handleAddUrlFile = () => {
+        if (!urlName.trim() || !urlValue.trim()) return;
+        
+        const newFile: FileLink = {
+            id: uuidv4(),
+            name: urlName,
+            url: urlValue.trim(),
+            type: 'file-url'
+        };
+        
+        setLocalFiles([...localFiles, newFile]);
+        setIsAddingUrl(false);
+        setUrlName('');
+        setUrlValue('');
+    };
+
+    // Calculate position
     const style: React.CSSProperties = {
         position: 'fixed',
         top: position.bottom + 4,
         left: position.left,
-        minWidth: '300px',
+        minWidth: '320px',
         maxWidth: '400px',
         backgroundColor: 'white',
         borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
         border: '1px solid #e1e4e8',
         zIndex: 1000,
-        padding: '12px',
+        padding: '16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px'
+        gap: '12px'
     };
 
     // Auto-adjust if off screen (vertical)
-    if (style.top && (style.top as number) + 300 > window.innerHeight) {
-        // Show above if not enough space below
+    if (style.top && (style.top as number) + 350 > window.innerHeight) {
         style.top = undefined;
         style.bottom = window.innerHeight - position.top + 4;
     }
 
     // Auto-adjust if off screen (horizontal)
-    const pickerWidth = 320; // Approx width
+    const pickerWidth = 320;
     if ((style.left as number) + pickerWidth > window.innerWidth) {
         style.left = undefined;
         const newLeft = window.innerWidth - pickerWidth - 16;
@@ -71,14 +90,22 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
 
     return createPortal(
         <div ref={pickerRef} style={style}>
-            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px', color: '#333' }}>
-                Attached Files (Google Drive)
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>
+                    Attached Files
+                </div>
+                <button 
+                  onClick={() => { onSave(localFiles); onClose(); }} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: '4px' }}
+                >
+                    <X size={16} />
+                </button>
             </div>
 
             {/* List of Files */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                 {localFiles.length === 0 && (
-                    <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', padding: '8px 0' }}>
+                    <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', padding: '12px 0', textAlign: 'center', border: '1px dashed #eee', borderRadius: '4px' }}>
                         No files attached yet.
                     </div>
                 )}
@@ -87,9 +114,10 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '6px 8px',
-                        backgroundColor: '#f5f7fa',
-                        borderRadius: '4px',
+                        padding: '8px 10px',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #edf2f7',
+                        borderRadius: '6px',
                         fontSize: '12px'
                     }}>
                         <a
@@ -99,13 +127,13 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '6px',
+                                gap: '8px',
                                 color: '#0073ea',
                                 textDecoration: 'none',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                maxWidth: '240px'
+                                flex: 1
                             }}
                         >
                             {(() => {
@@ -130,28 +158,16 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 }
 
                                 return iconUrl ? (
-                                    <img 
-                                        src={iconUrl} 
-                                        alt="" 
-                                        referrerPolicy="no-referrer"
-                                        style={{ width: '14px', height: '14px', objectFit: 'contain' }} 
-                                    />
+                                    <img src={iconUrl} alt="" referrerPolicy="no-referrer" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                                 ) : (
-                                    <FileText size={14} />
+                                    <Globe size={16} color="#666" />
                                 );
                             })()}
-                            <span title={file.name}>{file.name}</span>
+                            <span title={file.name} style={{ fontWeight: 500 }}>{file.name}</span>
                         </a>
                         <button
                             onClick={() => handleRemoveFile(file.id)}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                color: '#666',
-                                display: 'flex'
-                            }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8', display: 'flex' }}
                         >
                             <X size={14} />
                         </button>
@@ -159,67 +175,170 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                 ))}
             </div>
 
-            <div style={{ height: '1px', backgroundColor: '#e1e4e8', margin: '4px 0' }} />
+            <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '4px 0' }} />
 
-            {/* Google Drive Picker Button */}
-            <button
-                onClick={() => {
-                    openPicker((result) => {
-                        const newFile = {
-                            id: uuidv4(),
-                            name: result.name,
-                            url: result.url,
-                            type: 'google-drive',
-                            iconUrl: result.iconUrl,
-                            mimeType: result.mimeType
-                        } as FileLink;
-                        const updatedFiles = [...localFiles, newFile];
-                        onSave(updatedFiles);
-                        onClose();
-                    });
-                }}
-                style={{
-                    backgroundColor: 'white',
-                    color: '#333',
-                    border: '1px solid #d0d4e4',
-                    borderRadius: '4px',
-                    padding: '8px',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    marginBottom: '4px'
-                }}
-            >
-                <img 
-                    src="https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg" 
-                    alt="Google Drive" 
-                    width="18" 
-                    height="18" 
-                />
-                Select from Google Drive
-            </button>
+            {/* Addition Choice */}
+            {isAddingUrl ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #eee' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '2px' }}>Add File URL</div>
+                    <input 
+                        autoFocus
+                        placeholder="File Name (e.g. My Document)"
+                        value={urlName}
+                        onChange={(e) => setUrlName(e.target.value)}
+                        style={{ padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', outline: 'none' }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddUrlFile()}
+                    />
+                    <input 
+                        placeholder="https://example.com/file.pdf"
+                        value={urlValue}
+                        onChange={(e) => setUrlValue(e.target.value)}
+                        style={{ padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', outline: 'none' }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddUrlFile()}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button 
+                            onClick={() => setIsAddingUrl(false)}
+                            style={{ flex: 1, padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleAddUrlFile}
+                            disabled={!urlName.trim() || !urlValue.trim()}
+                            style={{ 
+                              flex: 2, 
+                              padding: '8px', 
+                              fontSize: '13px', 
+                              background: '#0073ea', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer', 
+                              opacity: (!urlName.trim() || !urlValue.trim()) ? 0.6 : 1,
+                              fontWeight: 600
+                            }}
+                        >
+                            Add File
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {/* Google Drive Option */}
+                    <button
+                        onClick={() => {
+                            openPicker((result) => {
+                                const newFile: FileLink = {
+                                    id: uuidv4(),
+                                    name: result.name,
+                                    url: result.url,
+                                    type: 'google-drive',
+                                    iconUrl: result.iconUrl,
+                                    mimeType: result.mimeType
+                                };
+                                const updatedFiles = [...localFiles, newFile];
+                                onSave(updatedFiles);
+                                onClose();
+                            });
+                        }}
+                        style={{
+                            flex: 1,
+                            backgroundColor: 'white',
+                            color: '#333',
+                            border: '1px solid #d0d4e4',
+                            borderRadius: '8px',
+                            padding: '12px 8px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.borderColor = '#0073ea';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderColor = '#d0d4e4';
+                        }}
+                    >
+                        <img 
+                            src="https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg" 
+                            alt="Google Drive" 
+                            width="24" 
+                            height="24" 
+                        />
+                        Google Drive
+                    </button>
 
-            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+                    {/* File URL Option */}
+                    <button
+                        onClick={() => setIsAddingUrl(true)}
+                        style={{
+                            flex: 1,
+                            backgroundColor: 'white',
+                            color: '#333',
+                            border: '1px solid #d0d4e4',
+                            borderRadius: '8px',
+                            padding: '12px 8px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.borderColor = '#0073ea';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderColor = '#d0d4e4';
+                        }}
+                    >
+                        <div style={{ 
+                            width: '24px', 
+                            height: '24px', 
+                            borderRadius: '6px', 
+                            backgroundColor: '#f1f5f9', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            color: '#475569'
+                        }}>
+                            <Globe size={18} />
+                        </div>
+                        File URL
+                    </button>
+                </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: isAddingUrl ? '0' : '8px' }}>
                 <button
-                    onClick={() => {
-                        onSave(localFiles);
-                        onClose();
-                    }}
+                    onClick={() => { onSave(localFiles); onClose(); }}
                     style={{
-                        padding: '6px 20px',
-                        backgroundColor: 'hsl(var(--color-primary))',
+                        padding: '10px 24px',
+                        backgroundColor: '#0073ea',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '13px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         transition: 'opacity 0.2s'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                 >
                     OK
                 </button>

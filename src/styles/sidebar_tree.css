@@ -145,6 +145,15 @@
     opacity: 1;
 }
 
+.tree-sidebar-item .drag-handle {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.tree-sidebar-item:hover .drag-handle {
+    opacity: 1;
+}
+
 .sidebar-item-action:hover {
     background-color: rgba(0, 0, 0, 0.05);
     color: #323338;

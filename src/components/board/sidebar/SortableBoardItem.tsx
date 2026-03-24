@@ -69,6 +69,7 @@ export const SortableBoardItem = ({
                 <div
                     {...attributes}
                     {...listeners}
+                    className="drag-handle"
                     style={{ marginRight: '4px', cursor: 'grab', color: '#ccc', display: 'flex', alignItems: 'center', outline: 'none' }}
                     onClick={(e) => e.stopPropagation()}
                 >

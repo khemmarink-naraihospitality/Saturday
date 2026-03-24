@@ -205,7 +205,10 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
 
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '12px' }}>
                 <button
-                    onClick={onClose}
+                    onClick={() => {
+                        onSave(localFiles);
+                        onClose();
+                    }}
                     style={{
                         padding: '6px 20px',
                         backgroundColor: 'hsl(var(--color-primary))',

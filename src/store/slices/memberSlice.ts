@@ -6,17 +6,24 @@ import type { BoardState } from '../useBoardStore';
 import type { Item } from '../../types';
 
 // Helper to map DB item to Store type
-const mapDbItemToLocal = (i: any): Item => ({
-    id: i.id,
-    title: i.title,
-    groupId: i.group_id,
-    boardId: i.board_id,
-    values: i.values || {},
-    isHidden: i.is_hidden,
-    updates: i.updates || [],
-    files: i.files || [],
-    order: i.order,
-    parentId: i.parent_id
+const parseSqlJson = (val: any, fallback: any) => {
+    if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch (e) { return fallback; }
+    }
+    return val ?? fallback;
+};
+
+const mapDbItemToLocal = (i: any, existingItem?: Item): Item => ({
+    id: i.id ?? existingItem?.id,
+    title: i.title ?? existingItem?.title ?? '',
+    groupId: i.group_id ?? existingItem?.groupId ?? '',
+    boardId: i.board_id ?? existingItem?.boardId ?? '',
+    values: parseSqlJson(i.values, existingItem?.values ?? {}),
+    isHidden: i.is_hidden ?? existingItem?.isHidden ?? false,
+    updates: parseSqlJson(i.updates, existingItem?.updates ?? []),
+    files: parseSqlJson(i.files, existingItem?.files ?? []),
+    order: i.order ?? existingItem?.order ?? 0,
+    parentId: i.parent_id !== undefined ? i.parent_id : existingItem?.parentId
 });
 
 export interface MemberSlice {
@@ -172,15 +179,22 @@ export const createMemberSlice: StateCreator<
                     const { activeBoardId, lastOptimisticUpdate } = get();
                     const item = (payload.new || payload.old) as any;
                     
+                    // Fallback for missing board_id in UPDATE payload
+                    let itemBoardId = item.board_id;
+                    if (!itemBoardId && payload.eventType === 'UPDATE') {
+                        const existingItem = get().boards.find(b => b.id === activeBoardId)?.items.find(i => i.id === item.id);
+                        if (existingItem) itemBoardId = existingItem.boardId;
+                    }
+
                     // Skip if item doesn't belong to current board or if we just updated it optimistically
-                    if (item.board_id !== activeBoardId) return;
+                    if (itemBoardId !== activeBoardId) return;
                     if (payload.eventType === 'UPDATE' && lastOptimisticUpdate[item.id] && Date.now() - lastOptimisticUpdate[item.id] < 3000) {
                         return;
                     }
 
                     set(state => ({
                         boards: state.boards.map(b => {
-                            if (b.id !== item.board_id) return b;
+                            if (b.id !== itemBoardId) return b;
                             
                             let newItems = [...b.items];
                             if (payload.eventType === 'INSERT') {
@@ -189,7 +203,7 @@ export const createMemberSlice: StateCreator<
                                     newItems.push(mapDbItemToLocal(item));
                                 }
                             } else if (payload.eventType === 'UPDATE') {
-                                newItems = newItems.map(i => i.id === item.id ? { ...i, ...mapDbItemToLocal(item) } : i);
+                                newItems = newItems.map(i => i.id === item.id ? { ...i, ...mapDbItemToLocal(item, i) } : i);
                             } else if (payload.eventType === 'DELETE') {
                                 newItems = newItems.filter(i => i.id !== item.id);
                             }

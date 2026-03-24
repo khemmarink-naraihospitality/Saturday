@@ -109,25 +109,26 @@ export const usePermission = () => {
 
         checkPermissions();
         // Only re-run if these specific IDs change (not the whole arrays)
-    }, [user?.id, activeWorkspaceId, activeBoardId, activeBoardWorkspaceId, activeWorkspaceOwnerId]);
+    }, [user?.id, activeWorkspaceId, activeBoardId, activeBoardWorkspaceId, activeWorkspaceOwnerId, useBoardStore(state => state.activeBoardMembers)]);
 
     const can = (action: PermissionAction): boolean => {
-        if (userRole === 'owner') return true;
+        const role = userRole.toLowerCase();
+        if (role === 'owner') return true;
 
         const permissions: Record<string, string[]> = {
-            'view_board': ['viewer', 'member', 'admin', 'owner'],
-            'edit_items': ['member', 'admin', 'owner'],
-            'delete_items': ['member', 'admin', 'owner'],
-            'manage_columns': ['member', 'admin', 'owner'],
-            'group_ungroup': ['member', 'admin', 'owner'],
+            'view_board': ['viewer', 'member', 'editor', 'admin', 'owner'],
+            'edit_items': ['member', 'editor', 'admin', 'owner', 'board-guest'],
+            'delete_items': ['member', 'editor', 'admin', 'owner'],
+            'manage_columns': ['member', 'editor', 'admin', 'owner'],
+            'group_ungroup': ['member', 'editor', 'admin', 'owner'],
             'create_board': ['admin', 'owner'],
             'delete_board': ['admin', 'owner'],
             'invite_members': ['admin', 'owner'],
             'create_sub_workspace': ['admin', 'owner'],
-            'manage_feedback': ['viewer', 'member', 'admin', 'owner']
+            'manage_feedback': ['viewer', 'member', 'editor', 'admin', 'owner', 'board-guest']
         };
 
-        return permissions[action]?.includes(userRole) || false;
+        return permissions[action]?.includes(role) || false;
     };
 
     return { can, role: userRole };

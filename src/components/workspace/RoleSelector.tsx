@@ -19,13 +19,15 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles }
     const roleLabels: Record<string, string> = {
         viewer: 'Viewer',
         member: 'Editor',
-        admin: 'Member',
+        editor: 'Editor', // Consolidation: display both as 'Editor'
+        admin: 'Admin',   // Corrected from 'Member' to be more intuitive
         owner: 'Owner'
     };
 
     const roleDescriptions: Record<string, string> = {
         viewer: 'Can view only',
         member: 'Can edit items & columns',
+        editor: 'Can edit items & columns',
         admin: 'Can manage members & boards',
         owner: 'Full control'
     };

@@ -11,7 +11,7 @@ BEGIN
         -- 1. Auto-join board
         IF NEW.board_id IS NOT NULL THEN
             INSERT INTO public.board_members (board_id, user_id, role)
-            VALUES (NEW.board_id, target_user_id, COALESCE(NEW.role, 'editor'))
+            VALUES (NEW.board_id, target_user_id, COALESCE(NEW.role, 'member'))
             ON CONFLICT (board_id, user_id) DO NOTHING;
         END IF;
 

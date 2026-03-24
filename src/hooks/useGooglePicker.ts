@@ -12,8 +12,11 @@ interface GooglePickerResult {
     mimeType?: string;
 }
 
+
+let cachedAccessToken: string | null = null;
+
 export const useGooglePicker = () => {
-    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [accessToken, setAccessToken] = useState<string | null>(cachedAccessToken);
 
     const openPicker = useCallback((onSelect: (result: GooglePickerResult) => void) => {
         // @ts-ignore
@@ -57,7 +60,7 @@ export const useGooglePicker = () => {
         } else {
             const tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: GOOGLE_CLIENT_ID,
-                prompt: 'select_account', // Always show account selector to avoid multi-account confusion
+                prompt: '', // Changed from 'select_account' to avoid constant prompting
                 scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
                 callback: (response: any) => {
                     if (response.error) {
@@ -66,6 +69,7 @@ export const useGooglePicker = () => {
                         return;
                     }
                     if (response.access_token) {
+                        cachedAccessToken = response.access_token;
                         setAccessToken(response.access_token);
                         showPicker(response.access_token);
                     }

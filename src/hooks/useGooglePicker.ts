@@ -30,16 +30,17 @@ export const useGooglePicker = () => {
 
         gapi.load('picker', {
             callback: () => {
-                const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
-                    .setIncludeFolders(true)
-                    .setSelectFolderEnabled(false)
-                    .setEnableTeamDrives(true)
-                    .setParent('root');
+                // Initialize default DocsView correctly
+                const docsView = new google.picker.DocsView();
+                docsView.setIncludeFolders(true);
+                docsView.setSelectFolderEnabled(false);
+                docsView.setEnableTeamDrives(true);
+                docsView.setParent('root');
 
-                const sharedWithMeView = new google.picker.DocsView(google.picker.ViewId.DOCS)
-                    .setOwnedByMe(false)
-                    .setTitle('Shared with me')
-                    .setEnableTeamDrives(true);
+                // Initialize Shared with me view correctly
+                const sharedWithMeView = new google.picker.DocsView();
+                sharedWithMeView.setOwnedByMe(false);
+                sharedWithMeView.setEnableTeamDrives(true);
 
                 const picker = new google.picker.PickerBuilder()
                     .enableFeature(google.picker.Feature.SUPPORT_DRIVES)

@@ -77,13 +77,18 @@ export const useGooglePicker = () => {
 
         const handleTokenResponse = (response: any) => {
             if (response.error) {
-                // If silent refresh failed, try with UI
+                console.error('Google OAuth Error:', response);
+                
+                // If silent refresh failed, it's expected if no session exists or interaction is needed
                 if (response.error === 'interaction_required' || response.error === 'consent_required') {
+                    // Only try with UI if we were trying silently (which we don't do explicitly yet, but good for future)
                     tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
+                } else if (response.error === 'popup_blocked_by_browser') {
+                    alert('Google login popup was blocked by your browser. Please allow popups for this site.');
+                } else if (response.error === 'redirect_uri_mismatch') {
+                    alert('Google Error: redirect_uri_mismatch. Please check the Troubleshooting Login guide to fix your Google Cloud Console settings.');
                 } else {
-                    console.error('Google OAuth Error:', response);
-                    // For other errors, we might still want to try with UI
-                    tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
+                    alert(`Google Access Error: ${response.error_description || response.error}`);
                 }
                 return;
             }
@@ -96,21 +101,20 @@ export const useGooglePicker = () => {
 
         const tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
-            hint: currentUser?.email, // Pre-select the account
-            prompt: '', // Default behavior
+            hint: currentUser?.email, 
+            prompt: '', 
             scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
             callback: handleTokenResponse,
             error_callback: (err: any) => {
                 console.error('Google Auth Error:', err);
+                alert('Authentication failed. Please check your connection or Google settings.');
             }
         });
 
         if (accessToken) {
-            // Ideally check if token is still valid, but for now just show picker
             showPicker(accessToken);
         } else {
-            // Try to get token. Since we don't know for sure if it will prompt, 
-            // we'll rely on the hint to make it easy.
+            // First time, just request with the default prompt
             tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
         }
     }, [accessToken, currentUser?.email]);

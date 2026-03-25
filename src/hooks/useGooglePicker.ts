@@ -30,23 +30,30 @@ export const useGooglePicker = () => {
 
         gapi.load('picker', {
             callback: () => {
-                // Initialize default DocsView correctly
-                const docsView = new google.picker.DocsView();
-                docsView.setIncludeFolders(true);
-                docsView.setSelectFolderEnabled(false);
-                docsView.setEnableTeamDrives(true);
-                docsView.setParent('root');
+                // 1. My Drive (Standard Docs View)
+                const myDriveView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+                    .setIncludeFolders(true)
+                    .setSelectFolderEnabled(false)
+                    .setParent('root');
 
-                // Initialize Shared with me view correctly
-                const sharedWithMeView = new google.picker.DocsView();
-                sharedWithMeView.setOwnedByMe(false);
-                sharedWithMeView.setEnableTeamDrives(true);
+                // 2. Shared with me
+                const sharedWithMeView = new google.picker.DocsView()
+                    .setOwnedByMe(false)
+                    .setIncludeFolders(true)
+                    .setTitle('Shared with me');
+
+                // 3. Shared drives (Team Drives)
+                const sharedDrivesView = new google.picker.DocsView()
+                    .setEnableTeamDrives(true)
+                    .setIncludeFolders(true)
+                    .setTitle('Shared drives');
 
                 const picker = new google.picker.PickerBuilder()
                     .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
                     .enableFeature(google.picker.Feature.SUPPORT_TEAM_DRIVES)
-                    .addView(docsView)
+                    .addView(myDriveView)
                     .addView(sharedWithMeView)
+                    .addView(sharedDrivesView)
                     .addView(google.picker.ViewId.RECENTLY_PICKED)
                     .setOAuthToken(token)
                     .setDeveloperKey(GOOGLE_API_KEY)

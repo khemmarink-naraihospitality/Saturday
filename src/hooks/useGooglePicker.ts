@@ -40,13 +40,13 @@ export const useGooglePicker = () => {
                 const sharedWithMeView = new google.picker.DocsView()
                     .setOwnedByMe(false)
                     .setIncludeFolders(true)
-                    .setTitle('Shared with me');
+                    .setLabel('Shared with me');
 
                 // 3. Shared drives (Team Drives)
                 const sharedDrivesView = new google.picker.DocsView()
                     .setEnableTeamDrives(true)
                     .setIncludeFolders(true)
-                    .setTitle('Shared drives');
+                    .setLabel('Shared drives');
 
                 const picker = new google.picker.PickerBuilder()
                     .enableFeature(google.picker.Feature.SUPPORT_DRIVES)

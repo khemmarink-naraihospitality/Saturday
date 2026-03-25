@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useUserStore } from '../store/useUserStore';
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -13,57 +12,48 @@ interface GooglePickerResult {
     mimeType?: string;
 }
 
-
 let cachedAccessToken: string | null = null;
 
 export const useGooglePicker = () => {
     const { currentUser } = useUserStore();
     const [accessToken, setAccessToken] = useState<string | null>(cachedAccessToken);
+    const tokenClientRef = useRef<any>(null);
+    const onSelectRef = useRef<((result: GooglePickerResult) => void) | null>(null);
 
-    const openPicker = useCallback((onSelect: (result: GooglePickerResult) => void) => {
+    const showPicker = useCallback((token: string) => {
         // @ts-ignore
         const gapi = window.gapi;
         // @ts-ignore
         const google = window.google;
 
-        if (!gapi || !google) {
-            console.error('Google API or GIS not loaded');
-            alert('Google library not loaded. Please ensure you have a stable internet connection and turn off any ad-blockers.');
-            return;
-        }
+        if (!gapi || !google) return;
 
-        if (!GOOGLE_CLIENT_ID) {
-            console.error('VITE_GOOGLE_CLIENT_ID is missing');
-            alert('Config Error: VITE_GOOGLE_CLIENT_ID is missing.');
-            return;
-        }
+        gapi.load('picker', {
+            callback: () => {
+                const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+                    .setIncludeFolders(true)
+                    .setSelectFolderEnabled(false)
+                    .setEnableTeamDrives(true)
+                    .setParent('root');
 
-        const showPicker = (token: string) => {
-            gapi.load('picker', {
-                callback: () => {
-                    const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
-                        .setIncludeFolders(true)
-                        .setSelectFolderEnabled(false)
-                        .setEnableTeamDrives(true)
-                        .setParent('root');
+                const sharedWithMeView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+                    .setOwnedByMe(false)
+                    .setTitle('Shared with me')
+                    .setEnableTeamDrives(true);
 
-                    const sharedWithMeView = new google.picker.DocsView(google.picker.ViewId.DOCS)
-                        .setOwnedByMe(false)
-                        .setTitle('Shared with me')
-                        .setEnableTeamDrives(true);
-
-                    const picker = new google.picker.PickerBuilder()
-                        .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
-                        .enableFeature(google.picker.Feature.SUPPORT_TEAM_DRIVES)
-                        .addView(docsView)
-                        .addView(sharedWithMeView)
-                        .addView(google.picker.ViewId.RECENTLY_PICKED)
-                        .setOAuthToken(token)
-                        .setDeveloperKey(GOOGLE_API_KEY)
-                        .setCallback((data: any) => {
-                            if (data.action === google.picker.Action.PICKED) {
-                                const doc = data.docs[0];
-                                onSelect({
+                const picker = new google.picker.PickerBuilder()
+                    .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
+                    .enableFeature(google.picker.Feature.SUPPORT_TEAM_DRIVES)
+                    .addView(docsView)
+                    .addView(sharedWithMeView)
+                    .addView(google.picker.ViewId.RECENTLY_PICKED)
+                    .setOAuthToken(token)
+                    .setDeveloperKey(GOOGLE_API_KEY)
+                    .setCallback((data: any) => {
+                        if (data.action === google.picker.Action.PICKED) {
+                            const doc = data.docs[0];
+                            if (onSelectRef.current) {
+                                onSelectRef.current({
                                     id: doc.id,
                                     name: doc.name,
                                     url: doc.url,
@@ -71,53 +61,46 @@ export const useGooglePicker = () => {
                                     mimeType: doc.mimeType
                                 });
                             }
-                        })
-                        .build();
-                    picker.setVisible(true);
-                }
-            });
-        };
-
-        const handleTokenResponse = (response: any) => {
-            if (response.error) {
-                console.error('Google OAuth Error:', response);
-                if (response.error === 'popup_blocked_by_browser') {
-                    alert('Google login popup was blocked by your browser. Please allow popups for this site.');
-                } else if (response.error === 'redirect_uri_mismatch') {
-                    alert('Google Error: redirect_uri_mismatch. Please check the Redirect URIs in your Google Cloud Console.');
-                } else if (response.error !== 'interaction_required' && response.error !== 'consent_required') {
-                    alert(`Google Access Error: ${response.error_description || response.error}`);
-                }
-                return;
-            }
-            if (response.access_token) {
-                cachedAccessToken = response.access_token;
-                setAccessToken(response.access_token);
-                showPicker(response.access_token);
-            }
-        };
-
-        const tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            hint: currentUser?.email, 
-            prompt: '', 
-            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
-            callback: handleTokenResponse,
-            error_callback: (err: any) => {
-                console.error('Google Auth Error:', err);
-                if (err.type === 'popup_failed_to_open') {
-                    alert('Could not open the login popup. Please click again and avoid moving your mouse away immediately.');
-                }
+                        }
+                    })
+                    .build();
+                picker.setVisible(true);
             }
         });
+    }, []);
+
+    useEffect(() => {
+        // @ts-ignore
+        const google = window.google;
+        if (!google || !google.accounts || !GOOGLE_CLIENT_ID) return;
+
+        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
+            hint: currentUser?.email,
+            callback: (response: any) => {
+                if (response.access_token) {
+                    cachedAccessToken = response.access_token;
+                    setAccessToken(response.access_token);
+                    showPicker(response.access_token);
+                } else if (response.error) {
+                    console.error('Google OAuth Error:', response);
+                }
+            },
+        });
+    }, [currentUser?.email, showPicker]);
+
+    const openPicker = useCallback((onSelect: (result: GooglePickerResult) => void) => {
+        onSelectRef.current = onSelect;
 
         if (accessToken) {
             showPicker(accessToken);
+        } else if (tokenClientRef.current) {
+            tokenClientRef.current.requestAccessToken({ prompt: '', hint: currentUser?.email });
         } else {
-            // This MUST be called directly in the user click handler's execution path
-            tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
+            alert('Google initialization in progress. Please wait a second and try again.');
         }
-    }, [accessToken, currentUser?.email]);
+    }, [accessToken, currentUser?.email, showPicker]);
 
     return { openPicker };
 };

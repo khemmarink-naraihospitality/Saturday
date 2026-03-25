@@ -26,8 +26,17 @@ export const useGooglePicker = () => {
         // @ts-ignore
         const google = window.google;
 
-        if (!gapi || !google) {
-            console.error('Google API not loaded');
+        if (!gapi) {
+            alert('Error: Google API (gapi) not loaded. Please check your internet connection or if an ad-blocker is blocking Google scripts.');
+            return;
+        }
+        if (!google) {
+            alert('Error: Google Identity Services (google.accounts) not loaded. Please check your internet connection or ad-blocker.');
+            return;
+        }
+
+        if (!GOOGLE_CLIENT_ID) {
+            alert('Error: VITE_GOOGLE_CLIENT_ID is missing in your environment variables (.env).');
             return;
         }
 

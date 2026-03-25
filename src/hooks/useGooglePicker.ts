@@ -21,40 +21,32 @@ export const useGooglePicker = () => {
     const [accessToken, setAccessToken] = useState<string | null>(cachedAccessToken);
 
     const openPicker = useCallback((onSelect: (result: GooglePickerResult) => void) => {
-        alert('DEBUG: openPicker function triggered!');
         // @ts-ignore
         const gapi = window.gapi;
         // @ts-ignore
         const google = window.google;
 
-        if (!gapi) {
-            alert('Error: Google API (gapi) not loaded. Please check your internet connection or if an ad-blocker is blocking Google scripts.');
-            return;
-        }
-        if (!google) {
-            alert('Error: Google Identity Services (google.accounts) not loaded. Please check your internet connection or ad-blocker.');
+        if (!gapi || !google) {
+            console.error('Google API or GIS not loaded');
+            alert('Google library not loaded. Please ensure you have a stable internet connection and turn off any ad-blockers.');
             return;
         }
 
         if (!GOOGLE_CLIENT_ID) {
-            alert('Error: VITE_GOOGLE_CLIENT_ID is missing in your environment variables (.env).');
+            console.error('VITE_GOOGLE_CLIENT_ID is missing');
+            alert('Config Error: VITE_GOOGLE_CLIENT_ID is missing.');
             return;
         }
 
         const showPicker = (token: string) => {
-            alert('DEBUG: showPicker called with token');
-            // Ensure picker library is loaded via gapi
             gapi.load('picker', {
                 callback: () => {
-                    alert('DEBUG: gapi.load(picker) callback hit');
-                    // Create a detailed DocsView to ensure access to all Drives
                     const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
                         .setIncludeFolders(true)
                         .setSelectFolderEnabled(false)
-                        .setEnableTeamDrives(true) // Crucial for Shared/Team Drives
-                        .setParent('root'); // Start from the root to show all sidebar options
+                        .setEnableTeamDrives(true)
+                        .setParent('root');
 
-                    // Another view specifically for Shared with me
                     const sharedWithMeView = new google.picker.DocsView(google.picker.ViewId.DOCS)
                         .setOwnedByMe(false)
                         .setTitle('Shared with me')
@@ -63,7 +55,6 @@ export const useGooglePicker = () => {
                     const picker = new google.picker.PickerBuilder()
                         .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
                         .enableFeature(google.picker.Feature.SUPPORT_TEAM_DRIVES)
-                        .enableFeature(google.picker.Feature.NAV_HIDDEN === undefined ? (google.picker.Feature as any).NAV_HIDDEN : (google.picker.Feature as any).NAV_HIDDEN) // Ensure nav is visible
                         .addView(docsView)
                         .addView(sharedWithMeView)
                         .addView(google.picker.ViewId.RECENTLY_PICKED)
@@ -88,32 +79,24 @@ export const useGooglePicker = () => {
         };
 
         const handleTokenResponse = (response: any) => {
-            alert('DEBUG: handleTokenResponse received');
             if (response.error) {
                 console.error('Google OAuth Error:', response);
-                
-                // If silent refresh failed, it's expected if no session exists or interaction is needed
-                if (response.error === 'interaction_required' || response.error === 'consent_required') {
-                    // Only try with UI if we were trying silently (which we don't do explicitly yet, but good for future)
-                    tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
-                } else if (response.error === 'popup_blocked_by_browser') {
+                if (response.error === 'popup_blocked_by_browser') {
                     alert('Google login popup was blocked by your browser. Please allow popups for this site.');
                 } else if (response.error === 'redirect_uri_mismatch') {
-                    alert('Google Error: redirect_uri_mismatch. Please check the Troubleshooting Login guide to fix your Google Cloud Console settings.');
-                } else {
+                    alert('Google Error: redirect_uri_mismatch. Please check the Redirect URIs in your Google Cloud Console.');
+                } else if (response.error !== 'interaction_required' && response.error !== 'consent_required') {
                     alert(`Google Access Error: ${response.error_description || response.error}`);
                 }
                 return;
             }
             if (response.access_token) {
-                alert('DEBUG: Access token obtained!');
                 cachedAccessToken = response.access_token;
                 setAccessToken(response.access_token);
                 showPicker(response.access_token);
             }
         };
 
-        alert('DEBUG: Initializing tokenClient...');
         const tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             hint: currentUser?.email, 
@@ -122,14 +105,16 @@ export const useGooglePicker = () => {
             callback: handleTokenResponse,
             error_callback: (err: any) => {
                 console.error('Google Auth Error:', err);
-                alert(`Authentication Error Callback hit: ${JSON.stringify(err)}`);
+                if (err.type === 'popup_failed_to_open') {
+                    alert('Could not open the login popup. Please click again and avoid moving your mouse away immediately.');
+                }
             }
         });
 
         if (accessToken) {
             showPicker(accessToken);
         } else {
-            alert('DEBUG: Requesting access token...');
+            // This MUST be called directly in the user click handler's execution path
             tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
         }
     }, [accessToken, currentUser?.email]);

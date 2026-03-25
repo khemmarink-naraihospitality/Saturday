@@ -42,9 +42,11 @@ export const useGooglePicker = () => {
         }
 
         const showPicker = (token: string) => {
+            alert('DEBUG: showPicker called with token');
             // Ensure picker library is loaded via gapi
             gapi.load('picker', {
                 callback: () => {
+                    alert('DEBUG: gapi.load(picker) callback hit');
                     // Create a detailed DocsView to ensure access to all Drives
                     const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
                         .setIncludeFolders(true)
@@ -86,6 +88,7 @@ export const useGooglePicker = () => {
         };
 
         const handleTokenResponse = (response: any) => {
+            alert('DEBUG: handleTokenResponse received');
             if (response.error) {
                 console.error('Google OAuth Error:', response);
                 
@@ -103,12 +106,14 @@ export const useGooglePicker = () => {
                 return;
             }
             if (response.access_token) {
+                alert('DEBUG: Access token obtained!');
                 cachedAccessToken = response.access_token;
                 setAccessToken(response.access_token);
                 showPicker(response.access_token);
             }
         };
 
+        alert('DEBUG: Initializing tokenClient...');
         const tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             hint: currentUser?.email, 
@@ -117,14 +122,14 @@ export const useGooglePicker = () => {
             callback: handleTokenResponse,
             error_callback: (err: any) => {
                 console.error('Google Auth Error:', err);
-                alert('Authentication failed. Please check your connection or Google settings.');
+                alert(`Authentication Error Callback hit: ${JSON.stringify(err)}`);
             }
         });
 
         if (accessToken) {
             showPicker(accessToken);
         } else {
-            // First time, just request with the default prompt
+            alert('DEBUG: Requesting access token...');
             tokenClient.requestAccessToken({ prompt: '', hint: currentUser?.email });
         }
     }, [accessToken, currentUser?.email]);

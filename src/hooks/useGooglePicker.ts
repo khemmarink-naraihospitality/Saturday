@@ -21,6 +21,7 @@ export const useGooglePicker = () => {
     const [accessToken, setAccessToken] = useState<string | null>(cachedAccessToken);
 
     const openPicker = useCallback((onSelect: (result: GooglePickerResult) => void) => {
+        alert('DEBUG: openPicker function triggered!');
         // @ts-ignore
         const gapi = window.gapi;
         // @ts-ignore

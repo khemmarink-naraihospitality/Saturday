@@ -34,7 +34,11 @@ export const useGooglePicker = () => {
             gapi.load('picker', {
                 callback: () => {
                     const picker = new google.picker.PickerBuilder()
+                        .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
+                        .enableFeature(google.picker.Feature.SUPPORT_TEAM_DRIVES)
                         .addView(google.picker.ViewId.DOCS)
+                        .addView(new google.picker.DocsView().setOwnedByMe(false).setTitle('Shared with me'))
+                        .addView(google.picker.ViewId.RECENTLY_PICKED)
                         .setOAuthToken(token)
                         .setDeveloperKey(GOOGLE_API_KEY)
                         .setCallback((data: any) => {

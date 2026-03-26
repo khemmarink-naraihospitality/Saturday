@@ -1,18 +1,18 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { TimelinePicker } from '../TimelinePicker';
 
 interface TimelineCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
     groupColor?: string;
 }
 
-export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupColor }) => {
-    const value = item.values[column.id];
+export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column, value, groupColor }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -49,6 +49,20 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupC
 
     const barColor = groupColor || '#ff158a';
 
+    const startEditing = useCallback(() => {
+        if (!can('edit_items')) return;
+        if (cellRef.current) {
+            const rect = cellRef.current.getBoundingClientRect();
+            setPickerPos({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width,
+                bottom: rect.bottom
+            });
+            setIsEditing(true);
+        }
+    }, [can]);
+
     return (
         <>
             <div
@@ -56,19 +70,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupC
                 className="table-cell"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={() => {
-                    if (!can('edit_items')) return;
-                    if (cellRef.current) {
-                        const rect = cellRef.current.getBoundingClientRect();
-                        setPickerPos({
-                            top: rect.bottom + 4,
-                            left: rect.left,
-                            width: rect.width,
-                            bottom: rect.bottom
-                        });
-                        setIsEditing(true);
-                    }
-                }}
+                onClick={startEditing}
                 style={{
                     width: '100%',
                     height: '100%',
@@ -127,7 +129,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupC
                     dateRange={value}
                     position={pickerPos}
                     onSelect={(range) => {
-                        updateItemValue(item.id, column.id, range);
+                        updateItemValue(itemId, column.id, range);
                     }}
                     onClose={() => {
                         setIsEditing(false);
@@ -137,4 +139,4 @@ export const TimelineCell: React.FC<TimelineCellProps> = ({ item, column, groupC
             )}
         </>
     );
-};
+});

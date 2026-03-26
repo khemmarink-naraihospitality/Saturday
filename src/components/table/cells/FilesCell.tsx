@@ -1,14 +1,15 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column, FileLink } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column, FileLink } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { FileText, Plus } from 'lucide-react';
 import { FilesPicker } from '../FilesPicker';
 
 interface FilesCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    files?: FileLink[];
 }
 
 const FILE_ICONS = {
@@ -21,8 +22,7 @@ const FILE_ICONS = {
     pdf: "https://commons.wikimedia.org/wiki/Special:FilePath/PDF%20icon.svg"
 };
 
-export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files: propFiles }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -30,26 +30,28 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
 
-    const files: FileLink[] = Array.isArray(value) ? value : [];
+    const files: FileLink[] = Array.isArray(propFiles) ? propFiles : [];
+
+    const startEditing = useCallback(() => {
+        if (!can('edit_items')) return;
+        if (cellRef.current) {
+            const rect = cellRef.current.getBoundingClientRect();
+            setPickerPos({
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                bottom: rect.bottom
+            });
+            setIsEditing(true);
+        }
+    }, [can]);
 
     return (
         <>
             <div
                 ref={cellRef}
                 className="table-cell"
-                onClick={() => {
-                    if (!can('edit_items')) return;
-                    if (cellRef.current) {
-                        const rect = cellRef.current.getBoundingClientRect();
-                        setPickerPos({
-                            top: rect.top,
-                            left: rect.left,
-                            width: rect.width,
-                            bottom: rect.bottom
-                        });
-                        setIsEditing(true);
-                    }
-                }}
+                onClick={startEditing}
                 style={{
                     width: '100%',
                     height: '100%',
@@ -160,7 +162,7 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
                     files={files}
                     position={pickerPos!}
                     onSave={(newFiles) => {
-                        updateItemValue(item.id, column.id, newFiles);
+                        updateItemValue(itemId, column.id, newFiles);
                     }}
                     onClose={() => {
                         setIsEditing(false);
@@ -170,4 +172,4 @@ export const FilesCell: React.FC<FilesCellProps> = ({ item, column }) => {
             )}
         </>
     );
-};
+});

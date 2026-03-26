@@ -1,17 +1,17 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { StatusPicker } from '../StatusPicker';
 
 interface StatusCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
 }
 
-export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -19,7 +19,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
 
-    const startEditing = () => {
+    const startEditing = useCallback(() => {
         if (!can('edit_items')) return;
 
         setIsEditing(true);
@@ -32,7 +32,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
                 width: rect.width
             });
         }
-    };
+    }, [can]);
 
     const options = Array.isArray(column.options) ? column.options : [];
     const statusOption = options.find(opt => opt.id === value || opt.label === value);
@@ -76,7 +76,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
                     currentValue={value}
                     position={pickerPos}
                     onSelect={(label) => {
-                        updateItemValue(item.id, column.id, label);
+                        updateItemValue(itemId, column.id, label);
                         setIsEditing(false);
                         setPickerPos(null);
                     }}
@@ -88,4 +88,4 @@ export const StatusCell: React.FC<StatusCellProps> = ({ item, column }) => {
             )}
         </>
     );
-};
+});

@@ -1,17 +1,17 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { DropdownPicker } from '../DropdownPicker';
 
 interface DropdownCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
 }
 
-export const DropdownCell: React.FC<DropdownCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -21,7 +21,7 @@ export const DropdownCell: React.FC<DropdownCellProps> = ({ item, column }) => {
 
     const selectedLabels = Array.isArray(value) ? value : (value ? [value] : []);
 
-    const startEditing = () => {
+    const startEditing = useCallback(() => {
         if (!can('edit_items')) return;
         setIsEditing(true);
         if (cellRef.current) {
@@ -33,7 +33,7 @@ export const DropdownCell: React.FC<DropdownCellProps> = ({ item, column }) => {
                 width: rect.width
             });
         }
-    };
+    }, [can]);
 
     return (
         <>
@@ -85,7 +85,7 @@ export const DropdownCell: React.FC<DropdownCellProps> = ({ item, column }) => {
                     currentValue={selectedLabels}
                     position={pickerPos}
                     onSelect={(newValues) => {
-                        updateItemValue(item.id, column.id, newValues);
+                        updateItemValue(itemId, column.id, newValues);
                     }}
                     onClose={() => {
                         setIsEditing(false);
@@ -95,4 +95,4 @@ export const DropdownCell: React.FC<DropdownCellProps> = ({ item, column }) => {
             )}
         </>
     );
-};
+});

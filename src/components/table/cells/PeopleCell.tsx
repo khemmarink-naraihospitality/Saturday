@@ -1,28 +1,32 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { PersonPicker } from '../PersonPicker';
 
 interface PeopleCellProps {
-    item: Item;
+    itemId: string;
+    boardId: string;
     column: Column;
+    value: any;
 }
 
-export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
-    const { activeBoardMembers, assignMemberToItem, inviteNewEmailToItem } = useBoardStore();
-    console.log('[PersonCell] Active Members:', activeBoardMembers);
+export const PeopleCell: React.FC<PeopleCellProps> = memo(({ itemId, boardId, column, value }) => {
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
+    const assignMemberToItem = useBoardStore(state => state.assignMemberToItem);
+    const inviteNewEmailToItem = useBoardStore(state => state.inviteNewEmailToItem);
+    const activeBoardId = useBoardStore(state => state.activeBoardId);
+
     const { can } = usePermission();
 
     const [isEditing, setIsEditing] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
 
-    const selectedIds = Array.isArray(value) ? value : (value ? [value] : []);
+    const selectedIds = React.useMemo(() => Array.isArray(value) ? value : (value ? [value] : []), [value]);
 
-    const startEditing = () => {
+    const startEditing = useCallback(() => {
         if (!can('edit_items')) return;
         setIsEditing(true);
         if (cellRef.current) {
@@ -34,7 +38,31 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                 width: rect.width
             });
         }
-    };
+    }, [can]);
+
+    const handleSelect = useCallback((userId: string) => {
+        assignMemberToItem(
+            boardId || activeBoardId || '', 
+            userId, 
+            itemId, 
+            column.id
+        );
+    }, [assignMemberToItem, boardId, activeBoardId, itemId, column.id]);
+
+    const handleSelectNewEmail = useCallback((email: string) => {
+        inviteNewEmailToItem(
+            boardId || activeBoardId || '',
+            email,
+            'viewer', 
+            itemId,
+            column.id
+        );
+    }, [inviteNewEmailToItem, boardId, activeBoardId, itemId, column.id]);
+
+    const handleClose = useCallback(() => {
+        setIsEditing(false);
+        setPickerPos(null);
+    }, []);
 
     return (
         <>
@@ -126,32 +154,14 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                 <PersonPicker
                     currentValue={selectedIds}
                     position={pickerPos}
-                    onSelect={(userId) => {
-                        assignMemberToItem(
-                            item.boardId || useBoardStore.getState().activeBoardId || '', 
-                            userId, 
-                            item.id, 
-                            column.id
-                        );
-                    }}
-                    onSelectNewEmail={(email) => {
-                        inviteNewEmailToItem(
-                            item.boardId || useBoardStore.getState().activeBoardId || '',
-                            email,
-                            'viewer', // Default role for Item assigned external users
-                            item.id,
-                            column.id
-                        );
-                    }}
-                    onClose={() => {
-                        setIsEditing(false);
-                        setPickerPos(null);
-                    }}
-                    boardId={item.boardId || useBoardStore.getState().activeBoardId || ''}
-                    itemId={item.id}
+                    onSelect={handleSelect}
+                    onSelectNewEmail={handleSelectNewEmail}
+                    onClose={handleClose}
+                    boardId={boardId || activeBoardId || ''}
+                    itemId={itemId}
                     columnId={column.id}
                 />
             )}
         </>
     );
-};
+});

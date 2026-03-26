@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBoardStore } from '../store/useBoardStore';
 import { supabase } from '../lib/supabase';
@@ -111,7 +111,7 @@ export const usePermission = () => {
         // Only re-run if these specific IDs change (not the whole arrays)
     }, [user?.id, activeWorkspaceId, activeBoardId, activeBoardWorkspaceId, activeWorkspaceOwnerId, useBoardStore(state => state.activeBoardMembers)]);
 
-    const can = (action: PermissionAction): boolean => {
+    const can = useCallback((action: PermissionAction): boolean => {
         const role = userRole.toLowerCase();
         if (role === 'owner') return true;
 
@@ -129,7 +129,7 @@ export const usePermission = () => {
         };
 
         return permissions[action]?.includes(role) || false;
-    };
+    }, [userRole]);
 
-    return { can, role: userRole };
+    return useMemo(() => ({ can, role: userRole }), [can, userRole]);
 };

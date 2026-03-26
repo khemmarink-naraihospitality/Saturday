@@ -1,26 +1,24 @@
 
-import React, { useRef, useState } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useCallback, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { Calendar } from 'lucide-react';
 import { DatePicker } from '../../ui/DatePicker';
 
 interface DateCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
 }
 
-export const DateCell: React.FC<DateCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
     const [isEditing, setIsEditing] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
-
-    // Auto-open logic if standard date picker was used? (Removed as custom picker replaces browser native)
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
@@ -36,7 +34,7 @@ export const DateCell: React.FC<DateCellProps> = ({ item, column }) => {
         });
     };
 
-    const startEditing = () => {
+    const startEditing = useCallback(() => {
         if (!can('edit_items')) return;
         if (cellRef.current) {
             const rect = cellRef.current.getBoundingClientRect();
@@ -44,11 +42,11 @@ export const DateCell: React.FC<DateCellProps> = ({ item, column }) => {
                 top: rect.bottom + 4,
                 left: rect.left,
                 width: rect.width,
-                bottom: rect.bottom + 4 // Add small offset
+                bottom: rect.bottom + 4
             });
             setIsEditing(true);
         }
-    };
+    }, [can]);
 
     return (
         <>
@@ -87,9 +85,9 @@ export const DateCell: React.FC<DateCellProps> = ({ item, column }) => {
                             const offset = date.getTimezoneOffset();
                             const localDate = new Date(date.getTime() - (offset * 60 * 1000));
                             const dateStr = localDate.toISOString().split('T')[0];
-                            updateItemValue(item.id, column.id, dateStr);
+                            updateItemValue(itemId, column.id, dateStr);
                         } else {
-                            updateItemValue(item.id, column.id, null);
+                            updateItemValue(itemId, column.id, null);
                         }
                         setIsEditing(false);
                         setPickerPos(null);
@@ -102,4 +100,4 @@ export const DateCell: React.FC<DateCellProps> = ({ item, column }) => {
             )}
         </>
     );
-};
+});

@@ -1,23 +1,23 @@
 
-import React from 'react';
-import type { Item, Column } from '../../../types';
+import React, { memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { Check } from 'lucide-react';
 
 interface CheckboxCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
 }
 
-export const CheckboxCell: React.FC<CheckboxCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const CheckboxCell: React.FC<CheckboxCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const isChecked = value === true;
 
     return (
         <div
             className="table-cell"
-            onClick={() => updateItemValue(item.id, column.id, !isChecked)}
+            onClick={() => updateItemValue(itemId, column.id, !isChecked)}
             style={{
                 width: '100%',
                 height: '100%',
@@ -44,4 +44,4 @@ export const CheckboxCell: React.FC<CheckboxCellProps> = ({ item, column }) => {
             </div>
         </div>
     );
-};
+});

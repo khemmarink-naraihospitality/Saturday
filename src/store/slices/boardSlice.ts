@@ -199,10 +199,39 @@ export const createBoardSlice: StateCreator<
 
             const favoritedBoardIds = new Set(userFavoritesData?.map(f => f.board_id) || []);
 
+
+            // --- OPTIMIZED DATA MAPPING ---
+            // Create maps for O(1) lookups instead of O(N) filters inside loops
+            const groupsByBoard = new Map<string, any[]>();
+            (groups || []).forEach(g => {
+                const list = groupsByBoard.get(g.board_id) || [];
+                list.push(g);
+                groupsByBoard.set(g.board_id, list);
+            });
+
+            const columnsByBoard = new Map<string, any[]>();
+            (columns || []).forEach(c => {
+                const list = columnsByBoard.get(c.board_id) || [];
+                list.push(c);
+                columnsByBoard.set(c.board_id, list);
+            });
+
+            const itemsByBoard = new Map<string, any[]>();
+            const itemsByGroup = new Map<string, any[]>();
+            (items || []).forEach(i => {
+                const bList = itemsByBoard.get(i.board_id) || [];
+                bList.push(i);
+                itemsByBoard.set(i.board_id, bList);
+
+                const gList = itemsByGroup.get(i.group_id) || [];
+                gList.push(i);
+                itemsByGroup.set(i.group_id, gList);
+            });
+
             const fullBoards: Board[] = boards.map(b => {
-                const bGroups = (groups || []).filter(g => g.board_id === b.id);
-                const bColumns = (columns || []).filter(c => c.board_id === b.id);
-                const bItems = (items || []).filter(i => i.board_id === b.id);
+                const bGroups = groupsByBoard.get(b.id) || [];
+                const bColumns = columnsByBoard.get(b.id) || [];
+                const bItems = itemsByBoard.get(b.id) || [];
 
                 return {
                     id: b.id,
@@ -224,7 +253,7 @@ export const createBoardSlice: StateCreator<
                         id: g.id,
                         title: g.title,
                         color: g.color,
-                        items: bItems.filter(i => i.group_id === g.id).map(i => ({
+                        items: (itemsByGroup.get(g.id) || []).map(i => ({
                             id: i.id,
                             title: i.title,
                             groupId: g.id,

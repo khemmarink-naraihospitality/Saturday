@@ -1,17 +1,17 @@
 
-import React, { useRef, useState, useEffect } from 'react';
-import type { Item, Column } from '../../../types';
+import React, { useRef, useState, useEffect, memo } from 'react';
+import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { Hash, Type, Link2 } from 'lucide-react';
 
 interface TextCellProps {
-    item: Item;
+    itemId: string;
     column: Column;
+    value: any;
 }
 
-export const TextCell: React.FC<TextCellProps> = ({ item, column }) => {
-    const value = item.values[column.id];
+export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -32,7 +32,7 @@ export const TextCell: React.FC<TextCellProps> = ({ item, column }) => {
     const handleBlur = () => {
         setIsEditing(false);
         if (editValue !== value) {
-            updateItemValue(item.id, column.id, editValue);
+            updateItemValue(itemId, column.id, editValue);
         }
     };
 
@@ -40,7 +40,7 @@ export const TextCell: React.FC<TextCellProps> = ({ item, column }) => {
         if (e.key === 'Enter') {
             setIsEditing(false);
             if (editValue !== value) {
-                updateItemValue(item.id, column.id, editValue);
+                updateItemValue(itemId, column.id, editValue);
             }
         }
         if (e.key === 'Escape') {
@@ -124,7 +124,7 @@ export const TextCell: React.FC<TextCellProps> = ({ item, column }) => {
             )}
         </div>
     );
-};
+});
 
 const inputStyle: React.CSSProperties = {
     width: '100%', height: '100%', border: '2px solid hsl(var(--color-brand-primary))', outline: 'none', padding: '0 8px',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Mail, Server } from 'lucide-react';
+import { Save, Mail, Server, ChevronRight, Info } from 'lucide-react';
 
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -20,6 +20,16 @@ export const EmailSettings = () => {
         bodyHtml: ''
     });
 
+    const [inviteExistingTemplate, setInviteExistingTemplate] = useState({
+        subject: '',
+        bodyHtml: ''
+    });
+
+    const [assignItemTemplate, setAssignItemTemplate] = useState({
+        subject: '',
+        bodyHtml: ''
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
@@ -32,16 +42,20 @@ export const EmailSettings = () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['smtp_config', 'invite_email_template']);
+                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template']);
             
             if (error) throw error;
 
             if (data) {
                 const smtp = data.find(item => item.key === 'smtp_config');
                 const template = data.find(item => item.key === 'invite_email_template');
+                const existingTemplate = data.find(item => item.key === 'invite_existing_user_template');
+                const assignTemplate = data.find(item => item.key === 'assign_item_template');
                 
                 if (smtp?.value) setSmtpConfig(smtp.value);
                 if (template?.value) setInviteTemplate(template.value);
+                if (existingTemplate?.value) setInviteExistingTemplate(existingTemplate.value);
+                if (assignTemplate?.value) setAssignItemTemplate(assignTemplate.value);
             }
         } catch (error: any) {
             console.error('Error fetching settings:', error);
@@ -66,6 +80,16 @@ export const EmailSettings = () => {
                     key: 'invite_email_template',
                     value: inviteTemplate,
                     description: 'Template for workspace/board invitations'
+                },
+                {
+                    key: 'invite_existing_user_template',
+                    value: inviteExistingTemplate,
+                    description: 'Template for inviting existing users to a workspace/board'
+                },
+                {
+                    key: 'assign_item_template',
+                    value: assignItemTemplate,
+                    description: 'Template for item assignments'
                 }
             ];
 
@@ -196,7 +220,10 @@ export const EmailSettings = () => {
             <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#10b981" />
-                    Invitation Email Template
+                    Invitation Email Template (New Users)
+                    <span title="สถานการณ์ที่ส่ง: เมื่อเชิญอีเมลที่ 'ไม่เคยมีบัญชีในระบบ' (ไม่ว่าเข้า Workspace, Board หรือคอลัมน์ Person)&#10;จุดประสงค์: ลิงก์จะพาสร้างบัญชีครั้งแรกและเข้าสู่กระดาน" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
                 </h2>
                 <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
                     <strong>Available Variables:</strong> <code style={codeStyle}>{"{{workspaceName}}"}</code>, <code style={codeStyle}>{"{{inviterName}}"}</code>, <code style={codeStyle}>{"{{inviteLink}}"}</code>
@@ -211,13 +238,151 @@ export const EmailSettings = () => {
                         style={inputStyle}
                     />
                 </div>
-                <div>
-                    <label style={labelStyle}>Email HTML Body</label>
-                    <textarea 
-                        value={inviteTemplate.bodyHtml}
-                        onChange={e => setInviteTemplate({...inviteTemplate, bodyHtml: e.target.value})}
-                        style={{ ...inputStyle, minHeight: '200px', resize: 'vertical', fontFamily: 'monospace', fontSize: '13px' }}
+                
+                <CollapsibleHtmlBody 
+                    label="Email HTML Body" 
+                    value={inviteTemplate.bodyHtml} 
+                    onChange={val => setInviteTemplate({...inviteTemplate, bodyHtml: val})} 
+                />
+
+                {/* Live Preview for New User Template */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{...labelStyle, color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{
+                        marginTop: '8px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        backgroundColor: '#f8fafc'
+                    }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span> <strong>{inviteTemplate.subject.replace(/\{\{workspaceName\}\}/g, 'Design System').replace(/\{\{inviterName\}\}/g, 'Alex')}</strong>
+                        </div>
+                        <div 
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{ 
+                                __html: inviteTemplate.bodyHtml
+                                    .replace(/\{\{workspaceName\}\}/g, 'Design System')
+                                    .replace(/\{\{inviterName\}\}/g, 'Alex')
+                                    .replace(/\{\{inviteLink\}\}/g, '#')
+                            }} 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={20} color="#f59e0b" />
+                    Invitation Email Template (Existing Users)
+                    <span title="สถานการณ์ที่ส่ง: เมื่อพนักงาน 'มีบัญชีอยู่แล้ว' แต่เพิ่งถูกเชิญเข้า Board/Workspace ใหม่ที่ไม่เคยมีสิทธิ์มาก่อน&#10;จุดประสงค์: ลิงก์ข้อความจะพาไปใช้บอร์ดทันที ไม่ต้องยืนยันตัวตนซ้ำ" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong> <code style={codeStyle}>{"{{workspaceName}}"}</code>, <code style={codeStyle}>{"{{inviterName}}"}</code>, <code style={codeStyle}>{"{{inviteLink}}"}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input 
+                        type="text" 
+                        value={inviteExistingTemplate.subject}
+                        onChange={e => setInviteExistingTemplate({...inviteExistingTemplate, subject: e.target.value})}
+                        style={inputStyle}
                     />
+                </div>
+                
+                <CollapsibleHtmlBody 
+                    label="Email HTML Body" 
+                    value={inviteExistingTemplate.bodyHtml} 
+                    onChange={val => setInviteExistingTemplate({...inviteExistingTemplate, bodyHtml: val})} 
+                />
+
+                {/* Live Preview for Existing User Template */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{...labelStyle, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{
+                        marginTop: '8px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        backgroundColor: '#f8fafc'
+                    }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span> <strong>{inviteExistingTemplate.subject.replace(/\{\{workspaceName\}\}/g, 'Design System').replace(/\{\{inviterName\}\}/g, 'Alex')}</strong>
+                        </div>
+                        <div 
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{ 
+                                __html: inviteExistingTemplate.bodyHtml
+                                    .replace(/\{\{workspaceName\}\}/g, 'Design System')
+                                    .replace(/\{\{inviterName\}\}/g, 'Alex')
+                                    .replace(/\{\{inviteLink\}\}/g, '#')
+                            }} 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={20} color="#3b82f6" />
+                    Item Assignment Template (Person Column)
+                    <span title="สถานการณ์ที่ส่ง: เมื่อมอบหมายงาน (คอลัมน์ Person) ให้พนักงานที่ 'มีสิทธิ์ใน Board นี้อยู่แล้ว'&#10;จุดประสงค์: แจ้งเตือนระดับงาน (Task) พร้อมลิงก์ไปยัง Item นั้นรวดเร็ว" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong> <code style={codeStyle}>{"{{itemName}}"}</code>, <code style={codeStyle}>{"{{boardName}}"}</code>, <code style={codeStyle}>{"{{inviterName}}"}</code>, <code style={codeStyle}>{"{{inviteLink}}"}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input 
+                        type="text" 
+                        value={assignItemTemplate.subject}
+                        onChange={e => setAssignItemTemplate({...assignItemTemplate, subject: e.target.value})}
+                        style={inputStyle}
+                    />
+                </div>
+                
+                <CollapsibleHtmlBody 
+                    label="Email HTML Body" 
+                    value={assignItemTemplate.bodyHtml} 
+                    onChange={val => setAssignItemTemplate({...assignItemTemplate, bodyHtml: val})} 
+                />
+
+                {/* Live Preview for Assign Item Template */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{...labelStyle, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{
+                        marginTop: '8px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        backgroundColor: '#f8fafc'
+                    }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span> <strong>{assignItemTemplate.subject.replace(/\{\{itemName\}\}/g, 'Set up 53 Tasks').replace(/\{\{boardName\}\}/g, 'Q3 Roadmap')}</strong>
+                        </div>
+                        <div 
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{ 
+                                __html: assignItemTemplate.bodyHtml
+                                    .replace(/\{\{itemName\}\}/g, 'Set up 53 Tasks')
+                                    .replace(/\{\{boardName\}\}/g, 'Q3 Roadmap')
+                                    .replace(/\{\{inviterName\}\}/g, 'Pattaravadee N.')
+                                    .replace(/\{\{inviteLink\}\}/g, '#')
+                            }} 
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -270,4 +435,45 @@ const codeStyle: React.CSSProperties = {
     padding: '2px 4px',
     borderRadius: '4px',
     color: '#0f172a'
+};
+
+const CollapsibleHtmlBody = ({ label, value, onChange }: { label: string, value: string, onChange: (val: string) => void }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                style={{ 
+                    padding: '12px 16px', 
+                    backgroundColor: '#f8fafc', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    borderBottom: isOpen ? '1px solid #e2e8f0' : 'none'
+                }}
+            >
+                <div style={{ 
+                    transition: 'transform 0.2s', 
+                    transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <ChevronRight size={18} />
+                </div>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>{label}</span>
+            </div>
+            {isOpen && (
+                <div style={{ padding: '16px', backgroundColor: 'white' }}>
+                    <textarea 
+                        value={value}
+                        onChange={e => onChange(e.target.value)}
+                        style={{ ...inputStyle, minHeight: '400px', resize: 'vertical', fontFamily: 'monospace', fontSize: '13px' }}
+                    />
+                </div>
+            )}
+        </div>
+    );
 };

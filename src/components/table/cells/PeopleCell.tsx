@@ -12,8 +12,7 @@ interface PeopleCellProps {
 
 export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
     const value = item.values[column.id];
-    const updateItemValue = useBoardStore(state => state.updateItemValue);
-    const { activeBoardMembers } = useBoardStore();
+    const { activeBoardMembers, assignMemberToItem, inviteNewEmailToItem } = useBoardStore();
     console.log('[PersonCell] Active Members:', activeBoardMembers);
     const { can } = usePermission();
 
@@ -128,10 +127,21 @@ export const PeopleCell: React.FC<PeopleCellProps> = ({ item, column }) => {
                     currentValue={selectedIds}
                     position={pickerPos}
                     onSelect={(userId) => {
-                        const newValues = selectedIds.includes(userId)
-                            ? selectedIds.filter((id: string) => id !== userId)
-                            : [...selectedIds, userId];
-                        updateItemValue(item.id, column.id, newValues);
+                        assignMemberToItem(
+                            item.boardId || useBoardStore.getState().activeBoardId || '', 
+                            userId, 
+                            item.id, 
+                            column.id
+                        );
+                    }}
+                    onSelectNewEmail={(email) => {
+                        inviteNewEmailToItem(
+                            item.boardId || useBoardStore.getState().activeBoardId || '',
+                            email,
+                            'viewer', // Default role for Item assigned external users
+                            item.id,
+                            column.id
+                        );
                     }}
                     onClose={() => {
                         setIsEditing(false);

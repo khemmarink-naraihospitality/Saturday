@@ -8,13 +8,14 @@ interface PersonPickerProps {
     currentValue: string[]; // Array of user_ids
     position: { top: number; bottom: number; left: number; width: number };
     onSelect: (userId: string) => void;
+    onSelectNewEmail?: (email: string) => void;
     onClose: () => void;
     boardId: string;
     itemId: string;
     columnId: string;
 }
 
-export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, boardId, itemId, columnId }: PersonPickerProps) => {
+export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNewEmail, onClose, boardId, itemId, columnId }: PersonPickerProps) => {
     const { activeBoardMembers, searchUsers, inviteAndAssignUser } = useBoardStore();
     const { } = useAuth();
 
@@ -317,10 +318,29 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onClose, b
                     </>
                 )}
 
-                {/* No results */}
+                {/* No results or Invite New Email */}
                 {filteredMembers.length === 0 && (!searchTerm || searchResults.length === 0) && (
                     <div style={{ padding: '16px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))', fontSize: '13px' }}>
-                        {isSearching ? 'Searching...' : 'No users found.'}
+                        {isSearching ? 'Searching...' : 
+                            (searchTerm && searchTerm.includes('@') && onSelectNewEmail) ? (
+                                <div
+                                    onClick={() => {
+                                        onSelectNewEmail(searchTerm);
+                                        onClose();
+                                    }}
+                                    style={{
+                                        cursor: 'pointer',
+                                        padding: '8px 12px',
+                                        backgroundColor: '#0073ea',
+                                        color: 'white',
+                                        borderRadius: '4px',
+                                        fontWeight: 500,
+                                        display: 'inline-block'
+                                    }}
+                                >
+                                    Invite {searchTerm} to Board
+                                </div>
+                            ) : 'No users found.'}
                     </div>
                 )}
             </div>

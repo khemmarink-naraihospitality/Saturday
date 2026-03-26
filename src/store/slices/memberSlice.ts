@@ -36,7 +36,12 @@ export interface MemberSlice {
     getBoardMembers: (boardId: string) => Promise<any[]>;
     updateMemberRole: (memberId: string, newRole: string, type: 'workspace' | 'board') => Promise<void>;
     removeMember: (memberId: string, type: 'workspace' | 'board') => Promise<void>;
+    
+    // Person Column Assignment Helpers
     inviteAndAssignUser: (boardId: string, userId: string, role: string, itemId: string, columnId: string) => Promise<void>;
+    inviteNewEmailToItem: (boardId: string, email: string, role: string, itemId: string, columnId: string) => Promise<void>;
+    assignMemberToItem: (boardId: string, userId: string, itemId: string, columnId: string) => Promise<void>;
+    
     searchUsers: (query: string) => Promise<any[]>;
 
     // Realtime & Logging
@@ -171,8 +176,87 @@ export const createMemberSlice: StateCreator<
     },
 
     inviteAndAssignUser: async (boardId, userId, role, itemId, columnId) => {
+        // 1. Give them access to the board
         await supabase.from('board_members').insert({ board_id: boardId, user_id: userId, role });
+        // 2. Assign them to the item
         await get().updateItemValue(itemId, columnId, [userId]);
+        
+        // 3. Send Existing User template email
+        const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
+        const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
+        
+        if (profile?.email) {
+            await supabase.functions.invoke('invite-user', {
+                body: { 
+                    email: profile.email, 
+                    boardId, 
+                    workspaceId: boardData?.workspace_id,
+                    redirectTo: `https://nhgsaturday.com/board/${boardId}`,
+                    action: 'invite'
+                }
+            });
+        }
+    },
+
+    inviteNewEmailToItem: async (boardId, email, role, itemId, columnId) => {
+        const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
+        
+        // 1. Call Edge Function to create/generate auth link and push New User email
+        const { data: responseData, error: fnError } = await supabase.functions.invoke('invite-user', {
+            body: { 
+                email, 
+                boardId, 
+                workspaceId: boardData?.workspace_id,
+                redirectTo: `https://nhgsaturday.com/board/${boardId}`,
+                action: 'invite'
+            }
+        });
+
+        if (fnError) {
+            console.error('Edge Function Invite Error:', fnError);
+            return;
+        }
+
+        const newUserId = responseData?.userId;
+        if (newUserId) {
+            // Give access and assign
+            await supabase.from('board_members').insert({ board_id: boardId, user_id: newUserId, role });
+            await get().updateItemValue(itemId, columnId, [newUserId]);
+        }
+    },
+
+    assignMemberToItem: async (boardId, userId, itemId, columnId) => {
+        // 1. Get current assigned users and merge with new
+        const board = get().boards.find(b => b.id === boardId);
+        const item = board?.items.find(i => i.id === itemId);
+        
+        const currentValue = item?.values?.[columnId];
+        let selectedIds = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
+        
+        // Check if toggling off or on
+        const isRemoving = selectedIds.includes(userId);
+        const newValues = isRemoving 
+            ? selectedIds.filter((id: string) => id !== userId) 
+            : [...selectedIds, userId];
+        
+        // 2. Update value in DB
+        await get().updateItemValue(itemId, columnId, newValues);
+
+        // 3. Send "You're assigned" email only if we just ADDED them
+        if (!isRemoving) {
+            const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
+            if (profile?.email && item?.title && board?.title) {
+                await supabase.functions.invoke('invite-user', {
+                    body: {
+                        email: profile.email,
+                        action: 'assign_item',
+                        itemName: item.title,
+                        boardName: board.title,
+                        redirectTo: `https://nhgsaturday.com/board/${boardId}`
+                    }
+                });
+            }
+        }
     },
 
     logActivity: async (actionType, targetType, targetId, metadata) => {

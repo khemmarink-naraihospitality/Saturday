@@ -31,7 +31,7 @@ interface WorkspaceListProps {
 export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     const {
         boards, activeBoardId, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
-        workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds, sharedWorkspaceIds,
+        workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds,
         userBoardRoles, userWorkspaceRoles, reorderWorkspaces
     } = useBoardStore();
 
@@ -82,7 +82,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     // Unified filtering: show everything the user has access to
     const filteredWorkspaces = workspaces.filter(w => {
         const isOwner = w.owner_id === user?.id;
-        const isMember = userWorkspaceRoles[w.id] !== undefined;
+        const isMember = userWorkspaceRoles[w.id] !== undefined && userWorkspaceRoles[w.id] !== 'board-guest';
         const hasSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
 
         return isOwner || isMember || hasSharedBoard;
@@ -97,7 +97,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
     const allAccessibleWorkspaces = workspaces.filter((w, index, self) => {
         const isAccessible = w.owner_id === user?.id ||
-            userWorkspaceRoles[w.id] !== undefined ||
+            (userWorkspaceRoles[w.id] !== undefined && userWorkspaceRoles[w.id] !== 'board-guest') ||
             boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
 
         return isAccessible && self.findIndex(i => i.id === w.id) === index;
@@ -167,7 +167,8 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                         // 2. Workspace itself is shared with the user (Member/Admin)
                         // 3. User is a Guest explicitly invited to this specific board
                         const isOwner = ws.owner_id === user?.id;
-                        const isWorkspaceShared = sharedWorkspaceIds.includes(ws.id);
+                        const wsRole = userWorkspaceRoles[ws.id];
+                        const isWorkspaceShared = wsRole && wsRole !== 'board-guest';
                         const isBoardShared = sharedBoardIds.includes(b.id);
 
                         const isAccessible = isOwner || isWorkspaceShared || isBoardShared;
@@ -262,7 +263,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 )}
 
                                  {/* Workspace Actions */}
-                                {(ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin') && (
+                                {(ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin' || userWorkspaceRoles[ws.id] === 'member') && (
                                     <div className="sidebar-item-action" onClick={(e) => e.stopPropagation()}>
                                         <MoreHorizontal
                                             size={14}
@@ -323,7 +324,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                     </DndContext>
 
                                     {/* Add Board Button Inside Tree */}
-                                    {!searchActive && (ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin') && (
+                                    {!searchActive && (ws.owner_id === user?.id || userWorkspaceRoles[ws.id] === 'admin' || userWorkspaceRoles[ws.id] === 'member') && (
                                         <div className="tree-node-leaf last-child">
                                             {creatingBoardInWorkspaceId === ws.id ? (
                                                 <div className="tree-sidebar-item" style={{ paddingLeft: '4px', cursor: 'default' }}>
@@ -569,44 +570,47 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                 </div>
             )}
 
-            {/* Workspace Context Menu */}
-            {activeWorkspaceMenu && (
-                <div className="context-menu" style={{
-                    position: 'fixed',
-                    top: menuPosition.top,
-                    left: menuPosition.left,
-                    backgroundColor: 'hsl(var(--color-bg-surface))',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    borderRadius: '4px',
-                    padding: '4px',
-                    zIndex: 9999,
-                    width: '180px',
-                    border: '1px solid hsl(var(--color-border))'
-                }} onClick={(e) => e.stopPropagation()}>
-                    <div className="menu-item" onClick={() => {
-                        setShareWorkspaceId(activeWorkspaceMenu);
-                        setActiveWorkspaceMenu(null);
-                    }}>
-                        <Users size={14} /> Share
+            {activeWorkspaceMenu && (() => {
+                const ws = workspaces.find(w => w.id === activeWorkspaceMenu);
+                return (
+                    <div className="context-menu" style={{
+                        position: 'fixed',
+                        top: menuPosition.top,
+                        left: menuPosition.left,
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        borderRadius: '4px',
+                        padding: '4px',
+                        zIndex: 9999,
+                        width: '180px',
+                        border: '1px solid hsl(var(--color-border))'
+                    }} onClick={(e) => e.stopPropagation()}>
+                        <div className="menu-item" onClick={() => {
+                            setShareWorkspaceId(activeWorkspaceMenu);
+                            setActiveWorkspaceMenu(null);
+                        }}>
+                            <Users size={14} /> Share
+                        </div>
+                        <div className="menu-item" onClick={() => {
+                            if (ws) {
+                                setEditingWorkspaceId(ws.id);
+                                setEditWorkspaceTitle(ws.title);
+                            }
+                            setActiveWorkspaceMenu(null);
+                        }} >
+                            <Edit2 size={14} /> Rename
+                        </div>
+                        {ws?.owner_id === user?.id && (
+                            <div className="menu-item delete" onClick={() => {
+                                setWorkspaceToDelete(activeWorkspaceMenu);
+                                setActiveWorkspaceMenu(null);
+                            }}>
+                                <Trash2 size={14} /> Delete
+                            </div>
+                        )}
                     </div>
-                    <div className="menu-item" onClick={() => {
-                        const ws = workspaces.find(w => w.id === activeWorkspaceMenu);
-                        if (ws) {
-                            setEditingWorkspaceId(ws.id);
-                            setEditWorkspaceTitle(ws.title);
-                        }
-                        setActiveWorkspaceMenu(null);
-                    }} >
-                        <Edit2 size={14} /> Rename
-                    </div>
-                    <div className="menu-item delete" onClick={() => {
-                        setWorkspaceToDelete(activeWorkspaceMenu);
-                        setActiveWorkspaceMenu(null);
-                    }}>
-                        <Trash2 size={14} /> Delete
-                    </div>
-                </div>
-            )}
+                );
+            })()}
 
             <ConfirmModal
                 isOpen={!!boardToDelete}

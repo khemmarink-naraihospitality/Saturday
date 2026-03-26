@@ -323,7 +323,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                 </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: isAddingUrl ? '0' : '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: isAddingUrl ? '0' : '8px' }}>
                 <button
                     onClick={() => { onSave(localFiles); onClose(); }}
                     style={{

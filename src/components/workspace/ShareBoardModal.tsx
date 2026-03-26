@@ -127,7 +127,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
 
                 {/* Invite Form */}
                 {(isOwner || currentUserRole === 'admin') && (
-                    <InviteMemberForm onInvite={handleInvite} />
+                    <InviteMemberForm onInvite={handleInvite} type="board" />
                 )}
 
                 {/* Members List */}

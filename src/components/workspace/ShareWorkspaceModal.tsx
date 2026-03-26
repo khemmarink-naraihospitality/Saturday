@@ -124,7 +124,7 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
 
                 {/* Invite Form */}
                 {(isOwner || currentUserRole === 'admin') && (
-                    <InviteMemberForm onInvite={handleInvite} />
+                    <InviteMemberForm onInvite={handleInvite} type="workspace" />
                 )}
 
                 {/* Members List */}

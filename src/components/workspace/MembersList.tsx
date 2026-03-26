@@ -204,7 +204,8 @@ export const MembersList = ({
                                 value={displayRole}
                                 onChange={(newRole) => onRoleChange(member.id, newRole)}
                                 disabled={!canChangeRole(member)}
-                                allowedRoles={displayRole === 'owner' ? ['owner'] : ['viewer', 'member', 'admin']}
+                                type={type}
+                                allowedRoles={displayRole === 'owner' ? ['owner'] : (type === 'workspace' ? ['member', 'board-guest'] : ['viewer', 'member', 'admin'])}
                             />
 
                             {/* Remove Button */}

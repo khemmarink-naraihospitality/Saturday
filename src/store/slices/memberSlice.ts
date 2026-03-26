@@ -123,7 +123,42 @@ export const createMemberSlice: StateCreator<
     },
     removeMember: async (memberId, type) => {
         const table = type === 'workspace' ? 'workspace_members' : 'board_members';
-        await supabase.from(table).delete().eq('id', memberId);
+        
+        if (type === 'workspace') {
+            // 1. Get user_id and workspace_id for the member being removed
+            const { data: memberData } = await supabase
+                .from('workspace_members')
+                .select('user_id, workspace_id')
+                .eq('id', memberId)
+                .single();
+
+            if (memberData) {
+                const { user_id, workspace_id } = memberData;
+
+                // 2. Remove from workspace_members
+                await supabase.from('workspace_members').delete().eq('id', memberId);
+
+                // 3. Find all boards in this workspace
+                const { data: wsBoards } = await supabase
+                    .from('boards')
+                    .select('id')
+                    .eq('workspace_id', workspace_id);
+
+                if (wsBoards && wsBoards.length > 0) {
+                    const boardIds = wsBoards.map(b => b.id);
+                    // 4. Remove the user from all board_members within those boards
+                    await supabase
+                        .from('board_members')
+                        .delete()
+                        .eq('user_id', user_id)
+                        .in('board_id', boardIds);
+                }
+            }
+        } else {
+            // Direct board member removal
+            await supabase.from(table).delete().eq('id', memberId);
+        }
+
         if (type === 'board' && get().activeBoardId) {
             set({ activeBoardMembers: await get().getBoardMembers(get().activeBoardId!) });
         }
@@ -254,18 +289,102 @@ export const createMemberSlice: StateCreator<
                     }));
                 })
                 .on('postgres_changes', {
-                    event: 'UPDATE',
+                    event: '*',
+                    schema: 'public',
+                    table: 'columns'
+                }, (payload) => {
+                    const column = (payload.new || payload.old) as any;
+                    set(state => ({
+                        boards: state.boards.map(b => {
+                            if (b.id !== column.board_id) return b;
+                            let newColumns = [...b.columns];
+                            const options = typeof column.options === 'string' ? JSON.parse(column.options) : (column.options || []);
+                            
+                            if (payload.eventType === 'INSERT') {
+                                if (!newColumns.find(c => c.id === column.id)) {
+                                    newColumns.push({
+                                        id: column.id,
+                                        title: column.title,
+                                        type: column.type,
+                                        order: column.order,
+                                        width: column.width,
+                                        options
+                                    });
+                                }
+                            } else if (payload.eventType === 'UPDATE') {
+                                newColumns = newColumns.map(c => c.id === column.id ? {
+                                    ...c,
+                                    title: column.title,
+                                    type: column.type,
+                                    order: column.order,
+                                    width: column.width,
+                                    options
+                                } : c);
+                            } else if (payload.eventType === 'DELETE') {
+                                newColumns = newColumns.filter(c => c.id !== column.id);
+                            }
+                            return { ...b, columns: newColumns.sort((a, b) => a.order - b.order) };
+                        })
+                    }));
+                })
+                .on('postgres_changes', {
+                    event: '*',
                     schema: 'public',
                     table: 'boards'
                 }, (payload) => {
-                    const board = payload.new as any;
-                    set(state => ({
-                        boards: state.boards.map(b => b.id === board.id ? { 
-                            ...b, 
-                            title: board.title, 
-                            is_archived: board.is_archived
-                        } : b)
-                    }));
+                    const board = (payload.new || payload.old) as any;
+                    set(state => {
+                        let newBoards = [...state.boards];
+                        if (payload.eventType === 'INSERT') {
+                            if (!newBoards.find(b => b.id === board.id)) {
+                                newBoards.push({
+                                    id: board.id,
+                                    workspaceId: board.workspace_id,
+                                    title: board.title,
+                                    is_archived: board.is_archived || false,
+                                    columns: [],
+                                    groups: [],
+                                    items: [],
+                                    itemColumnTitle: 'Item',
+                                    itemColumnWidth: 500
+                                });
+                            }
+                        } else if (payload.eventType === 'UPDATE') {
+                            newBoards = newBoards.map(b => b.id === board.id ? { 
+                                ...b, 
+                                title: board.title, 
+                                is_archived: board.is_archived
+                            } : b);
+                        } else if (payload.eventType === 'DELETE') {
+                            newBoards = newBoards.filter(b => b.id !== board.id);
+                        }
+                        return { boards: newBoards };
+                    });
+                })
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workspaces'
+                }, (payload) => {
+                    const ws = (payload.new || payload.old) as any;
+                    set(state => {
+                        let newWorkspaces = [...state.workspaces];
+                        if (payload.eventType === 'INSERT') {
+                            if (!newWorkspaces.find(w => w.id === ws.id)) {
+                                newWorkspaces.push({
+                                    id: ws.id,
+                                    title: ws.title,
+                                    order: ws.order,
+                                    owner_id: ws.owner_id
+                                });
+                            }
+                        } else if (payload.eventType === 'UPDATE') {
+                            newWorkspaces = newWorkspaces.map(w => w.id === ws.id ? { ...w, title: ws.title, order: ws.order } : w);
+                        } else if (payload.eventType === 'DELETE') {
+                            newWorkspaces = newWorkspaces.filter(w => w.id !== ws.id);
+                        }
+                        return { workspaces: newWorkspaces.sort((a,b) => a.order - b.order) };
+                    });
                 })
                 .subscribe();
 

@@ -7,24 +7,34 @@ interface RoleSelectorProps {
     onChange: (role: string) => void;
     disabled?: boolean;
     allowedRoles?: string[];
+    type?: 'workspace' | 'board';
 }
 
-export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles }: RoleSelectorProps) => {
+export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, type = 'board' }: RoleSelectorProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
-    const roles = allowedRoles || ['viewer', 'member', 'admin'];
+    const isWorkspace = type === 'workspace';
+    const roles = allowedRoles || (isWorkspace ? ['member', 'board-guest'] : ['viewer', 'member', 'admin']);
 
-    const roleLabels: Record<string, string> = {
+    const roleLabels: Record<string, string> = isWorkspace ? {
+        member: 'Workspace - Member',
+        'board-guest': 'Workspace - Guest',
+        owner: 'Workspace - Owner'
+    } : {
         viewer: 'Viewer',
         member: 'Editor',
-        editor: 'Editor', // Consolidation: display both as 'Editor'
-        admin: 'Admin',   // Corrected from 'Member' to be more intuitive
+        editor: 'Editor',
+        admin: 'Admin',
         owner: 'Owner'
     };
 
-    const roleDescriptions: Record<string, string> = {
+    const roleDescriptions: Record<string, string> = isWorkspace ? {
+        member: 'Access all boards & create boards',
+        'board-guest': 'Access only shared boards',
+        owner: 'Full control'
+    } : {
         viewer: 'Can view only',
         member: 'Can edit items & columns',
         editor: 'Can edit items & columns',

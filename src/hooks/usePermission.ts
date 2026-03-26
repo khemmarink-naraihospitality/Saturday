@@ -121,7 +121,7 @@ export const usePermission = () => {
             'delete_items': ['member', 'editor', 'admin', 'owner'],
             'manage_columns': ['member', 'editor', 'admin', 'owner'],
             'group_ungroup': ['member', 'editor', 'admin', 'owner'],
-            'create_board': ['admin', 'owner'],
+            'create_board': ['admin', 'owner', 'member'],
             'delete_board': ['admin', 'owner'],
             'invite_members': ['admin', 'owner'],
             'create_sub_workspace': ['admin', 'owner'],

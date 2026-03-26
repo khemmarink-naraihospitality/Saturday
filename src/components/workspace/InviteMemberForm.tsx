@@ -5,9 +5,10 @@ import { useBoardStore } from '../../store/useBoardStore';
 interface InviteMemberFormProps {
     onInvite: (email: string, role: string) => Promise<void>;
     defaultRole?: string;
+    type?: 'workspace' | 'board';
 }
 
-export const InviteMemberForm = ({ onInvite, defaultRole = 'member' }: InviteMemberFormProps) => {
+export const InviteMemberForm = ({ onInvite, defaultRole = 'member', type = 'board' }: InviteMemberFormProps) => {
     const { searchUsers } = useBoardStore();
     const [email, setEmail] = useState('');
     const [role, setRole] = useState(defaultRole);
@@ -140,6 +141,7 @@ export const InviteMemberForm = ({ onInvite, defaultRole = 'member' }: InviteMem
                     value={role}
                     onChange={setRole}
                     disabled={isLoading}
+                    type={type}
                 />
 
                 <button

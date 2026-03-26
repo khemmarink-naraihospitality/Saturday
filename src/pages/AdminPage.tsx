@@ -4,17 +4,18 @@ import { useBoardStore } from '../store/useBoardStore';
 import { supabase } from '../lib/supabase';
 import {
     LayoutDashboard, Users, Settings,
-    ShieldCheck, Activity, ArrowLeft, Building2, Trello, Download, Upload
+    ShieldCheck, Activity, ArrowLeft, Building2, Trello, Download, Upload, Mail
 } from 'lucide-react';
 import { UserTable } from '../components/admin/UserTable';
 import { WorkspaceTable } from '../components/admin/WorkspaceTable';
 import { BoardTable } from '../components/admin/BoardTable';
 import { ActivityLogs } from '../components/admin/ActivityLogs';
+import { EmailSettings } from '../components/admin/EmailSettings';
 
 export const AdminPage = () => {
     const { currentUser } = useUserStore();
     const { navigateTo } = useBoardStore();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'email_templates' | 'settings'>('dashboard');
 
     // Real Stats State
     const [stats, setStats] = useState([
@@ -87,6 +88,7 @@ export const AdminPage = () => {
                         { id: 'users', label: 'User Management', icon: Users },
                         { id: 'workspaces', label: 'Workspaces', icon: Building2 },
                         { id: 'boards', label: 'Boards', icon: Trello },
+                        { id: 'email_templates', label: 'Email & SMTP', icon: Mail },
                         { id: 'settings', label: 'System Settings', icon: Settings },
                     ].map((item) => (
                         <div
@@ -125,7 +127,7 @@ export const AdminPage = () => {
             <main style={{ flex: 1, overflow: 'auto', padding: '32px 48px' }}>
                 <header style={{ marginBottom: '32px' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
-                        {activeTab === 'dashboard' ? 'Overview' : activeTab === 'users' ? 'User Management' : activeTab === 'workspaces' ? 'Workspace Management' : activeTab === 'boards' ? 'Board Management' : 'Settings'}
+                        {activeTab === 'dashboard' ? 'Overview' : activeTab === 'users' ? 'User Management' : activeTab === 'workspaces' ? 'Workspace Management' : activeTab === 'boards' ? 'Board Management' : activeTab === 'email_templates' ? 'Email Settings' : 'Settings'}
                     </h1>
                     <p style={{ color: '#64748b', marginTop: '8px' }}>
                         Welcome back, {currentUser.name}. managing system as {currentUser.system_role}.
@@ -183,6 +185,11 @@ export const AdminPage = () => {
                         <BoardTable />
                     </div>
                 )}
+                
+                {activeTab === 'email_templates' && (
+                    <EmailSettings />
+                )}
+
                 {activeTab === 'settings' && (
                     <div style={{ maxWidth: '800px' }}>
                         <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>

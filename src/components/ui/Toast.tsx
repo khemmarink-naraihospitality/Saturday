@@ -56,10 +56,6 @@ export const Toast = ({ message, type = 'success', duration = 3000, onClose }: T
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
-                position: 'fixed',
-                top: '24px',
-                right: '24px',
-                zIndex: 10000,
                 backgroundColor: colors.bg,
                 color: '#ffffff',
                 padding: '12px 16px',
@@ -69,7 +65,8 @@ export const Toast = ({ message, type = 'success', duration = 3000, onClose }: T
                 alignItems: 'center',
                 gap: '12px',
                 minWidth: '300px',
-                maxWidth: '500px'
+                maxWidth: '500px',
+                pointerEvents: 'auto'
             }}
         >
             <Icon size={20} color={colors.icon} />
@@ -106,24 +103,28 @@ interface ToastContainerProps {
 
 export const ToastContainer = ({ toasts, onRemove }: ToastContainerProps) => {
     return (
-        <AnimatePresence>
-            {toasts.map((toast, index) => (
-                <div
-                    key={toast.id}
-                    style={{
-                        position: 'fixed',
-                        top: `${24 + index * 80}px`,
-                        right: '24px',
-                        zIndex: 10000
-                    }}
-                >
+        <div style={{
+            position: 'fixed',
+            top: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            alignItems: 'center',
+            pointerEvents: 'none'
+        }}>
+            <AnimatePresence>
+                {toasts.map((toast) => (
                     <Toast
+                        key={toast.id}
                         message={toast.message}
                         type={toast.type}
                         onClose={() => onRemove(toast.id)}
                     />
-                </div>
-            ))}
-        </AnimatePresence>
+                ))}
+            </AnimatePresence>
+        </div>
     );
 };

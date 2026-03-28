@@ -228,11 +228,16 @@ export const createWorkspaceSlice: StateCreator<
                     { role, workspaceName: 'Workspace' }
                 );
             } else {
+                const { workspaces } = get();
+                const ws = workspaces.find(w => w.id === workspaceId);
+                const workspaceName = ws?.title || 'NHG Saturday';
+
                 // Call Edge Function to send email invite and record pending
                 const { error: fnError } = await supabase.functions.invoke('invite-user', {
                     body: { 
                         email, 
                         workspaceId,
+                        workspaceName,
                         redirectTo: 'https://saturdaycom.vercel.app/'
                     }
                 });

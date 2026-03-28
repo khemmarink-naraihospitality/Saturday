@@ -85,7 +85,8 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
                 maxHeight: '80vh',
                 display: 'flex',
                 flexDirection: 'column',
-                zIndex: 9999
+                zIndex: 9999,
+                overflow: 'hidden'
             }}>
                 {/* Header */}
                 <div style={{
@@ -161,6 +162,35 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
                             type="workspace"
                         />
                     )}
+                </div>
+                
+                {/* Footer */}
+                <div style={{
+                    padding: '16px 24px',
+                    borderTop: '1px solid hsl(var(--color-border))',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    backgroundColor: 'white',
+                    marginTop: 'auto'
+                }}>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            padding: '8px 24px',
+                            backgroundColor: '#4f46e5',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'opacity 0.2s',
+                            fontSize: '14px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                    >
+                        Done
+                    </button>
                 </div>
             </div>
         </>

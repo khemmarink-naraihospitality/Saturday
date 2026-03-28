@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -19,72 +18,103 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { email, redirectTo, workspaceName = 'NHG Saturday', inviterName = 'A Team Member' } = await req.json();
+    const { 
+      email, 
+      redirectTo, 
+      workspaceName = 'NHG Saturday', 
+      inviterName = 'A Team Member',
+      action = 'invite', // 'invite' | 'assign_item' | 'test_email'
+      itemName = '',
+      boardName = ''
+    } = await req.json();
 
     if (!email) {
       throw new Error('Email is required');
     }
 
-    // 1. Fetch SMTP Config and Template from system_settings
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
-      .in('key', ['smtp_config', 'invite_email_template']);
+      .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template']);
 
     if (settingsError) {
       console.error('Error fetching settings:', settingsError);
-      throw new Error('Failed to fetch email settings');
+      throw new Error('Failed to fetch email settings from DB');
     }
 
     const smtpConfig = settingsData?.find(s => s.key === 'smtp_config')?.value;
-    const template = settingsData?.find(s => s.key === 'invite_email_template')?.value;
+    const templateNew = settingsData?.find(s => s.key === 'invite_email_template')?.value;
+    const templateExisting = settingsData?.find(s => s.key === 'invite_existing_user_template')?.value;
+    const templateAssign = settingsData?.find(s => s.key === 'assign_item_template')?.value;
 
     if (!smtpConfig || !smtpConfig.host) {
       throw new Error('SMTP Configuration is missing or incomplete in system_settings');
     }
 
-    // 2. Generate Invite Link or Use Redirect Link (for existing users)
     let actionLink = redirectTo || 'https://nhgsaturday.com';
     let isNewUser = false;
+    let finalTemplate;
+    let returnedUserId = null;
 
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'invite',
-      email: email,
-      options: { redirectTo: actionLink }
-    });
+    if (action === 'test_email') {
+      finalTemplate = {
+        subject: 'SMTP Connection Test Success',
+        bodyHtml: `<p>Hello!</p><p>If you see this email, it means your SMTP configuration in <b>{{workspaceName}}</b> is working correctly.</p><p>Sent to: ${email}</p>`
+      };
+    } else if (action === 'assign_item') {
+      finalTemplate = templateAssign;
+      // Get the existing user's ID
+      const { data: userRecord } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = userRecord?.users?.find(u => u.email === email);
+      if (existingUser) returnedUserId = existingUser.id;
+    } else {
+      // Standard Workspace/Board Invite
+      finalTemplate = templateNew;
+      
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'invite',
+        email: email,
+        options: { redirectTo: actionLink }
+      });
 
-    if (linkError) {
-      const errorMsg = linkError.message?.toLowerCase() || '';
-      if (errorMsg.includes('user already registered') || errorMsg.includes('already exists')) {
-        // User already exists. We can just send them a link to log in.
-        actionLink = redirectTo || 'https://nhgsaturday.com';
-      } else {
-        console.error('Error generating link:', linkError);
-        throw linkError;
+      if (linkError) {
+        const errorMsg = linkError.message?.toLowerCase() || '';
+        if (errorMsg.includes('user already registered') || errorMsg.includes('already exists')) {
+          actionLink = redirectTo || 'https://nhgsaturday.com';
+          finalTemplate = templateExisting || templateNew; 
+          
+          const { data: userRecord } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = userRecord?.users?.find(u => u.email === email);
+          if (existingUser) returnedUserId = existingUser.id;
+        } else {
+          throw linkError;
+        }
+      } else if (linkData?.properties?.action_link) {
+        actionLink = linkData.properties.action_link;
+        isNewUser = true;
+        returnedUserId = linkData.user?.id || null;
       }
-    } else if (linkData?.properties?.action_link) {
-      // New user invite link generated successfully
-      actionLink = linkData.properties.action_link;
-      isNewUser = true;
     }
 
-    // 3. Prepare Email Content
-    let subject = template?.subject || `You have been invited to ${workspaceName}`;
-    let htmlBody = template?.bodyHtml || `<p>You have been invited to ${workspaceName}.</p><p><a href="{{inviteLink}}">Click here to join</a></p>`;
+    let subject = finalTemplate?.subject || `Notification from ${workspaceName}`;
+    let htmlBody = finalTemplate?.bodyHtml || `<p>Please visit: <a href="{{inviteLink}}">Link</a></p>`;
 
-    // Replace Variables
+    // Replace Variables with correct regex (matching exactly `{{varName}}`)
     subject = subject.replace(/\{\{workspaceName\}\}/g, workspaceName)
-                     .replace(/\{\{inviterName\}\}/g, inviterName);
+                     .replace(/\{\{inviterName\}\}/g, inviterName)
+                     .replace(/\{\{itemName\}\}/g, itemName)
+                     .replace(/\{\{boardName\}\}/g, boardName);
                      
     htmlBody = htmlBody.replace(/\{\{workspaceName\}\}/g, workspaceName)
                        .replace(/\{\{inviterName\}\}/g, inviterName)
-                       .replace(/\{\{inviteLink\}\}/g, actionLink);
+                       .replace(/\{\{inviteLink\}\}/g, actionLink)
+                       .replace(/\{\{itemName\}\}/g, itemName)
+                       .replace(/\{\{boardName\}\}/g, boardName);
 
-    // 4. Send Email via Nodemailer
     const transporter = nodemailer.createTransport({
       host: smtpConfig.host,
       port: smtpConfig.port,
-      secure: smtpConfig.secure, // true for 465, false for other ports
+      secure: smtpConfig.secure,
       auth: {
         user: smtpConfig.user,
         pass: smtpConfig.password,
@@ -103,8 +133,9 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        message: 'Invitation email sent successfully via custom SMTP', 
+        message: action === 'test_email' ? 'Test email sent successfully!' : 'Email sent successfully', 
         isNewUser,
+        userId: returnedUserId,
         messageId: info.messageId 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

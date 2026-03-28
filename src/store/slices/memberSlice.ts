@@ -96,12 +96,15 @@ export const createMemberSlice: StateCreator<
                 { role, boardName: boardData?.title || 'Board', workspaceId: boardData?.workspace_id }
             );
         } else {
+            const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
+            
             // Call Edge Function to send email invite and record pending
             const { error: fnError } = await supabase.functions.invoke('invite-user', {
                 body: { 
                     email, 
                     boardId, 
                     workspaceId: boardData?.workspace_id,
+                    workspaceName: workspaceTitle,
                     redirectTo: 'https://saturdaycom.vercel.app/'
                 }
             });
@@ -185,12 +188,15 @@ export const createMemberSlice: StateCreator<
         const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
         const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
         
+        const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
+        
         if (profile?.email) {
             await supabase.functions.invoke('invite-user', {
                 body: { 
                     email: profile.email, 
                     boardId, 
                     workspaceId: boardData?.workspace_id,
+                    workspaceName: workspaceTitle,
                     redirectTo: `https://nhgsaturday.com/board/${boardId}`,
                     action: 'invite'
                 }
@@ -201,12 +207,15 @@ export const createMemberSlice: StateCreator<
     inviteNewEmailToItem: async (boardId, email, role, itemId, columnId) => {
         const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
         
+        const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
+        
         // 1. Call Edge Function to create/generate auth link and push New User email
         const { data: responseData, error: fnError } = await supabase.functions.invoke('invite-user', {
             body: { 
                 email, 
                 boardId, 
                 workspaceId: boardData?.workspace_id,
+                workspaceName: workspaceTitle,
                 redirectTo: `https://nhgsaturday.com/board/${boardId}`,
                 action: 'invite'
             }
@@ -245,6 +254,7 @@ export const createMemberSlice: StateCreator<
         // 3. Send "You're assigned" email only if we just ADDED them
         if (!isRemoving) {
             const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
+            const workspaceTitle = get().workspaces.find(w => w.id === board?.workspaceId)?.title || 'NHG Saturday';
             if (profile?.email && item?.title && board?.title) {
                 await supabase.functions.invoke('invite-user', {
                     body: {
@@ -252,6 +262,7 @@ export const createMemberSlice: StateCreator<
                         action: 'assign_item',
                         itemName: item.title,
                         boardName: board.title,
+                        workspaceName: workspaceTitle,
                         redirectTo: `https://nhgsaturday.com/board/${boardId}`
                     }
                 });

@@ -28,41 +28,13 @@ function PageLoader() {
   return (
     <div style={{
       height: '100vh',
-      width: '100vw',
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'hsl(var(--color-bg-canvas))',
-      gap: '24px'
+      color: '#64748b',
+      fontSize: '14px'
     }}>
-      <div style={{
-        width: '64px',
-        height: '64px',
-        borderRadius: '16px',
-        backgroundColor: 'hsl(var(--color-brand-primary))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 8px 32px -8px hsla(var(--color-brand-primary-hsl), 0.5)',
-        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-      }}>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <line x1="3" y1="9" x2="21" y2="9"/>
-          <line x1="9" y1="21" x2="9" y2="9"/>
-        </svg>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Workera</h2>
-        <p style={{ fontSize: '14px', color: 'hsl(var(--color-text-tertiary))', margin: 0 }}>Loading your workspace...</p>
-      </div>
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(0.95); }
-        }
-      `}</style>
+      Loading...
     </div>
   );
 }
@@ -256,7 +228,11 @@ function MainApp() {
   }, [activeWorkspaceId]);
 
   if (isLoading) {
-    return <PageLoader />;
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p>Loading your workspace...</p>
+      </div>
+    );
   }
 
   return (

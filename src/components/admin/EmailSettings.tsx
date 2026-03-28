@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Mail, Server, ChevronRight, Info } from 'lucide-react';
+import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff } from 'lucide-react';
 
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -31,6 +31,12 @@ export const EmailSettings = () => {
     });
 
     const [message, setMessage] = useState({ type: '', text: '' });
+    
+    // Test SMTP state
+    const [testEmail, setTestEmail] = useState('');
+    const [testingSmtp, setTestingSmtp] = useState(false);
+    const [testResult, setTestResult] = useState<{ type: 'success' | 'error' | '', text: string }>({ type: '', text: '' });
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -112,6 +118,51 @@ export const EmailSettings = () => {
         }
     };
 
+    const handleTestEmail = async () => {
+        if (!testEmail) {
+            setTestResult({ type: 'error', text: 'Please enter a recipient email' });
+            return;
+        }
+
+        try {
+            setTestingSmtp(true);
+            setTestResult({ type: '', text: '' });
+
+            const { data, error } = await supabase.functions.invoke('test-smtp', {
+                body: { 
+                    smtp_config: smtpConfig,
+                    test_email: testEmail
+                }
+            });
+
+            if (error) {
+                // Try to get more details from the error response
+                let errorMessage = error.message || 'Unknown error';
+                
+                // If the error has a response property (standard for FunctionsHttpError)
+                if (error instanceof Error && 'context' in error) {
+                     // Some versions of supabase-js return details in context
+                }
+
+                try {
+                    // Check if it's a JSON error response from our function
+                    if (data && data.error) {
+                        errorMessage = data.error;
+                    }
+                } catch (e) {}
+
+                throw new Error(errorMessage);
+            }
+
+            setTestResult({ type: 'success', text: 'Test email sent successfully! Please check your inbox.' });
+        } catch (error: any) {
+            console.error('Error testing SMTP:', error);
+            setTestResult({ type: 'error', text: 'Failed to send test email: ' + (error.message || 'Unknown error') });
+        } finally {
+            setTestingSmtp(false);
+        }
+    };
+
     if (loading) {
         return <div style={{ padding: '24px', color: '#64748b' }}>Loading settings...</div>;
     }
@@ -185,13 +236,34 @@ export const EmailSettings = () => {
                     </div>
                     <div>
                         <label style={labelStyle}>Password / App Password</label>
-                        <input 
-                            type="password" 
-                            value={smtpConfig.password}
-                            onChange={e => setSmtpConfig({...smtpConfig, password: e.target.value})}
-                            style={inputStyle}
-                            autoComplete="new-password"
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                value={smtpConfig.password}
+                                onChange={e => setSmtpConfig({...smtpConfig, password: e.target.value})}
+                                style={{ ...inputStyle, paddingRight: '40px' }}
+                                autoComplete="new-password"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: '#64748b',
+                                    padding: '0'
+                                }}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -215,6 +287,67 @@ export const EmailSettings = () => {
                         />
                     </div>
                 </div>
+            </div>
+
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={20} color="#6366f1" />
+                    Test SMTP Configuration
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+                    Enter an email address below to send a test message using the current SMTP settings. 
+                    <span style={{ color: '#f59e0b', marginLeft: '4px', fontWeight: 500 }}>
+                        (You don't need to save settings before testing)
+                    </span>
+                </p>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Recipient Email Address</label>
+                        <input 
+                            type="email" 
+                            value={testEmail}
+                            onChange={e => setTestEmail(e.target.value)}
+                            placeholder="e.g. your-email@example.com"
+                            style={inputStyle}
+                        />
+                    </div>
+                    <button
+                        onClick={handleTestEmail}
+                        disabled={testingSmtp || !testEmail}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 20px',
+                            backgroundColor: '#4f46e5',
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: 'white',
+                            fontWeight: 600,
+                            cursor: (testingSmtp || !testEmail) ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: (testingSmtp || !testEmail) ? 0.7 : 1,
+                            transition: 'all 0.2s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <Mail size={18} />
+                        {testingSmtp ? 'Sending...' : 'Test Send Email'}
+                    </button>
+                </div>
+
+                {testResult.text && (
+                    <div style={{
+                        marginTop: '16px',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        backgroundColor: testResult.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                        color: testResult.type === 'success' ? '#166534' : '#991b1b',
+                        border: `1px solid ${testResult.type === 'success' ? '#bbf7d0' : '#fecaca'}`
+                    }}>
+                        {testResult.text}
+                    </div>
+                )}
             </div>
 
             <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>

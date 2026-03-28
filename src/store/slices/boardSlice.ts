@@ -41,9 +41,6 @@ export interface BoardSlice {
 
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
-    fetchBoardContent: (boardId: string) => Promise<void>;
-    loadedBoardIds: string[];
-    isBoardLoading: Record<string, boolean>;
 }
 
 export const createBoardSlice: StateCreator<
@@ -63,8 +60,6 @@ export const createBoardSlice: StateCreator<
     userWorkspaceRoles: {},
     sharedBoardIds: [],
     sharedWorkspaceIds: [],
-    loadedBoardIds: [],
-    isBoardLoading: {},
 
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
@@ -109,6 +104,7 @@ export const createBoardSlice: StateCreator<
         if (get().isInitializing) return;
 
         if (!isSilent) {
+            // Only show full loading if we have NO data yet
             const currentBoards = get().boards;
             if (currentBoards.length === 0) {
                 set({ isLoading: true, error: null, isInitializing: true });
@@ -125,35 +121,61 @@ export const createBoardSlice: StateCreator<
                 return;
             }
 
-            // --- PHASE 1: CORE METADATA ---
-            // Faster loading by skipping heavy items/columns/groups initially
+            // Using full typed response validation would be better but keeping structure
             const [
                 { data: workspaces },
                 { data: boards },
+                { data: groups },
+                { data: columns },
+                { data: items },
                 { data: sharedBoardsData },
                 { data: sharedWorkspacesData },
                 { data: userFavoritesData }
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
-                supabase.from('boards').select('*, is_archived').order('order'),
+                supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
+                supabase.from('groups').select('*').order('order'),
+                supabase.from('columns').select('*').order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
             ]);
+
+            // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
+            if (columns && columns.length > 0) {
+                const buggedColumns = columns.filter(c => (c.title === 'Person' || c.title === 'Owner') && c.type === 'text');
+                if (buggedColumns.length > 0) {
+                    console.log('[AutoFix] Found bugged Person columns:', buggedColumns.length);
+                    await Promise.all(buggedColumns.map(c =>
+                        supabase.from('columns').update({ type: 'people', options: [] }).eq('id', c.id)
+                    ));
+                    buggedColumns.forEach(c => { c.type = 'people'; c.options = []; });
+                }
+            }
+            // ---------------------------------------------------------------------
 
             if (!workspaces || !boards) throw new Error('Failed to load core data');
 
             // 0. ENSURE PROFILE
             let { data: existingProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
+            // Fetch profiles for workspace owners to display names
             const workspaceOwnerIds = Array.from(new Set(workspaces.map((w: any) => w.owner_id).filter(Boolean)));
             let ownerProfilesMap: Record<string, string> = {};
             if (workspaceOwnerIds.length > 0) {
                 const { data: ownerProfiles } = await supabase.from('profiles').select('id, full_name').in('id', workspaceOwnerIds);
-                if (ownerProfiles) ownerProfiles.forEach((p: any) => { ownerProfilesMap[p.id] = p.full_name || 'Unknown'; });
+                if (ownerProfiles) {
+                    ownerProfiles.forEach((p: any) => {
+                        ownerProfilesMap[p.id] = p.full_name || 'Unknown';
+                    });
+                }
             }
 
-            await supabase.from('profiles').upsert({
+            console.log('[DEBUG] User Metadata:', user.user_metadata);
+            console.log('[DEBUG] Existing Profile:', existingProfile);
+
+            const { error: profileError } = await supabase.from('profiles').upsert({
                 id: user.id,
                 email: user.email,
                 full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
@@ -161,28 +183,107 @@ export const createBoardSlice: StateCreator<
                 system_role: existingProfile?.system_role || 'user'
             }, { onConflict: 'id' });
 
+            if (profileError) console.error("Failed to ensure profile:", profileError);
+            else console.log('[DEBUG] Profile ensured successfully');
+
+            // console.log('DEBUG: loadUserData sharedBoardsData:', sharedBoardsData);
+
             const lastViewedMap: Record<string, string> = {};
             if (sharedBoardsData) {
                 sharedBoardsData.forEach((r: any) => {
-                    if (r.board_id && r.last_viewed_at) lastViewedMap[r.board_id] = r.last_viewed_at;
+                    if (r.board_id && r.last_viewed_at) {
+                        lastViewedMap[r.board_id] = r.last_viewed_at;
+                    }
                 });
             }
 
             const favoritedBoardIds = new Set(userFavoritesData?.map(f => f.board_id) || []);
 
-            const initialBoards: Board[] = boards.map(b => ({
-                id: b.id,
-                workspaceId: b.workspace_id,
-                title: b.title,
-                is_archived: b.is_archived,
-                isFavorite: favoritedBoardIds.has(b.id),
-                lastViewedAt: lastViewedMap[b.id] || undefined,
-                columns: [], // Empty initially
-                groups: [],  // Empty initially
-                items: [],   // Empty initially
-                itemColumnTitle: 'Item',
-                itemColumnWidth: 500
-            }));
+
+            // --- OPTIMIZED DATA MAPPING ---
+            // Create maps for O(1) lookups instead of O(N) filters inside loops
+            const groupsByBoard = new Map<string, any[]>();
+            (groups || []).forEach(g => {
+                const list = groupsByBoard.get(g.board_id) || [];
+                list.push(g);
+                groupsByBoard.set(g.board_id, list);
+            });
+
+            const columnsByBoard = new Map<string, any[]>();
+            (columns || []).forEach(c => {
+                const list = columnsByBoard.get(c.board_id) || [];
+                list.push(c);
+                columnsByBoard.set(c.board_id, list);
+            });
+
+            const itemsByBoard = new Map<string, any[]>();
+            const itemsByGroup = new Map<string, any[]>();
+            (items || []).forEach(i => {
+                const bList = itemsByBoard.get(i.board_id) || [];
+                bList.push(i);
+                itemsByBoard.set(i.board_id, bList);
+
+                const gList = itemsByGroup.get(i.group_id) || [];
+                gList.push(i);
+                itemsByGroup.set(i.group_id, gList);
+            });
+
+            const fullBoards: Board[] = boards.map(b => {
+                const bGroups = groupsByBoard.get(b.id) || [];
+                const bColumns = columnsByBoard.get(b.id) || [];
+                const bItems = itemsByBoard.get(b.id) || [];
+
+                return {
+                    id: b.id,
+                    workspaceId: b.workspace_id,
+                    title: b.title,
+                    is_archived: b.is_archived,
+                    isFavorite: favoritedBoardIds.has(b.id),
+                    lastViewedAt: lastViewedMap[b.id] || undefined,
+                    columns: bColumns.map(c => ({
+                        id: c.id,
+                        title: c.title,
+                        type: c.type as ColumnType,
+                        width: c.width,
+                        order: c.order,
+                        options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
+                        aggregation: c.aggregation
+                    })),
+                    groups: bGroups.map(g => ({
+                        id: g.id,
+                        title: g.title,
+                        color: g.color,
+                        items: (itemsByGroup.get(g.id) || []).map(i => ({
+                            id: i.id,
+                            title: i.title,
+                            groupId: g.id,
+                            boardId: b.id,
+                            values: i.values || {},
+                            isHidden: i.is_hidden,
+                            updates: i.updates || [],
+                            files: i.files || [],
+                            order: i.order,
+                            parentId: i.parent_id
+                        })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
+                    })),
+                    items: bItems.map(i => ({
+                        id: i.id,
+                        title: i.title,
+                        groupId: i.group_id,
+                        boardId: b.id,
+                        values: i.values || {},
+                        isHidden: i.is_hidden,
+                        updates: i.updates || [],
+                        files: i.files || [],
+                        parentId: i.parent_id
+                    })),
+                    itemColumnTitle: 'Item',
+                    itemColumnWidth: 500
+                };
+            });
+
+            // ... (Active Workspace/Board determination) ...
+            // Simplified for brevity in replacement constraint
 
             // Determine Active Workspace
             const currentWorkspaceId = get().activeWorkspaceId;
@@ -196,19 +297,23 @@ export const createBoardSlice: StateCreator<
 
             // Determine Active Board
             const currentBoardId = get().activeBoardId;
-            const validCurrentBoard = initialBoards.find(b => b.id === currentBoardId);
+            const validCurrentBoard = fullBoards.find(b => b.id === currentBoardId);
             let activeBoardId = validCurrentBoard ? validCurrentBoard.id : null;
             if (!activeBoardId) {
                 const lastBoardId = localStorage.getItem('lastActiveBoardId');
-                const validBoard = initialBoards.find(b => b.id === lastBoardId);
+                const validBoard = fullBoards.find(b => b.id === lastBoardId);
                 activeBoardId = validBoard ? validBoard.id : null;
             }
 
             const boardRoles: Record<string, string> = {};
-            sharedBoardsData?.forEach((r: any) => { if (r.board_id) boardRoles[r.board_id] = r.role || 'viewer'; });
+            sharedBoardsData?.forEach((r: any) => {
+                if (r.board_id) boardRoles[r.board_id] = r.role || 'viewer';
+            });
 
             const workspaceRoles: Record<string, string> = {};
-            sharedWorkspacesData?.forEach((r: any) => { if (r.workspace_id) workspaceRoles[r.workspace_id] = r.role || 'member'; });
+            sharedWorkspacesData?.forEach((r: any) => {
+                if (r.workspace_id) workspaceRoles[r.workspace_id] = r.role || 'member';
+            });
 
             set({
                 workspaces: workspaces.map((w: any) => ({
@@ -216,9 +321,9 @@ export const createBoardSlice: StateCreator<
                     title: w.title,
                     order: w.order,
                     owner_id: w.owner_id,
-                    ownerName: ownerProfilesMap[w.owner_id]
+                    ownerName: ownerProfilesMap[w.owner_id] // Add ownerName
                 })),
-                boards: initialBoards,
+                boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],
                 sharedWorkspaceIds: sharedWorkspacesData?.map((r: any) => r.workspace_id) || [],
                 userBoardRoles: boardRoles,
@@ -228,9 +333,13 @@ export const createBoardSlice: StateCreator<
                 activeBoardId
             });
 
-            // Trigger content load for the active board immediately
             if (activeBoardId) {
-                get().setActiveBoard(activeBoardId);
+                if (isSilent && activeBoardId === get().activeBoardId) {
+                    const members = await get().getBoardMembers(activeBoardId);
+                    set({ activeBoardMembers: members });
+                } else {
+                    get().setActiveBoard(activeBoardId);
+                }
             }
 
         } catch (e) {
@@ -241,104 +350,12 @@ export const createBoardSlice: StateCreator<
         }
     },
 
-    fetchBoardContent: async (boardId: string) => {
-        if (!boardId || get().loadedBoardIds.includes(boardId) || get().isBoardLoading[boardId]) return;
-
-        set(state => ({ isBoardLoading: { ...state.isBoardLoading, [boardId]: true } }));
-
-        try {
-            console.log(`[Store] Fetching content for board: ${boardId}`);
-            const [
-                { data: groups },
-                { data: columns },
-                { data: items }
-            ] = await Promise.all([
-                supabase.from('groups').select('*').eq('board_id', boardId).order('order'),
-                supabase.from('columns').select('*').eq('board_id', boardId).order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order')
-            ]);
-
-            // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
-            let processedColumns = columns || [];
-            if (processedColumns.length > 0) {
-                const buggedColumns = processedColumns.filter(c => (c.title === 'Person' || c.title === 'Owner') && c.type === 'text');
-                if (buggedColumns.length > 0) {
-                    await Promise.all(buggedColumns.map(c =>
-                        supabase.from('columns').update({ type: 'people', options: [] }).eq('id', c.id)
-                    ));
-                    buggedColumns.forEach(c => { c.type = 'people'; c.options = []; });
-                }
-            }
-
-            const itemsByGroup = new Map<string, any[]>();
-            (items || []).forEach(i => {
-                const gList = itemsByGroup.get(i.group_id) || [];
-                gList.push(i);
-                itemsByGroup.set(i.group_id, gList);
-            });
-
-            set(state => ({
-                boards: state.boards.map(b => {
-                    if (b.id !== boardId) return b;
-                    return {
-                        ...b,
-                        columns: processedColumns.map(c => ({
-                            id: c.id,
-                            title: c.title,
-                            type: c.type as ColumnType,
-                            width: c.width,
-                            order: c.order,
-                            options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
-                            aggregation: c.aggregation
-                        })),
-                        groups: (groups || []).map(g => ({
-                            id: g.id,
-                            title: g.title,
-                            color: g.color,
-                            items: (itemsByGroup.get(g.id) || []).map(i => ({
-                                id: i.id,
-                                title: i.title,
-                                groupId: g.id,
-                                boardId: b.id,
-                                values: i.values || {},
-                                isHidden: i.is_hidden,
-                                updates: i.updates || [],
-                                files: i.files || [],
-                                order: i.order,
-                                parentId: i.parent_id
-                            })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
-                        })),
-                        items: (items || []).map(i => ({
-                            id: i.id,
-                            title: i.title,
-                            groupId: i.group_id,
-                            boardId: b.id,
-                            values: i.values || {},
-                            isHidden: i.is_hidden,
-                            updates: i.updates || [],
-                            files: i.files || [],
-                            parentId: i.parent_id
-                        }))
-                    };
-                }),
-                loadedBoardIds: [...state.loadedBoardIds, boardId],
-                isBoardLoading: { ...state.isBoardLoading, [boardId]: false }
-            }));
-        } catch (err) {
-            console.error(`[Store] Failed to fetch board content for ${boardId}:`, err);
-            set(state => ({ isBoardLoading: { ...state.isBoardLoading, [boardId]: false } }));
-        }
-    },
-
     setActiveBoard: async (id) => {
         set({ activeBoardId: id, activePage: 'board' });
         localStorage.setItem('lastActiveBoardId', id || '');
 
         if (id) {
             window.history.pushState(null, '', `/board/${id}`);
-            
-            // Lazy load board content
-            get().fetchBoardContent(id);
 
             // Fire and forget: Update last_viewed_at
             const { data: { user } } = await supabase.auth.getUser();

@@ -117,7 +117,7 @@ export const usePermission = () => {
 
         const permissions: Record<string, string[]> = {
             'view_board': ['viewer', 'member', 'editor', 'admin', 'owner'],
-            'edit_items': ['member', 'editor', 'admin', 'owner', 'board-guest'],
+            'edit_items': ['member', 'editor', 'admin', 'owner'],
             'delete_items': ['member', 'editor', 'admin', 'owner'],
             'manage_columns': ['member', 'editor', 'admin', 'owner'],
             'group_ungroup': ['member', 'editor', 'admin', 'owner'],
@@ -125,7 +125,7 @@ export const usePermission = () => {
             'delete_board': ['admin', 'owner'],
             'invite_members': ['admin', 'owner'],
             'create_sub_workspace': ['admin', 'owner'],
-            'manage_feedback': ['viewer', 'member', 'editor', 'admin', 'owner', 'board-guest']
+            'manage_feedback': ['viewer', 'member', 'editor', 'admin', 'owner']
         };
 
         return permissions[action]?.includes(role) || false;

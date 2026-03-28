@@ -82,7 +82,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     // Unified filtering: show everything the user has access to
     const filteredWorkspaces = workspaces.filter(w => {
         const isOwner = w.owner_id === user?.id;
-        const isMember = userWorkspaceRoles[w.id] !== undefined && userWorkspaceRoles[w.id] !== 'board-guest';
+        const isMember = userWorkspaceRoles[w.id] !== undefined;
         const hasSharedBoard = boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
 
         return isOwner || isMember || hasSharedBoard;
@@ -97,7 +97,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
     const allAccessibleWorkspaces = workspaces.filter((w, index, self) => {
         const isAccessible = w.owner_id === user?.id ||
-            (userWorkspaceRoles[w.id] !== undefined && userWorkspaceRoles[w.id] !== 'board-guest') ||
+            (userWorkspaceRoles[w.id] !== undefined) ||
             boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
 
         return isAccessible && self.findIndex(i => i.id === w.id) === index;
@@ -168,7 +168,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                         // 3. User is a Guest explicitly invited to this specific board
                         const isOwner = ws.owner_id === user?.id;
                         const wsRole = userWorkspaceRoles[ws.id];
-                        const isWorkspaceShared = wsRole && wsRole !== 'board-guest';
+                        const isWorkspaceShared = wsRole;
                         const isBoardShared = sharedBoardIds.includes(b.id);
 
                         const isAccessible = isOwner || isWorkspaceShared || isBoardShared;

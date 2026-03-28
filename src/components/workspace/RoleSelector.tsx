@@ -16,15 +16,14 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, 
     const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
     const isWorkspace = type === 'workspace';
-    const roles = allowedRoles || (isWorkspace ? ['member', 'board-guest'] : ['viewer', 'member', 'admin']);
+    const roles = allowedRoles || (isWorkspace ? ['member'] : ['viewer', 'member', 'admin']);
 
     const roleLabels: Record<string, string> = isWorkspace ? {
         member: 'Workspace - Member',
-        'board-guest': 'Workspace - Guest',
         owner: 'Workspace - Owner'
     } : {
         viewer: 'Viewer',
-        member: 'Editor',
+        member: 'Member',
         editor: 'Editor',
         admin: 'Admin',
         owner: 'Owner'
@@ -32,7 +31,6 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, 
 
     const roleDescriptions: Record<string, string> = isWorkspace ? {
         member: 'Access all boards & create boards',
-        'board-guest': 'Access only shared boards',
         owner: 'Full control'
     } : {
         viewer: 'Can view only',

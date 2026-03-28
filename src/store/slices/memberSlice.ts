@@ -95,20 +95,7 @@ export const createMemberSlice: StateCreator<
             });
 
             // Ensure workspace access as board-guest if they don't have workspace access
-            if (boardData?.workspace_id) {
-                const { count: wsCount } = await supabase.from('workspace_members')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('workspace_id', boardData.workspace_id)
-                    .eq('user_id', foundUser.id);
-
-                if (!wsCount) {
-                    await supabase.from('workspace_members').insert({
-                        workspace_id: boardData.workspace_id,
-                        user_id: foundUser.id,
-                        role: 'board-guest'
-                    });
-                }
-            }
+            // NOTE: Removed insertion of `board-guest` to `workspace_members` per user request.
 
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
 
@@ -608,27 +595,7 @@ export const createMemberSlice: StateCreator<
                         role
                     });
 
-                    // Add to workspace as board-guest to ensure visibility
-                    let workspaceId = data?.workspaceId;
-                    if (!workspaceId) {
-                        const { data: boardData } = await supabase.from('boards').select('workspace_id').eq('id', entity_id).single();
-                        workspaceId = boardData?.workspace_id;
-                    }
-
-                    if (workspaceId) {
-                        const { count: wsCount } = await supabase.from('workspace_members')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('workspace_id', workspaceId)
-                            .eq('user_id', user.id);
-
-                        if (!wsCount) {
-                            await supabase.from('workspace_members').insert({
-                                workspace_id: workspaceId,
-                                user_id: user.id,
-                                role: 'board-guest'
-                            });
-                        }
-                    }
+                    // NOTE: Removed insertion of `board-guest` to `workspace_members` per user request.
                 }
             } else if (type === 'workspace_invite' && entity_id) {
                 const { count } = await supabase.from('workspace_members').select('*', { count: 'exact', head: true })

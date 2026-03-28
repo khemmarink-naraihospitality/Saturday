@@ -233,7 +233,7 @@ export const createWorkspaceSlice: StateCreator<
                 const workspaceName = ws?.title || 'NHG Saturday';
 
                 // Call Edge Function to send email invite and record pending
-                const { error: fnError } = await supabase.functions.invoke('invite-user', {
+                const { data: responseData, error: fnError } = await supabase.functions.invoke('invite-user', {
                     body: { 
                         email, 
                         workspaceId,
@@ -250,6 +250,13 @@ export const createWorkspaceSlice: StateCreator<
                         workspace_id: workspaceId,
                         role,
                         invited_by: user.id
+                    });
+                } else if (responseData?.userId) {
+                    // Automatically add the new user to workspace_members since they are a brand new user
+                    await supabase.from('workspace_members').insert({
+                        workspace_id: workspaceId,
+                        user_id: responseData.userId,
+                        role
                     });
                 }
             }

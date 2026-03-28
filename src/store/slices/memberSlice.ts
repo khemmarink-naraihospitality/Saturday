@@ -99,7 +99,7 @@ export const createMemberSlice: StateCreator<
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
             
             // Call Edge Function to send email invite and record pending
-            const { error: fnError } = await supabase.functions.invoke('invite-user', {
+            const { data: responseData, error: fnError } = await supabase.functions.invoke('invite-user', {
                 body: { 
                     email, 
                     boardId, 
@@ -118,6 +118,28 @@ export const createMemberSlice: StateCreator<
                     workspace_id: boardData?.workspace_id,
                     role
                 });
+            } else if (responseData?.userId) {
+                // Automatically add the new user to board_members
+                await supabase.from('board_members').insert({
+                    board_id: boardId,
+                    user_id: responseData.userId,
+                    role
+                });
+
+                if (boardData?.workspace_id) {
+                    const { count: wsCount } = await supabase.from('workspace_members')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('workspace_id', boardData.workspace_id)
+                        .eq('user_id', responseData.userId);
+
+                    if (!wsCount) {
+                        await supabase.from('workspace_members').insert({
+                            workspace_id: boardData.workspace_id,
+                            user_id: responseData.userId,
+                            role: 'board-guest'
+                        });
+                    }
+                }
             }
         }
     },

@@ -48,6 +48,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
 
     const handleInvite = async (email: string, role: string) => {
         await inviteToBoard(boardId, email, role);
+        await loadMembers();
         showToast('Invitation sent successfully!', 'success');
     };
 

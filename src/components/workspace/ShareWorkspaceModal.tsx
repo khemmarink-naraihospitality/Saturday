@@ -43,6 +43,7 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
 
     const handleInvite = async (email: string, role: string) => {
         await inviteToWorkspace(workspaceId, email, role);
+        await loadMembers();
         alert('Invitation sent!');
     };
 

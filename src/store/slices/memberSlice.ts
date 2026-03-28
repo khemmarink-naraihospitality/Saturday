@@ -119,7 +119,7 @@ export const createMemberSlice: StateCreator<
                     boardId, 
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
-                    redirectTo: 'https://saturdaycom.vercel.app/'
+                    redirectTo: `https://nhgsaturday.com/board/${boardId}`
                 }
             });
 
@@ -141,7 +141,7 @@ export const createMemberSlice: StateCreator<
                     boardId, 
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
-                    redirectTo: 'https://saturdaycom.vercel.app/'
+                    redirectTo: `https://nhgsaturday.com/board/${boardId}`
                 }
             });
             

@@ -87,13 +87,49 @@ export const createMemberSlice: StateCreator<
         const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
         const { data: foundUser } = await supabase.from('profiles').select('id, full_name').eq('email', email).single();
         if (foundUser) {
-            // Send Invite Notification ONLY - Do not add member directly
+            // Automatically add member directly
+            await supabase.from('board_members').insert({
+                board_id: boardId,
+                user_id: foundUser.id,
+                role
+            });
+
+            // Ensure workspace access as board-guest if they don't have workspace access
+            if (boardData?.workspace_id) {
+                const { count: wsCount } = await supabase.from('workspace_members')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('workspace_id', boardData.workspace_id)
+                    .eq('user_id', foundUser.id);
+
+                if (!wsCount) {
+                    await supabase.from('workspace_members').insert({
+                        workspace_id: boardData.workspace_id,
+                        user_id: foundUser.id,
+                        role: 'board-guest'
+                    });
+                }
+            }
+
+            const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
+
+            // Send Email Notification for existing user
+            await supabase.functions.invoke('invite-user', {
+                body: { 
+                    email, 
+                    boardId, 
+                    workspaceId: boardData?.workspace_id,
+                    workspaceName: workspaceTitle,
+                    redirectTo: 'https://saturdaycom.vercel.app/'
+                }
+            });
+
+            // Send in-app notification without accept action
             await get().createNotification(
                 foundUser.id,
-                'board_invite',
-                `You have been invited to join board`,
+                'access_granted',
+                `You have been added to board`,
                 boardId,
-                { role, boardName: boardData?.title || 'Board', workspaceId: boardData?.workspace_id }
+                { role, boardName: boardData?.title || 'Board', workspaceName: workspaceTitle }
             );
         } else {
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';

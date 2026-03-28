@@ -110,7 +110,7 @@ export interface Board {
     is_archived?: boolean;
 }
 
-export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention';
+export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added';
 export type NotificationStatus = 'pending' | 'accepted' | 'declined';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -219,13 +219,34 @@ export const createWorkspaceSlice: StateCreator<
             const { data: foundUser } = await supabase.from('profiles').select('id, full_name').eq('email', email).single();
 
             if (foundUser) {
-                // Send Invite Notification ONLY
+                // Automatically add the existing user to workspace_members
+                await supabase.from('workspace_members').insert({
+                    workspace_id: workspaceId,
+                    user_id: foundUser.id,
+                    role
+                });
+
+                const { workspaces } = get();
+                const ws = workspaces.find(w => w.id === workspaceId);
+                const workspaceName = ws?.title || 'NHG Saturday';
+
+                // Send email notification for existing user added
+                await supabase.functions.invoke('invite-user', {
+                    body: { 
+                        email, 
+                        workspaceId,
+                        workspaceName,
+                        redirectTo: 'https://saturdaycom.vercel.app/'
+                    }
+                });
+
+                // Send Access Granted Notification (No need to accept)
                 await get().createNotification(
                     foundUser.id,
-                    'workspace_invite',
-                    `You have been invited to join workspace`,
+                    'access_granted',
+                    `You have been added to workspace`,
                     workspaceId,
-                    { role, workspaceName: 'Workspace' }
+                    { role, workspaceName }
                 );
             } else {
                 const { workspaces } = get();

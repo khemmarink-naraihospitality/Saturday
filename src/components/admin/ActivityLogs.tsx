@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { RefreshCw, User, Briefcase, Trello, Trash2, Shield } from 'lucide-react';
+import { RefreshCw, User, Briefcase, Trello, Trash2, Shield, FileEdit } from 'lucide-react';
 
 interface ActivityLog {
     id: string;
@@ -20,6 +20,7 @@ const ACTION_ICONS: Record<string, any> = {
     board_created: Trello,
     user_deleted: Trash2,
     role_updated: Shield,
+    item_value_updated: FileEdit,
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ const ACTION_LABELS: Record<string, string> = {
     board_created: 'Board Created',
     user_deleted: 'User Deleted',
     role_updated: 'Role Updated',
+    item_value_updated: 'Item Value Updated',
 };
 
 export const ActivityLogs = () => {
@@ -155,33 +157,51 @@ export const ActivityLogs = () => {
                                     </div>
                                     {log.metadata && (() => {
                                         const meta = log.metadata;
-                                        let description = '';
 
                                         switch (log.action_type) {
                                             case 'role_updated':
-                                                description = `Changed role from ${meta.old_role || 'N/A'} to ${meta.new_role || 'N/A'} for ${meta.target_email || 'user'}`;
-                                                break;
+                                                return <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{`Changed role from ${meta.old_role || 'N/A'} to ${meta.new_role || 'N/A'} for ${meta.target_email || 'user'}`}</div>;
                                             case 'user_signup':
-                                                description = `New user: ${meta.full_name || 'Unknown'} (${meta.email || 'N/A'}) as ${meta.system_role || 'user'}`;
-                                                break;
+                                                return <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{`New user: ${meta.full_name || 'Unknown'} (${meta.email || 'N/A'}) as ${meta.system_role || 'user'}`}</div>;
                                             case 'user_deleted':
-                                                description = `Deleted user: ${meta.full_name || 'Unknown'} (${meta.email || 'N/A'})`;
-                                                break;
+                                                return <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{`Deleted user: ${meta.full_name || 'Unknown'} (${meta.email || 'N/A'})`}</div>;
                                             case 'workspace_created':
-                                                description = `Created workspace: "${meta.workspace_title || 'Untitled'}"`;
-                                                break;
+                                                return <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{`Created workspace: "${meta.workspace_title || 'Untitled'}"`}</div>;
                                             case 'board_created':
-                                                description = `Created board: "${meta.board_title || 'Untitled'}" in workspace "${meta.workspace_title || 'Unknown'}"`;
-                                                break;
+                                                return <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{`Created board: "${meta.board_title || 'Untitled'}" in workspace "${meta.workspace_title || 'Unknown'}"`}</div>;
                                             default:
-                                                description = JSON.stringify(meta);
+                                                return (
+                                                    <details style={{ marginTop: '8px' }}>
+                                                        <summary style={{ 
+                                                            fontSize: '12px', 
+                                                            color: '#0ea5e9', 
+                                                            cursor: 'pointer', 
+                                                            outline: 'none', 
+                                                            fontWeight: 500,
+                                                            display: 'inline-block' 
+                                                        }}>
+                                                            View Details
+                                                        </summary>
+                                                        <pre style={{ 
+                                                            fontSize: '11px', 
+                                                            color: '#64748b', 
+                                                            marginTop: '6px',
+                                                            padding: '12px',
+                                                            backgroundColor: '#f8fafc',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #e2e8f0',
+                                                            overflowX: 'auto',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word',
+                                                            fontFamily: 'monospace',
+                                                            maxHeight: '300px',
+                                                            overflowY: 'auto'
+                                                        }}>
+                                                            {JSON.stringify(meta, null, 2)}
+                                                        </pre>
+                                                    </details>
+                                                );
                                         }
-
-                                        return (
-                                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-                                                {description}
-                                            </div>
-                                        );
                                     })()}
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>

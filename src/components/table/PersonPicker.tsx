@@ -96,8 +96,8 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
 
 
     // Position logic
-    const canFitBelow = window.innerHeight - position.bottom > 350;
-    const listTop = canFitBelow ? position.bottom + 4 : position.top - 354;
+    const canFitBelow = window.innerHeight - position.bottom > 450;
+    const listTop = canFitBelow ? position.bottom + 4 : Math.max(10, position.top - 454);
 
     // --- RENDER INVITE CONFIRMATION ---
     if (inviteCandidate) {
@@ -178,7 +178,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: '350px',
+                maxHeight: '450px',
                 overflow: 'hidden'
             }}
         >
@@ -343,6 +343,29 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                             ) : 'No users found.'}
                     </div>
                 )}
+            </div>
+
+            {/* OK Button */}
+            <div style={{ padding: '12px', borderTop: '1px solid hsl(var(--color-border))', display: 'flex', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-surface))' }}>
+                <button
+                    onClick={onClose}
+                    style={{
+                        padding: '8px 32px',
+                        backgroundColor: '#0073ea',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s',
+                        width: '100%'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                >
+                    OK
+                </button>
             </div>
         </div>,
         document.body

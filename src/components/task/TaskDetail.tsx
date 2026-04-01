@@ -6,6 +6,7 @@ import { RichTextEditor } from '../ui/RichTextEditor';
 import { isValidGoogleDriveUrl, getGoogleDriveFileName } from '../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
+import { useGooglePicker } from '../../hooks/useGooglePicker';
 
 export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () => void }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
@@ -32,6 +33,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [fileError, setFileError] = useState<string | null>(null);
 
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
+    const { openPicker } = useGooglePicker();
 
     const handleAddFile = () => {
         if (!fileUrl.trim()) return;
@@ -516,6 +518,39 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             }}
                                         >
                                             <Plus size={16} /> Add Link
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                openPicker((result) => {
+                                                    const newFile: FileLink = {
+                                                        id: uuidv4(),
+                                                        name: result.name,
+                                                        url: result.url,
+                                                        type: 'google-drive',
+                                                        iconUrl: result.iconUrl,
+                                                        mimeType: result.mimeType
+                                                    };
+                                                    const currentFiles = activeItem?.files || [];
+                                                    updateItemFiles(itemId, [...currentFiles, newFile]);
+                                                });
+                                            }}
+                                            style={{
+                                                backgroundColor: 'white',
+                                                color: '#3c4043',
+                                                border: '1px solid #dadce0',
+                                                borderRadius: '4px',
+                                                padding: '8px 16px',
+                                                fontSize: '14px',
+                                                fontWeight: 500,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                boxShadow: '0 1px 2px 0 rgba(60,64,67,0.3)'
+                                            }}
+                                        >
+                                            <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '18px', height: '18px' }} />
+                                            Google Drive
                                         </button>
                                     </div>
                                 </div>

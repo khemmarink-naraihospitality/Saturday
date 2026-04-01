@@ -93,6 +93,7 @@ export const useGooglePicker = () => {
                     showPicker(response.access_token);
                 } else if (response.error) {
                     console.error('Google OAuth Error:', response);
+                    alert(`Failed to connect to Google Drive: ${response.error_description || response.error}. Please check if pop-ups are allowed.`);
                 }
             },
         });
@@ -104,7 +105,8 @@ export const useGooglePicker = () => {
         if (accessToken) {
             showPicker(accessToken);
         } else if (tokenClientRef.current) {
-            tokenClientRef.current.requestAccessToken({ prompt: '', hint: currentUser?.email });
+            // Use select_account if no token to ensure user can pick the right account
+            tokenClientRef.current.requestAccessToken({ prompt: 'select_account', hint: currentUser?.email });
         } else {
             alert('Google initialization in progress. Please wait a second and try again.');
         }

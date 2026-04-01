@@ -84,7 +84,13 @@ export const createMemberSlice: StateCreator<
     },
 
     inviteToBoard: async (boardId, email, role) => {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: inviterProfile } = await supabase.from('profiles').select('full_name').eq('id', currentUser?.id).single();
+        const inviterName = inviterProfile?.full_name || 'A Team Member';
+
         const { data: boardData } = await supabase.from('boards').select('workspace_id, title').eq('id', boardId).single();
+        const boardName = boardData?.title || 'Board';
+
         const { data: foundUser } = await supabase.from('profiles').select('id, full_name').eq('email', email).single();
         if (foundUser) {
             // Automatically add member directly
@@ -100,15 +106,21 @@ export const createMemberSlice: StateCreator<
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
 
             // Send Email Notification for existing user
-            await supabase.functions.invoke('invite-user', {
+            const { error: fnError } = await supabase.functions.invoke('invite-user', {
                 body: { 
                     email, 
                     boardId, 
+                    boardName,
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
-                    redirectTo: `https://nhgsaturday.com/board/${boardId}`
+                    inviterName,
+                    redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`
                 }
             });
+
+            if (fnError) {
+                console.error('Edge Function Invite Error (Existing User):', fnError);
+            }
 
             // Send in-app notification without accept action
             await get().createNotification(
@@ -126,9 +138,11 @@ export const createMemberSlice: StateCreator<
                 body: { 
                     email, 
                     boardId, 
+                    boardName,
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
-                    redirectTo: `https://nhgsaturday.com/board/${boardId}`
+                    inviterName,
+                    redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`
                 }
             });
             
@@ -242,7 +256,7 @@ export const createMemberSlice: StateCreator<
                     boardId, 
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
-                    redirectTo: `https://nhgsaturday.com/board/${boardId}`,
+                    redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`,
                     action: 'invite'
                 }
             });
@@ -261,7 +275,7 @@ export const createMemberSlice: StateCreator<
                 boardId, 
                 workspaceId: boardData?.workspace_id,
                 workspaceName: workspaceTitle,
-                redirectTo: `https://nhgsaturday.com/board/${boardId}`,
+                redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`,
                 action: 'invite'
             }
         });
@@ -308,7 +322,7 @@ export const createMemberSlice: StateCreator<
                         itemName: item.title,
                         boardName: board.title,
                         workspaceName: workspaceTitle,
-                        redirectTo: `https://nhgsaturday.com/board/${boardId}`
+                        redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`
                     }
                 });
             }

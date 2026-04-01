@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       throw new Error('SMTP Configuration is missing or incomplete in system_settings');
     }
 
-    let actionLink = redirectTo || 'https://nhgsaturday.com';
+    let actionLink = redirectTo || 'https://saturdaycom.vercel.app';
     let isNewUser = false;
     let finalTemplate;
     let returnedUserId = null;
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       if (linkError) {
         const errorMsg = linkError.message?.toLowerCase() || '';
         if (errorMsg.includes('user already registered') || errorMsg.includes('already exists')) {
-          actionLink = redirectTo || 'https://nhgsaturday.com';
+          actionLink = redirectTo || 'https://saturdaycom.vercel.app';
           finalTemplate = templateExisting || templateNew; 
           
           const { data: userRecord } = await supabaseAdmin.auth.admin.listUsers();
@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
         user: smtpConfig.user,
         pass: smtpConfig.password,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     const mailOptions = {

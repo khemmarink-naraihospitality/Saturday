@@ -52,12 +52,7 @@ export interface ItemSlice {
     setLastOptimisticUpdate: (itemId: string, timestamp: number) => void;
 }
 
-const parseSqlJson = (val: any, fallback: any) => {
-    if (typeof val === 'string') {
-        try { return JSON.parse(val); } catch (e) { return fallback; }
-    }
-    return val ?? fallback;
-};
+
 
 export const createItemSlice: StateCreator<
     BoardState,

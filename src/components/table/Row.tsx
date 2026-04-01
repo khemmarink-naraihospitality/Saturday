@@ -299,7 +299,6 @@ export const Row = React.memo(({
                             boardId={item.boardId}
                             column={col} 
                             value={item.values[col.id]}
-                            files={item.files}
                             groupColor={groupColor} 
                         />
                     </div>

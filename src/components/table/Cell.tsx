@@ -14,14 +14,12 @@ export const Cell = memo(({
     boardId,
     column, 
     value, 
-    files,
     groupColor 
 }: { 
     itemId: string, 
     boardId: string,
     column: Column, 
     value: any,
-    files?: any[],
     groupColor?: string 
 }) => {
     // Dispatch to specific cell type components
@@ -35,7 +33,7 @@ export const Cell = memo(({
         case 'timeline':
             return <TimelineCell itemId={itemId} value={value} column={column} groupColor={groupColor} />;
         case 'files':
-            return <FilesCell itemId={itemId} files={files} column={column} />;
+            return <FilesCell itemId={itemId} files={value} column={column} />;
         case 'checkbox':
             return <CheckboxCell itemId={itemId} value={value} column={column} />;
         case 'dropdown':

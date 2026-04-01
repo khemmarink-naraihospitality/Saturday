@@ -22,10 +22,13 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
     const { openPicker } = useGooglePicker();
 
     useEffect(() => {
+        setLocalFiles(files || []);
+    }, [files]);
+
+    useEffect(() => {
         // Click outside handler
         const handleClickOutside = (event: MouseEvent) => {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-                onSave(localFiles);
                 onClose();
             }
         };
@@ -34,10 +37,13 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [localFiles, onSave, onClose]);
+    }, [onClose]);
 
-    const handleRemoveFile = (id: string) => {
-        setLocalFiles(localFiles.filter(f => f.id !== id));
+    const handleRemoveFile = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        const updated = localFiles.filter(f => f.id !== id);
+        setLocalFiles(updated);
+        onSave(updated); // Sync immediately
     };
 
     const handleAddUrlFile = () => {
@@ -50,7 +56,9 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
             type: 'file-url'
         };
         
-        setLocalFiles([...localFiles, newFile]);
+        const updated = [...localFiles, newFile];
+        setLocalFiles(updated);
+        onSave(updated); // Sync immediately
         setIsAddingUrl(false);
         setUrlName('');
         setUrlValue('');
@@ -88,6 +96,11 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         style.left = Math.max(16, newLeft);
     }
 
+    const handleClose = (save: boolean = true) => {
+        if (save) onSave(localFiles);
+        onClose();
+    };
+
     return createPortal(
         <div ref={pickerRef} style={style}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -95,7 +108,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                     Attached Files
                 </div>
                 <button 
-                  onClick={() => { onSave(localFiles); onClose(); }} 
+                  onClick={() => handleClose(true)} 
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: '4px' }}
                 >
                     <X size={16} />
@@ -142,19 +155,19 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 const name = file.name.toLowerCase();
 
                                 if (mime.includes('spreadsheet')) {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Sheets%202020%20Logo.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png";
                                 } else if (mime.includes('document')) {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Docs%202020%20Logo.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/docs_2020q4_48dp.png";
                                 } else if (mime.includes('presentation')) {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Slides%202020%20Logo.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/slides_2020q4_48dp.png";
                                 } else if (mime.includes('form')) {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Forms%202020%20Logo.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png";
                                 } else if (mime.includes('pdf') || name.endsWith('.pdf')) {
-                                    iconUrl = "https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/pdf_48dp.png";
                                 } else if (mime.includes('image') || name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg')) {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Photos%20icon%20%282020-2025%29.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/photos_48dp.png"; // Fixed icon mapping
                                 } else if (file.type === 'google-drive') {
-                                    iconUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg";
+                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png";
                                 }
 
                                 return iconUrl ? (
@@ -166,7 +179,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                             <span title={file.name} style={{ fontWeight: 500 }}>{file.name}</span>
                         </a>
                         <button
-                            onClick={() => handleRemoveFile(file.id)}
+                            onClick={(e) => handleRemoveFile(e, file.id)}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94a3b8', display: 'flex' }}
                         >
                             <X size={14} />
@@ -325,7 +338,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
 
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: isAddingUrl ? '0' : '8px' }}>
                 <button
-                    onClick={() => { onSave(localFiles); onClose(); }}
+                    onClick={() => handleClose(true)}
                     style={{
                         padding: '10px 24px',
                         backgroundColor: '#0073ea',

@@ -43,6 +43,13 @@ export interface BoardSlice {
     loadUserData: (isSilent?: boolean) => Promise<void>;
 }
 
+const parseSqlJson = (val: any, fallback: any) => {
+    if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch (e) { return fallback; }
+    }
+    return val ?? fallback;
+};
+
 export const createBoardSlice: StateCreator<
     BoardState,
     [],
@@ -258,10 +265,10 @@ export const createBoardSlice: StateCreator<
                             title: i.title,
                             groupId: g.id,
                             boardId: b.id,
-                            values: i.values || {},
+                            values: parseSqlJson(i.values, {}),
                             isHidden: i.is_hidden,
-                            updates: i.updates || [],
-                            files: i.files || [],
+                            updates: parseSqlJson(i.updates, []),
+                            files: parseSqlJson(i.files, []),
                             order: i.order,
                             parentId: i.parent_id
                         })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
@@ -271,10 +278,10 @@ export const createBoardSlice: StateCreator<
                         title: i.title,
                         groupId: i.group_id,
                         boardId: b.id,
-                        values: i.values || {},
+                        values: parseSqlJson(i.values, {}),
                         isHidden: i.is_hidden,
-                        updates: i.updates || [],
-                        files: i.files || [],
+                        updates: parseSqlJson(i.updates, []),
+                        files: parseSqlJson(i.files, []),
                         parentId: i.parent_id
                     })),
                     itemColumnTitle: 'Item',

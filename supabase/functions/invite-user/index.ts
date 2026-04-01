@@ -131,6 +131,8 @@ Deno.serve(async (req) => {
       html: htmlBody,
     };
 
+    console.log(`Sending email to ${email} with subject: ${subject}`);
+    console.log(`Final HTML Body Preview: ${htmlBody.substring(0, 500)}...`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Message sent: %s', info.messageId);
 

@@ -13,13 +13,12 @@ interface FilesCellProps {
 }
 
 const FILE_ICONS = {
-    sheets: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Sheets%202020%20Logo.svg",
-    docs: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Docs%202020%20Logo.svg",
-    slides: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Slides%202020%20Logo.svg",
-    forms: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Forms%202020%20Logo.svg",
-    photos: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Photos%20icon%20%282020-2025%29.svg",
-    drive: "https://commons.wikimedia.org/wiki/Special:FilePath/Google%20Drive%20icon%20%282020%29.svg",
-    pdf: "https://commons.wikimedia.org/wiki/Special:FilePath/PDF%20icon.svg"
+    sheets: "https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png",
+    docs: "https://www.gstatic.com/images/branding/product/1x/docs_2020q4_48dp.png",
+    slides: "https://www.gstatic.com/images/branding/product/1x/slides_2020q4_48dp.png",
+    forms: "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png",
+    drive: "https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png",
+    pdf: "https://www.gstatic.com/images/branding/product/1x/pdf_48dp.png"
 };
 
 export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files: propFiles }) => {
@@ -96,7 +95,7 @@ export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files
                                     } else if (mime.includes('pdf') || name.endsWith('.pdf')) {
                                         iconUrl = FILE_ICONS.pdf;
                                     } else if (mime.includes('image') || name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg')) {
-                                        iconUrl = FILE_ICONS.photos;
+                                        // iconUrl = FILE_ICONS.photos; // We'll just let it use the file.iconUrl or generic
                                     } else if (file.type === 'google-drive') {
                                         iconUrl = FILE_ICONS.drive;
                                     }

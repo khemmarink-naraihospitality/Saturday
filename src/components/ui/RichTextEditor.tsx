@@ -510,15 +510,6 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                             </div>
                         ))}
 
-                        <style>{`
-                .rich-text-content ul, .rich-text-content ol {
-                    margin-left: 20px;
-                }
-                .rich-text-content a {
-                    color: hsl(var(--color-brand-primary));
-                    text-decoration: underline;
-                }
-            `}</style>
                     </div>
                 )
             }
@@ -624,6 +615,28 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                     </div>
                 )
             }
+
+            <style>{`
+                .rich-text-content ul {
+                    list-style-type: disc;
+                    padding-left: 24px;
+                    margin-top: 8px;
+                    margin-bottom: 8px;
+                }
+                .rich-text-content ol {
+                    list-style-type: decimal;
+                    padding-left: 24px;
+                    margin-top: 8px;
+                    margin-bottom: 8px;
+                }
+                .rich-text-content li {
+                    margin-bottom: 4px;
+                }
+                .rich-text-content a {
+                    color: hsl(var(--color-brand-primary));
+                    text-decoration: underline;
+                }
+            `}</style>
         </div >
     );
 };

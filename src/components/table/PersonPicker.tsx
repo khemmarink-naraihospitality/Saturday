@@ -359,7 +359,6 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                         fontWeight: 600,
                         cursor: 'pointer',
                         transition: 'opacity 0.2s',
-                        width: '100%'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}

@@ -48,6 +48,7 @@ export interface Comment {
     id: string;
     content: string;
     createdAt: string;
+    userId?: string; // Optional for backward compatibility
     author: string;
 }
 

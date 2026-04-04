@@ -92,7 +92,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         const textOnly = draftText.replace(/<[^>]*>/g, '').trim();
         if (!textOnly && !draftText.includes('<img')) return;
 
-        addUpdate(itemId, draftText, { name: currentUser.name, id: currentUser.id });
+        addUpdate(itemId, draftText, { name: currentUser.name, id: currentUser.id, userId: currentUser.id });
         setDraft(itemId, ''); // Clear global draft
     };
 
@@ -294,28 +294,25 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            {/* Delete and Edit Actions */}
-                                            {(update.author === currentUser.name || currentUser.role === 'owner' || currentUser.role === 'admin') && (
+                                            {/* Delete and Edit Actions - Strictly restricted to Author only */}
+                                            {(update.userId === currentUser.id || update.author === currentUser.name) && (
                                                 <div style={{ position: 'relative', display: 'flex', gap: '4px' }}>
-                                                    {update.author === currentUser.name && (
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingUpdateId(update.id);
-                                                                setEditUpdateContent(update.content);
-                                                            }}
-                                                            style={{
-                                                                background: 'none',
-                                                                border: 'none',
-                                                                cursor: 'pointer',
-                                                                color: '#9ca3af',
-                                                                padding: '4px'
-                                                            }}
-                                                            title="Edit Update"
-                                                        >
-                                                            <Edit2 size={14} />
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingUpdateId(update.id);
+                                                            setEditUpdateContent(update.content);
+                                                        }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            color: '#9ca3af',
+                                                            padding: '4px'
+                                                        }}
+                                                        title="Edit Update"
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDeleteClick(update.id)}
                                                         style={{

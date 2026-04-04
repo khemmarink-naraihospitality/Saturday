@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Item, FileLink } from '../../types';
+import type { Item, FileLink, Comment } from '../../types';
 import type { BoardState } from '../useBoardStore';
 
 export interface ItemSlice {
@@ -22,7 +22,7 @@ export interface ItemSlice {
     moveItem: (activeId: string, overId: string) => Promise<void>;
 
     // Update/Comment
-    addUpdate: (itemId: string, content: string, author: { name: string; id: string }) => Promise<void>;
+    addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }) => Promise<void>;
     deleteUpdate: (itemId: string, updateId: string) => Promise<void>;
     editUpdate: (itemId: string, updateId: string, newContent: string) => Promise<void>;
 
@@ -355,7 +355,13 @@ export const createItemSlice: StateCreator<
 
     addUpdate: async (itemId, content, author) => {
         const { activeBoardId } = get();
-        const newUpdate = { id: uuidv4(), content, author: author.name, createdAt: new Date().toISOString() };
+        const newUpdate: Comment = { 
+            id: uuidv4(), 
+            content, 
+            author: author.name, 
+            userId: author.id,
+            createdAt: new Date().toISOString() 
+        };
 
         set(state => ({
             boards: state.boards.map(b => {

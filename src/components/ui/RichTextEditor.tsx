@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import {
     Bold, Italic, Underline, Strikethrough,
     List, ListOrdered, Link,
-    Minus, Palette
+    Minus, Palette, Table2, CheckSquare,
+    AlignLeft, AlignCenter, AlignRight,
+    Type, ChevronDown
 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 
@@ -13,14 +15,32 @@ interface RichTextEditorProps {
 
 const TEXT_COLORS = [
     { label: 'Black', value: '#000000' },
-    { label: 'Gray', value: '#666666' },
-    { label: 'Red', value: '#e11d48' },
-    { label: 'Orange', value: '#f59e0b' },
-    { label: 'Yellow', value: '#eab308' },
-    { label: 'Green', value: '#10b981' },
-    { label: 'Blue', value: '#0073ea' }, // Brand
-    { label: 'Purple', value: '#8b5cf6' },
-    { label: 'Pink', value: '#ec4899' },
+    { label: 'Gray 1', value: '#323338' },
+    { label: 'Gray 2', value: '#676879' },
+    { label: 'Gray 3', value: '#abb4be' },
+    { label: 'Gray 4', value: '#d0d4d9' },
+    { label: 'White', value: '#ffffff' },
+
+    { label: 'Blue', value: '#0073ea' },
+    { label: 'Soft Blue', value: '#00a9ff' },
+    { label: 'Indigo', value: '#579bfc' },
+    { label: 'Purple', value: '#a25ddc' },
+    { label: 'Deep Purple', value: '#784bd1' },
+    { label: 'Pink', value: '#ff5ac4' },
+
+    { label: 'Red', value: '#e2445c' },
+    { label: 'Soft Red', value: '#ff642e' },
+    { label: 'Orange', value: '#fdab3d' },
+    { label: 'Yellow', value: '#ffcb00' },
+    { label: 'Lime', value: '#9cd326' },
+    { label: 'Green', value: '#00c875' },
+    
+    { label: 'Teal', value: '#00d1d1' },
+    { label: 'Dark Blue', value: '#0086c0' },
+    { label: 'Dark Indigo', value: '#225091' },
+    { label: 'Dark Purple', value: '#401694' },
+    { label: 'Dark Green', value: '#007f36' },
+    { label: 'Brown', value: '#7f5347' },
 ];
 
 export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
@@ -40,6 +60,11 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
 
     // Color State
     const [isColorUIOpen, setIsColorUIOpen] = useState(false);
+    const [colorMode, setColorMode] = useState<'text' | 'highlight'>('text');
+    const [activeColorSource, setActiveColorSource] = useState<'color' | 'highlight' | null>(null);
+
+    // Typography State
+    const [isTypeUIOpen, setIsTypeUIOpen] = useState(false);
 
     // Helper to get display name (prefer email username)
     const getDisplayName = (member: any) => {
@@ -68,6 +93,23 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
     const isInternalUpdate = useRef(false);
 
     // Sync external value to editor ONLY if different and not focused
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (isColorUIOpen || isTypeUIOpen) {
+                // If the click is not inside a popover or a toolbar button
+                const isInsidePopover = target.closest('.editor-popover');
+                const isToolbarButton = target.closest('button[title]');
+                if (!isInsidePopover && !isToolbarButton) {
+                    setIsColorUIOpen(false);
+                    setIsTypeUIOpen(false);
+                }
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isColorUIOpen, isTypeUIOpen]);
+
     useEffect(() => {
         // Skip sync if UI is open
         if (isLinkUIOpen || isColorUIOpen) return;
@@ -190,6 +232,8 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
     // --- Hyperlink Handlers ---
 
     const openLinkUI = () => {
+        setIsColorUIOpen(false);
+        setIsTypeUIOpen(false);
         const selection = window.getSelection();
         if (!selection || !selection.rangeCount) {
             // If no selection, just open empty
@@ -246,42 +290,101 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
         editorRef.current?.focus();
     };
 
-    // --- Color Handlers ---
-    const openColorUI = () => {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            setSavedSelection(selection.getRangeAt(0).cloneRange());
-        }
-        setIsColorUIOpen(true);
-    };
-
+    // Use the savedSelection specifically when applying changes
     const applyColor = (color: string) => {
         const selection = window.getSelection();
         if (savedSelection && selection) {
             selection.removeAllRanges();
             selection.addRange(savedSelection);
         }
-        exec('foreColor', color);
+        if (colorMode === 'text') {
+            exec('foreColor', color);
+        } else {
+            // Need to handle hiliteColor carefully for contentEditable
+            // Note: document.execCommand('hiliteColor') uses <span style="background-color: ...">
+            exec('hiliteColor', color);
+        }
         setIsColorUIOpen(false);
+        setActiveColorSource(null);
         setSavedSelection(null);
+    };
+
+    const applyTypography = (tag: string) => {
+        exec('formatBlock', tag);
+        setIsTypeUIOpen(false);
+    };
+
+    const insertTable = () => {
+        const tableHtml = `
+            <table style="border-collapse: collapse; width: 100%; border: 1px solid hsl(var(--color-border)); margin: 12px 0;">
+                <thead>
+                    <tr style="background-color: hsl(var(--color-bg-subtle));">
+                        <th style="border: 1px solid hsl(var(--color-border)); padding: 8px; text-align: left; font-weight: 600;">Header 1</th>
+                        <th style="border: 1px solid hsl(var(--color-border)); padding: 8px; text-align: left; font-weight: 600;">Header 2</th>
+                        <th style="border: 1px solid hsl(var(--color-border)); padding: 8px; text-align: left; font-weight: 600;">Header 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 1</td>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 2</td>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 3</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 4</td>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 5</td>
+                        <td style="border: 1px solid hsl(var(--color-border)); padding: 8px;">Cell 6</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><br></p>
+        `;
+        exec('insertHTML', tableHtml);
+    };
+
+    const insertChecklist = () => {
+        const checklistHtml = `
+            <div class="editor-checklist-item" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
+                <div contenteditable="false" style="margin-top: 4px;">
+                    <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
+                </div>
+                <div style="flex: 1;">Checklist item</div>
+            </div>
+            <p><br></p>
+        `;
+        exec('insertHTML', checklistHtml);
     };
 
 
     const tools = [
+        { id: 'type', icon: Type, label: 'Typography', action: () => { setIsTypeUIOpen(!isTypeUIOpen); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { type: 'separator' },
         { id: 'bold', icon: Bold, label: 'Bold', action: () => exec('bold') },
         { id: 'italic', icon: Italic, label: 'Italic', action: () => exec('italic') },
         { id: 'underline', icon: Underline, label: 'Underline', action: () => exec('underline') },
         { id: 'strike', icon: Strikethrough, label: 'Strikethrough', action: () => exec('strikeThrough') },
-        {
-            id: 'color', icon: Palette, label: 'Text Color', action: () => openColorUI()
-        },
+        { id: 'color', icon: Palette, label: 'Color', action: () => { 
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                setSavedSelection(selection.getRangeAt(0).cloneRange());
+            }
+            // Keep current colorMode or default to text
+            setActiveColorSource('color');
+            setIsColorUIOpen(!isColorUIOpen || activeColorSource !== 'color'); 
+            setIsTypeUIOpen(false); 
+            setIsLinkUIOpen(false); 
+        } },
         { type: 'separator' },
         { id: 'ul', icon: List, label: 'Bullet List', action: () => exec('insertUnorderedList') },
         { id: 'ol', icon: ListOrdered, label: 'Ordered List', action: () => exec('insertOrderedList') },
+        { id: 'checklist', icon: CheckSquare, label: 'Checklist', action: () => insertChecklist() },
         { type: 'separator' },
-        {
-            id: 'link', icon: Link, label: 'Link', action: () => openLinkUI()
-        },
+        { id: 'align-left', icon: AlignLeft, label: 'Align Left', action: () => exec('justifyLeft') },
+        { id: 'align-center', icon: AlignCenter, label: 'Align Center', action: () => exec('justifyCenter') },
+        { id: 'align-right', icon: AlignRight, label: 'Align Right', action: () => exec('justifyRight') },
+        { type: 'separator' },
+        { id: 'table', icon: Table2, label: 'Table', action: () => insertTable() },
+        { id: 'link', icon: Link, label: 'Link', action: () => openLinkUI() },
         { id: 'hr', icon: Minus, label: 'Horizontal Rule', action: () => exec('insertHorizontalRule') }
     ];
 
@@ -334,23 +437,71 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: '28px',
+                                    width: tool.id === 'type' ? 'auto' : '28px',
                                     height: '28px',
+                                    padding: tool.id === 'type' ? '0 8px' : '0',
                                     border: 'none',
-                                    background: tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent',
+                                    background: tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : tool.id === 'type' && isTypeUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
                                     color: 'hsl(var(--color-text-secondary))',
+                                    gap: '4px'
                                 }}
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} // Dark mode fix
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : tool.id === 'type' && isTypeUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent'}
                             >
                                 <Icon size={16} strokeWidth={2.5} />
+                                {(tool.id === 'type' || tool.id === 'color') && <ChevronDown size={12} />}
                             </button>
 
+                            {/* Typography Popover */}
+                            {tool.id === 'type' && isTypeUIOpen && (
+                                <div className="editor-popover" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                                    border: '1px solid hsl(var(--color-border))',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    zIndex: 10002,
+                                    padding: '4px',
+                                    width: '180px',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}>
+                                    {[
+                                        { label: 'Normal Text', tag: 'p' },
+                                        { label: 'Heading 1', tag: 'h1', style: { fontSize: '24px', fontWeight: 700 } },
+                                        { label: 'Heading 2', tag: 'h2', style: { fontSize: '20px', fontWeight: 600 } },
+                                        { label: 'Heading 3', tag: 'h3', style: { fontSize: '18px', fontWeight: 600 } },
+                                    ].map(item => (
+                                        <button
+                                            key={item.tag}
+                                            onClick={(e) => { e.preventDefault(); applyTypography(item.tag); }}
+                                            style={{
+                                                padding: '8px 12px',
+                                                textAlign: 'left',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'hsl(var(--color-text-primary))',
+                                                borderRadius: '4px',
+                                                ...(item.style || {})
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Color Picker Popover */}
-                            {tool.id === 'color' && isColorUIOpen && (
-                                <div style={{
+                            {tool.id === activeColorSource && isColorUIOpen && (
+                                <div className="editor-popover" style={{
                                     position: 'absolute',
                                     top: '100%',
                                     left: 0,
@@ -360,12 +511,50 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                     borderRadius: '8px',
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                     zIndex: 10001,
-                                    padding: '8px',
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                    gap: '4px',
-                                    width: '120px'
+                                    padding: '12px',
+                                    width: '240px'
                                 }}>
+                                    {/* Tabs */}
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', borderBottom: '1px solid hsl(var(--color-border))', paddingBottom: '8px' }}>
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); setColorMode('text'); }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '4px',
+                                                fontSize: '12px',
+                                                background: colorMode === 'text' ? 'hsl(var(--color-bg-subtle))' : 'none',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                color: colorMode === 'text' ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-secondary))',
+                                                fontWeight: colorMode === 'text' ? 600 : 400
+                                            }}
+                                        >
+                                            Text
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); setColorMode('highlight'); }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '4px',
+                                                fontSize: '12px',
+                                                background: colorMode === 'highlight' ? 'hsl(var(--color-bg-subtle))' : 'none',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                color: colorMode === 'highlight' ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-secondary))',
+                                                fontWeight: colorMode === 'highlight' ? 600 : 400
+                                            }}
+                                        >
+                                            Highlight
+                                        </button>
+                                    </div>
+
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(6, 1fr)',
+                                        gap: '6px'
+                                    }}>
                                     {TEXT_COLORS.map(color => (
                                         <button
                                             key={color.value}
@@ -389,29 +578,40 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                     <button
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            applyColor('inherit');
+                                            applyColor(colorMode === 'text' ? 'inherit' : 'transparent');
                                         }}
                                         title="Reset Color"
                                         style={{
                                             gridColumn: '1 / -1',
-                                            marginTop: '4px',
-                                            padding: '4px',
-                                            fontSize: '11px',
+                                            marginTop: '8px',
+                                            padding: '6px',
+                                            fontSize: '12px',
                                             background: 'none',
-                                            border: '1px solid hsl(var(--color-border))', // Dark mode fix
-                                            borderRadius: '4px',
+                                            border: '1px solid hsl(var(--color-border))',
+                                            borderRadius: '6px',
                                             cursor: 'pointer',
-                                            color: 'hsl(var(--color-text-primary))' // Dark mode fix
+                                            color: 'hsl(var(--color-text-secondary))',
+                                            fontWeight: 500,
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))';
+                                            e.currentTarget.style.borderColor = 'hsl(var(--color-text-secondary))';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                            e.currentTarget.style.borderColor = 'hsl(var(--color-border))';
                                         }}
                                     >
-                                        Auto
+                                        Auto (Reset)
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
 
             {/* Editor Area */}
             <div
@@ -635,6 +835,24 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                 .rich-text-content a {
                     color: hsl(var(--color-brand-primary));
                     text-decoration: underline;
+                }
+                .rich-text-content table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    border: 1px solid hsl(var(--color-border));
+                    margin: 12px 0;
+                }
+                .rich-text-content th, .rich-text-content td {
+                    border: 1px solid hsl(var(--color-border));
+                    padding: 8px;
+                    min-width: 50px;
+                }
+                .rich-text-content th {
+                    background-color: hsl(var(--color-bg-subtle));
+                    font-weight: 600;
+                }
+                .editor-checklist-item input[type="checkbox"] {
+                    accent-color: hsl(var(--color-brand-primary));
                 }
             `}</style>
         </div >

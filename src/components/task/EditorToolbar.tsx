@@ -2,7 +2,9 @@
 import {
     Bold, Italic, Underline, Strikethrough,
     List, ListOrdered, Link,
-    Minus, CheckSquare
+    Minus, CheckSquare, Table2, 
+    AlignLeft, AlignCenter, AlignRight,
+    Palette, Highlighter
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -15,11 +17,18 @@ export const EditorToolbar = ({ onFormat }: EditorToolbarProps) => {
         { id: 'italic', icon: Italic, label: 'Italic' },
         { id: 'underline', icon: Underline, label: 'Underline' },
         { id: 'strikethrough', icon: Strikethrough, label: 'Strikethrough' },
+        { id: 'color', icon: Palette, label: 'Text Color' },
+        { id: 'highlight', icon: Highlighter, label: 'Highlight' },
         { type: 'separator' },
         { id: 'list-bullet', icon: List, label: 'Bullet List' },
         { id: 'list-ordered', icon: ListOrdered, label: 'Ordered List' },
         { id: 'check', icon: CheckSquare, label: 'Checklist' },
         { type: 'separator' },
+        { id: 'align-left', icon: AlignLeft, label: 'Align Left' },
+        { id: 'align-center', icon: AlignCenter, label: 'Align Center' },
+        { id: 'align-right', icon: AlignRight, label: 'Align Right' },
+        { type: 'separator' },
+        { id: 'table', icon: Table2, label: 'Table' },
         { id: 'link', icon: Link, label: 'Link' },
         { id: 'hr', icon: Minus, label: 'Horizontal Rule' }
     ];

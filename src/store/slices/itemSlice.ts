@@ -506,7 +506,7 @@ export const createItemSlice: StateCreator<
             selectedItemIds: []
         }));
 
-        await supabase.from('items').update({ isHidden: true }).in('id', selectedItemIds);
+        await supabase.from('items').update({ is_hidden: true }).in('id', selectedItemIds);
     },
 
     unhideSelectedItems: async () => {
@@ -525,7 +525,7 @@ export const createItemSlice: StateCreator<
             selectedItemIds: []
         }));
 
-        await supabase.from('items').update({ isHidden: false }).in('id', selectedItemIds);
+        await supabase.from('items').update({ is_hidden: false }).in('id', selectedItemIds);
     },
 
     moveSelectedItemsToGroup: async (groupId) => {

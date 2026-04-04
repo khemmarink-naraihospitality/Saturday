@@ -46,6 +46,10 @@ export const Row = React.memo(({
     const { can } = usePermission();
     const rowRef = useRef<HTMLDivElement>(null);
     const highlightedItemId = useBoardStore(state => state.highlightedItemId);
+    const hasSubItems = useBoardStore(state => {
+        const board = state.boards.find(b => b.id === item.boardId);
+        return board ? board.items.some(i => i.parentId === item.id && !i.isHidden) : false;
+    });
     // Local state for flash animation - Disabled for now as per user request
     // const [isFlashing, setIsFlashing] = useState(false);
 
@@ -167,7 +171,7 @@ export const Row = React.memo(({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            opacity: isExpanded ? 1 : 0, // Hidden until hover or expanded
+                            opacity: (isExpanded || hasSubItems) ? 1 : 0, // Show if has subitems or expanded. Will be shown on hover via CSS.
                             transition: 'opacity 0.2s, transform 0.2s, color 0.2s',
                             zIndex: 100,
                             width: '20px',

@@ -171,7 +171,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
             const type = virtualItems[index]?.type;
             if (type === 'group') return 44; // Compact-ish group row
             if (type === 'header' || type === 'subitem-header') return 34; // Compact-ish header
-            if (type === 'footer' || type === 'subitem-footer') return 36;
+            if (type === 'subitem-footer') return 40;
+            if (type === 'footer') return 80; // Add item (36) + margin (4) + Summary (40)
             return 30; // item or subitem
         },
         overscan: 5,
@@ -414,13 +415,37 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 backgroundColor: 'hsl(var(--color-bg-canvas))',
                                                                 flexShrink: 0,
                                                                 borderRight: '1px solid hsl(var(--color-border))',
-                                                                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
-                                                            }} />
+                                                                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'flex-end',
+                                                                paddingRight: 0,
+                                                            }}>
+                                                                <div style={{
+                                                                    height: '36px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    padding: '0 16px',
+                                                                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                                                                    borderRadius: '8px 0 0 8px',
+                                                                    border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                                    borderRight: 'none',
+                                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                                                    color: 'hsl(var(--color-text-secondary))',
+                                                                    fontSize: '12px',
+                                                                    minWidth: '100px',
+                                                                }}>
+                                                                    {board.items.filter(i => i.groupId === vItem.data.groupId).length} items
+                                                                </div>
+                                                            </div>
                                                             <div style={{
                                                                 display: 'flex',
-                                                                boxShadow: '0 0 0 1px hsl(var(--color-border)), 0 2px 8px rgba(0,0,0,0.1)',
-                                                                borderRadius: '8px',
+                                                                border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                                borderLeft: 'none',
+                                                                borderRadius: '0 8px 8px 0',
                                                                 backgroundColor: 'hsl(var(--color-bg-surface))',
+
                                                                 overflow: 'hidden',
                                                                 height: '36px',
                                                                 marginTop: '0px',

@@ -108,8 +108,8 @@ export const TimelineView = () => {
             </div>
 
             {/* Timeline Grid */}
-            <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
-                <div style={{ display: 'flex', minWidth: 'max-content', minHeight: '100%', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+                <div style={{ display: 'flex', minWidth: 'max-content', minHeight: '100%', flexDirection: 'column', position: 'relative' }}>
                     
                     {/* Calendar Day Headers */}
                     <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>

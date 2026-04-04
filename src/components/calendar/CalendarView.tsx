@@ -9,9 +9,7 @@ import {
     isSameMonth, 
     isSameDay, 
     addMonths, 
-    subMonths,
-    parse,
-    isValid
+    subMonths
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -21,6 +19,8 @@ export const CalendarView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
     const searchQuery = useBoardStore(state => state.searchQuery);
+    const showHiddenItems = useBoardStore(state => state.showHiddenItems);
+    const setActiveItem = useBoardStore(state => state.setActiveItem);
 
     const activeBoard = useMemo(() => boards.find(b => b.id === activeBoardId), [boards, activeBoardId]);
     
@@ -30,28 +30,31 @@ export const CalendarView = () => {
 
         // 1. Search
         if (searchQuery) {
-            items = items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
+            items = items.filter(item => (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
-        // 2. Filters
+        // 2. Hidden Items
+        if (!showHiddenItems) {
+            items = items.filter(item => !item.isHidden);
+        }
+
+        // 3. Filters
         if (activeBoard.filters && activeBoard.filters.length > 0) {
             activeBoard.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
                     items = items.filter(item => {
                         const val = item.values[filter.columnId];
-                        if (Array.isArray(val)) return val.some(v => filter.values.includes(v));
-                        if (typeof val === 'boolean') return filter.values.includes(String(val));
-                        return filter.values.includes(val);
+                        return Array.isArray(val) ? val.some(v => filter.values.includes(v)) : filter.values.includes(val);
                     });
                 }
             });
         }
 
         return items;
-    }, [activeBoard, searchQuery]);
+    }, [activeBoard, searchQuery, showHiddenItems]);
     
-    // Find timeline column
-    const timelineColumn = useMemo(() => activeBoard?.columns.find(c => c.type === 'timeline'), [activeBoard]);
+    // Find timeline/date column
+    const timeColumn = useMemo(() => activeBoard?.columns.find(c => c.type === 'timeline' || c.type === 'date'), [activeBoard]);
 
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
@@ -67,43 +70,30 @@ export const CalendarView = () => {
     const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
     const getItemsForDay = (day: Date) => {
-        if (!activeBoard || !timelineColumn) return [];
+        if (!activeBoard || !timeColumn) return [];
         
         return filteredItems.filter(item => {
-            const timelineValue = item.values?.[timelineColumn.id];
-            if (!timelineValue || typeof timelineValue !== 'string') return false;
+            const val = item.values?.[timeColumn.id];
+            if (!val) return false;
 
-            // Simple parsing for "Jan 1, 2024 - Jan 5, 2024" or similar
-            // Assuming the format is roughly "MMM d - MMM d, yyyy" or "MMM d, yyyy - MMM d, yyyy"
-            const parts = timelineValue.split(' - ');
-            if (parts.length < 1) return false;
+            let start: Date | null = null;
+            let end: Date | null = null;
 
-            try {
-                // This logic needs to be robust. For now, let's try some common formats.
-                const parseDate = (dStr: string) => {
-                    // Try parsing with year first
-                    let d = parse(dStr, 'MMM d, yyyy', new Date());
-                    if (!isValid(d)) {
-                        // Try without year, adding current year
-                        d = parse(dStr, 'MMM d', new Date());
-                    }
-                    return d;
-                };
-
-                const startParsed = parseDate(parts[0]);
-                const endParsed = parts.length > 1 ? parseDate(parts[1]) : startParsed;
-
-                if (!isValid(startParsed)) return false;
-
-                // Set all to midnight for accurate comparison
-                const dayMid = new Date(day).setHours(0,0,0,0);
-                const startMid = new Date(startParsed).setHours(0,0,0,0);
-                const endMid = new Date(endParsed).setHours(0,0,0,0);
-
-                return dayMid >= startMid && dayMid <= endMid;
-            } catch (e) {
-                return false;
+            if (timeColumn.type === 'timeline') {
+                if (val.from) start = new Date(val.from);
+                if (val.to) end = new Date(val.to);
+            } else if (timeColumn.type === 'date') {
+                start = new Date(val);
+                end = new Date(val);
             }
+
+            if (!start || !end) return false;
+
+            const d = new Date(day).setHours(0,0,0,0);
+            const s = new Date(start).setHours(0,0,0,0);
+            const e = new Date(end).setHours(0,0,0,0);
+
+            return d >= s && d <= e;
         });
     };
 
@@ -154,6 +144,7 @@ export const CalendarView = () => {
                                     return (
                                         <div 
                                             key={item.id} 
+                                            onClick={() => setActiveItem(item.id)}
                                             className="calendar-item-bar"
                                             style={{ backgroundColor: group?.color || '#333' }}
                                             title={item.title}
@@ -176,6 +167,7 @@ export const CalendarView = () => {
                     padding: 24px 32px;
                     overflow: hidden;
                     background-color: white;
+                    height: 100%;
                 }
                 .calendar-header {
                     display: flex;
@@ -243,9 +235,8 @@ export const CalendarView = () => {
                     font-weight: 500;
                 }
                 .calendar-day.today .day-number {
-                    color: hsl(var(--color-brand-primary));
-                    background-color: hsl(var(--color-brand-primary));
                     color: white;
+                    background-color: hsl(var(--color-brand-primary));
                     width: 20px;
                     height: 20px;
                     display: flex;
@@ -277,3 +268,4 @@ export const CalendarView = () => {
         </div>
     );
 };
+

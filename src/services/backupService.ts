@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import * as XLSX from 'xlsx';
 
 export const backupService = {
     /**
@@ -181,11 +182,11 @@ export const backupService = {
     },
 
     // ------------------------------------------------------------------
-    // 3. Export Board to CSV
+    // 3. Export Board to CSV / EXCEL
     // ------------------------------------------------------------------
-    exportBoardToCSV: async (boardId: string, customFilename?: string) => {
+    exportBoardData: async (boardId: string, customFilename?: string, format: 'csv' | 'xlsx' = 'csv') => {
         try {
-            console.log('Starting CSV Export...');
+            console.log(`Starting ${format.toUpperCase()} Export...`);
 
             // 1. Fetch Data
             const { data: board, error: boardError } = await supabase.from('boards').select('title').eq('id', boardId).single();
@@ -194,7 +195,8 @@ export const backupService = {
             const { data: columns, error: colsError } = await supabase.from('columns').select('*').eq('board_id', boardId).order('order');
             if (colsError) throw new Error('Failed to fetch columns: ' + colsError.message);
 
-            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId);
+            // Fetch items explicitly ordered by creation date to flatten sub-items effectively
+            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId).order('created_at', { ascending: true });
             if (itemsError) throw new Error('Failed to fetch items: ' + itemsError.message);
 
             const { data: groups, error: groupsError } = await supabase.from('groups').select('id, title').eq('board_id', boardId);
@@ -245,13 +247,12 @@ export const backupService = {
                 return String(val);
             };
 
-            // 3. Build CSV Content
-            console.log('Building CSV content...');
-            // CSV Headers
+            // 3. Build Array of Arrays (AoA) content
+            console.log('Building content array...');
             const headers = ['Task Name', 'Group', ...columns.map(c => c.title), 'Created At'];
+            const aoa: any[][] = [headers];
 
-            // CSV Rows
-            const rows = items.map(item => {
+            items.forEach(item => {
                 const groupName = groupMap.get(item.group_id) || 'Unknown Group';
 
                 // Map dynamic column values
@@ -262,43 +263,36 @@ export const backupService = {
 
                     try {
                         if (col.type === 'status' || col.type === 'priority' || col.type === 'dropdown') {
-                            const sv = getOptionLabel(col, val).replace(/"/g, '""');
-                            return sv;
+                            return getOptionLabel(col, val);
                         }
                         if (col.type === 'people') {
-                            const pv = getPeopleNames(val).replace(/"/g, '""');
-                            return pv;
+                            return getPeopleNames(val);
                         }
                         if (col.type === 'date' || col.type === 'timeline') {
                             // Assuming val is string or { from, to }
                             if (typeof val === 'object' && val !== null) {
                                 if (val.from && val.to) return `${val.from} - ${val.to}`;
                                 if (val.date) return val.date;
-                                return JSON.stringify(val).replace(/"/g, '""');
+                                return JSON.stringify(val);
                             }
-                            return String(val).replace(/"/g, '""');
+                            return String(val);
                         }
                     } catch (e) {
                         console.error('Error formatting value', e);
-                        return String(val).replace(/"/g, '""');
+                        return String(val);
                     }
 
-                    if (typeof val === 'object') return JSON.stringify(val).replace(/"/g, '""');
-                    return String(val).replace(/"/g, '""');
+                    if (typeof val === 'object') return JSON.stringify(val);
+                    return String(val);
                 });
 
-                return [
-                    `"${(item.title || '').replace(/"/g, '""')}"`,
-                    `"${(groupName || '').replace(/"/g, '""')}"`,
-                    ...colValues.map(v => `"${v}"`),
-                    `"${new Date(item.created_at).toLocaleString()}"`
-                ].join(',');
+                aoa.push([
+                    item.title || '',
+                    groupName || '',
+                    ...colValues,
+                    new Date(item.created_at).toLocaleString()
+                ]);
             });
-
-            const csvContent = [headers.join(','), ...rows].join('\n');
-
-            // 4. Download Strategy
-            console.log('Triggering download...');
 
             // Filename sanitization
             let safeTitle = '';
@@ -309,10 +303,30 @@ export const backupService = {
             }
             if (!safeTitle || safeTitle.trim() === '') safeTitle = 'Board_Export';
 
-            const filename = safeTitle.toLowerCase().endsWith('.csv') ? safeTitle : `${safeTitle}.csv`;
-            console.log('Final Filename:', filename);
+            // 4. Output Generation and Download Execution
+            if (format === 'xlsx') {
+                console.log('Generating Excel file via SheetJS...');
+                const filename = safeTitle.toLowerCase().endsWith('.xlsx') ? safeTitle : `${safeTitle}.xlsx`;
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                XLSX.utils.book_append_sheet(wb, ws, "Board Data");
+                
+                XLSX.writeFile(wb, filename);
+                console.log('Excel Export Complete.');
+                return;
+            }
 
+            // Fallback: CSV Logic
+            console.log('Generating CSV file string...');
+            const filename = safeTitle.toLowerCase().endsWith('.csv') ? safeTitle : `${safeTitle}.csv`;
             const BOM = '\uFEFF';
+            
+            // Re-escape arrays for CSV syntax
+            const csvRows = aoa.map(row => 
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            );
+            const csvContent = csvRows.join('\n');
             const csvData = BOM + csvContent;
 
             let url = '';
@@ -342,12 +356,12 @@ export const backupService = {
             setTimeout(() => {
                 document.body.removeChild(a);
                 if (!isDataUri) URL.revokeObjectURL(url);
-                console.log('Export Complete.');
+                console.log('CSV Export Complete.');
             }, 100);
 
         } catch (error: any) {
-            console.error('CSV Export Failed:', error);
-            alert('Failed to export CSV: ' + (error.message || 'Unknown error'));
+            console.error('Export Failed:', error);
+            alert(`Failed to export ${format.toUpperCase()}: ` + (error.message || 'Unknown error'));
         }
     }
 };

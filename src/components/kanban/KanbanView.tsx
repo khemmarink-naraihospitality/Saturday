@@ -21,9 +21,10 @@ import type { Item } from '../../types';
 
 interface KanbanCardProps {
     item: Item;
+    onClick: () => void;
 }
 
-const KanbanCard = ({ item }: KanbanCardProps) => {
+const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
     const {
         attributes,
         listeners,
@@ -51,6 +52,7 @@ const KanbanCard = ({ item }: KanbanCardProps) => {
             style={style}
             {...attributes}
             {...listeners}
+            onClick={onClick}
             className="kanban-card"
         >
             <div className="kanban-card-content">
@@ -81,7 +83,7 @@ const KanbanCard = ({ item }: KanbanCardProps) => {
                     border: 1px solid hsl(var(--color-border));
                     border-radius: 6px;
                     padding: 12px;
-                    cursor: grab;
+                    cursor: pointer;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                     margin-bottom: 8px;
                     transition: box-shadow 0.2s, border-color 0.2s;
@@ -116,9 +118,10 @@ interface KanbanColumnProps {
     color: string;
     items: Item[];
     onAddItem: () => void;
+    onItemClick: (itemId: string) => void;
 }
 
-const KanbanColumn = ({ id, label, color, items, onAddItem }: KanbanColumnProps) => {
+const KanbanColumn = ({ id, label, color, items, onAddItem, onItemClick }: KanbanColumnProps) => {
     const { setNodeRef } = useSortable({
         id,
         data: {
@@ -149,7 +152,7 @@ const KanbanColumn = ({ id, label, color, items, onAddItem }: KanbanColumnProps)
             <div className="kanban-column-content">
                 <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
                     {items.map(item => (
-                        <KanbanCard key={item.id} item={item} />
+                        <KanbanCard key={item.id} item={item} onClick={() => onItemClick(item.id)} />
                     ))}
                 </SortableContext>
                 
@@ -181,7 +184,7 @@ const KanbanColumn = ({ id, label, color, items, onAddItem }: KanbanColumnProps)
                 }
                 .kanban-column-content {
                     flex: 1;
-                    padding: 0 8px 16px 8px;
+                    padding: 14px 8px 16px 8px;
                     overflow-y: auto;
                 }
                 .kanban-add-btn {
@@ -215,30 +218,49 @@ export const KanbanView = () => {
     const addItem = useBoardStore(state => state.addItem);
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const searchQuery = useBoardStore(state => state.searchQuery);
+    const setActiveItem = useBoardStore(state => state.setActiveItem);
 
     const activeBoard = useMemo(() => boards.find(b => b.id === activeBoardId), [boards, activeBoardId]);
     
+    // 1. Filtered Items
     const filteredItems = useMemo(() => {
         if (!activeBoard) return [];
         let items = [...activeBoard.items];
 
-        // 1. Search
+        // Search
         if (searchQuery) {
-            items = items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
+            items = items.filter(item => (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
-        // 2. Filters
+        // Column Filters
         if (activeBoard.filters && activeBoard.filters.length > 0) {
             activeBoard.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
                     items = items.filter(item => {
                         const val = item.values[filter.columnId];
-                        if (Array.isArray(val)) return val.some(v => filter.values.includes(v));
-                        if (typeof val === 'boolean') return filter.values.includes(String(val));
-                        return filter.values.includes(val);
+                        return Array.isArray(val) ? val.some(v => filter.values.includes(v)) : filter.values.includes(val);
                     });
                 }
             });
+        }
+
+        // Sort (if any)
+        if (activeBoard.sort) {
+            const { columnId, direction } = activeBoard.sort;
+            const col = activeBoard.columns.find(c => c.id === columnId);
+            if (col && direction) {
+                items.sort((a, b) => {
+                    let valA = a.values[columnId];
+                    let valB = b.values[columnId];
+                    if (col.type === 'number') {
+                        valA = Number(valA) || 0;
+                        valB = Number(valB) || 0;
+                    }
+                    if (valA < valB) return direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
         }
 
         return items;
@@ -262,7 +284,6 @@ export const KanbanView = () => {
         if (!statusColumn || !activeBoard) return [];
         
         const options = statusColumn.options || [];
-        // Add a "No Status" column if there's no option selected
         const itemsByStatus: Record<string, Item[]> = {};
         
         options.forEach(opt => {
@@ -270,25 +291,7 @@ export const KanbanView = () => {
         });
         itemsByStatus['no-status'] = [];
 
-        activeBoard.items.forEach(item => {
-            const statusId = item.values?.[statusColumn.id];
-            if (statusId && itemsByStatus[statusId]) {
-                itemsByStatus[statusId].push(item);
-            } else {
-                itemsByStatus['no-status'].push(item);
-            }
-        });
-
-        // Filter items first
-        const filteredBoardItems = filteredItems;
-        
-        // Re-initialize itemsByStatus
-        options.forEach(opt => {
-            itemsByStatus[opt.id] = [];
-        });
-        itemsByStatus['no-status'] = [];
-
-        filteredBoardItems.forEach(item => {
+        filteredItems.forEach(item => {
             const statusId = item.values?.[statusColumn.id];
             if (statusId && itemsByStatus[statusId]) {
                 itemsByStatus[statusId].push(item);
@@ -301,7 +304,7 @@ export const KanbanView = () => {
             id: opt.id,
             label: opt.label,
             color: opt.color,
-            items: itemsByStatus[opt.id].sort((a,b) => (a.order || 0) - (b.order || 0))
+            items: itemsByStatus[opt.id]
         }));
 
         if (itemsByStatus['no-status'].length > 0) {
@@ -309,39 +312,33 @@ export const KanbanView = () => {
                 id: 'no-status',
                 label: 'No Status',
                 color: 'hsl(var(--color-text-tertiary))',
-                items: itemsByStatus['no-status'].sort((a,b) => (a.order || 0) - (b.order || 0))
+                items: itemsByStatus['no-status']
             });
         }
 
         return availableColumns;
-    }, [statusColumn, activeBoard]);
+    }, [statusColumn, activeBoard, filteredItems]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || !activeBoard || !statusColumn) return;
 
         const activeId = active.id as string;
-
-        // Find which column we dragged it into
         const activeItem = activeBoard.items.find(i => i.id === activeId);
         if (!activeItem) return;
 
-        // If dragging over a column
         const overData = over.data.current;
         if (overData?.type === 'column') {
             const newStatusId = overData.statusId === 'no-status' ? null : overData.statusId;
             if (activeItem.values?.[statusColumn.id] !== newStatusId) {
                 updateItemValue(activeId, statusColumn.id, newStatusId);
             }
-        } 
-        // If dragging over another item
-        else if (overData?.type === 'item') {
+        } else if (overData?.type === 'item') {
             const overItem = overData.item as Item;
             const newStatusId = overItem.values?.[statusColumn.id] || null;
             if (activeItem.values?.[statusColumn.id] !== newStatusId) {
                 updateItemValue(activeId, statusColumn.id, newStatusId);
             }
-            // Sorting within column is not fully implemented in this logic but status change works
         }
     };
 
@@ -368,11 +365,11 @@ export const KanbanView = () => {
                             label={col.label}
                             color={col.color}
                             items={col.items}
+                            onItemClick={setActiveItem}
                             onAddItem={() => {
                                 const firstGroup = activeBoard.groups[0];
                                 if (firstGroup) {
                                     addItem("New Item", firstGroup.id);
-                                    // Status will need to be set after creation or logic added to addItem
                                 }
                             }}
                         />
@@ -400,3 +397,4 @@ export const KanbanView = () => {
         </div>
     );
 };
+

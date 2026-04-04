@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
-import { X, Download, FileText } from 'lucide-react';
+import { X, Download, FileText, Table } from 'lucide-react';
 
 interface ExportBoardModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onExport: (filename: string) => void;
+    onExport: (filename: string, format: 'csv' | 'xlsx') => void;
     defaultFilename: string;
 }
 
 export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }: ExportBoardModalProps) => {
     const [filename, setFilename] = useState(defaultFilename);
+    const [format, setFormat] = useState<'csv' | 'xlsx'>('csv');
 
     // Sync default filename when modal opens or prop changes
     useEffect(() => {
         if (isOpen) {
             setFilename(defaultFilename);
+            setFormat('csv');
         }
     }, [isOpen, defaultFilename]);
 
@@ -23,7 +25,7 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
     const handleExport = () => {
         // Validation: Ensure not empty
         const finalName = filename.trim() || 'Board_Export';
-        onExport(finalName);
+        onExport(finalName, format);
         onClose();
     };
 
@@ -58,7 +60,7 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
                 }}>
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Download size={18} className="text-brand-primary" />
-                        Export to CSV
+                        Export Board Data
                     </h3>
                     <button
                         onClick={onClose}
@@ -70,6 +72,36 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
 
                 {/* Body */}
                 <div style={{ padding: '24px 20px' }}>
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-text-secondary))' }}>
+                            Export Format
+                        </label>
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <input 
+                                    type="radio" 
+                                    name="export_format" 
+                                    value="csv" 
+                                    checked={format === 'csv'} 
+                                    onChange={() => setFormat('csv')} 
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                <span style={{ fontSize: '14px', color: 'hsl(var(--color-text-primary))' }}>CSV Document</span>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <input 
+                                    type="radio" 
+                                    name="export_format" 
+                                    value="xlsx" 
+                                    checked={format === 'xlsx'} 
+                                    onChange={() => setFormat('xlsx')} 
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                <span style={{ fontSize: '14px', color: 'hsl(var(--color-text-primary))' }}>Excel (.xlsx)</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-text-secondary))' }}>
                         File Name
                     </label>
@@ -83,7 +115,7 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
                             background: 'hsl(var(--color-bg-subtle))',
                             padding: '0 12px'
                         }}>
-                            <FileText size={16} color="hsl(var(--color-text-tertiary))" />
+                            {format === 'csv' ? <FileText size={16} color="hsl(var(--color-text-tertiary))" /> : <Table size={16} color="hsl(var(--color-text-tertiary))" />}
                             <input
                                 type="text"
                                 value={filename}
@@ -99,7 +131,9 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
                                     color: 'hsl(var(--color-text-primary))'
                                 }}
                             />
-                            <span style={{ fontSize: '14px', color: 'hsl(var(--color-text-tertiary))', userSelect: 'none' }}>.csv</span>
+                            <span style={{ fontSize: '14px', color: 'hsl(var(--color-text-tertiary))', userSelect: 'none' }}>
+                                .{format}
+                            </span>
                         </div>
                     </div>
                     <p style={{ marginTop: '12px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>

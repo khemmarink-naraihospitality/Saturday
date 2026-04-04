@@ -423,9 +423,9 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                     isOpen={showExportModal}
                     onClose={() => setShowExportModal(false)}
                     defaultFilename={board.title}
-                    onExport={(filename) => {
+                    onExport={(filename, format) => {
                         import('../../services/backupService').then(({ backupService }) => {
-                            backupService.exportBoardToCSV(boardId, filename);
+                            backupService.exportBoardData(boardId, filename, format);
                         });
                     }}
                 />

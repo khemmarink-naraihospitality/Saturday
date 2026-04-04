@@ -23,20 +23,22 @@ export const DatePicker = ({ date, onSelect, onClose, position }: DatePickerProp
     useEffect(() => {
         if (pickerRef.current) {
             const rect = pickerRef.current.getBoundingClientRect();
-            let top = position.top;
-            let left = position.left;
+            let newTop = position.top;
+            let newLeft = position.left;
 
-            if (top + rect.height > window.innerHeight) {
-                top = position.top - rect.height - 40;
+            if (newTop + rect.height + 16 > window.innerHeight) {
+                newTop = position.top - rect.height - 40;
             }
-            if (left + rect.width > window.innerWidth) {
-                left = window.innerWidth - rect.width - 20;
+            if (newLeft + rect.width + 16 > window.innerWidth) {
+                newLeft = window.innerWidth - rect.width - 16;
             }
 
-            setStyle({ top, left });
+            if (newTop < 16) newTop = 16;
+            if (newLeft < 16) newLeft = 16;
+
+            setStyle({ top: newTop, left: newLeft });
         }
-    }, [position, view]); // Re-calc on view change as height might change
-
+    }, [position, view, month]);
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {

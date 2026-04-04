@@ -266,8 +266,15 @@ export const KanbanView = () => {
         return items;
     }, [activeBoard, searchQuery]);
     
-    // Find the first status column
-    const statusColumn = useMemo(() => activeBoard?.columns.find(c => c.type === 'status'), [activeBoard]);
+    // Determine the grouping column
+    const groupingColumn = useMemo(() => {
+        if (!activeBoard) return null;
+        if (activeBoard.groupByColumnId) {
+            return activeBoard.columns.find(c => c.id === activeBoard.groupByColumnId) || null;
+        }
+        // Default to first status column for Kanban
+        return activeBoard.columns.find(c => c.type === 'status') || null;
+    }, [activeBoard]);
     
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -281,47 +288,72 @@ export const KanbanView = () => {
     );
 
     const columns = useMemo(() => {
-        if (!statusColumn || !activeBoard) return [];
+        if (!groupingColumn || !activeBoard) return [];
         
-        const options = statusColumn.options || [];
-        const itemsByStatus: Record<string, Item[]> = {};
+        let columnDefs: { id: string; label: string; color: string }[] = [];
         
-        options.forEach(opt => {
-            itemsByStatus[opt.id] = [];
-        });
-        itemsByStatus['no-status'] = [];
+        if (groupingColumn.options && groupingColumn.options.length > 0) {
+            columnDefs = groupingColumn.options.map(opt => ({
+                id: opt.id,
+                label: opt.label,
+                color: opt.color
+            }));
+        } else {
+            // Derive columns from unique values in items (e.g. for Person column without explicit options)
+            const uniqueValues = new Set<string>();
+            filteredItems.forEach(item => {
+                const val = item.values[groupingColumn.id];
+                if (val) {
+                    if (Array.isArray(val)) val.forEach(v => uniqueValues.add(String(v)));
+                    else uniqueValues.add(String(val));
+                }
+            });
+            columnDefs = Array.from(uniqueValues).map(val => ({
+                id: val,
+                label: val, // In a real app we might look up user names here
+                color: 'hsl(var(--color-bg-subtle))'
+            }));
+        }
+
+        const itemsByGroup: Record<string, Item[]> = {};
+        columnDefs.forEach(col => { itemsByGroup[col.id] = []; });
+        itemsByGroup['no-value'] = [];
 
         filteredItems.forEach(item => {
-            const statusId = item.values?.[statusColumn.id];
-            if (statusId && itemsByStatus[statusId]) {
-                itemsByStatus[statusId].push(item);
+            const val = item.values?.[groupingColumn.id];
+            if (val) {
+                if (Array.isArray(val)) {
+                    val.forEach(v => { if (itemsByGroup[v]) itemsByGroup[v].push(item); });
+                } else if (itemsByGroup[val]) {
+                    itemsByGroup[val].push(item);
+                } else {
+                    itemsByGroup['no-value'].push(item);
+                }
             } else {
-                itemsByStatus['no-status'].push(item);
+                itemsByGroup['no-value'].push(item);
             }
         });
 
-        const availableColumns = options.map(opt => ({
-            id: opt.id,
-            label: opt.label,
-            color: opt.color,
-            items: itemsByStatus[opt.id]
+        const availableColumns = columnDefs.map(def => ({
+            ...def,
+            items: itemsByGroup[def.id]
         }));
 
-        if (itemsByStatus['no-status'].length > 0) {
+        if (itemsByGroup['no-value'].length > 0) {
             availableColumns.unshift({
-                id: 'no-status',
-                label: 'No Status',
+                id: 'no-value',
+                label: 'None',
                 color: 'hsl(var(--color-text-tertiary))',
-                items: itemsByStatus['no-status']
+                items: itemsByGroup['no-value']
             });
         }
 
         return availableColumns;
-    }, [statusColumn, activeBoard, filteredItems]);
+    }, [groupingColumn, activeBoard, filteredItems]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || !activeBoard || !statusColumn) return;
+        if (!over || !activeBoard || !groupingColumn) return;
 
         const activeId = active.id as string;
         const activeItem = activeBoard.items.find(i => i.id === activeId);
@@ -329,23 +361,23 @@ export const KanbanView = () => {
 
         const overData = over.data.current;
         if (overData?.type === 'column') {
-            const newStatusId = overData.statusId === 'no-status' ? null : overData.statusId;
-            if (activeItem.values?.[statusColumn.id] !== newStatusId) {
-                updateItemValue(activeId, statusColumn.id, newStatusId);
+            const newValue = overData.statusId === 'no-value' ? null : overData.statusId;
+            if (activeItem.values?.[groupingColumn.id] !== newValue) {
+                updateItemValue(activeId, groupingColumn.id, newValue);
             }
         } else if (overData?.type === 'item') {
             const overItem = overData.item as Item;
-            const newStatusId = overItem.values?.[statusColumn.id] || null;
-            if (activeItem.values?.[statusColumn.id] !== newStatusId) {
-                updateItemValue(activeId, statusColumn.id, newStatusId);
+            const newValue = overItem.values?.[groupingColumn.id] || null;
+            if (activeItem.values?.[groupingColumn.id] !== newValue) {
+                updateItemValue(activeId, groupingColumn.id, newValue);
             }
         }
     };
 
-    if (!statusColumn || !activeBoard) {
+    if (!groupingColumn || !activeBoard) {
         return (
             <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
-                <p>No status column found for this board. Kanban view requires a status column.</p>
+                <p>No valid grouping column found for this board. Kanban view requires a Status, Dropdown, or People column.</p>
             </div>
         );
     }
@@ -397,4 +429,5 @@ export const KanbanView = () => {
         </div>
     );
 };
+
 

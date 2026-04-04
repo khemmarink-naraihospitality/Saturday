@@ -54,7 +54,6 @@
     color: hsl(var(--color-text-secondary));
     text-align: center;
     justify-content: center;
-    /* Center align headers usually */
 }
 
 /* First Column (Item Name) Adjustments */
@@ -62,7 +61,6 @@
 .table-header-cell:first-child {
     justify-content: flex-start;
     border-right: 1px solid hsl(var(--color-border));
-    /* Stronger divider for name */
 }
 
 .sticky-col {

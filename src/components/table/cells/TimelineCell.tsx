@@ -74,12 +74,11 @@ export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column,
                 style={{
                     width: '100%',
                     height: '100%',
-                    borderRight: '1px solid hsl(var(--color-cell-border))',
-                    padding: '0 10px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    padding: 0
                 }}
             >
                 {displayValue ? (

@@ -596,7 +596,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             borderRight: '1px solid hsl(var(--color-border))',
                                                             boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
                                                         }}>
-                                                            {board.itemColumnTitle}
+                                                            {vItem.type === 'subitem-header' ? 'Sub-Items' : board.itemColumnTitle}
                                                         </div>
                                                         {board.columns.map(col => (
                                                             <div key={col.id} className="table-cell" style={{ 
@@ -636,7 +636,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 gap: '8px',
                                                                 padding: '4px 8px',
                                                                 borderRadius: '4px',
-                                                                marginLeft: vItem.groupColor ? '78px' : '68px' // Indent further (match Row.tsx + extra step)
+                                                                marginLeft: vItem.groupColor ? '116px' : '106px' // Indent further to match new Row.tsx (86px/76px + base margin)
                                                             }}
                                                             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; e.currentTarget.style.color = 'hsl(var(--color-text-secondary))'; }}
                                                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))'; }}

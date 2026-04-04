@@ -99,8 +99,7 @@ export const Row = React.memo(({
                 left: 0,
                 zIndex: 5,
                 backgroundColor: isSelected ? 'hsl(var(--color-brand-primary-subtle))' : (item.isHidden ? 'hsl(var(--color-bg-subtle))' : 'hsl(var(--color-bg-canvas))'),
-                borderRight: '1px solid hsl(var(--color-border))',
-                paddingLeft: groupColor ? (isSubItem ? '46px' : '18px') : '8px',
+                paddingLeft: groupColor ? (isSubItem ? '86px' : '18px') : (isSubItem ? '76px' : '8px'),
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -186,18 +185,6 @@ export const Row = React.memo(({
                     <input
                         defaultValue={item.title}
                         readOnly={!can('edit_items')}
-                        onBlur={(e) => {
-                            if (!can('edit_items')) return;
-                            const val = e.target.value.trim();
-                            if (val && val !== item.title) {
-                                import('../../store/useBoardStore').then(({ useBoardStore }) => {
-                                    useBoardStore.getState().updateItemTitle(item.id, val, true);
-                                });
-                            } else {
-                                // Reset if empty
-                                e.target.value = item.title;
-                            }
-                        }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.currentTarget.blur();
@@ -214,7 +201,32 @@ export const Row = React.memo(({
                             color: isSubItem ? 'hsl(var(--color-text-secondary))' : 'inherit',
                             outline: 'none',
                             cursor: can('edit_items') ? 'text' : 'default',
-                            pointerEvents: can('edit_items') ? 'auto' : 'none' // Disable interaction cleanly
+                            pointerEvents: 'auto',
+                            zIndex: 100,
+                            position: 'relative'
+                        }}
+                        onFocus={(e) => {
+                            if (can('edit_items')) {
+                                e.currentTarget.parentElement!.style.backgroundColor = 'hsl(var(--color-bg-surface))';
+                                e.currentTarget.style.paddingLeft = '4px';
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // UI Cleanup
+                            e.currentTarget.parentElement!.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.paddingLeft = '0';
+                            
+                            // Save Logic
+                            if (!can('edit_items')) return;
+                            const val = e.target.value.trim();
+                            if (val && val !== item.title) {
+                                import('../../store/useBoardStore').then(({ useBoardStore }) => {
+                                    useBoardStore.getState().updateItemTitle(item.id, val, true);
+                                });
+                            } else {
+                                // Reset if empty
+                                e.target.value = item.title;
+                            }
                         }}
                     />
 

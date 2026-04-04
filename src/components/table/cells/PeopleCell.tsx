@@ -73,7 +73,6 @@ export const PeopleCell: React.FC<PeopleCellProps> = memo(({ itemId, boardId, co
                 style={{
                     width: '100%',
                     height: '100%',
-                    borderRight: '1px solid hsl(var(--color-cell-border))',
                     padding: '4px 8px',
                     display: 'flex',
                     alignItems: 'center',

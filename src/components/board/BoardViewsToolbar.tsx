@@ -47,7 +47,7 @@ export const BoardViewsToolbar = () => {
                     <button
                         onClick={handleAddItem}
                         style={{
-                            backgroundColor: 'hsl(var(--color-brand-primary))',
+                            backgroundColor: '#6b4cc3',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px 0 0 4px',
@@ -57,6 +57,7 @@ export const BoardViewsToolbar = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
+                            boxShadow: '0 2px 4px rgba(107, 76, 195, 0.15)'
                         }}
                     >
                         New Item
@@ -65,7 +66,7 @@ export const BoardViewsToolbar = () => {
                         ref={dropdownBtnRef}
                         onClick={() => setShowDropdown(!showDropdown)}
                         style={{
-                            backgroundColor: 'hsl(var(--color-brand-primary))',
+                            backgroundColor: '#6b4cc3',
                             color: 'white',
                             border: 'none',
                             borderLeft: '1px solid rgba(255,255,255,0.2)',

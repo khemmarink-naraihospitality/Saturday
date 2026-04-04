@@ -58,7 +58,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
     if (column.type === 'link') {
         if (isEditing) {
             return (
-                <div className="table-cell" style={{ width: '100%', height: '100%', borderRight: '1px solid hsl(var(--color-cell-border))', padding: 0 }}>
+                <div className="table-cell" style={{ width: '100%', height: '100%', padding: 0 }}>
                     <input
                         ref={inputRef}
                         type="text"
@@ -92,7 +92,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
 
     if (isEditing) {
         return (
-            <div className="table-cell" style={{ width: '100%', height: '100%', borderRight: '1px solid hsl(var(--color-cell-border))', padding: 0 }}>
+            <div className="table-cell" style={{ width: '100%', height: '100%', padding: 0 }}>
                 <input
                     ref={inputRef}
                     type="text"
@@ -131,7 +131,7 @@ const inputStyle: React.CSSProperties = {
     fontFamily: 'inherit', fontSize: 'inherit', backgroundColor: 'transparent', color: 'inherit'
 };
 const cellStyle: React.CSSProperties = {
-    width: '100%', height: '100%', borderRight: '1px solid hsl(var(--color-cell-border))', padding: '0 8px',
+    width: '100%', height: '100%', padding: '0 8px',
     display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text'
 };
 const linkStyle: React.CSSProperties = { color: 'hsl(var(--color-brand-primary))', textDecoration: 'none', cursor: 'pointer' };

@@ -21,7 +21,6 @@ export const CheckboxCell: React.FC<CheckboxCellProps> = memo(({ itemId, column,
             style={{
                 width: '100%',
                 height: '100%',
-                borderRight: '1px solid hsl(var(--color-cell-border))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

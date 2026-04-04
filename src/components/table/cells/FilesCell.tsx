@@ -54,7 +54,6 @@ export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files
                 style={{
                     width: '100%',
                     height: '100%',
-                    borderRight: '1px solid hsl(var(--color-cell-border))',
                     padding: '0 8px',
                     display: 'flex',
                     alignItems: 'center',

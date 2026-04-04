@@ -44,7 +44,6 @@ const SortableHeaderCell = ({
         transform: CSS.Transform.toString(transform),
         transition,
         width: `${col.width || 150}px`,
-        justifyContent: 'space-between',
         position: 'relative' as const,
         cursor: (editingColId === col.id || !canManage) ? 'default' : 'grab',
         opacity: isDragging ? 0.4 : 1,
@@ -407,7 +406,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 columns.map((col) => (
                     <div
                         key={col.id}
-                        style={{ width: `${col.width || 150}px`, justifyContent: 'space-between' }}
+                        style={{ width: `${col.width || 150}px` }}
                         className="table-cell table-header-cell"
                     >
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

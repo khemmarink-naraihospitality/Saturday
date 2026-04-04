@@ -74,10 +74,9 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     if (!board) return null;
 
-    // Filter members to show (unique users)
-    const uniqueMembers = Array.from(new Map(activeBoardMembers.map(m => [m.user_id, m])).values());
-    const displayMembers = uniqueMembers.slice(0, 4);
-    const remainingMembers = uniqueMembers.length - 4;
+    // Show up to 7 members
+    const displayMembers = activeBoardMembers.slice(0, 7);
+    const remainingMembers = activeBoardMembers.length - 7;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
@@ -157,7 +156,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
                 {/* Members Display */}
                 <div style={{ display: 'flex', marginRight: '8px', alignItems: 'center' }}>
-                    {uniqueMembers.length > 0 ? (
+                    {activeBoardMembers.length > 0 ? (
                         <>
                             {displayMembers.map((member, index) => {
                                 const isOwner = member.role === 'owner';
@@ -180,7 +179,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                             cursor: 'pointer',
                                             position: 'relative',
                                             overflow: 'hidden',
-                                            zIndex: 5 - index
+                                            zIndex: 10 - index
                                         }}
                                     >
                                         {avatar ? (
@@ -316,7 +315,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         alignItems: 'center',
                         gap: '6px',
                         padding: '6px 12px',
-                        backgroundColor: 'hsl(var(--color-brand-primary))',
+                        backgroundColor: '#6b4cc3',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
@@ -324,7 +323,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         fontWeight: 500,
                         cursor: can('invite_members') ? 'pointer' : 'not-allowed',
                         opacity: can('invite_members') ? 1 : 0.7,
-                        marginLeft: '4px'
+                        marginLeft: '4px',
+                        boxShadow: '0 2px 4px rgba(107, 76, 195, 0.15)'
                     }}
                 >
                     <Share2 size={16} />

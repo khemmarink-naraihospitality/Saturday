@@ -9,13 +9,22 @@ import {
     isSameMonth, 
     isSameDay, 
     addMonths, 
-    subMonths
+    subMonths,
+    addDays,
+    subDays,
+    addYears,
+    subYears,
+    startOfYear,
+    endOfYear,
+    eachMonthOfInterval
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 
 export const CalendarView = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewType, setViewType] = useState<'day' | 'month' | 'year'>('month');
+    
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
     const searchQuery = useBoardStore(state => state.searchQuery);
@@ -28,17 +37,14 @@ export const CalendarView = () => {
         if (!activeBoard) return [];
         let items = [...activeBoard.items];
 
-        // 1. Search
         if (searchQuery) {
             items = items.filter(item => (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
-        // 2. Hidden Items
         if (!showHiddenItems) {
             items = items.filter(item => !item.isHidden);
         }
 
-        // 3. Filters
         if (activeBoard.filters && activeBoard.filters.length > 0) {
             activeBoard.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
@@ -53,21 +59,7 @@ export const CalendarView = () => {
         return items;
     }, [activeBoard, searchQuery, showHiddenItems]);
     
-    // Find timeline/date column
     const timeColumn = useMemo(() => activeBoard?.columns.find(c => c.type === 'timeline' || c.type === 'date'), [activeBoard]);
-
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const calendarDays = eachDayOfInterval({
-        start: startDate,
-        end: endDate,
-    });
-
-    const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-    const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
     const getItemsForDay = (day: Date) => {
         if (!activeBoard || !timeColumn) return [];
@@ -97,67 +89,247 @@ export const CalendarView = () => {
         });
     };
 
+    const handleNext = () => {
+        if (viewType === 'day') setCurrentDate(addDays(currentDate, 1));
+        else if (viewType === 'month') setCurrentDate(addMonths(currentDate, 1));
+        else setCurrentDate(addYears(currentDate, 1));
+    };
+
+    const handlePrev = () => {
+        if (viewType === 'day') setCurrentDate(subDays(currentDate, 1));
+        else if (viewType === 'month') setCurrentDate(subMonths(currentDate, 1));
+        else setCurrentDate(subYears(currentDate, 1));
+    };
+
     if (!activeBoard) return null;
+
+    const renderHeader = () => (
+        <div className="calendar-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0, minWidth: '150px' }}>
+                    {viewType === 'day' ? format(currentDate, 'MMMM d, yyyy') : 
+                     viewType === 'month' ? format(currentDate, 'MMMM yyyy') : 
+                     format(currentDate, 'yyyy')}
+                </h2>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    <button onClick={handlePrev} className="nav-btn">
+                        <ChevronLeft size={18} />
+                    </button>
+                    <button 
+                        style={{ fontSize: '12px', padding: '0 12px', height: '28px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'none', cursor: 'pointer' }} 
+                        onClick={() => setCurrentDate(new Date())}
+                    >
+                        Today
+                    </button>
+                    <button onClick={handleNext} className="nav-btn">
+                        <ChevronRight size={18} />
+                    </button>
+                </div>
+
+                <div style={{ display: 'flex', backgroundColor: '#f0f0f5', borderRadius: '6px', padding: '2px', marginLeft: '16px' }}>
+                    {(['day', 'month', 'year'] as const).map(type => (
+                        <button
+                            key={type}
+                            onClick={() => setViewType(type)}
+                            style={{
+                                border: 'none',
+                                padding: '4px 12px',
+                                borderRadius: '4px',
+                                fontSize: '13px',
+                                fontWeight: viewType === type ? 600 : 400,
+                                backgroundColor: viewType === type ? 'white' : 'transparent',
+                                color: viewType === type ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-tertiary))',
+                                cursor: 'pointer',
+                                boxShadow: viewType === type ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                textTransform: 'capitalize'
+                            }}
+                        >
+                            {type}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderDayView = () => {
+        const dayItems = getItemsForDay(currentDate);
+        return (
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                    <h3 style={{ borderBottom: '2px solid #6b4cc3', paddingBottom: '8px', color: '#6b4cc3' }}>
+                        Tasks for {format(currentDate, 'EEEE')}
+                    </h3>
+                    {dayItems.length === 0 ? (
+                        <p style={{ color: 'hsl(var(--color-text-tertiary))', textAlign: 'center', marginTop: '40px' }}>No tasks scheduled for this day.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+                            {dayItems.map(item => {
+                                const group = activeBoard.groups.find(g => g.id === item.groupId);
+                                return (
+                                    <div 
+                                        key={item.id}
+                                        onClick={() => setActiveItem(item.id)}
+                                        style={{
+                                            padding: '16px',
+                                            borderRadius: '8px',
+                                            border: '1px solid hsl(var(--color-border))',
+                                            backgroundColor: 'white',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                            transition: 'transform 0.1s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    >
+                                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: group?.color || '#333' }} />
+                                        <span style={{ fontWeight: 500 }}>{item.title}</span>
+                                        <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>{group?.title}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderMonthView = () => {
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(monthStart);
+        const startDate = startOfWeek(monthStart);
+        const endDate = endOfWeek(monthEnd);
+        const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+
+        return (
+            <>
+                <div className="calendar-grid-header">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="weekday-label">{day}</div>
+                    ))}
+                </div>
+                <div className="calendar-grid">
+                    {calendarDays.map((day, idx) => {
+                        const dayItems = getItemsForDay(day);
+                        const isCurrentMonth = isSameMonth(day, monthStart);
+                        const isToday = isSameDay(day, new Date());
+                        return (
+                            <div 
+                                key={idx} 
+                                className={`calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
+                                onClick={() => {
+                                    if (!isCurrentMonth) setCurrentDate(day);
+                                    setViewType('day');
+                                    setCurrentDate(day);
+                                }}
+                            >
+                                <div className="day-number">{format(day, 'd')}</div>
+                                <div className="day-content">
+                                    {dayItems.map(item => {
+                                        const group = activeBoard.groups.find(g => g.id === item.groupId);
+                                        return (
+                                            <div 
+                                                key={item.id} 
+                                                onClick={(e) => { e.stopPropagation(); setActiveItem(item.id); }}
+                                                className="calendar-item-bar"
+                                                style={{ backgroundColor: group?.color || '#333' }}
+                                                title={item.title}
+                                            >
+                                                {item.title}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </>
+        );
+    };
+
+    const renderYearView = () => {
+        const yearStart = startOfYear(currentDate);
+        const yearEnd = endOfYear(yearStart);
+        const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
+
+        return (
+            <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+                    gap: '24px' 
+                }}>
+                    {months.map(month => {
+                        const mStart = startOfMonth(month);
+                        const mEnd = endOfMonth(mStart);
+                        const sDate = startOfWeek(mStart);
+                        const eDate = endOfWeek(mEnd);
+                        const days = eachDayOfInterval({ start: sDate, end: eDate });
+
+                        return (
+                            <div 
+                                key={month.toISOString()}
+                                onClick={() => {
+                                    setCurrentDate(month);
+                                    setViewType('month');
+                                }}
+                                style={{ 
+                                    padding: '12px', 
+                                    borderRadius: '8px', 
+                                    border: '1px solid hsl(var(--color-border))',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9fb'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', textAlign: 'center' }}>
+                                    {format(month, 'MMMM')}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                                    {['S','M','T','W','T','F','S'].map((d, i) => (
+                                        <div key={i} style={{ fontSize: '9px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>{d}</div>
+                                    ))}
+                                    {days.map((day, i) => {
+                                        const hasItems = getItemsForDay(day).length > 0;
+                                        const isM = isSameMonth(day, month);
+                                        return (
+                                            <div 
+                                                key={i} 
+                                                style={{ 
+                                                    fontSize: '9px', 
+                                                    textAlign: 'center', 
+                                                    padding: '2px 0',
+                                                    color: isM ? 'inherit' : '#ccc',
+                                                    backgroundColor: (isM && hasItems) ? 'rgba(107, 76, 195, 0.1)' : 'transparent',
+                                                    borderRadius: '2px',
+                                                    fontWeight: (isM && hasItems) ? 700 : 400
+                                                }}
+                                            >
+                                                {format(day, 'd')}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="calendar-container">
-            <div className="calendar-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
-                        {format(currentDate, 'MMMM yyyy')}
-                    </h2>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={prevMonth} className="nav-btn">
-                            <ChevronLeft size={18} />
-                        </button>
-                        <button style={{ fontSize: '12px', padding: '0 8px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'none', cursor: 'pointer' }} onClick={() => setCurrentDate(new Date())}>
-                            Today
-                        </button>
-                        <button onClick={nextMonth} className="nav-btn">
-                            <ChevronRight size={18} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="calendar-grid-header">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="weekday-label">{day}</div>
-                ))}
-            </div>
-
-            <div className="calendar-grid">
-                {calendarDays.map((day, idx) => {
-                    const dayItems = getItemsForDay(day);
-                    const isCurrentMonth = isSameMonth(day, monthStart);
-                    const isToday = isSameDay(day, new Date());
-
-                    return (
-                        <div 
-                            key={idx} 
-                            className={`calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
-                        >
-                            <div className="day-number">{format(day, 'd')}</div>
-                            <div className="day-content">
-                                {dayItems.map(item => {
-                                    const group = activeBoard.groups.find(g => g.id === item.groupId);
-                                    return (
-                                        <div 
-                                            key={item.id} 
-                                            onClick={() => setActiveItem(item.id)}
-                                            className="calendar-item-bar"
-                                            style={{ backgroundColor: group?.color || '#333' }}
-                                            title={item.title}
-                                        >
-                                            {item.title}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            {renderHeader()}
+            {viewType === 'day' && renderDayView()}
+            {viewType === 'month' && renderMonthView()}
+            {viewType === 'year' && renderYearView()}
 
             <style>{`
                 .calendar-container {
@@ -221,6 +393,10 @@ export const CalendarView = () => {
                     padding: 4px;
                     display: flex;
                     flex-direction: column;
+                    cursor: pointer;
+                }
+                .calendar-day:hover {
+                    background-color: #fcfcfd;
                 }
                 .calendar-day.other-month {
                     background-color: hsl(var(--color-bg-canvas));
@@ -268,4 +444,5 @@ export const CalendarView = () => {
         </div>
     );
 };
+
 

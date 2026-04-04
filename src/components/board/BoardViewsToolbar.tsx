@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
 
@@ -387,6 +387,15 @@ export const BoardViewsToolbar = () => {
                     </>,
                     document.body
                 )}
+
+                <div 
+                    className="toolbar-item" 
+                    style={toolbarItemStyle}
+                    onClick={() => useBoardStore.getState().toggleShowHiddenItems()}
+                >
+                    {useBoardStore(state => state.showHiddenItems) ? <Eye size={16} /> : <EyeOff size={16} />}
+                    <span>Hide</span>
+                </div>
             </div>
 
             {/* Right Side: Empty */}

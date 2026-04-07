@@ -1,5 +1,6 @@
 
 import React, { useRef, useState, useCallback, memo } from 'react';
+import { X } from 'lucide-react';
 import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
@@ -103,7 +104,35 @@ export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column,
                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                     }} title={`${displayValue} (${days} days)`}>
                         {isHovered ? (
-                            <span style={{ fontWeight: 700 }}>{days}d</span>
+                            <>
+                                <span style={{ fontWeight: 700 }}>{days}d</span>
+                                {can('edit_items') && (
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateItemValue(itemId, column.id, null);
+                                        }}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '4px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: 'rgba(0,0,0,0.2)',
+                                            cursor: 'pointer',
+                                            zIndex: 2
+                                        }}
+                                        title="Clear timeline"
+                                    >
+                                        <X size={8} strokeWidth={3} />
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <span style={{
                                 textOverflow: 'ellipsis',

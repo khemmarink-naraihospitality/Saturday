@@ -3,7 +3,7 @@ import React, { useRef, useState, useCallback, memo } from 'react';
 import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
-import { Calendar } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import { DatePicker } from '../../ui/DatePicker';
 
 interface DateCellProps {
@@ -17,6 +17,7 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
     const { can } = usePermission();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +54,8 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
             <div
                 ref={cellRef}
                 className="table-cell"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
                 onClick={startEditing}
                 style={{
                     width: '100%',
@@ -63,11 +66,40 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
                     justifyContent: 'center',
                     cursor: 'pointer',
                     color: value ? 'inherit' : 'hsl(var(--color-text-tertiary))',
-                    backgroundColor: isEditing ? 'hsl(var(--color-brand-light))' : 'transparent'
+                    backgroundColor: isEditing ? 'hsl(var(--color-brand-light))' : 'transparent',
+                    position: 'relative'
                 }}
             >
                 {value ? (
-                    <span>{formatDate(value)}</span>
+                    <>
+                        <span>{formatDate(value)}</span>
+                        {isHovered && can('edit_items') && (
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateItemValue(itemId, column.id, null);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    right: '8px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    backgroundColor: 'rgba(0,0,0,0.1)',
+                                    color: 'hsl(var(--color-text-secondary))',
+                                    cursor: 'pointer'
+                                }}
+                                title="Clear date"
+                            >
+                                <X size={10} strokeWidth={2.5} />
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div style={{ opacity: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                         <Calendar size={16} strokeWidth={1.5} />

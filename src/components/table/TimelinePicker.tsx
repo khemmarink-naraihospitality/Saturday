@@ -262,6 +262,52 @@ export const TimelinePicker = ({ dateRange, onSelect, onClose, position }: Timel
                     ))}
                 </div>
             )}
+
+            {/* Footer */}
+            <div style={{ 
+                marginTop: '16px', 
+                paddingTop: '12px', 
+                borderTop: '1px solid hsl(var(--color-border))', 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <button
+                    onClick={() => {
+                        onSelect(null);
+                        onClose();
+                    }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'hsl(var(--color-text-secondary))',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        borderRadius: '4px'
+                    }}
+                    className="hover-bg"
+                >
+                    Clear
+                </button>
+                <button
+                    onClick={onClose}
+                    style={{
+                        backgroundColor: 'hsl(var(--color-brand-primary))',
+                        border: 'none',
+                        color: 'white',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: '6px 16px',
+                        borderRadius: '4px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    Save
+                </button>
+            </div>
         </div>,
         document.body
     );

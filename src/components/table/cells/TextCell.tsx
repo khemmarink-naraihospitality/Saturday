@@ -92,7 +92,13 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
 
     if (isEditing) {
         return (
-            <div className="table-cell" style={{ width: '100%', height: '100%', padding: 0 }}>
+            <div className="table-cell" style={{ 
+                width: '100%', 
+                height: '100%', 
+                padding: '2px', // Slight padding for the "floating" input look
+                backgroundColor: 'hsl(var(--color-bg-surface))', // Highlight background
+                zIndex: 10
+            }}>
                 <input
                     ref={inputRef}
                     type="text"
@@ -107,14 +113,28 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                     }}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
-                    style={inputStyle}
+                    style={{
+                        ...inputStyle,
+                        border: '1px solid hsl(var(--color-brand-primary))', // Slimmer consistent border
+                        borderRadius: '4px',
+                        padding: '0 8px',
+                        backgroundColor: 'white' // White input on highlight bg
+                    }}
                 />
             </div>
         );
     }
 
     return (
-        <div className="table-cell" onDoubleClick={startEditing} style={{ ...cellStyle, justifyContent: column.type === 'number' ? 'flex-end' : 'flex-start' }}>
+        <div 
+            className="table-cell" 
+            onDoubleClick={startEditing} 
+            style={{ 
+                ...cellStyle, 
+                justifyContent: column.type === 'number' ? 'flex-end' : 'flex-start',
+                transition: 'all 0.2s ease'
+            }}
+        >
             {value || (
                 <div style={placeholderStyle}>
                     {column.type === 'number' && <Hash size={16} />}
@@ -127,8 +147,8 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
 });
 
 const inputStyle: React.CSSProperties = {
-    width: '100%', height: '100%', border: '2px solid hsl(var(--color-brand-primary))', outline: 'none', padding: '0 8px',
-    fontFamily: 'inherit', fontSize: 'inherit', backgroundColor: 'transparent', color: 'inherit'
+    width: '100%', height: '100%', outline: 'none',
+    fontFamily: 'inherit', fontSize: '13px', backgroundColor: 'transparent', color: 'inherit'
 };
 const cellStyle: React.CSSProperties = {
     width: '100%', height: '100%', padding: '0 8px',

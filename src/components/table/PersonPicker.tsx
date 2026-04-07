@@ -242,7 +242,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                         >
                             <div style={{
                                 width: '24px', height: '24px', borderRadius: '50%',
-                                backgroundColor: profile.avatar_url ? 'transparent' : '#0073ea',
+                                backgroundColor: profile.avatar_url ? 'transparent' : 'hsl(var(--color-brand-primary))',
                                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0
                             }}>
@@ -331,7 +331,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                                     style={{
                                         cursor: 'pointer',
                                         padding: '8px 12px',
-                                        backgroundColor: '#0073ea',
+                                        backgroundColor: 'hsl(var(--color-brand-primary))',
                                         color: 'white',
                                         borderRadius: '4px',
                                         fontWeight: 500,
@@ -351,7 +351,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                     onClick={onClose}
                     style={{
                         padding: '8px 32px',
-                        backgroundColor: '#0073ea',
+                        backgroundColor: 'hsl(var(--color-brand-primary))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',

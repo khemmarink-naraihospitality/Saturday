@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, ExternalLink } from 'lucide-react';
+import { useBoardStore } from '../../store/useBoardStore';
 
 interface WorkspaceRow {
     id: string;
@@ -12,6 +13,7 @@ interface WorkspaceRow {
 }
 
 export const WorkspaceTable = () => {
+    const { setActiveWorkspace, navigateTo } = useBoardStore();
     const [workspaces, setWorkspaces] = useState<WorkspaceRow[]>([]);
     const [filteredWorkspaces, setFilteredWorkspaces] = useState<WorkspaceRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -129,12 +131,13 @@ export const WorkspaceTable = () => {
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Workspace</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Owner</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Created</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredWorkspaces.length === 0 ? (
                                 <tr>
-                                    <td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                                         No workspaces found
                                     </td>
                                 </tr>
@@ -150,6 +153,39 @@ export const WorkspaceTable = () => {
                                         </td>
                                         <td style={{ padding: '16px 20px', fontSize: '14px', color: '#64748b' }}>
                                             {new Date(ws.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                            <button
+                                                onClick={() => {
+                                                    setActiveWorkspace(ws.id);
+                                                    navigateTo('home');
+                                                }}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    backgroundColor: '#f1f5f9',
+                                                    border: '1px solid #cbd5e1',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '13px',
+                                                    fontWeight: 500,
+                                                    color: '#334155',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#e2e8f0';
+                                                    e.currentTarget.style.color = '#0f172a';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                                                    e.currentTarget.style.color = '#334155';
+                                                }}
+                                            >
+                                                <ExternalLink size={14} />
+                                                Access
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

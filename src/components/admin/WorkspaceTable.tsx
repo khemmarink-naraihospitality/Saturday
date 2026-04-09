@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, RefreshCw, ExternalLink } from 'lucide-react';
-import { useBoardStore } from '../../store/useBoardStore';
+import { useUserStore } from '../../store/useUserStore';
+import { slugify } from '../../lib/utils';
 
 interface WorkspaceRow {
     id: string;
@@ -13,7 +14,7 @@ interface WorkspaceRow {
 }
 
 export const WorkspaceTable = () => {
-    const { setActiveWorkspace, navigateTo } = useBoardStore();
+    const { currentUser } = useUserStore();
     const [workspaces, setWorkspaces] = useState<WorkspaceRow[]>([]);
     const [filteredWorkspaces, setFilteredWorkspaces] = useState<WorkspaceRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -157,8 +158,10 @@ export const WorkspaceTable = () => {
                                         <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                             <button
                                                 onClick={() => {
-                                                    setActiveWorkspace(ws.id);
-                                                    navigateTo('home');
+                                                    const username = slugify(currentUser.name || 'u');
+                                                    const wsName = slugify(ws.title);
+                                                    const url = `/${username}/${wsName}`;
+                                                    window.open(url, '_blank');
                                                 }}
                                                 style={{
                                                     padding: '6px 12px',

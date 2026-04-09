@@ -144,6 +144,20 @@ function MainApp() {
 
     if (initPath === '/notifications') {
       navigateTo('notifications');
+    } else if (initPath === '/admin') {
+      navigateTo('admin');
+    }
+
+    // Check for query parameters as fallback deep links
+    const params = new URLSearchParams(window.location.search);
+    const qBoardId = params.get('boardId');
+    const qWorkspaceId = params.get('workspaceId');
+
+    if (qBoardId) {
+      useBoardStore.getState().setActiveBoard(qBoardId);
+    } else if (qWorkspaceId) {
+      useBoardStore.getState().setActiveWorkspace(qWorkspaceId);
+      useBoardStore.getState().navigateTo('home');
     }
 
 
@@ -170,6 +184,16 @@ function MainApp() {
       if (matchedBoard && matchedBoard.id !== activeBoardId) {
         console.log('Deep Link: Found board', matchedBoard.title);
         useBoardStore.getState().setActiveBoard(matchedBoard.id);
+      }
+    } else if (parts.length === 2) {
+      // Handle Workspace direct link: /[username]/[workspace-slug]
+      const targetWorkspaceSlug = parts[1];
+      const matchedWs = useBoardStore.getState().workspaces.find(w => slugify(w.title) === targetWorkspaceSlug);
+      
+      if (matchedWs) {
+        console.log('Deep Link: Found workspace', matchedWs.title);
+        useBoardStore.getState().setActiveWorkspace(matchedWs.id);
+        useBoardStore.getState().navigateTo('home');
       }
     }
     hasResolvedDeepLink.current = true;

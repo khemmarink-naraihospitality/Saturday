@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
-import type { Workspace, Board, ColumnType, Item } from '../../types';
+import type { Workspace, Board, ColumnType, Column, Item } from '../../types';
 import type { BoardState } from '../useBoardStore';
 
 export interface WorkspaceSlice {
@@ -68,10 +68,20 @@ export const createWorkspaceSlice: StateCreator<
             const groupId = uuidv4();
             const itemId = uuidv4();
 
-            const defaultColumns = [
-                { id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [{ id: uuidv4(), label: 'Done', color: '#00c875' }, { id: uuidv4(), label: 'Working', color: '#fdab3d' }, { id: uuidv4(), label: 'Stuck', color: '#e2445c' }] },
-                { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 1, width: 140 },
-                { id: uuidv4(), title: 'Priority', type: 'status' as ColumnType, order: 2, width: 140, options: [{ id: uuidv4(), label: 'High', color: '#e2445c' }, { id: uuidv4(), label: 'Medium', color: '#fdab3d' }, { id: uuidv4(), label: 'Low', color: '#579bfc' }] },
+            const defaultColumns: Column[] = [
+                {
+                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Stuck', color: '#e2445c' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
+                    ]
+                },
+                { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
+                { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
+                { id: uuidv4(), title: 'Timeline', type: 'timeline' as ColumnType, order: 3, width: 160 },
+                { id: uuidv4(), title: 'Target Date', type: 'date' as ColumnType, order: 4, width: 140 },
+                { id: uuidv4(), title: 'Comment', type: 'text' as ColumnType, order: 5, width: 200 },
             ];
 
             const defaultGroups = [
@@ -79,11 +89,10 @@ export const createWorkspaceSlice: StateCreator<
             ];
 
             const statusCol = defaultColumns[0];
-            const priorityCol = defaultColumns[2];
+            const dateCol = defaultColumns[4];
             const defaultValues = {
-                [statusCol.id]: statusCol.options?.[1].id,
-                [priorityCol.id]: priorityCol.options?.[1].id,
-                [defaultColumns[1].id]: new Date().toISOString().split('T')[0]
+                [statusCol.id]: statusCol.options?.[1].id, // 'Done'
+                [dateCol.id]: new Date().toISOString().split('T')[0]
             };
 
             const newItem: Item = {

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, RefreshCw, ExternalLink } from 'lucide-react';
-import { useBoardStore } from '../../store/useBoardStore';
+import { useUserStore } from '../../store/useUserStore';
+import { slugify } from '../../lib/utils';
 
 interface BoardRow {
     id: string;
@@ -15,7 +16,7 @@ interface BoardRow {
 }
 
 export const BoardTable = () => {
-    const { setActiveBoard } = useBoardStore();
+    const { currentUser } = useUserStore();
     const [boards, setBoards] = useState<BoardRow[]>([]);
     const [filteredBoards, setFilteredBoards] = useState<BoardRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -169,7 +170,11 @@ export const BoardTable = () => {
                                         <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                             <button
                                                 onClick={() => {
-                                                    setActiveBoard(board.id);
+                                                    const username = slugify(currentUser.name || 'u');
+                                                    const wsName = slugify(board.workspace_title);
+                                                    const bName = slugify(board.title);
+                                                    const url = `/${username}/${wsName}/${bName}`;
+                                                    window.open(url, '_blank');
                                                 }}
                                                 style={{
                                                     padding: '6px 12px',

@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Board, ColumnType } from '../../types';
+import type { Board, ColumnType, Column } from '../../types';
 import type { BoardState } from '../useBoardStore';
 
 export interface BoardSlice {
@@ -403,7 +403,7 @@ export const createBoardSlice: StateCreator<
             { id: uuidv4(), title: 'Group 1', color: '#579bfc', order: 0 },
             { id: uuidv4(), title: 'Group 2', color: '#784bd1', order: 1 }
         ];
-        const defaultColumns = [
+        const defaultColumns: Column[] = [
             {
                 id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
                     { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' }, // Status ID must be UUID to avoid DB triggers failing
@@ -412,8 +412,11 @@ export const createBoardSlice: StateCreator<
                     { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
                 ]
             },
-            { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 1, width: 140 },
-            { id: uuidv4(), title: 'Person', type: 'people', order: 2, width: 140 },
+            { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
+            { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
+            { id: uuidv4(), title: 'Timeline', type: 'timeline' as ColumnType, order: 3, width: 160 },
+            { id: uuidv4(), title: 'Target Date', type: 'date' as ColumnType, order: 4, width: 140 },
+            { id: uuidv4(), title: 'Comment', type: 'text' as ColumnType, order: 5, width: 200 },
         ];
 
         const newBoard: Board = {

@@ -253,8 +253,17 @@ export const Row = React.memo(({
                         width: '24px',
                         height: '24px',
                         borderRadius: '4px',
-                        // Blue if updates, else gray
-                        color: (item.updates && item.updates.length > 0) ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))',
+                        // Blue if updates within 14 days, else gray
+                        color: (() => {
+                            if (item.updates && item.updates.length > 0) {
+                                const latestUpdate = item.updates.reduce((latest, current) => {
+                                    return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
+                                });
+                                const daysSinceLastUpdate = Math.floor((new Date().getTime() - new Date(latestUpdate.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+                                if (daysSinceLastUpdate <= 14) return 'hsl(var(--color-brand-primary))';
+                            }
+                            return 'hsl(var(--color-text-tertiary))';
+                        })(),
                         transition: 'background-color 0.2s, color 0.2s',
                         zIndex: 10,
                         flexShrink: 0, // Prevent shrinking

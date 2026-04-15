@@ -172,3 +172,31 @@
 .feed-content-padding {
     padding: 32px;
 }
+
+/* Rich Text / Prose overrides for lists */
+.prose ul, .rich-text-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.prose ol, .rich-text-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.prose li, .rich-text-content li {
+    margin-bottom: 0.25em;
+}
+
+.prose a, .rich-text-content a {
+    color: hsl(var(--color-brand-primary));
+    text-decoration: underline;
+}
+
+.prose a:hover, .rich-text-content a:hover {
+    color: hsl(var(--color-brand-hover));
+}

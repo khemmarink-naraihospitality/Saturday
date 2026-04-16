@@ -39,6 +39,69 @@ function PageLoader() {
   );
 }
 
+function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <div style={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f8fafc',
+      padding: '20px',
+      textAlign: 'center'
+    }}>
+      <div style={{
+        maxWidth: '400px',
+        backgroundColor: 'white',
+        padding: '32px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        <div style={{ 
+          width: '64px', 
+          height: '64px', 
+          backgroundColor: '#fef3c7', 
+          borderRadius: '50%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          marginBottom: '20px'
+        }}>
+          <span style={{ fontSize: '32px' }}>⏳</span>
+        </div>
+        <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Account Pending Approval</h2>
+        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
+          Your account has been created successfully. <br/>
+          Please wait for <strong>Super Admin</strong> to approve your access.
+        </p>
+        <button 
+          onClick={onSignOut}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MainApp() {
   const activeBoardId = useBoardStore(state => state.activeBoardId);
   const activePage = useBoardStore(state => state.activePage);
@@ -71,8 +134,20 @@ function MainApp() {
       lastUserIdRef.current = session.user.id;
       
       const initUser = async () => {
-        // Fetch full profile to get system_role
-        const { data: profile } = await supabase.from('profiles').select('system_role').eq('id', session.user.id).single();
+        // Fetch full profile to get system_role and is_approved
+        const { data: profile } = await supabase.from('profiles').select('system_role, is_approved').eq('id', session.user.id).single();
+
+        const userEmail = session.user.email || '';
+        const userDomain = userEmail.split('@')[1];
+        const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
+        const shouldBeApproved = profile?.is_approved || 
+                                ALLOWED_DOMAINS.includes(userDomain) || 
+                                userEmail === 'khemmarin.k@naraihospitality.com';
+
+        // Auto-update database if they should be approved but aren't yet
+        if (shouldBeApproved && !profile?.is_approved) {
+          await supabase.from('profiles').update({ is_approved: true }).eq('id', session.user.id);
+        }
 
         // Sync UserStore with Supabase Session
         setUser({
@@ -81,7 +156,8 @@ function MainApp() {
           email: session.user.email,
           avatar: session.user.user_metadata?.avatar_url,
           role: 'owner',
-          system_role: (profile?.system_role as any) || 'user'
+          system_role: (profile?.system_role as any) || 'user',
+          is_approved: shouldBeApproved
         });
 
         // Deep linking logic: 
@@ -331,6 +407,17 @@ function AppContent() {
 
   if (!session) {
     return <LoginPage />;
+  }
+
+  const currentUser = useUserStore.getState().currentUser;
+  
+  const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
+  const userDomain = currentUser?.email?.split('@')[1];
+  const isAutoApproved = userDomain && ALLOWED_DOMAINS.includes(userDomain);
+
+  // Only check approval if the user isn't the super admin and not from an auto-approved domain
+  if (currentUser && currentUser.is_approved === false && currentUser.email !== 'khemmarin.k@naraihospitality.com' && !isAutoApproved) {
+    return <PendingApprovalPage onSignOut={() => supabase.auth.signOut()} />;
   }
 
   return <MainApp />;

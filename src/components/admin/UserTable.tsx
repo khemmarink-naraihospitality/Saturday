@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../store/useUserStore';
-import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck } from 'lucide-react';
 
 interface Profile {
     id: string;
     email: string;
     full_name: string;
     system_role: 'user' | 'it_admin' | 'super_admin';
+    is_approved: boolean;
     created_at: string;
     last_login_at: string | null;
 }
@@ -146,6 +147,34 @@ export const UserTable = () => {
         }
     };
 
+    const handleApproveUser = async (userId: string) => {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_approved: true })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+            setProfiles(prev => prev.map(p => 
+                p.id === userId ? { ...p, is_approved: true } : p
+            ));
+            setOpenPopoverId(null);
+            
+            // Log activity
+            const user = profiles.find(p => p.id === userId);
+            await supabase.rpc('log_activity', {
+                p_action_type: 'user_approved',
+                p_target_type: 'user',
+                p_target_id: userId,
+                p_metadata: { email: user?.email }
+            });
+
+        } catch (err: any) {
+            alert('Failed to approve user: ' + err.message);
+        }
+    };
+
     const handleDeleteUser = async (userId: string) => {
         try {
             const { error } = await supabase.rpc('delete_user', { user_id: userId });
@@ -199,7 +228,7 @@ export const UserTable = () => {
             const roleMatch = columnFilters.system_role === '' || 
                 p.system_role === columnFilters.system_role;
             const statusMatch = columnFilters.status === '' || 
-                'active'.includes(columnFilters.status.toLowerCase()); // Since status is hardcoded as 'Active'
+                (p.is_approved ? 'approved' : 'pending').includes(columnFilters.status.toLowerCase());
 
             return globalSearchMatch && nameMatch && emailMatch && roleMatch && statusMatch;
         })
@@ -355,12 +384,15 @@ export const UserTable = () => {
                                         </select>
                                     </th>
                                     <th style={{ padding: '8px 24px' }}>
-                                        <input 
-                                            placeholder="Filter status..."
+                                        <select 
                                             value={columnFilters.status}
                                             onChange={(e) => setColumnFilters({ ...columnFilters, status: e.target.value })}
-                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                        />
+                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', backgroundColor: 'white' }}
+                                        >
+                                            <option value="">All Status</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="pending">Pending</option>
+                                        </select>
                                     </th>
                                     <th style={{ padding: '8px 24px' }}></th>
                                     <th style={{ padding: '8px 24px' }}></th>
@@ -390,9 +422,21 @@ export const UserTable = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '12px 24px' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#10b981' }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                                            Active
+                                        <span style={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '6px', 
+                                            fontSize: '13px', 
+                                            color: profile.is_approved ? '#10b981' : '#f59e0b',
+                                            fontWeight: 500
+                                        }}>
+                                            <div style={{ 
+                                                width: '6px', 
+                                                height: '6px', 
+                                                borderRadius: '50%', 
+                                                backgroundColor: profile.is_approved ? '#10b981' : '#f59e0b' 
+                                            }} />
+                                            {profile.is_approved ? 'Approved' : 'Pending'}
                                         </span>
                                     </td>
                                     <td style={{ padding: '12px 24px', fontSize: '13px', color: '#64748b' }}>
@@ -501,6 +545,31 @@ export const UserTable = () => {
                                                                 >
                                                                     <Edit3 size={16} color="#64748b" />
                                                                     Edit Profile
+                                                                </button>
+                                                            )}
+
+                                                            {!profile.is_approved && (
+                                                                <button
+                                                                    onClick={() => handleApproveUser(profile.id)}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        padding: '10px 16px',
+                                                                        border: 'none',
+                                                                        background: 'transparent',
+                                                                        textAlign: 'left',
+                                                                        cursor: 'pointer',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '10px',
+                                                                        fontSize: '14px',
+                                                                        color: '#10b981',
+                                                                        transition: 'background-color 0.15s'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                >
+                                                                    <ShieldCheck size={16} />
+                                                                    Approve User
                                                                 </button>
                                                             )}
 

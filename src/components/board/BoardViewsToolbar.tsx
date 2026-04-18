@@ -57,7 +57,7 @@ export const BoardViewsToolbar = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            boxShadow: '0 2px 4px hsla(var(--color-brand-primary), 0.15)'
+                            boxShadow: '0 2px 4px hsl(var(--color-brand-primary) / 0.15)'
                         }}
                     >
                         New Item

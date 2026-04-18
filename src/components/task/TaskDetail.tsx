@@ -341,7 +341,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                             zIndex: 10,
                                                             minWidth: '120px'
                                                         }}>
-                                                            <div style={{ fontSize: '12px', marginBottom: '8px', color: '#ef4444', fontWeight: 500 }}>Delete this update?</div>
+                                                            <div style={{ fontSize: '12px', marginBottom: '8px', color: 'hsl(var(--color-brand-primary))', fontWeight: 500 }}>Delete this update?</div>
                                                             <div style={{ display: 'flex', gap: '4px' }}>
                                                                  <button
                                                                     onClick={() => confirmDelete(update.id)}
@@ -501,7 +501,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             onClick={handleAddFile}
                                             disabled={!fileUrl.trim()}
                                             style={{
-                                                backgroundColor: fileUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsla(var(--color-brand-primary), 0.3)',
+                                                backgroundColor: fileUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-brand-primary) / 0.3)',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '4px',
@@ -584,7 +584,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             <div style={{
                                                 width: '40px',
                                                 height: '40px',
-                                                backgroundColor: 'hsla(var(--color-brand-primary), 0.1)',
+                                                backgroundColor: 'hsl(var(--color-brand-primary) / 0.1)',
                                                 borderRadius: '8px',
                                                 display: 'flex',
                                                 alignItems: 'center',

@@ -83,7 +83,7 @@
 }
 
 .sidebar-item.active {
-    background-color: hsla(var(--color-brand-primary), 0.15);
+    background-color: hsl(var(--color-brand-primary) / 0.15);
     /* Transparent Purple */
     color: hsl(var(--color-text-primary));
     /* White text */

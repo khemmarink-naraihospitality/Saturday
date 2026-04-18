@@ -76,11 +76,11 @@ export const ConfirmModal = ({
                             padding: '8px 16px',
                             borderRadius: '4px',
                             border: 'none',
-                            background: 'hsl(var(--color-brand-primary))',
+                            backgroundColor: 'hsl(var(--color-brand-primary))',
                             color: '#fff',
                             cursor: 'pointer',
                             fontWeight: 500,
-                            boxShadow: '0 2px 4px hsla(var(--color-brand-primary), 0.2)'
+                            boxShadow: '0 2px 4px hsl(var(--color-brand-primary) / 0.2)'
                         }}
                     >
                         {confirmText}

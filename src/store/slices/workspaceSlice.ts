@@ -152,7 +152,12 @@ export const createWorkspaceSlice: StateCreator<
             const { error: memError } = await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
             if (memError) console.error('[AddWorkspace] Board member creation error:', memError);
 
-            await get().loadUserData(true);
+            set(state => ({
+                userWorkspaceRoles: { ...state.userWorkspaceRoles, [newWsId]: 'owner' },
+                userBoardRoles: { ...state.userBoardRoles, [boardId]: 'owner' }
+            }));
+            
+            // Removed loadUserData(true) to avoid UI flicker/race conditions with DB replication
         } catch (err) {
             console.error('[AddWorkspace] Full Error context:', err);
             // Re-load to undo optimistic state if needed

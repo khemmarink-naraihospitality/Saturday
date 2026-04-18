@@ -485,16 +485,20 @@ export const createBoardSlice: StateCreator<
             });
 
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            set({
+            set(state => ({
                 activeBoardMembers: [{
                     id: uuidv4(),
                     user_id: user.id,
                     role: 'owner',
                     profiles: profile || { email: user.email, id: user.id, full_name: user.user_metadata?.full_name }
-                }]
-            });
+                }],
+                userBoardRoles: { ...state.userBoardRoles, [boardId]: 'owner' }
+            }));
         }
-        await get().loadUserData(true);
+        
+        // Removed loadUserData(true) to prevent race condition where DB replicas 
+        // haven't resolved the insert yet, which would momentarily wipe the optimistic columns.
+        // Realtime channels and optimistic state will handle the rest.
     },
 
     deleteBoard: async (id) => {

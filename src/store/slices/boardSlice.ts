@@ -494,7 +494,7 @@ export const createBoardSlice: StateCreator<
                 }]
             });
         }
-        get().loadUserData(true);
+        await get().loadUserData(true);
     },
 
     deleteBoard: async (id) => {

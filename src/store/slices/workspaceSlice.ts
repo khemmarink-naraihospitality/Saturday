@@ -152,11 +152,11 @@ export const createWorkspaceSlice: StateCreator<
             const { error: memError } = await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
             if (memError) console.error('[AddWorkspace] Board member creation error:', memError);
 
-            get().loadUserData(true);
+            await get().loadUserData(true);
         } catch (err) {
             console.error('[AddWorkspace] Full Error context:', err);
             // Re-load to undo optimistic state if needed
-            get().loadUserData(true);
+            await get().loadUserData(true);
             throw err;
         }
     },

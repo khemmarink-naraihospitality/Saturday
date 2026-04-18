@@ -455,7 +455,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 minWidth: '100px' // Ensure it has some width
                                                             }}>
                                                                 {board.columns.map((col, idx) => {
-                                                                    const groupItems = board.items.filter(i => i.groupId === vItem.data.groupId);
+                                                                    const agg = vItem.data.aggregates?.[col.id];
+                                                                    const totalCount = vItem.data.count || 0;
                                                                     return (
                                                                         <div key={col.id} style={{
                                                                             width: `${col.width || 150}px`,
@@ -478,9 +479,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     position: 'relative'
                                                                                 }}>
                                                                                     {(() => {
-                                                                                        const values = groupItems.map(i => i.values[col.id]);
-                                                                                        const total = values.length;
-                                                                                        if (total === 0) return <div style={{ width: '100%', background: '#eee' }} />;
+                                                                                        if (!agg || totalCount === 0) return <div style={{ width: '100%', background: '#eee' }} />;
+                                                                                        const values = agg.values as any[];
                                                                                         const counts: Record<string, number> = {};
                                                                                         values.forEach(v => {
                                                                                             const val = v || 'default';
@@ -490,7 +490,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                         return options.map(opt => {
                                                                                             const count = counts[opt.id] || counts[opt.label] || 0;
                                                                                             if (count === 0) return null;
-                                                                                            const widthPct = (count / total) * 100;
+                                                                                            const widthPct = (count / totalCount) * 100;
                                                                                             return (
                                                                                                 <div key={opt.id} style={{
                                                                                                     width: `${widthPct}%`,
@@ -501,7 +501,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                         }).concat(
                                                                                             counts['default'] ? (
                                                                                                 <div key="default" style={{
-                                                                                                    width: `${(counts['default'] / total) * 100}%`,
+                                                                                                    width: `${(counts['default'] / totalCount) * 100}%`,
                                                                                                     height: '100%',
                                                                                                     backgroundColor: '#c4c4c4',
                                                                                                 }} title="Empty" />
@@ -511,21 +511,18 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 </div>
                                                                             )}
                                                                             {col.type === 'date' && (() => {
-                                                                                const dates = groupItems.map(i => i.values[col.id]).filter(Boolean).sort();
-                                                                                if (!dates.length) return null;
-                                                                                const d1 = new Date(dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                                                const d2 = new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                                                if (!agg || !agg.min) return null;
+                                                                                const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                                                const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 return <div style={{ background: 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
                                                                             })()}
                                                                             {col.type === 'number' && (() => {
                                                                                 const aggregation = col.aggregation || 'sum';
-
-                                                                                // Calculate
-                                                                                const values = groupItems.map(i => parseFloat(i.values[col.id])).filter(v => !isNaN(v));
+                                                                                
                                                                                 let result: number | string = 0;
                                                                                 let label = aggregation;
 
-                                                                                if (aggregation === 'none' || values.length === 0) {
+                                                                                if (aggregation === 'none' || !agg || agg.count === 0) {
                                                                                     if (aggregation === 'none') {
                                                                                         return (
                                                                                             <div
@@ -539,19 +536,19 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 } else {
                                                                                     switch (aggregation) {
                                                                                         case 'sum':
-                                                                                            result = values.reduce((a, b) => a + b, 0);
+                                                                                            result = agg.sum || 0;
                                                                                             break;
                                                                                         case 'avg':
-                                                                                            result = parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2));
+                                                                                            result = parseFloat(((agg.sum || 0) / agg.count).toFixed(2));
                                                                                             break;
                                                                                         case 'min':
-                                                                                            result = Math.min(...values);
+                                                                                            result = Math.min(...agg.values);
                                                                                             break;
                                                                                         case 'max':
-                                                                                            result = Math.max(...values);
+                                                                                            result = Math.max(...agg.values);
                                                                                             break;
                                                                                         case 'count':
-                                                                                            result = values.length;
+                                                                                            result = agg.count;
                                                                                             break;
                                                                                     }
                                                                                 }

@@ -11,6 +11,8 @@ export interface VirtualItemData {
     data: any;
     depth: number;
     groupColor?: string; // For the left border branding
+    aggregates?: Record<string, any>;
+    count?: number;
 }
 
 export const groupItems = (
@@ -18,7 +20,8 @@ export const groupItems = (
     groups: Group[],
     groupByColumnId: string | null,
     collapsedGroups: string[] = [],
-    expandedItemIds: string[] = []
+    expandedItemIds: string[] = [],
+    columns?: any[]
 ): VirtualItemData[] => {
     // Pre-calculate sub-items map and group items map
     const subItemsMap = new Map<string, Item[]>();
@@ -69,7 +72,29 @@ export const groupItems = (
 
         const addDynamicGroup = (title: string, gItems: Item[], gId: string, color: string = '#c4c4c4') => {
             const isCollapsed = collapsedGroups.includes(gId);
-            result.push({ type: 'group', id: gId, data: { title, count: gItems.length, color }, depth: 0, groupColor: color });
+            const aggregates: Record<string, any> = {};
+            if (columns) {
+                columns.forEach(col => {
+                    const vals = gItems.map(i => i.values[col.id]);
+                    if (col.type === 'number') {
+                        const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                        aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
+                    } else if (col.type === 'date') {
+                        const dateValues = vals.filter(Boolean).sort();
+                        aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
+                    } else {
+                        aggregates[col.id] = { values: vals, count: vals.length };
+                    }
+                });
+            }
+
+            result.push({ 
+                type: 'group', 
+                id: gId, 
+                data: { title, count: gItems.length, color, aggregates }, 
+                depth: 0, 
+                groupColor: color 
+            });
 
             if (!isCollapsed) {
                 result.push({ type: 'header', id: `${gId}-header`, data: { groupId: gId }, depth: 0, groupColor: color });
@@ -82,7 +107,13 @@ export const groupItems = (
                         result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: gId }, depth: 1, groupColor: color });
                     }
                 });
-                result.push({ type: 'footer', id: `${gId}-footer`, data: { groupId: gId }, depth: 0, groupColor: color });
+                result.push({ 
+                    type: 'footer', 
+                    id: `${gId}-footer`, 
+                    data: { groupId: gId, aggregates, count: gItems.length }, 
+                    depth: 0, 
+                    groupColor: color 
+                });
             }
         };
 
@@ -92,16 +123,37 @@ export const groupItems = (
         return result;
     }
 
-    // 2. Manual Grouping (Default View)
     effectiveGroups.forEach((group) => {
-        const groupItems = itemsByGroupMap.get(group.id) || [];
+        const groupItemsList = itemsByGroupMap.get(group.id) || [];
         const isCollapsed = collapsedGroups.includes(group.id);
 
-        result.push({ type: 'group', id: group.id, data: { ...group, count: groupItems.length }, depth: 0, groupColor: group.color });
+        const aggregates: Record<string, any> = {};
+        if (columns) {
+            columns.forEach(col => {
+                const vals = groupItemsList.map(i => i.values[col.id]);
+                if (col.type === 'number') {
+                    const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                    aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
+                } else if (col.type === 'date') {
+                    const dateValues = vals.filter(Boolean).sort();
+                    aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
+                } else {
+                    aggregates[col.id] = { values: vals, count: vals.length };
+                }
+            });
+        }
+
+        result.push({ 
+            type: 'group', 
+            id: group.id, 
+            data: { ...group, count: groupItemsList.length, aggregates }, 
+            depth: 0, 
+            groupColor: group.color 
+        });
 
         if (!isCollapsed) {
             result.push({ type: 'header', id: `${group.id}-header`, data: { groupId: group.id }, depth: 0, groupColor: group.color });
-            groupItems.forEach(item => {
+            groupItemsList.forEach(item => {
                 result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: group.color });
                 if (expandedItemIds.includes(item.id)) {
                     const subItems = subItemsMap.get(item.id) || [];
@@ -110,7 +162,13 @@ export const groupItems = (
                     result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: group.id }, depth: 1, groupColor: group.color });
                 }
             });
-            result.push({ type: 'footer', id: `${group.id}-footer`, data: { groupId: group.id }, depth: 0, groupColor: group.color });
+            result.push({ 
+                type: 'footer', 
+                id: `${group.id}-footer`, 
+                data: { groupId: group.id, aggregates, count: groupItemsList.length }, 
+                depth: 0, 
+                groupColor: group.color 
+            });
         }
     });
 

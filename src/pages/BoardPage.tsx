@@ -11,9 +11,23 @@ export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
     
-    // Safety check, though App.tsx should handle this
-    if (!activeBoardId || !activeBoard) return null;
-
+    // Safety check: Prevent white screens if the board is deleted or deeply linked incorrectly
+    if (!activeBoardId || !activeBoard) {
+        return (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: 'hsl(var(--color-text-primary))' }}>Board Not Found</h2>
+                <p>The board you are looking for does not exist, or you might not have access to it.</p>
+                <button 
+                    onClick={() => useBoardStore.getState().navigateTo('home')}
+                    className="btn-primary" 
+                    style={{ marginTop: '24px', padding: '8px 16px', borderRadius: '6px' }}
+                >
+                    Return to Home
+                </button>
+            </div>
+        );
+    }
+    
     const activeViewId = activeBoard.activeViewId || 'main_table';
 
     return (

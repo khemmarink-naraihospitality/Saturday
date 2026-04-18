@@ -105,15 +105,18 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
     // Auto-expand on search
     useEffect(() => {
-        if (searchActive) {
+        if (searchActive && filteredWorkspaces.length > 0) {
             const matches = filteredWorkspaces.map(ws => ws.id);
-            setExpandedWorkspaces(prev => {
-                const next = new Set(prev);
-                matches.forEach(id => next.add(id));
-                return next;
-            });
+            const needsExpand = matches.some(id => !expandedWorkspaces.has(id));
+            if (needsExpand) {
+                setExpandedWorkspaces(prev => {
+                    const next = new Set(prev);
+                    matches.forEach(id => next.add(id));
+                    return next;
+                });
+            }
         }
-    }, [searchQuery, searchActive, filteredWorkspaces]); // Dependencies fixed
+    }, [searchActive, filteredWorkspaces, expandedWorkspaces, setExpandedWorkspaces]);
 
     // Close menus on outside click
     useEffect(() => {

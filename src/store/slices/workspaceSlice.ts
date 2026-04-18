@@ -78,7 +78,7 @@ export const createWorkspaceSlice: StateCreator<
                     ]
                 },
                 { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
-                { id: uuidv4(), title: 'People', type: 'people' as ColumnType, order: 2, width: 140 },
+                { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
                 { id: uuidv4(), title: 'Timeline', type: 'timeline' as ColumnType, order: 3, width: 160 },
                 { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 4, width: 140 },
                 { id: uuidv4(), title: 'Text', type: 'text' as ColumnType, order: 5, width: 200 },
@@ -113,7 +113,8 @@ export const createWorkspaceSlice: StateCreator<
                 groups: defaultGroups.map(g => ({ ...g, items: [newItem] })),
                 items: [newItem],
                 itemColumnTitle: 'Item',
-                itemColumnWidth: 350
+                itemColumnWidth: 350,
+                isDataLoaded: true
             };
 
             set(state => ({

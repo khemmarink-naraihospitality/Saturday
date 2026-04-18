@@ -41,7 +41,7 @@ export const BatchActionsBar = () => {
             {/* Left: Count */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{
-                    backgroundColor: '#0073ea',
+                    backgroundColor: 'hsl(var(--color-brand-primary))',
                     color: 'white',
                     width: '24px',
                     height: '24px',

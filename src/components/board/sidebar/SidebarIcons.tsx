@@ -27,7 +27,7 @@ export const WorkspaceIcon = ({ title, isActive }: { title: string, isActive: bo
             width: '20px',
             height: '20px',
             borderRadius: '50%',
-            backgroundColor: isActive ? '#0073ea' : '#e6e9ef',
+            backgroundColor: isActive ? 'hsl(var(--color-brand-primary))' : '#e6e9ef',
             color: isActive ? 'white' : '#676879',
             display: 'flex',
             alignItems: 'center',

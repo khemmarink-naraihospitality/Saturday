@@ -185,7 +185,7 @@ export const GlobalTopActions = () => {
                         border: '1px solid hsl(var(--color-border))',
                         cursor: 'pointer',
                         overflow: 'hidden',
-                        backgroundColor: userAvatar ? 'transparent' : '#0073ea',
+                        backgroundColor: userAvatar ? 'transparent' : 'hsl(var(--color-brand-primary))',
                         color: 'white',
                         fontSize: '14px',
                         fontWeight: 600,

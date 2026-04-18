@@ -78,7 +78,7 @@ export const ConfirmModal = ({
                             padding: '8px 16px',
                             borderRadius: '4px',
                             border: 'none',
-                            background: variant === 'danger' ? '#e2445c' : '#0073ea',
+                            background: 'hsl(var(--color-brand-primary))',
                             color: '#fff',
                             cursor: 'pointer',
                             fontWeight: 500

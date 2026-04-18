@@ -257,7 +257,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
                                     disabled={!newWorkspaceTitle.trim() || isSubmitting}
                                     style={{
                                         padding: '10px 20px', borderRadius: '6px', border: 'none',
-                                        backgroundColor: !newWorkspaceTitle.trim() || isSubmitting ? '#ddd' : '#0073ea',
+                                        backgroundColor: !newWorkspaceTitle.trim() || isSubmitting ? '#ddd' : 'hsl(var(--color-brand-primary))',
                                         color: 'white', cursor: !newWorkspaceTitle.trim() || isSubmitting ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 500
                                     }}
                                 >

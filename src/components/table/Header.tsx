@@ -94,7 +94,7 @@ const SortableHeaderCell = ({
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    backgroundColor: '#0073ea',
+                    backgroundColor: 'hsl(var(--color-brand-primary))',
                     marginRight: 4
                 }} />
             )}

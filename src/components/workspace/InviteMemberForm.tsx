@@ -149,7 +149,7 @@ export const InviteMemberForm = ({ onInvite, defaultRole = 'member', type = 'boa
                     disabled={isLoading || !email.trim()}
                     style={{
                         padding: '8px 16px',
-                        backgroundColor: isLoading || !email.trim() ? '#ccc' : '#0073ea',
+                        backgroundColor: isLoading || !email.trim() ? '#ccc' : 'hsl(var(--color-brand-primary))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',

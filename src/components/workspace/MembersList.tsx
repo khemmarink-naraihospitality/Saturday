@@ -149,7 +149,7 @@ export const MembersList = ({
                                 width: '32px',
                                 height: '32px',
                                 borderRadius: '50%',
-                                backgroundColor: profile.avatar_url ? 'transparent' : '#0073ea',
+                                backgroundColor: profile.avatar_url ? 'transparent' : 'hsl(var(--color-brand-primary))',
                                 color: 'white',
                                 display: 'flex',
                                 alignItems: 'center',

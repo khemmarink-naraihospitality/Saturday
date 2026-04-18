@@ -153,7 +153,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                     </button>
                     <button
                         onClick={confirmInvite}
-                        style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: '#0073ea', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+                        style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: 'hsl(var(--color-brand-primary))', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
                     >
                         Invite & Assign
                     </button>
@@ -292,7 +292,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                                 >
                                     <div style={{
                                         width: '24px', height: '24px', borderRadius: '50%',
-                                        backgroundColor: user.avatar_url ? 'transparent' : '#784bd1', // Different color for non-members
+                                        backgroundColor: user.avatar_url ? 'transparent' : 'hsl(var(--color-brand-primary))', // Different color for non-members
                                         color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0
                                     }}>

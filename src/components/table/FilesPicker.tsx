@@ -141,7 +141,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                color: '#0073ea',
+                                color: 'hsl(var(--color-brand-primary))',
                                 textDecoration: 'none',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -223,7 +223,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                               flex: 2, 
                               padding: '8px', 
                               fontSize: '13px', 
-                              background: '#0073ea', 
+                              background: 'hsl(var(--color-brand-primary))', 
                               color: 'white', 
                               border: 'none', 
                               borderRadius: '4px', 
@@ -274,7 +274,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = '#f8fafc';
-                          e.currentTarget.style.borderColor = '#0073ea';
+                          e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary))';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'white';
@@ -312,7 +312,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = '#f8fafc';
-                          e.currentTarget.style.borderColor = '#0073ea';
+                          e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary))';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'white';

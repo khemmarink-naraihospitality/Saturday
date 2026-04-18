@@ -97,6 +97,7 @@ export interface Board {
     columns: Column[];
     groups: Group[]; // Ordered list of groups
     items: Item[];
+    isDataLoaded?: boolean; // Tracking if columns, groups, items have been fetched
     itemColumnTitle?: string; // Customizable title for the first "Item" layout column
     itemColumnWidth?: number; // Custom width for the first column
     groupByColumnId?: string | null; // For dynamic view overrides (optional future)

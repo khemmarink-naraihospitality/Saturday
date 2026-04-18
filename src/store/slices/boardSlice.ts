@@ -41,6 +41,7 @@ export interface BoardSlice {
 
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
+    loadBoardData: (boardId: string) => Promise<void>;
 }
 
 const parseSqlJson = (val: any, fallback: any) => {
@@ -132,34 +133,19 @@ export const createBoardSlice: StateCreator<
             const [
                 { data: workspaces },
                 { data: boards },
-                { data: groups },
-                { data: columns },
-                { data: items },
                 { data: sharedBoardsData },
                 { data: sharedWorkspacesData },
                 { data: userFavoritesData }
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
-                supabase.from('groups').select('*').order('order'),
-                supabase.from('columns').select('*').order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
             ]);
 
             // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
-            if (columns && columns.length > 0) {
-                const buggedColumns = columns.filter(c => (c.title === 'Person' || c.title === 'Owner') && c.type === 'text');
-                if (buggedColumns.length > 0) {
-                    console.log('[AutoFix] Found bugged Person columns:', buggedColumns.length);
-                    await Promise.all(buggedColumns.map(c =>
-                        supabase.from('columns').update({ type: 'people', options: [] }).eq('id', c.id)
-                    ));
-                    buggedColumns.forEach(c => { c.type = 'people'; c.options = []; });
-                }
-            }
+            // Removed global sweep to save time, logic moved to loadBoardData if needed
             // ---------------------------------------------------------------------
 
             if (!workspaces || !boards) throw new Error('Failed to load core data');
@@ -207,39 +193,10 @@ export const createBoardSlice: StateCreator<
             const favoritedBoardIds = new Set(userFavoritesData?.map(f => f.board_id) || []);
 
 
-            // --- OPTIMIZED DATA MAPPING ---
-            // Create maps for O(1) lookups instead of O(N) filters inside loops
-            const groupsByBoard = new Map<string, any[]>();
-            (groups || []).forEach(g => {
-                const list = groupsByBoard.get(g.board_id) || [];
-                list.push(g);
-                groupsByBoard.set(g.board_id, list);
-            });
-
-            const columnsByBoard = new Map<string, any[]>();
-            (columns || []).forEach(c => {
-                const list = columnsByBoard.get(c.board_id) || [];
-                list.push(c);
-                columnsByBoard.set(c.board_id, list);
-            });
-
-            const itemsByBoard = new Map<string, any[]>();
-            const itemsByGroup = new Map<string, any[]>();
-            (items || []).forEach(i => {
-                const bList = itemsByBoard.get(i.board_id) || [];
-                bList.push(i);
-                itemsByBoard.set(i.board_id, bList);
-
-                const gList = itemsByGroup.get(i.group_id) || [];
-                gList.push(i);
-                itemsByGroup.set(i.group_id, gList);
-            });
-
             const fullBoards: Board[] = boards.map(b => {
-                const bGroups = groupsByBoard.get(b.id) || [];
-                const bColumns = columnsByBoard.get(b.id) || [];
-                const bItems = itemsByBoard.get(b.id) || [];
-
+                // Determine if we should preserve existing groups/columns/items from local state cache
+                const existingBoard = get().boards.find(eb => eb.id === b.id);
+                
                 return {
                     id: b.id,
                     workspaceId: b.workspace_id,
@@ -247,43 +204,10 @@ export const createBoardSlice: StateCreator<
                     is_archived: b.is_archived,
                     isFavorite: favoritedBoardIds.has(b.id),
                     lastViewedAt: lastViewedMap[b.id] || undefined,
-                    columns: bColumns.map(c => ({
-                        id: c.id,
-                        title: c.title,
-                        type: c.type as ColumnType,
-                        width: c.width,
-                        order: c.order,
-                        options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
-                        aggregation: c.aggregation
-                    })),
-                    groups: bGroups.map(g => ({
-                        id: g.id,
-                        title: g.title,
-                        color: g.color,
-                        items: (itemsByGroup.get(g.id) || []).map(i => ({
-                            id: i.id,
-                            title: i.title,
-                            groupId: g.id,
-                            boardId: b.id,
-                            values: parseSqlJson(i.values, {}),
-                            isHidden: i.is_hidden,
-                            updates: parseSqlJson(i.updates, []),
-                            files: parseSqlJson(i.files, []),
-                            order: i.order,
-                            parentId: i.parent_id
-                        })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
-                    })),
-                    items: bItems.map(i => ({
-                        id: i.id,
-                        title: i.title,
-                        groupId: i.group_id,
-                        boardId: b.id,
-                        values: parseSqlJson(i.values, {}),
-                        isHidden: i.is_hidden,
-                        updates: parseSqlJson(i.updates, []),
-                        files: parseSqlJson(i.files, []),
-                        parentId: i.parent_id
-                    })),
+                    columns: existingBoard?.columns || [],
+                    groups: existingBoard?.groups || [],
+                    items: existingBoard?.items || [],
+                    isDataLoaded: existingBoard?.isDataLoaded || false,
                     itemColumnTitle: 'Item',
                     itemColumnWidth: 500
                 };
@@ -389,8 +313,85 @@ export const createBoardSlice: StateCreator<
             set({ isLoadingMembers: true });
             const members = await get().getBoardMembers(id);
             set({ activeBoardMembers: members, isLoadingMembers: false });
+
+            // Trigger lazy load implementation
+            get().loadBoardData(id);
         } else {
             set({ activeBoardMembers: [], isLoadingMembers: false });
+        }
+    },
+
+    loadBoardData: async (boardId: string) => {
+        try {
+            const board = get().boards.find(b => b.id === boardId);
+            if (board?.isDataLoaded) return; // Already loaded!
+
+            const [
+                { data: groups },
+                { data: columns },
+                { data: items }
+            ] = await Promise.all([
+                supabase.from('groups').select('*').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('*').eq('board_id', boardId).order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order')
+            ]);
+
+            set(state => {
+                const boardIndex = state.boards.findIndex(b => b.id === boardId);
+                if (boardIndex === -1) return state;
+
+                const bGroups = groups || [];
+                const bColumns = columns || [];
+                const bItems = items || [];
+
+                const updatedBoard = {
+                    ...state.boards[boardIndex],
+                    isDataLoaded: true,
+                    columns: bColumns.map(c => ({
+                        id: c.id,
+                        title: c.title,
+                        type: c.type as ColumnType,
+                        width: c.width,
+                        order: c.order,
+                        options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
+                        aggregation: c.aggregation
+                    })),
+                    groups: bGroups.map(g => ({
+                        id: g.id,
+                        title: g.title,
+                        color: g.color,
+                        items: bItems.filter(i => i.group_id === g.id).map(i => ({
+                            id: i.id,
+                            title: i.title,
+                            groupId: g.id,
+                            boardId,
+                            values: parseSqlJson(i.values, {}),
+                            isHidden: i.is_hidden,
+                            updates: parseSqlJson(i.updates, []),
+                            files: parseSqlJson(i.files, []),
+                            order: i.order,
+                            parentId: i.parent_id
+                        })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
+                    })),
+                    items: bItems.map(i => ({
+                        id: i.id,
+                        title: i.title,
+                        groupId: i.group_id,
+                        boardId,
+                        values: parseSqlJson(i.values, {}),
+                        isHidden: i.is_hidden,
+                        updates: parseSqlJson(i.updates, []),
+                        files: parseSqlJson(i.files, []),
+                        parentId: i.parent_id
+                    }))
+                };
+
+                const newBoards = [...state.boards];
+                newBoards[boardIndex] = updatedBoard;
+                return { boards: newBoards };
+            });
+        } catch (err) {
+            console.error('Failed to load board data', err);
         }
     },
 

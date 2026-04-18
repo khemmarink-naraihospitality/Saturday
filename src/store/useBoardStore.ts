@@ -9,25 +9,11 @@ import { createMemberSlice, type MemberSlice } from './slices/memberSlice';
 
 export type BoardState = BoardSlice & WorkspaceSlice & ItemSlice & GroupSlice & ColumnSlice & MemberSlice & {};
 
-export const useBoardStore = create<BoardState>()(
-    persist(
-        (...a) => ({
-            ...createBoardSlice(...a),
-            ...createWorkspaceSlice(...a),
-            ...createItemSlice(...a),
-            ...createGroupSlice(...a),
-            ...createColumnSlice(...a),
-            ...createMemberSlice(...a),
-        }),
-        {
-            name: 'nhgone-local-cache',
-            partialize: (state) => ({
-                workspaces: state.workspaces,
-                boards: state.boards, // Method 2: Cache boards for instant UI load
-                activeWorkspaceId: state.activeWorkspaceId,
-                activeBoardId: state.activeBoardId,
-                activePage: state.activePage
-            })
-        }
-    )
-);
+export const useBoardStore = create<BoardState>()((...a) => ({
+    ...createBoardSlice(...a),
+    ...createWorkspaceSlice(...a),
+    ...createItemSlice(...a),
+    ...createGroupSlice(...a),
+    ...createColumnSlice(...a),
+    ...createMemberSlice(...a),
+}));

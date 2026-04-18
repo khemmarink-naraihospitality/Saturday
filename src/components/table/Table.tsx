@@ -85,6 +85,20 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const [activeId, setActiveId] = useState<string | null>(null);
 
+    if (board && !board.isDataLoaded) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <div className="spinner" style={{ width: '24px', height: '24px', border: '2px solid hsl(var(--color-border))', borderTopColor: 'hsl(var(--color-brand-primary))', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    <p style={{ fontSize: '14px' }}>Loading board content...</p>
+                </div>
+                <style>{`
+                    @keyframes spin { to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        );
+    }
+
     const virtualItems = useMemo(() => {
         if (!board) return [];
         let items = [...board.items]; // Clone to sort

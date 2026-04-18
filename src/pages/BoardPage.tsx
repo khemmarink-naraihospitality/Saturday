@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BatchActionsBar } from '../components/table/BatchActionsBar';
 import { BoardHeader } from '../components/board/BoardHeader';
 import { BoardViewsToolbar } from '../components/board/BoardViewsToolbar';
@@ -9,7 +10,16 @@ import { CalendarView } from '../components/calendar/CalendarView';
 
 export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
-    const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
+    const boards = useBoardStore(state => state.boards);
+    const loadBoardData = useBoardStore(state => state.loadBoardData);
+    const activeBoard = boards.find(b => b.id === activeBoardId);
+
+    useEffect(() => {
+        if (activeBoardId && activeBoard && !activeBoard.isDataLoaded) {
+            console.log('BoardPage: Triggering lazy load for', activeBoardId);
+            loadBoardData(activeBoardId);
+        }
+    }, [activeBoardId, activeBoard?.isDataLoaded, loadBoardData]);
     
     // Safety check: Prevent white screens if the board is deleted or deeply linked incorrectly
     if (!activeBoardId || !activeBoard) {

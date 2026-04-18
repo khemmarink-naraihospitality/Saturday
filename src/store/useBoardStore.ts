@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { createBoardSlice, type BoardSlice } from './slices/boardSlice';
 import { createWorkspaceSlice, type WorkspaceSlice } from './slices/workspaceSlice';
 import { createItemSlice, type ItemSlice } from './slices/itemSlice';

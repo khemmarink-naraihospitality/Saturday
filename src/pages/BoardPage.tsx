@@ -22,6 +22,25 @@ export const BoardPage = () => {
     }, [activeBoardId, activeBoard?.isDataLoaded, loadBoardData]);
     
     // Safety check: Prevent white screens if the board is deleted or deeply linked incorrectly
+    if (activeBoard && !activeBoard.isDataLoaded) {
+        return (
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
+                <div className="animate-spin" style={{ width: '32px', height: '32px', border: '3px solid hsl(var(--color-brand-primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                <span style={{ color: 'hsl(var(--color-text-secondary))', fontSize: '14px' }}>Loading board content...</span>
+            </div>
+        );
+    }
+
+    // Safety fallback for malformed board data
+    if (activeBoard && (!activeBoard.groups || !activeBoard.columns)) {
+        return (
+             <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
+                <span style={{ color: '#ef4444', fontSize: '14px' }}>Error: Board data is incomplete.</span>
+                <button onClick={() => window.location.reload()} className="btn-primary" style={{ padding: '8px 16px' }}>Reload Application</button>
+            </div>
+        );
+    }
+
     if (!activeBoardId || !activeBoard) {
         return (
             <div style={{ padding: '60px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>

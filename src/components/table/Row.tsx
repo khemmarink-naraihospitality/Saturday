@@ -28,7 +28,7 @@ export const Row = React.memo(({
     item,
     columns,
     groupColor,
-    itemColumnWidth = 520,
+    itemColumnWidth = 370,
     dragHandleProps,
     isSubItem,
     isExpanded,

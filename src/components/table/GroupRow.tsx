@@ -89,7 +89,7 @@ export const GroupRow = ({
                 left: 0,
                 zIndex: 60,
                 backgroundColor: 'hsl(var(--color-bg-canvas))',
-                width: '520px', // Match default itemColumnWidth or pass it as prop
+                width: '370px', // Match default itemColumnWidth or pass it as prop
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',

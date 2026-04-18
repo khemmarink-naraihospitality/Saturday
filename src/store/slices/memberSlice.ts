@@ -500,7 +500,7 @@ export const createMemberSlice: StateCreator<
                                     groups: [],
                                     items: [],
                                     itemColumnTitle: 'Item',
-                                    itemColumnWidth: 500
+                                    itemColumnWidth: 350
                                 });
                             }
                         } else if (payload.eventType === 'UPDATE') {

@@ -81,7 +81,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
-    const itemColumnWidth = board?.itemColumnWidth || 500;
+    const itemColumnWidth = board?.itemColumnWidth || 350;
 
     const [activeId, setActiveId] = useState<string | null>(null);
 

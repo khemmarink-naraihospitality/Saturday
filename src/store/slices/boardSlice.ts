@@ -141,7 +141,7 @@ export const createBoardSlice: StateCreator<
             ] = await Promise.all([
                 supabase.from('workspaces').select('*').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
-                supabase.from('board_members').select('board_id, role, last_viewed_at').eq('user_id', user.id),
+                supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
             ]);
@@ -184,10 +184,12 @@ export const createBoardSlice: StateCreator<
             // console.log('DEBUG: loadUserData sharedBoardsData:', sharedBoardsData);
 
             const lastViewedMap: Record<string, string> = {};
+            const boardSettingsMap: Record<string, any> = {};
             if (sharedBoardsData) {
                 sharedBoardsData.forEach((r: any) => {
-                    if (r.board_id && r.last_viewed_at) {
-                        lastViewedMap[r.board_id] = r.last_viewed_at;
+                    if (r.board_id) {
+                        if (r.last_viewed_at) lastViewedMap[r.board_id] = r.last_viewed_at;
+                        if (r.settings) boardSettingsMap[r.board_id] = r.settings;
                     }
                 });
             }
@@ -211,7 +213,7 @@ export const createBoardSlice: StateCreator<
                     items: existingBoard?.items || [],
                     isDataLoaded: existingBoard?.isDataLoaded || false,
                     itemColumnTitle: 'Item',
-                    itemColumnWidth: 500
+                    itemColumnWidth: boardSettingsMap[b.id]?.itemColumnWidth || 350
                 };
             });
 
@@ -358,7 +360,7 @@ export const createBoardSlice: StateCreator<
                     ...state.boards[boardIndex],
                     isDataLoaded: true,
                     itemColumnTitle: state.boards[boardIndex].itemColumnTitle || 'Item',
-                    itemColumnWidth: state.boards[boardIndex].itemColumnWidth || 500,
+                    itemColumnWidth: state.boards[boardIndex].itemColumnWidth || 350,
                     columns: bColumns.map(c => ({
                         id: c.id,
                         title: c.title,

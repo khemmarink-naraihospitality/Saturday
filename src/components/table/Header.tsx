@@ -232,7 +232,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     });
     const itemColumnWidth = useBoardStore(state => {
         const board = state.boards.find(b => b.id === state.activeBoardId);
-        return board?.itemColumnWidth || 500;
+        return board?.itemColumnWidth || 350;
     });
 
     const [isEditingItemCol, setIsEditingItemCol] = React.useState(false);

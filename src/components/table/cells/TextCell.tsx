@@ -58,7 +58,11 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
     if (column.type === 'link') {
         if (isEditing) {
             return (
-                <div className="table-cell" style={{ width: '100%', height: '100%', padding: 0 }}>
+                <div className="table-cell" style={{ 
+                    ...cellStyle, 
+                    padding: 0,
+                    backgroundColor: 'hsl(var(--color-bg-surface))' 
+                }}>
                     <input
                         ref={inputRef}
                         type="text"
@@ -67,14 +71,22 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
                         placeholder="Paste link here..."
-                        style={inputStyle}
+                        style={{
+                            ...inputStyle,
+                            border: '1px solid hsl(var(--color-brand-primary))',
+                            borderRadius: '4px',
+                            margin: '2px', // Slight margin to show the highlight background
+                            padding: '0 8px',
+                            backgroundColor: 'white',
+                            color: 'hsl(var(--color-text-primary))'
+                        }}
                     />
                 </div>
             );
         }
         const url = value ? (value.startsWith('http') ? value : `https://${value}`) : '';
         return (
-            <div className="table-cell" onDoubleClick={startEditing} style={cellStyle}>
+            <div className="table-cell" onClick={startEditing} style={cellStyle}>
                 {value ? (
                     <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={linkStyle}
                         onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
@@ -82,7 +94,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                         {value}
                     </a>
                 ) : (
-                    <div onClick={startEditing} style={placeholderStyle}>
+                    <div style={placeholderStyle}>
                         <Link2 size={16} />
                     </div>
                 )}
@@ -93,11 +105,9 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
     if (isEditing) {
         return (
             <div className="table-cell" style={{ 
-                width: '100%', 
-                height: '100%', 
-                padding: '2px', // Slight padding for the "floating" input look
-                backgroundColor: 'hsl(var(--color-bg-surface))', // Highlight background
-                zIndex: 10
+                ...cellStyle, 
+                padding: 0,
+                backgroundColor: 'hsl(var(--color-bg-surface))' 
             }}>
                 <input
                     ref={inputRef}
@@ -115,10 +125,12 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                     onKeyDown={handleKeyDown}
                     style={{
                         ...inputStyle,
-                        border: '1px solid hsl(var(--color-brand-primary))', // Slimmer consistent border
+                        border: '1px solid hsl(var(--color-brand-primary))',
                         borderRadius: '4px',
+                        margin: '2px',
                         padding: '0 8px',
-                        backgroundColor: 'white' // White input on highlight bg
+                        backgroundColor: 'white',
+                        color: 'hsl(var(--color-text-primary))'
                     }}
                 />
             </div>
@@ -128,11 +140,18 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
     return (
         <div 
             className="table-cell" 
-            onDoubleClick={startEditing} 
+            onClick={startEditing} 
             style={{ 
                 ...cellStyle, 
                 justifyContent: column.type === 'number' ? 'flex-end' : 'flex-start',
-                transition: 'all 0.2s ease'
+                transition: 'background-color 0.2s ease',
+                cursor: can('edit_items') ? 'text' : 'default'
+            }}
+            onMouseEnter={(e) => {
+                if (can('edit_items')) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
             }}
         >
             {value || (

@@ -379,7 +379,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                     display: 'flex', alignItems: 'center', gap: '8px',
                                     width: '100%', padding: '8px 16px',
                                     textAlign: 'left', background: 'none', border: 'none',
-                                    fontSize: '14px', color: 'hsl(var(--color-brand-primary))',
+                                    fontSize: '14px', color: '#9159FF',
                                     cursor: 'pointer'
                                 }}
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}

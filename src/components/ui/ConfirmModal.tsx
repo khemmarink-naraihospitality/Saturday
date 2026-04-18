@@ -76,8 +76,12 @@ export const ConfirmModal = ({
                         style={{
                             padding: '8px 16px',
                             borderRadius: '4px',
+                            backgroundColor: '#9159FF',
+                            color: '#ffffff',
+                            border: 'none',
                             cursor: 'pointer',
                             fontWeight: 500,
+                            boxShadow: '0 2px 4px rgba(145, 89, 255, 0.3)'
                         }}
                     >
                         {confirmText}

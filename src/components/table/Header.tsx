@@ -510,7 +510,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                     }}
                     onCancel={() => setConfirmDeleteColId(null)}
                     confirmText="Delete Column"
-                    variant="danger"
                 />
             </DndContext>
         );
@@ -518,5 +517,3 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
     return content;
 };
-
-

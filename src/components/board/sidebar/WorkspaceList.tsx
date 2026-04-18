@@ -620,7 +620,6 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                 title="Delete Board"
                 message="Are you sure you want to delete this board? This action cannot be undone."
                 confirmText="Delete"
-                variant="danger"
                 onConfirm={() => {
                     if (boardToDelete) deleteBoard(boardToDelete);
                     setBoardToDelete(null);
@@ -633,7 +632,6 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                 title="Delete Workspace"
                 message="Are you sure you want to delete this workspace? All boards inside it will be deleted! This action cannot be undone."
                 confirmText="Delete Workspace"
-                variant="danger"
                 onConfirm={() => {
                     if (workspaceToDelete) deleteWorkspace(workspaceToDelete);
                     setWorkspaceToDelete(null);

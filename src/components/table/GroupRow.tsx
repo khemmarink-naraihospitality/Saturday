@@ -245,7 +245,6 @@ export const GroupRow = ({
                 title="Delete Group"
                 message={`Are you sure you want to delete "${data.title}" and all its items? This action cannot be undone.`}
                 confirmText="Delete"
-                variant="danger"
                 onConfirm={() => {
                     deleteGroup(data.id);
                     setShowDeleteConfirm(false);

@@ -414,7 +414,19 @@ export const createBoardSlice: StateCreator<
             set(state => {
                 const nextLoading = new Set(state.loadingBoardIds);
                 nextLoading.delete(boardId);
-                return { loadingBoardIds: nextLoading };
+                
+                const boardIndex = state.boards.findIndex(b => b.id === boardId);
+                if (boardIndex === -1) return { loadingBoardIds: nextLoading };
+                
+                const newBoards = [...state.boards];
+                // Force marked as loaded to release the spinner, even on error
+                newBoards[boardIndex] = { ...newBoards[boardIndex], isDataLoaded: true };
+                
+                return { 
+                    boards: newBoards,
+                    loadingBoardIds: nextLoading,
+                    error: 'Failed to load board data. Please try again.'
+                };
             });
         }
     },

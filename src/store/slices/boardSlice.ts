@@ -452,10 +452,10 @@ export const createBoardSlice: StateCreator<
                 ]
             },
             { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
-            { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
+            { id: uuidv4(), title: 'People', type: 'people' as ColumnType, order: 2, width: 140 },
             { id: uuidv4(), title: 'Timeline', type: 'timeline' as ColumnType, order: 3, width: 160 },
-            { id: uuidv4(), title: 'Target Date', type: 'date' as ColumnType, order: 4, width: 140 },
-            { id: uuidv4(), title: 'Comment', type: 'text' as ColumnType, order: 5, width: 200 },
+            { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 4, width: 140 },
+            { id: uuidv4(), title: 'Text', type: 'text' as ColumnType, order: 5, width: 200 },
         ];
 
         const newBoard: Board = {
@@ -464,7 +464,9 @@ export const createBoardSlice: StateCreator<
             title,
             columns: defaultColumns.map(c => ({ ...c, type: c.type as ColumnType, options: c.options })),
             groups: defaultGroups.map(g => ({ ...g, items: [] })),
-            items: []
+            items: [],
+            itemColumnTitle: 'Item',
+            itemColumnWidth: 350
         };
 
         set({ boards: [...boards, newBoard], activeBoardId: boardId });
@@ -605,7 +607,9 @@ export const createBoardSlice: StateCreator<
                 color: g.color,
                 items: newItems.filter(i => i.groupId === g.id)
             })),
-            items: newItems
+            items: newItems,
+            itemColumnTitle: sourceBoard.itemColumnTitle || 'Item',
+            itemColumnWidth: sourceBoard.itemColumnWidth || 350
         };
 
         set(state => ({

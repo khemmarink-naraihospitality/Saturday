@@ -42,6 +42,7 @@ export interface BoardSlice {
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
     loadBoardData: (boardId: string) => Promise<void>;
+    loadingBoardIds: Set<string>;
 }
 
 const parseSqlJson = (val: any, fallback: any) => {
@@ -68,6 +69,7 @@ export const createBoardSlice: StateCreator<
     userWorkspaceRoles: {},
     sharedBoardIds: [],
     sharedWorkspaceIds: [],
+    loadingBoardIds: new Set(),
 
     navigateTo: (page) => set({ activePage: page }),
     setActivePage: (page) => set({ activePage: page }),
@@ -286,7 +288,8 @@ export const createBoardSlice: StateCreator<
         localStorage.setItem('lastActiveBoardId', id || '');
 
         if (id) {
-            window.history.pushState(null, '', `/board/${id}`);
+            // FIRE AND FORGET: URL push removed here because App.tsx handles it with correct slugs
+            // window.history.pushState(null, '', `/board/${id}`);
 
             // Fire and forget: Update last_viewed_at
             const { data: { user } } = await supabase.auth.getUser();
@@ -322,10 +325,14 @@ export const createBoardSlice: StateCreator<
     },
 
     loadBoardData: async (boardId: string) => {
-        try {
-            const board = get().boards.find(b => b.id === boardId);
-            if (board?.isDataLoaded) return; // Already loaded!
+        const { boards, loadingBoardIds } = get();
+        const board = boards.find(b => b.id === boardId);
+        
+        if (!board || board.isDataLoaded || loadingBoardIds.has(boardId)) return;
 
+        set(state => ({ loadingBoardIds: new Set(state.loadingBoardIds).add(boardId) }));
+
+        try {
             const [
                 { data: groups },
                 { data: columns },
@@ -338,7 +345,10 @@ export const createBoardSlice: StateCreator<
 
             set(state => {
                 const boardIndex = state.boards.findIndex(b => b.id === boardId);
-                if (boardIndex === -1) return state;
+                const nextLoading = new Set(state.loadingBoardIds);
+                nextLoading.delete(boardId);
+
+                if (boardIndex === -1) return { loadingBoardIds: nextLoading };
 
                 const bGroups = groups || [];
                 const bColumns = columns || [];
@@ -388,10 +398,18 @@ export const createBoardSlice: StateCreator<
 
                 const newBoards = [...state.boards];
                 newBoards[boardIndex] = updatedBoard;
-                return { boards: newBoards };
+                return { 
+                    boards: newBoards,
+                    loadingBoardIds: nextLoading
+                };
             });
         } catch (err) {
             console.error('Failed to load board data', err);
+            set(state => {
+                const nextLoading = new Set(state.loadingBoardIds);
+                nextLoading.delete(boardId);
+                return { loadingBoardIds: nextLoading };
+            });
         }
     },
 

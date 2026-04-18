@@ -729,8 +729,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                 )}
 
                 <div style={{
-                    paddingTop: '80px',
-                    paddingBottom: '120px',
+                    paddingTop: '24px',
+                    paddingBottom: '40px',
                     paddingLeft: '32px',
                     display: 'flex',
                     justifyContent: 'flex-start'

@@ -155,10 +155,6 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
     );
 });
 
-const inputStyle: React.CSSProperties = {
-    width: '100%', height: '100%', outline: 'none',
-    fontFamily: 'inherit', fontSize: '13px', backgroundColor: 'transparent', color: 'inherit'
-};
 const cellStyle: React.CSSProperties = {
     width: '100%', height: '100%', padding: '0 8px',
     display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text'

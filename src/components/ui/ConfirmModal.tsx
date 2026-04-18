@@ -10,7 +10,6 @@ interface ConfirmModalProps {
     onCancel: () => void;
     confirmText?: string;
     cancelText?: string;
-    variant?: 'danger' | 'primary';
 }
 
 export const ConfirmModal = ({
@@ -20,8 +19,7 @@ export const ConfirmModal = ({
     onConfirm,
     onCancel,
     confirmText = "Confirm",
-    cancelText = "Cancel",
-    variant = 'primary'
+    cancelText = "Cancel"
 }: ConfirmModalProps) => {
     if (!isOpen) return null;
 
@@ -81,7 +79,8 @@ export const ConfirmModal = ({
                             background: 'hsl(var(--color-brand-primary))',
                             color: '#fff',
                             cursor: 'pointer',
-                            fontWeight: 500
+                            fontWeight: 500,
+                            boxShadow: '0 2px 4px hsla(var(--color-brand-primary), 0.2)'
                         }}
                     >
                         {confirmText}

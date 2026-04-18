@@ -379,10 +379,10 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                     display: 'flex', alignItems: 'center', gap: '8px',
                                     width: '100%', padding: '8px 16px',
                                     textAlign: 'left', background: 'none', border: 'none',
-                                    fontSize: '14px', color: '#ef4444',
+                                    fontSize: '14px', color: 'hsl(var(--color-brand-primary))',
                                     cursor: 'pointer'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
                                 <Trash2 size={14} /> Delete Board

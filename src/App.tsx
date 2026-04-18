@@ -83,7 +83,7 @@ function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
           onClick={onSignOut}
           style={{
             padding: '10px 20px',
-            backgroundColor: '#ef4444',
+            backgroundColor: 'hsl(var(--color-brand-primary))',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -92,8 +92,8 @@ function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
             cursor: 'pointer',
             transition: 'background-color 0.2s'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-primary) / 0.8)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-primary))'}
         >
           Sign Out
         </button>

@@ -343,11 +343,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                         }}>
                                                             <div style={{ fontSize: '12px', marginBottom: '8px', color: '#ef4444', fontWeight: 500 }}>Delete this update?</div>
                                                             <div style={{ display: 'flex', gap: '4px' }}>
-                                                                <button
+                                                                 <button
                                                                     onClick={() => confirmDelete(update.id)}
                                                                     style={{
                                                                         flex: 1,
-                                                                        backgroundColor: '#ef4444',
+                                                                        backgroundColor: 'hsl(var(--color-brand-primary))',
                                                                         color: 'white',
                                                                         border: 'none',
                                                                         borderRadius: '4px',
@@ -501,7 +501,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             onClick={handleAddFile}
                                             disabled={!fileUrl.trim()}
                                             style={{
-                                                backgroundColor: fileUrl.trim() ? '#0073ea' : '#cce5ff',
+                                                backgroundColor: fileUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsla(var(--color-brand-primary), 0.3)',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '4px',
@@ -584,12 +584,12 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             <div style={{
                                                 width: '40px',
                                                 height: '40px',
-                                                backgroundColor: '#e6f4ff',
+                                                backgroundColor: 'hsla(var(--color-brand-primary), 0.1)',
                                                 borderRadius: '8px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                color: '#0073ea'
+                                                color: 'hsl(var(--color-brand-primary))'
                                             }}>
                                                 <FileText size={20} />
                                             </div>
@@ -616,10 +616,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 {file.name}
                                             </div>
                                             <a
-                                                href={file.url}
+                                                href={fileUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                style={{ fontSize: '12px', color: '#0073ea', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                style={{ fontSize: '12px', color: 'hsl(var(--color-brand-primary))', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 Open Link <ExternalLink size={10} />

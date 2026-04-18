@@ -130,7 +130,7 @@ export const Sidebar = () => {
                     width: '6px',
                     height: '100%',
                     cursor: 'col-resize',
-                    backgroundColor: isResizing || isHoveringResizer ? 'rgba(0, 115, 234, 0.5)' : 'transparent',
+                    backgroundColor: isResizing || isHoveringResizer ? 'rgba(145, 89, 255, 0.5)' : 'transparent',
                     transition: 'background-color 0.2s',
                     zIndex: 10
                 }}

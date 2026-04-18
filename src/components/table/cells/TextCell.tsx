@@ -54,33 +54,50 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
         setIsEditing(true);
     };
 
+    // Edit input renderer to match Row.tsx exactly
+    const renderEditInput = () => (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', backgroundColor: 'hsl(var(--color-bg-surface))' }}>
+            <input
+                ref={inputRef}
+                type="text"
+                value={editValue || ''}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    if (column.type === 'number') {
+                        if (/^[0-9]*\.?[0-9]*%?$/.test(val)) setEditValue(val);
+                    } else {
+                        setEditValue(val);
+                    }
+                }}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={column.type === 'link' ? "Paste link here..." : ""}
+                style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    border: 'none',
+                    background: 'transparent',
+                    width: '100%',
+                    fontSize: '13px',
+                    color: 'inherit',
+                    outline: 'none',
+                    paddingLeft: '4px', // Same as Item column on focus
+                    cursor: 'text',
+                    pointerEvents: 'auto',
+                    zIndex: 100,
+                    position: 'relative'
+                }}
+            />
+        </div>
+    );
+
     // Render logic based on type (Link vs others)
     if (column.type === 'link') {
         if (isEditing) {
             return (
-                <div className="table-cell" style={{ 
-                    ...cellStyle, 
-                    padding: 0,
-                    backgroundColor: 'hsl(var(--color-bg-surface))' 
-                }}>
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue || ''}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleBlur}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Paste link here..."
-                        style={{
-                            ...inputStyle,
-                            border: '1px solid hsl(var(--color-brand-primary))',
-                            borderRadius: '4px',
-                            margin: '2px', // Slight margin to show the highlight background
-                            padding: '0 8px',
-                            backgroundColor: 'white',
-                            color: 'hsl(var(--color-text-primary))'
-                        }}
-                    />
+                <div className="table-cell" style={{ ...cellStyle, padding: 0 }}>
+                    {renderEditInput()}
                 </div>
             );
         }
@@ -104,35 +121,8 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
 
     if (isEditing) {
         return (
-            <div className="table-cell" style={{ 
-                ...cellStyle, 
-                padding: 0,
-                backgroundColor: 'hsl(var(--color-bg-surface))' 
-            }}>
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={editValue || ''}
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        if (column.type === 'number') {
-                            if (/^[0-9]*\.?[0-9]*%?$/.test(val)) setEditValue(val);
-                        } else {
-                            setEditValue(val);
-                        }
-                    }}
-                    onBlur={handleBlur}
-                    onKeyDown={handleKeyDown}
-                    style={{
-                        ...inputStyle,
-                        border: '1px solid hsl(var(--color-brand-primary))',
-                        borderRadius: '4px',
-                        margin: '2px',
-                        padding: '0 8px',
-                        backgroundColor: 'white',
-                        color: 'hsl(var(--color-text-primary))'
-                    }}
-                />
+            <div className="table-cell" style={{ ...cellStyle, padding: 0 }}>
+                {renderEditInput()}
             </div>
         );
     }

@@ -200,3 +200,14 @@
 .prose a:hover, .rich-text-content a:hover {
     color: hsl(var(--color-brand-hover));
 }
+
+.confirm-btn-primary {
+    background-color: #9159FF !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(145, 89, 255, 0.4) !important;
+}
+
+.confirm-btn-primary:hover {
+    background-color: #7b46e0 !important;
+}

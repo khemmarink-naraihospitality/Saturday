@@ -354,9 +354,11 @@ export const createBoardSlice: StateCreator<
                 const bColumns = columns || [];
                 const bItems = items || [];
 
-                const updatedBoard = {
+                const updatedBoard: Board = {
                     ...state.boards[boardIndex],
                     isDataLoaded: true,
+                    itemColumnTitle: state.boards[boardIndex].itemColumnTitle || 'Item',
+                    itemColumnWidth: state.boards[boardIndex].itemColumnWidth || 500,
                     columns: bColumns.map(c => ({
                         id: c.id,
                         title: c.title,
@@ -370,6 +372,7 @@ export const createBoardSlice: StateCreator<
                         id: g.id,
                         title: g.title,
                         color: g.color,
+                        order: g.order,
                         items: bItems.filter(i => i.group_id === g.id).map(i => ({
                             id: i.id,
                             title: i.title,
@@ -380,7 +383,8 @@ export const createBoardSlice: StateCreator<
                             updates: parseSqlJson(i.updates, []),
                             files: parseSqlJson(i.files, []),
                             order: i.order,
-                            parentId: i.parent_id
+                            parentId: i.parent_id,
+                            createdAt: i.created_at
                         })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
                     })),
                     items: bItems.map(i => ({
@@ -392,7 +396,9 @@ export const createBoardSlice: StateCreator<
                         isHidden: i.is_hidden,
                         updates: parseSqlJson(i.updates, []),
                         files: parseSqlJson(i.files, []),
-                        parentId: i.parent_id
+                        order: i.order,
+                        parentId: i.parent_id,
+                        createdAt: i.created_at
                     }))
                 };
 

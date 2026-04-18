@@ -37,7 +37,7 @@ export const ConfirmModal = ({
             zIndex: 9999
         }}>
             <div style={{
-                backgroundColor: 'hsl(var(--color-bg-surface))',
+                backgroundColor: 'lightblue',
                 borderRadius: '8px',
                 padding: '24px',
                 width: '400px',

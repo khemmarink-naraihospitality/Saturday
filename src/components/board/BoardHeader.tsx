@@ -9,6 +9,7 @@ import { SidePanel } from '../ui/SidePanel';
 import { ExportBoardModal } from './ExportBoardModal';
 
 import { BoardViewsTabs } from './BoardViewsTabs';
+import { GlobalTopActions } from '../layout/GlobalTopActions';
 
 interface BoardHeaderProps {
     boardId: string;
@@ -409,6 +410,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         </div>
                     )}
                 </div>
+
+                {/* Divider & Global Actions */}
+                <div style={{ width: '1px', height: '24px', backgroundColor: 'hsl(var(--color-border))', margin: '0 4px' }} />
+                <GlobalTopActions />
+
             </div>
 
             {showShareModal && (

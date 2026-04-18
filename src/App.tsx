@@ -348,7 +348,7 @@ function MainApp() {
           borderLeft: '1px solid hsl(var(--color-border))',
           boxShadow: '-4px 0 15px rgba(0,0,0,0.03)'
       }}>
-        <TopBar />
+        {activePage !== 'board' && <TopBar />}
 
         {activePage === 'admin' ? (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>

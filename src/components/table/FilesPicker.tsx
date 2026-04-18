@@ -341,7 +341,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                     onClick={() => handleClose(true)}
                     style={{
                         padding: '10px 24px',
-                        backgroundColor: '#0073ea',
+                        backgroundColor: 'hsl(var(--color-brand-primary))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',

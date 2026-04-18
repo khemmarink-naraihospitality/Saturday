@@ -172,7 +172,7 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                     <button
                         onClick={() => setIsEditingLabels(false)}
                         style={{
-                            backgroundColor: '#7c3aed',
+                            backgroundColor: 'hsl(var(--color-brand-primary))',
                             border: 'none',
                             borderRadius: '4px',
                             fontSize: '14px',
@@ -182,8 +182,8 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                             color: 'white',
                             transition: 'background-color 0.2s',
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6b4cc3'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-hover))'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-primary))'}
                     >
                         Apply
                     </button>

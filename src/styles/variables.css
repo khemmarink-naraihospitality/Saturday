@@ -1,11 +1,11 @@
 :root {
   /* Monday.com Light Mode Inspired */
 
-  /* Primary Brand (Bright Blue) */
-  --color-brand-primary: 211 100% 50%;
-  /* #0085FF */
-  --color-brand-hover: 211 100% 45%;
-  --color-brand-light: 211 100% 96%;
+  /* Primary Brand (Premium Purple) */
+  --color-brand-primary: 255 83% 60%;
+  /* #9159FF */
+  --color-brand-hover: 255 83% 53%;
+  --color-brand-light: 255 83% 96%;
 
   /* Backgrounds */
   --color-bg-canvas: 0 0% 100%;

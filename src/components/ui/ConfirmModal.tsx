@@ -80,7 +80,7 @@ export const ConfirmModal = ({
                             fontWeight: 500,
                         }}
                     >
-                        {confirmText}
+                        Confirm Delete Now
                     </button>
                 </div>
             </div>

@@ -37,7 +37,7 @@ export const ConfirmModal = ({
             zIndex: 9999
         }}>
             <div style={{
-                backgroundColor: 'lightblue',
+                backgroundColor: 'hsl(var(--color-bg-surface))',
                 borderRadius: '8px',
                 padding: '24px',
                 width: '400px',
@@ -80,7 +80,7 @@ export const ConfirmModal = ({
                             fontWeight: 500,
                         }}
                     >
-                        Confirm Delete Now
+                        {confirmText}
                     </button>
                 </div>
             </div>

@@ -212,7 +212,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                     <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                         <button 
                             onClick={() => setIsAddingUrl(false)}
-                            style={{ flex: 1, padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: 'pointer' }}
+                            style={{ flex: 1, padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         >
                             Cancel
                         </button>
@@ -229,7 +229,10 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                               borderRadius: '4px', 
                               cursor: 'pointer', 
                               opacity: (!urlName.trim() || !urlValue.trim()) ? 0.6 : 1,
-                              fontWeight: 600
+                              fontWeight: 600,
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center'
                             }}
                         >
                             Add File

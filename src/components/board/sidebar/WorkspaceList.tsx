@@ -30,7 +30,7 @@ interface WorkspaceListProps {
 
 export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     const {
-        boards, activeBoardId, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
+        boards, activeBoardId, activePage, navigateTo, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
         workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds,
         userBoardRoles, userWorkspaceRoles, reorderWorkspaces
     } = useBoardStore();
@@ -286,6 +286,21 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             {/* Expanded Content */}
                             {isExpanded && (
                                 <div className="tree-node-children">
+                                    {/* Workspace Dashboard Link */}
+                                    <div className="tree-node-leaf">
+                                        <div
+                                            className={clsx("tree-sidebar-item", { active: activePage === 'dashboard' && activeWorkspaceId === ws.id })}
+                                            onClick={() => {
+                                                setActiveWorkspace(ws.id);
+                                                navigateTo('dashboard');
+                                            }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', cursor: 'pointer' }}
+                                        >
+                                            <div style={{ width: '12px', marginRight: '4px' }}></div>
+                                            <LayoutDashboard size={16} className="item-icon" />
+                                            <span className="item-label">Dashboard</span>
+                                        </div>
+                                    </div>
                                     <DndContext
                                         sensors={sensors}
                                         collisionDetection={closestCenter}

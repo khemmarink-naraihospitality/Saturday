@@ -16,12 +16,12 @@ import { supabase } from './lib/supabase';
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
 
-// Lazy load heavy pages to reduce initial bundle size
 const NotificationPage = lazy(() => import('./pages/NotificationPage').then(m => ({ default: m.NotificationPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const BoardPage = lazy(() => import('./pages/BoardPage').then(m => ({ default: m.BoardPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
+const WorkspaceDashboardPage = lazy(() => import('./pages/WorkspaceDashboardPage').then(m => ({ default: m.WorkspaceDashboardPage })));
 
 // Loading fallback component
 function PageLoader() {
@@ -291,6 +291,15 @@ function MainApp() {
       if (window.location.pathname !== '/admin') {
         window.history.pushState(null, '', '/admin');
       }
+    } else if (activePage === 'dashboard') {
+      const workspace = useBoardStore.getState().workspaces.find(w => w.id === activeWorkspaceId);
+      const workspaceName = workspace ? slugify(workspace.title) : 'workspace';
+      const currentUser = useUserStore.getState().currentUser;
+      const username = currentUser ? slugify(currentUser.name) : 'u';
+      const newPath = `/${username}/${workspaceName}/dashboard`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState(null, '', newPath);
+      }
     } else if (activePage === 'board' && activeBoard) {
       const workspace = useBoardStore.getState().workspaces.find(w => w.id === activeBoard.workspaceId);
       const workspaceName = workspace ? slugify(workspace.title) : 'workspace';
@@ -368,6 +377,10 @@ function MainApp() {
               <FavoritesPage />
             </Suspense>
           </div>
+        ) : activePage === 'dashboard' ? (
+          <Suspense fallback={<PageLoader />}>
+            <WorkspaceDashboardPage />
+          </Suspense>
         ) : activePage === 'board' && activeBoard ? (
 
           <Suspense fallback={<PageLoader />}>

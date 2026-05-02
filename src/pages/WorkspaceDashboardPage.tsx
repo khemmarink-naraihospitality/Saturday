@@ -192,54 +192,77 @@ export const WorkspaceDashboardPage = () => {
         allBoards.filter(b => b.workspaceId === activeWorkspaceId && !b.is_archived),
     [allBoards, activeWorkspaceId]);
 
-    // Ensure all boards in workspace are loaded
+    // Optimization: Fetch all needed data for the workspace in bulk
+    const [isWorkspaceDataLoading, setIsWorkspaceDataLoading] = useState(false);
+    const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
 
     useEffect(() => {
-        if (workspaceBoards.length === 0) return;
-        
-        async function fetchProfiles() {
-            // Extract all unique user IDs from all tasks in all boards
-            const userIds = new Set<string>();
-            
-            workspaceBoards.forEach(board => {
-                const peopleCols = board.columns.filter(c => c.type === 'people');
-                board.items.forEach(item => {
+        if (!activeWorkspaceId || workspaceBoards.length === 0) return;
+
+        async function fetchWorkspaceData() {
+            setIsWorkspaceDataLoading(true);
+            const boardIds = workspaceBoards.map(b => b.id);
+
+            try {
+                // Batch fetch columns and items for all boards in the workspace
+                const [colsRes, itemsRes] = await Promise.all([
+                    supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
+                    supabase.from('items').select('id, board_id, group_id, values').in('board_id', boardIds)
+                ]);
+
+                const columns = colsRes.data || [];
+                const items = itemsRes.data || [];
+
+                setWorkspaceData({ items, columns });
+
+                // Optimize Profile Fetching using the newly loaded items
+                const userIds = new Set<string>();
+                const peopleCols = columns.filter(c => c.type === 'people');
+                
+                items.forEach(item => {
                     peopleCols.forEach(pCol => {
                         const pVal = item.values?.[pCol.id];
                         const assignedPeople = Array.isArray(pVal) ? pVal : (pVal ? [pVal] : []);
                         assignedPeople.forEach(p => {
-                            if (typeof p === 'string') {
-                                userIds.add(p);
-                            } else if (p && typeof p === 'object') {
+                            if (typeof p === 'string') userIds.add(p);
+                            else if (p && typeof p === 'object') {
                                 const pId = p.id || p.user_id;
                                 if (pId) userIds.add(pId);
                             }
                         });
                     });
                 });
-            });
 
-            if (userIds.size > 0) {
-                const idsArray = Array.from(userIds);
-                const { data: profiles } = await supabase
-                    .from('profiles')
-                    .select('id, full_name, email')
-                    .in('id', idsArray);
+                if (userIds.size > 0) {
+                    const { data: profiles } = await supabase
+                        .from('profiles')
+                        .select('id, full_name, email')
+                        .in('id', Array.from(userIds));
 
-                if (profiles) {
-                    const map: Record<string, string> = {};
-                    profiles.forEach((p: any) => {
-                        const name = p.full_name || p.display_name || (p.email ? p.email.split('@')[0] : 'Member');
-                        map[p.id] = name;
-                    });
-                    setWorkspaceMemberProfiles(map);
+                    if (profiles) {
+                        const map: Record<string, string> = {};
+                        profiles.forEach((p: any) => {
+                            map[p.id] = p.full_name || p.email?.split('@')[0] || 'Member';
+                        });
+                        setWorkspaceMemberProfiles(map);
+                    }
                 }
+            } catch (err) {
+                console.error("Failed to fetch workspace summary data:", err);
+            } finally {
+                setIsWorkspaceDataLoading(false);
             }
         }
-        fetchProfiles();
-    }, [workspaceBoards]);
+
+        fetchWorkspaceData();
+    }, [activeWorkspaceId, workspaceBoards]);
+
+    useEffect(() => {
+        if (!activeWorkspaceId || workspaceBoards.length === 0) return;
+        
+        async function fetchLogs() {
 
     useEffect(() => {
         if (!activeWorkspaceId || workspaceBoards.length === 0) return;
@@ -260,13 +283,11 @@ export const WorkspaceDashboardPage = () => {
         fetchLogs();
     }, [activeWorkspaceId, workspaceBoards]);
 
+    // Note: loadBoardData is no longer needed here as we use workspaceData for stats
+    // This dramatically improves performance in the dashboard view.
     useEffect(() => {
-        workspaceBoards.forEach(b => {
-            if (!b.isDataLoaded) {
-                loadBoardData(b.id);
-            }
-        });
-    }, [workspaceBoards, loadBoardData]);
+        // Only load data if specifically requested by other components or store actions
+    }, []);
 
     const stats = useMemo(() => {
         let totalTasks = 0;
@@ -280,82 +301,72 @@ export const WorkspaceDashboardPage = () => {
                 hash = str.charCodeAt(i) + ((hash << 5) - hash);
             }
             const h = Math.abs(hash) % 360;
-            return `hsl(${h}, 85%, 55%)`; // Vibrant
+            return `hsl(${h}, 85%, 55%)`;
         };
 
+        if (!workspaceData.items.length) {
+            return { totalTasks: 0, totalStatusValues: 0, statusCounts: {}, workloadData: [], catsToRender: [], completionPercent: 0 };
+        }
+
+        totalTasks = workspaceData.items.length;
         let doneCount = 0;
 
-        workspaceBoards.forEach(b => {
-            if (!b.isDataLoaded) return;
-            totalTasks += (b.items?.length || 0);
+        // Group columns by board for quick lookup
+        const columnsByBoard: Record<string, any[]> = {};
+        workspaceData.columns.forEach(c => {
+            if (!columnsByBoard[c.board_id]) columnsByBoard[c.board_id] = [];
+            columnsByBoard[c.board_id].push(c);
+        });
 
-            const statusCols = b.columns?.filter(c => c.type === 'status') || [];
-            const peopleCols = b.columns?.filter(c => c.type === 'people') || [];
-            
-            if (statusCols.length === 0) return;
+        workspaceData.items.forEach(item => {
+            const boardCols = columnsByBoard[item.board_id] || [];
+            const statusCols = boardCols.filter(c => c.type === 'status');
+            const peopleCols = boardCols.filter(c => c.type === 'people');
 
-            // Only use the FIRST status column found to avoid double-counting tasks if multiple status columns exist
-            const primaryStatusCol = statusCols[0];
+            if (statusCols.length > 0) {
+                const primaryStatusCol = statusCols[0];
+                const statusOptions = typeof primaryStatusCol.options === 'string' ? JSON.parse(primaryStatusCol.options) : (primaryStatusCol.options || []);
+                const statusValueId = item.values?.[primaryStatusCol.id];
+                const statusOption = statusOptions.find((opt: any) => opt.id === statusValueId);
 
-            b.items?.forEach(item => {
-                const statusVal = item.values?.[primaryStatusCol.id];
-                let statusLabel = 'Empty';
-                let statusColor = '#c4c4c4';
+                if (statusOption) {
+                    const color = statusOption.color || '#c4c4c4';
+                    const key = `${statusOption.label}-${color}`;
 
-                if (statusVal) {
-                    const optionId = typeof statusVal === 'string' ? statusVal : statusVal.id;
-                    const option = primaryStatusCol.options?.find(o => o.id === optionId);
-                    if (option) {
-                        statusLabel = option.label.trim();
-                        statusColor = option.color || '#c4c4c4';
+                    if (!statusCounts[key]) {
+                        statusCounts[key] = { count: 0, workloadCount: 0, color, label: statusOption.label, people: {} };
                     }
-                }
-
-                if (statusLabel === 'Done') {
-                    doneCount++;
-                }
-
-                const groupKey = statusColor.toUpperCase(); // Normalize color key
-                    
-                    if (!statusCounts[groupKey]) {
-                        statusCounts[groupKey] = { count: 0, workloadCount: 0, color: statusColor, label: statusLabel, people: {} };
-                    }
-                    
-                    statusCounts[groupKey].count++;
+                    statusCounts[key].count++;
+                    statusCounts[key].workloadCount++;
                     totalStatusValues++;
+                    
+                    if (statusOption.label?.toLowerCase() === 'done' || statusOption.label?.toLowerCase() === 'complete') {
+                        doneCount++;
+                    }
 
-                    // Handle People data for this item
+                    // Workload calculation
                     peopleCols.forEach(pCol => {
                         const pVal = item.values?.[pCol.id];
-                        const assignedPeople = Array.isArray(pVal) ? pVal : (pVal ? [pVal] : []);
+                        const assignedPeopleIds = Array.isArray(pVal) ? pVal.map((p: any) => typeof p === 'string' ? p : (p?.id || p?.user_id)) : (pVal ? [typeof pVal === 'string' ? pVal : (pVal?.id || pVal?.user_id)] : []);
                         
-                        if (assignedPeople.length > 0) {
-                            assignedPeople.forEach(p => {
-                                let pName = 'Member';
-                                if (typeof p === 'string') {
-                                    pName = workspaceMemberProfiles[p];
-                                } else if (p && typeof p === 'object') {
-                                    const pId = p.id || p.user_id;
-                                    pName = workspaceMemberProfiles[pId] || p.name || p.full_name || p.displayName;
+                        assignedPeopleIds.forEach((pId: string) => {
+                            if (pId) {
+                                const pName = workspaceMemberProfiles[pId] || 'Member';
+                                if (!statusCounts[key].people[pId]) {
+                                    statusCounts[key].people[pId] = { count: 0, name: pName };
                                 }
+                                statusCounts[key].people[pId].count++;
 
-                                if (!pName || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pName)) {
-                                    return;
+                                if (!peopleMap[pId]) {
+                                    peopleMap[pId] = { name: pName, color: stringToColor(pName), totalTasks: 0 };
                                 }
-                                
-                                if (!statusCounts[groupKey].people[pName]) {
-                                    statusCounts[groupKey].people[pName] = { count: 0, name: pName };
-                                }
-                                statusCounts[groupKey].people[pName].count++;
-                                statusCounts[groupKey].workloadCount++;
-                                if (!peopleMap[pName]) peopleMap[pName] = { name: pName, color: stringToColor(pName), totalTasks: 0 };
-                                peopleMap[pName].totalTasks++;
-                            });
-                        }
+                                peopleMap[pId].totalTasks++;
+                            }
+                        });
                     });
-                });
-            });
-
+                }
+            }
+        });
         const completionPercent = totalStatusValues > 0 ? ((doneCount / totalStatusValues) * 100).toFixed(1) : 0;
         
         // Generate reproducible Cat placements for the farm based on status counts

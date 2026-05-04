@@ -82,7 +82,7 @@ export const ContactSupportButton = () => {
                             overflow: 'hidden'
                         }}>
                             <img 
-                                src="https://cdne-assets.monday.com/assets/images/help-center/hc-floating-icon.png" 
+                                src="https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru-e1777883318827.png" 
                                 alt="Support" 
                                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 onError={(e) => {

@@ -21,64 +21,77 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../lib/supabase';
 
-const SvgCat = ({ size, color }: { size: number, color: string }) => {
+const SvgCat = ({ size, color, pose = 'walk' }: { size: number, color: string, pose?: string }) => {
+    const isWalking = pose === 'walk';
+    const isSleeping = pose === 'sleep';
+    const isSitting = pose === 'sit';
+
     return (
-        <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="cute-anim-cat">
+        <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={`cute-anim-cat ${pose}`}>
             {/* Tail */}
             <path className="cat-tail" d="M 75 45 C 95 30, 95 60, 85 70" stroke={color} strokeWidth="8" strokeLinecap="round" fill="none" style={{ transformOrigin: '75px 45px' }} />
             
             {/* Back Legs */}
-            <g className="cat-leg back-leg" style={{ transformOrigin: '65px 75px' }}>
-                <rect x="60" y="70" width="12" height="18" rx="6" fill={color} opacity="0.8" />
+            <g className={`cat-leg back-leg ${isWalking ? 'wiggle' : ''} ${isSitting ? 'sitting' : ''}`} style={{ transformOrigin: '65px 75px' }}>
+                <rect x="60" y={isSitting ? 75 : 70} width="12" height={isSitting ? 12 : 18} rx="6" fill={color} opacity="0.8" />
                 <path d="M 60 85 Q 66 88, 72 85" stroke="rgba(0,0,0,0.1)" strokeWidth="2" fill="none" />
             </g>
-            <g className="cat-leg front-leg" style={{ transformOrigin: '35px 75px' }}>
-                <rect x="30" y="70" width="12" height="18" rx="6" fill={color} opacity="0.8" />
+            <g className={`cat-leg front-leg ${isWalking ? 'wiggle-alt' : ''} ${isSitting ? 'sitting' : ''}`} style={{ transformOrigin: '35px 75px' }}>
+                <rect x="30" y={isSitting ? 75 : 70} width="12" height={isSitting ? 12 : 18} rx="6" fill={color} opacity="0.8" />
                 <path d="M 30 85 Q 36 88, 42 85" stroke="rgba(0,0,0,0.1)" strokeWidth="2" fill="none" />
             </g>
 
             {/* Body */}
-            <rect x="25" y="35" width="55" height="45" rx="22" fill={color} />
+            <rect x="25" y={isSitting ? 30 : 35} width="55" height={isSitting ? 50 : 45} rx="22" fill={color} />
             
             {/* Front Legs (closest to viewer) */}
-            <g className="cat-leg front-leg-alt" style={{ transformOrigin: '45px 75px' }}>
-                <rect x="40" y="72" width="14" height="20" rx="7" fill={color} />
+            <g className={`cat-leg front-leg-alt ${isWalking ? 'wiggle' : ''}`} style={{ transformOrigin: '45px 75px' }}>
+                <rect x="40" y={isSitting ? 77 : 72} width="14" height={isSitting ? 15 : 20} rx="7" fill={color} />
                 <path d="M 40 88 Q 47 91, 54 88" stroke="rgba(0,0,0,0.1)" strokeWidth="2" fill="none" />
             </g>
-            <g className="cat-leg back-leg-alt" style={{ transformOrigin: '55px 75px' }}>
-                <rect x="50" y="72" width="14" height="20" rx="7" fill={color} />
+            <g className={`cat-leg back-leg-alt ${isWalking ? 'wiggle-alt' : ''}`} style={{ transformOrigin: '55px 75px' }}>
+                <rect x="50" y={isSitting ? 77 : 72} width="14" height={isSitting ? 15 : 20} rx="7" fill={color} />
                 <path d="M 50 88 Q 57 91, 64 88" stroke="rgba(0,0,0,0.1)" strokeWidth="2" fill="none" />
             </g>
 
             {/* Head */}
-            <circle cx="35" cy="38" r="22" fill={color} />
+            <circle cx="35" cy={isSitting ? 33 : 38} r="22" fill={color} />
             
             {/* Ears */}
-            <path d="M 18 24 L 14 6 L 28 18" fill={color} />
-            <path d="M 42 18 L 56 6 L 52 24" fill={color} />
+            <path d={`M 18 ${isSitting ? 19 : 24} L 14 ${isSitting ? 1 : 6} L 28 ${isSitting ? 13 : 18}`} fill={color} />
+            <path d={`M 42 ${isSitting ? 13 : 18} L 56 ${isSitting ? 1 : 6} L 52 ${isSitting ? 22 : 24}`} fill={color} />
             
             {/* Inner Ears */}
-            <path d="M 20 22 L 17 12 L 25 18" fill="#ffd1dc" />
-            <path d="M 45 18 L 53 12 L 50 22" fill="#ffd1dc" />
+            <path d={`M 20 ${isSitting ? 17: 22} L 17 ${isSitting ? 7 : 12} L 25 ${isSitting ? 13 : 18}`} fill="#ffd1dc" />
+            <path d={`M 45 ${isSitting ? 13: 18} L 53 ${isSitting ? 7 : 12} L 50 ${isSitting ? 17 : 22}`} fill="#ffd1dc" />
 
-            {/* Eyes - Large Kawaii Style */}
+            {/* Eyes */}
             <g className="cat-eyes">
-                <circle cx="26" cy="38" r="5" fill="#1e1e1e" />
-                <circle cx="44" cy="38" r="5" fill="#1e1e1e" />
-                {/* Highlights */}
-                <circle cx="24" cy="36" r="2" fill="#fff" />
-                <circle cx="42" cy="36" r="2" fill="#fff" />
-                <circle cx="27.5" cy="40" r="1" fill="#fff" />
-                <circle cx="45.5" cy="40" r="1" fill="#fff" />
+                {isSleeping ? (
+                    <>
+                        <path d="M 22 38 Q 26 42, 30 38" stroke="#1e1e1e" strokeWidth="2" strokeLinecap="round" fill="none" />
+                        <path d="M 40 38 Q 44 42, 48 38" stroke="#1e1e1e" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    </>
+                ) : (
+                    <>
+                        <circle cx="26" cy={isSitting ? 35 : 38} r="5" fill="#1e1e1e" />
+                        <circle cx="44" cy={isSitting ? 35 : 38} r="5" fill="#1e1e1e" />
+                        {/* Highlights */}
+                        <circle cx="24" cy={isSitting ? 33 : 36} r="2" fill="#fff" />
+                        <circle cx="42" cy={isSitting ? 33 : 36} r="2" fill="#fff" />
+                        <circle cx="27.5" cy={isSitting ? 37 : 40} r="1" fill="#fff" />
+                        <circle cx="45.5" cy={isSitting ? 37 : 40} r="1" fill="#fff" />
+                    </>
+                )}
             </g>
 
             {/* Blushes */}
-            <circle cx="20" cy="45" r="4" fill="#ffb6c1" fillOpacity="0.6" />
-            <circle cx="50" cy="45" r="4" fill="#ffb6c1" fillOpacity="0.6" />
+            <circle cx="20" cy={isSitting ? 42 : 45} r="4" fill="#ffb6c1" fillOpacity="0.6" />
+            <circle cx="50" cy={isSitting ? 42 : 45} r="4" fill="#ffb6c1" fillOpacity="0.6" />
 
             {/* Mouth / Nose */}
-            <path d="M 32 44 Q 35 47, 38 44" stroke="#1e1e1e" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M 33 42 Q 35 43, 37 42" stroke="#1e1e1e" strokeWidth="1" fill="none" />
+            <path d={`M 32 ${isSitting ? 41 : 44} Q 35 ${isSitting ? 44 : 47}, 38 ${isSitting ? 41 : 44}`} stroke="#1e1e1e" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d={`M 33 ${isSitting ? 39 : 42} Q 35 ${isSitting ? 40 : 43}, 37 ${isSitting ? 39 : 42}`} stroke="#1e1e1e" strokeWidth="1" fill="none" />
         </svg>
     );
 };
@@ -158,7 +171,6 @@ export const WorkspaceDashboardPage = () => {
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspaces = useBoardStore(state => state.workspaces);
     const allBoards = useBoardStore(state => state.boards);
-    const loadBoardData = useBoardStore(state => state.loadBoardData);
     
     // Track widget order
     const [widgetOrder, setWidgetOrder] = useState(['totalTasks', 'totalStatus', 'catFarm', 'workStatusChart', 'boardUpdates']);
@@ -193,7 +205,6 @@ export const WorkspaceDashboardPage = () => {
     [allBoards, activeWorkspaceId]);
 
     // Optimization: Fetch all needed data for the workspace in bulk
-    const [isWorkspaceDataLoading, setIsWorkspaceDataLoading] = useState(false);
     const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
@@ -202,18 +213,23 @@ export const WorkspaceDashboardPage = () => {
         if (!activeWorkspaceId || workspaceBoards.length === 0) return;
 
         async function fetchWorkspaceData() {
-            setIsWorkspaceDataLoading(true);
             const boardIds = workspaceBoards.map(b => b.id);
 
             try {
                 // Batch fetch columns and items for all boards in the workspace
                 const [colsRes, itemsRes] = await Promise.all([
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
-                    supabase.from('items').select('id, board_id, group_id, values').in('board_id', boardIds)
+                    supabase.from('items').select('*').in('board_id', boardIds)
                 ]);
 
                 const columns = colsRes.data || [];
                 const items = itemsRes.data || [];
+
+                console.log("Dashboard: Data Fetched", { 
+                    colCount: columns.length, 
+                    itemCount: items.length, 
+                    sampleItem: items[0] ? { ...items[0], values: '...' } : null 
+                });
 
                 setWorkspaceData({ items, columns });
 
@@ -251,18 +267,11 @@ export const WorkspaceDashboardPage = () => {
                 }
             } catch (err) {
                 console.error("Failed to fetch workspace summary data:", err);
-            } finally {
-                setIsWorkspaceDataLoading(false);
             }
         }
 
         fetchWorkspaceData();
     }, [activeWorkspaceId, workspaceBoards]);
-
-    useEffect(() => {
-        if (!activeWorkspaceId || workspaceBoards.length === 0) return;
-        
-        async function fetchLogs() {
 
     useEffect(() => {
         if (!activeWorkspaceId || workspaceBoards.length === 0) return;
@@ -290,125 +299,193 @@ export const WorkspaceDashboardPage = () => {
     }, []);
 
     const stats = useMemo(() => {
-        let totalTasks = 0;
-        let totalStatusValues = 0;
-        const statusCounts: Record<string, { count: number, workloadCount: number, color: string, label: string, people: Record<string, { count: number, name: string }> }> = {};
+        // Defensive check for missing or empty data
+        if (!workspaceData?.items || !workspaceData?.columns || workspaceData.columns.length === 0) {
+            console.log("Dashboard: No data to render stats", { items: workspaceData?.items?.length, cols: workspaceData?.columns?.length });
+            return { 
+                totalTasks: 0, 
+                statusCounts: {}, 
+                totalStatusValues: 0, 
+                completionPercent: "0", 
+                catsToRender: [], 
+                peopleMap: {} 
+            };
+        }
+
+        const statusCounts: Record<string, { label: string, color: string, count: number, workloadCount: number, people: Record<string, { count: number, name: string }> }> = {};
         const peopleMap: Record<string, { name: string, color: string, totalTasks: number }> = {};
         
         const stringToColor = (str: string) => {
             let hash = 0;
-            for (let i = 0; i < str.length; i++) {
+            for (let i = 0; i < (str || '').length; i++) {
                 hash = str.charCodeAt(i) + ((hash << 5) - hash);
             }
             const h = Math.abs(hash) % 360;
             return `hsl(${h}, 85%, 55%)`;
         };
 
-        if (!workspaceData.items.length) {
-            return { totalTasks: 0, totalStatusValues: 0, statusCounts: {}, workloadData: [], catsToRender: [], completionPercent: 0 };
-        }
+        const statusCols = workspaceData.columns.filter(c => c?.type === 'status');
+        const peopleCols = workspaceData.columns.filter(c => c?.type === 'people');
 
-        totalTasks = workspaceData.items.length;
-        let doneCount = 0;
+        // 1. Initialize statusCounts map from all status columns
+        statusCols.forEach(col => {
+            if (!col) return;
+            try {
+                // schema uses 'options', code also supports 'settings' for flexibility
+                const labels = col.options || col.settings ? (typeof col.settings === 'string' ? JSON.parse(col.settings) : (col.settings || col.options)) : {};
+                
+                const entries = Array.isArray(labels) ? labels.map((l, idx) => [l.id || idx.toString(), l]) : Object.entries(labels);
 
-        // Group columns by board for quick lookup
-        const columnsByBoard: Record<string, any[]> = {};
-        workspaceData.columns.forEach(c => {
-            if (!columnsByBoard[c.board_id]) columnsByBoard[c.board_id] = [];
-            columnsByBoard[c.board_id].push(c);
+                entries.forEach(([key, label]: [string, any]) => {
+                    if (!key || !label) return;
+                    if (!statusCounts[key]) {
+                        statusCounts[key] = {
+                            label: (typeof label === 'string' ? label : (label.text || label.label || label.title || 'Unknown')),
+                            color: label.color || '#cbd5e1',
+                            count: 0,
+                            workloadCount: 0,
+                            people: {}
+                        };
+                    }
+                });
+            } catch (e) {
+                console.error("Dashboard: Error parsing status settings", e);
+            }
         });
 
+        let totalTasks = workspaceData.items.length;
+        let doneCount = 0;
+        let totalStatusValues = 0;
+
+        // 2. Count statuses and workload
         workspaceData.items.forEach(item => {
-            const boardCols = columnsByBoard[item.board_id] || [];
-            const statusCols = boardCols.filter(c => c.type === 'status');
-            const peopleCols = boardCols.filter(c => c.type === 'people');
+            if (!item || !item.values) return;
 
-            if (statusCols.length > 0) {
-                const primaryStatusCol = statusCols[0];
-                const statusOptions = typeof primaryStatusCol.options === 'string' ? JSON.parse(primaryStatusCol.options) : (primaryStatusCol.options || []);
-                const statusValueId = item.values?.[primaryStatusCol.id];
-                const statusOption = statusOptions.find((opt: any) => opt.id === statusValueId);
+            statusCols.forEach(sCol => {
+                const val = item.values[sCol.id];
+                if (!val) return;
 
-                if (statusOption) {
-                    const color = statusOption.color || '#c4c4c4';
-                    const key = `${statusOption.label}-${color}`;
-
-                    if (!statusCounts[key]) {
-                        statusCounts[key] = { count: 0, workloadCount: 0, color, label: statusOption.label, people: {} };
+                // Handle both option ID and object-based status values
+                let matchedKey = null;
+                if (typeof val === 'string' && statusCounts[val]) {
+                    matchedKey = val;
+                } else {
+                    // Try to match by label text if it's an object
+                    const labelText = typeof val === 'string' ? val : (val.label || val.text || '');
+                    if (labelText) {
+                        matchedKey = Object.keys(statusCounts).find(k => statusCounts[k].label === labelText);
                     }
-                    statusCounts[key].count++;
-                    statusCounts[key].workloadCount++;
+                }
+
+                if (matchedKey) {
+                    const status = statusCounts[matchedKey];
+                    status.count++;
+                    status.workloadCount++;
                     totalStatusValues++;
                     
-                    if (statusOption.label?.toLowerCase() === 'done' || statusOption.label?.toLowerCase() === 'complete') {
+                    const labelLower = (status.label || "").toLowerCase();
+                    if (labelLower === 'done' || labelLower === 'completed') {
                         doneCount++;
                     }
 
-                    // Workload calculation
+                    // People/Workload per status
                     peopleCols.forEach(pCol => {
-                        const pVal = item.values?.[pCol.id];
-                        const assignedPeopleIds = Array.isArray(pVal) ? pVal.map((p: any) => typeof p === 'string' ? p : (p?.id || p?.user_id)) : (pVal ? [typeof pVal === 'string' ? pVal : (pVal?.id || pVal?.user_id)] : []);
+                        const pVal = item.values[pCol.id];
+                        const rawPeople = Array.isArray(pVal) ? pVal : (pVal ? [pVal] : []);
+                        
+                        const assignedPeopleIds = rawPeople.map((p: any) => {
+                            if (!p) return null;
+                            if (typeof p === 'string') return p;
+                            return p.id || p.user_id;
+                        }).filter(Boolean) as string[];
                         
                         assignedPeopleIds.forEach((pId: string) => {
-                            if (pId) {
-                                const pName = workspaceMemberProfiles[pId] || 'Member';
-                                if (!statusCounts[key].people[pId]) {
-                                    statusCounts[key].people[pId] = { count: 0, name: pName };
-                                }
-                                statusCounts[key].people[pId].count++;
-
-                                if (!peopleMap[pId]) {
-                                    peopleMap[pId] = { name: pName, color: stringToColor(pName), totalTasks: 0 };
-                                }
-                                peopleMap[pId].totalTasks++;
+                            const pName = workspaceMemberProfiles[pId] || 'Member';
+                            if (!status.people[pId]) {
+                                status.people[pId] = { count: 0, name: pName };
                             }
+                            status.people[pId].count++;
+
+                            if (!peopleMap[pId]) {
+                                peopleMap[pId] = { name: pName, color: stringToColor(pName), totalTasks: 0 };
+                            }
+                            peopleMap[pId].totalTasks++;
                         });
                     });
                 }
-            }
+            });
         });
-        const completionPercent = totalStatusValues > 0 ? ((doneCount / totalStatusValues) * 100).toFixed(1) : 0;
-        
-        // Generate reproducible Cat placements for the farm based on status counts
-        // Cap total cats at 150 to keep performance good, scale proportionally if needed
-        const catsToRender: any[] = [];
-        let catIdCounter = 0;
-        const MAX_CATS = 150;
-        let multiplier = 1;
-        if (totalStatusValues > MAX_CATS) {
-            multiplier = MAX_CATS / totalStatusValues;
-        }
 
-        Object.values(statusCounts).forEach(status => {
-            const countToRender = Math.max(1, Math.floor(status.count * multiplier)); // At least 1 if it has value
-            for (let i = 0; i < countToRender; i++) {
-                const behaviorChance = Math.random();
-                let behavior = 'walk';
-                if (behaviorChance < 0.3) behavior = 'sit';
-                else if (behaviorChance < 0.6) behavior = 'sleep';
-                
-                catsToRender.push({
-                    id: `cat-${catIdCounter++}`,
-                    color: status.color,
-                    behavior,
-                    left: 2 + Math.random() * 92,
-                    bottom: Math.random() * 60,
-                    delay: Math.random() * -10,
-                    duration: behavior === 'walk' ? 25 + Math.random() * 35 : 5 + Math.random() * 5,
-                    size: behavior === 'sleep' ? 20 + Math.random() * 15 : 24 + Math.random() * 20,
-                    zIndex: 0,
-                    flip: Math.random() > 0.5,
-                    walkOffset: Math.random() * -50
-                });
+        const completionPercent = totalStatusValues > 0 ? ((doneCount / totalStatusValues) * 100).toFixed(1) : "0";
+        
+        // 3. Generate Cats for the farm
+        const catsToRender: any[] = [];
+        
+        // Limit cats for visuals & performance
+        const maxCats = 30;
+        const shuffledItems = [...workspaceData.items].sort(() => Math.random() - 0.5);
+        const limitedItems = shuffledItems.slice(0, maxCats);
+
+        limitedItems.forEach((item, index) => {
+            if (!item) return;
+
+            // Find primary status for this cat's color
+            let itemStatus = null;
+            for (const sCol of statusCols) {
+                const val = item.values?.[sCol.id];
+                if (!val) continue;
+
+                let matchedKey = null;
+                if (typeof val === 'string' && statusCounts[val]) {
+                    matchedKey = val;
+                } else {
+                    const labelText = typeof val === 'string' ? val : (val.label || val.text || '');
+                    if (labelText) {
+                        matchedKey = Object.keys(statusCounts).find(k => statusCounts[k].label === labelText);
+                    }
+                }
+
+                if (matchedKey) {
+                    itemStatus = statusCounts[matchedKey];
+                    break;
+                }
             }
+
+            if (!itemStatus) {
+                 const firstStatusKey = Object.keys(statusCounts)[0];
+                 itemStatus = statusCounts[firstStatusKey] || { color: '#cbd5e1' };
+            }
+
+            const behaviorChance = Math.random();
+            let behavior = 'walk';
+            if (behaviorChance < 0.3) behavior = 'sit';
+            else if (behaviorChance < 0.6) behavior = 'sleep';
+
+            // Item names are now fetched directly from the 'title' column in the database
+            const taskName = item.title || 'Untitled Task';
+
+            catsToRender.push({
+                id: item.id || `cat-${index}`,
+                color: itemStatus.color || '#cbd5e1',
+                behavior,
+                taskName,
+                left: 5 + Math.random() * 85,
+                bottom: Math.random() * 55,
+                delay: Math.random() * -20,
+                duration: behavior === 'walk' ? 25 + Math.random() * 35 : 5 + Math.random() * 5,
+                size: behavior === 'sleep' ? 24 + Math.random() * 10 : 28 + Math.random() * 14,
+                zIndex: 0,
+                flip: Math.random() > 0.5,
+                walkOffset: Math.random() * -60
+            });
         });
         
-        // Sort by bottom descending so cats in front (lower bottom) have higher z-index generally
         catsToRender.sort((a, b) => b.bottom - a.bottom);
         catsToRender.forEach((cat, index) => cat.zIndex = index);
 
+        console.log("Dashboard: Stats computed successfully", { totalTasks, cats: catsToRender.length });
         return { totalTasks, statusCounts, totalStatusValues, completionPercent, catsToRender, peopleMap };
-    }, [workspaceBoards, workspaceMemberProfiles]);
+    }, [workspaceData, workspaceBoards, workspaceMemberProfiles]);
 
     if (!workspace) {
         return (
@@ -431,7 +508,7 @@ export const WorkspaceDashboardPage = () => {
             alignItems: 'center', 
             justifyContent: 'space-between', 
             marginBottom: '16px',
-            paddingLeft: '36px', // Balanced for proximity
+            paddingLeft: '36px', 
         };
 
         switch (id) {
@@ -519,7 +596,7 @@ export const WorkspaceDashboardPage = () => {
             case 'catFarm':
                 return (
                     <div style={{
-                        backgroundColor: '#f3e8ff',
+                        backgroundColor: '#fff', // White house floor
                         borderRadius: '8px',
                         border: '1px solid hsl(var(--color-border))',
                         padding: '20px',
@@ -528,27 +605,66 @@ export const WorkspaceDashboardPage = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        minHeight: '200px',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                        minHeight: '220px',
                         height: '100%'
                     }}>
                          <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
-                            <div className="widget-header-with-space" style={{ backgroundColor: 'rgba(255,255,255,0.85)', padding: '6px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center' }}>
+                            <div className="widget-header-with-space" style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '6px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid rgba(126, 34, 206, 0.2)', display: 'flex', alignItems: 'center' }}>
                                 <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: '#7e22ce', whiteSpace: 'nowrap' }}>
-                                    {workspace.title} {stats.totalStatusValues} Task Farm
+                                    {workspace.title} {stats.catsToRender.length} Task Farm
                                 </h3>
                             </div>
                         </div>
-                        {/* House Background */}
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '60%', backgroundColor: '#e9d5ff', borderBottom: '4px solid #d8b4fe', zIndex: 1 }}>
-                            <div style={{ position: 'absolute', right: '40px', top: '20px', width: '60px', height: '60px', backgroundColor: '#1e1b4b', border: '4px solid white', borderRadius: '4px' }} />
+
+                        {/* House Wall Background */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '55%', backgroundColor: '#e9d5ff', borderBottom: '6px solid #d8b4fe', zIndex: 1 }}>
+                            {/* Improved Window */}
+                            <div style={{ position: 'absolute', right: '40px', top: '15px', width: '70px', height: '60px', backgroundColor: '#fff', border: '6px solid #a855f7', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                                <div style={{ width: '100%', height: '50%', background: 'linear-gradient(to bottom, #7dd3fc, #0ea5e9)' }} />
+                                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '4px', backgroundColor: '#a855f7' }} />
+                                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '4px', backgroundColor: '#a855f7' }} />
+                            </div>
                         </div>
-                        <div style={{ position: 'absolute', top: '40%', left: 0, right: 0, bottom: 0, backgroundColor: '#f3e8ff', zIndex: 1 }} />
-                         <div style={{ position: 'absolute', top: '30%', left: 0, right: 0, bottom: '10px', zIndex: 2 }}>
+
+                        {/* Cat Toys / Play Equipment */}
+                        <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '40px', height: '80px', pointerEvents: 'none', zIndex: 2 }}>
+                            {/* Scratching Post */}
+                            <div style={{ position: 'absolute', bottom: 0, left: '10px', width: '20px', height: '60px', backgroundColor: '#92400e', borderRadius: '4px' }} />
+                            <div style={{ position: 'absolute', bottom: '60px', left: 0, width: '40px', height: '10px', backgroundColor: '#b45309', borderRadius: '4px' }} />
+                        </div>
+                        <div style={{ position: 'absolute', bottom: '30px', left: '30px', width: '25px', height: '25px', backgroundColor: '#f87171', borderRadius: '50%', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} /> {/* Red Ball */}
+                        <div style={{ position: 'absolute', bottom: '50px', left: '60px', width: '20px', height: '20px', backgroundColor: '#60a5fa', borderRadius: '50%', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} /> {/* Blue Ball */}
+
+                        <div style={{ position: 'absolute', top: '30%', left: 0, right: 0, bottom: '10px', zIndex: 3 }}>
                             {stats.catsToRender.map(cat => (
-                                <div key={cat.id} style={{ position: 'absolute', bottom: `${cat.bottom}%`, zIndex: cat.zIndex, width: '60px', height: '60px', animation: cat.behavior === 'walk' ? `catPatrol ${cat.duration}s linear infinite` : 'none', animationDelay: `${cat.walkOffset}s`, left: cat.behavior !== 'walk' ? `${cat.left}%` : 'auto' }}>
-                                    <div style={{ animation: cat.behavior === 'sleep' ? `catSleep 5s ease-in-out infinite` : `catBob 1.2s ease-in-out infinite alternate`, filter: cat.behavior === 'sleep' ? `brightness(0.9)` : `none` }}>
-                                        <SvgCat size={cat.size} color={cat.color} />
+                                <div 
+                                    key={cat.id} 
+                                    className="cat-container"
+                                    style={{ 
+                                        position: 'absolute', 
+                                        bottom: `${cat.bottom}%`, 
+                                        zIndex: cat.zIndex, 
+                                        width: '60px', 
+                                        height: '60px', 
+                                        animation: cat.behavior === 'walk' ? `catPatrol ${cat.duration}s linear infinite` : 'none', 
+                                        animationDelay: `${cat.walkOffset}s`, 
+                                        left: cat.behavior !== 'walk' ? `${cat.left}%` : 'auto',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {/* Tooltip */}
+                                    <div className="cat-tooltip">
+                                        {cat.taskName}
+                                    </div>
+
+                                    <div className="cat-visual" style={{ 
+                                        animation: cat.behavior === 'sleep' ? `catSleep 5s ease-in-out infinite` : 
+                                                   cat.behavior === 'walk' ? `none` :
+                                                   `catBob 1.2s ease-in-out infinite alternate`, 
+                                        filter: cat.behavior === 'sleep' ? `brightness(0.9)` : `none` 
+                                    }}>
+                                        <SvgCat size={cat.size} color={cat.color} pose={cat.behavior} />
                                     </div>
                                 </div>
                             ))}
@@ -620,7 +736,7 @@ export const WorkspaceDashboardPage = () => {
                                                                     style={{
                                                                         width: '100%',
                                                                         height: `${(pData.count / status.workloadCount) * 100}%`,
-                                                                        backgroundColor: stats.peopleMap[pName]?.color || '#cbd5e1',
+                                                                        backgroundColor: (stats.peopleMap as Record<string, any>)[pName]?.color || '#cbd5e1',
                                                                         borderBottom: j < sortedPeople.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
                                                                         display: 'flex',
                                                                         alignItems: 'center',
@@ -754,15 +870,43 @@ export const WorkspaceDashboardPage = () => {
                     50% { transform: scale(1.05); opacity: 0.6; }
                 }
                 @keyframes catPatrol {
-                    0% { left: -10%; transform: scaleX(1); }
-                    49% { transform: scaleX(1); }
-                    50% { left: 100%; transform: scaleX(-1); }
-                    99% { transform: scaleX(-1); }
-                    100% { left: -10%; transform: scaleX(1); }
+                    0% { left: -10%; transform: scaleX(-1); }
+                    35% { left: 100%; transform: scaleX(-1); }
+                    49.9% { left: 100%; transform: scaleX(-1); }
+                    50% { left: 100%; transform: scaleX(1); }
+                    85% { left: -10%; transform: scaleX(1); }
+                    99.9% { left: -10%; transform: scaleX(1); }
+                    100% { left: -10%; transform: scaleX(-1); }
                 }
                 @keyframes catBob {
                     0% { transform: translateY(0) rotate(0deg); }
-                    100% { transform: translateY(-6px) rotate(3deg); }
+                    100% { transform: translateY(-4px) rotate(2deg); }
+                }
+                @keyframes walkStep {
+                    0% { transform: translateY(0); }
+                    25% { transform: translateY(-8px); }
+                    50% { transform: translateY(0); }
+                    75% { transform: translateY(-8px); }
+                    100% { transform: translateY(0); }
+                }
+
+                @keyframes wiggleLeg {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(25deg); }
+                    100% { transform: rotate(0deg); }
+                }
+                @keyframes wiggleLegAlt {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(-25deg); }
+                    100% { transform: rotate(0deg); }
+                }
+
+                .cat-leg.wiggle {
+                    animation: wiggleLeg 0.3s infinite ease-in-out;
+                }
+                .cat-leg.wiggle-alt {
+                    animation: wiggleLegAlt 0.3s infinite ease-in-out;
+                    animation-delay: 0.15s;
                 }
                 
                 .interesting-scroll::-webkit-scrollbar {
@@ -771,6 +915,50 @@ export const WorkspaceDashboardPage = () => {
                 .interesting-scroll::-webkit-scrollbar-thumb {
                     background: hsl(var(--color-border));
                     border-radius: 10px;
+                }
+
+                .cat-container {
+                    transition: transform 0.2s ease;
+                }
+                .cat-container:hover {
+                    transform: scale(1.15);
+                    z-index: 100 !important;
+                }
+                .cat-tooltip {
+                    position: absolute;
+                    bottom: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(30, 41, 59, 0.95);
+                    color: white;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    white-space: nowrap;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.2s ease, transform 0.2s ease;
+                    margin-bottom: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                    z-index: 101;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    max-width: 150px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .cat-container:hover .cat-tooltip {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(-5px);
+                }
+                .cat-tooltip::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border-width: 5px;
+                    border-style: solid;
+                    border-color: rgba(30, 41, 59, 0.95) transparent transparent transparent;
                 }
             `}</style>
         </div>

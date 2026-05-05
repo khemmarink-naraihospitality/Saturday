@@ -82,7 +82,7 @@ export const ContactSupportButton = () => {
                             overflow: 'hidden'
                         }}>
                             <img 
-                                src="https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru-e1777883318827.png" 
+                                src="https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru.png" 
                                 alt="Support" 
                                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 onError={(e) => {

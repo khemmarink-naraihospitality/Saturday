@@ -336,7 +336,7 @@ export const WorkspaceDashboardPage = () => {
                 
                 const entries = Array.isArray(labels) ? labels.map((l, idx) => [l.id || idx.toString(), l]) : Object.entries(labels);
 
-                entries.forEach(([key, label]: [string, any]) => {
+                (entries as any[]).forEach(([key, label]: [string, any]) => {
                     if (!key || !label) return;
                     if (!statusCounts[key]) {
                         statusCounts[key] = {

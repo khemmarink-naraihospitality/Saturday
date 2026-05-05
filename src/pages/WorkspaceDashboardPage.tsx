@@ -611,19 +611,34 @@ export const WorkspaceDashboardPage = () => {
                     }}>
                          <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
                             <div className="widget-header-with-space" style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '6px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid rgba(126, 34, 206, 0.2)', display: 'flex', alignItems: 'center' }}>
-                                <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: '#7e22ce', whiteSpace: 'nowrap' }}>
-                                    {workspace.title} {stats.catsToRender.length} Task Farm
+                                <h3 style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#7e22ce', whiteSpace: 'nowrap' }}>
+                                    {workspace.title} {stats.catsToRender.length === 1 ? '1 Cat' : `${stats.catsToRender.length} Cats`}
                                 </h3>
                             </div>
                         </div>
 
                         {/* House Wall Background */}
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '55%', backgroundColor: '#e9d5ff', borderBottom: '6px solid #d8b4fe', zIndex: 1 }}>
-                            {/* Improved Window */}
-                            <div style={{ position: 'absolute', right: '40px', top: '15px', width: '70px', height: '60px', backgroundColor: '#fff', border: '6px solid #a855f7', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                                <div style={{ width: '100%', height: '50%', background: 'linear-gradient(to bottom, #7dd3fc, #0ea5e9)' }} />
-                                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '4px', backgroundColor: '#a855f7' }} />
-                                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '4px', backgroundColor: '#a855f7' }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '55%', backgroundColor: '#f3e8ff', borderBottom: '6px solid #e9d5ff', zIndex: 1 }}>
+                            {/* Simple Window - Explicitly Styled */}
+                            <div style={{ 
+                                position: 'absolute', 
+                                right: '40px', 
+                                top: '15px', 
+                                width: '60px', 
+                                height: '50px', 
+                                backgroundColor: '#ffffff', 
+                                border: '4px solid #a855f7', 
+                                borderRadius: '6px', 
+                                overflow: 'hidden', 
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}>
+                                <div style={{ flex: 1, backgroundColor: '#7dd3fc' }} />
+                                <div style={{ height: '3px', backgroundColor: '#a855f7' }} />
+                                <div style={{ flex: 1, backgroundColor: '#0ea5e9' }} />
+                                {/* Window Panes */}
+                                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '3px', backgroundColor: '#a855f7', transform: 'translateX(-50%)' }} />
                             </div>
                         </div>
 

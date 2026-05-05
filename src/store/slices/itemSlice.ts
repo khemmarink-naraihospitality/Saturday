@@ -42,7 +42,7 @@ export interface ItemSlice {
     duplicateSelectedItems: () => Promise<void>;
     hideSelectedItems: () => Promise<void>;
     unhideSelectedItems: () => Promise<void>;
-    moveSelectedItemsToGroup: (groupId: string) => Promise<void>;
+    moveSelectedItemsToTarget: (groupId: string, parentId?: string | null) => Promise<void>;
 
     // UI/Drafts
     drafts: Record<string, string>;
@@ -534,20 +534,21 @@ export const createItemSlice: StateCreator<
         await supabase.from('items').update({ is_hidden: false }).in('id', selectedItemIds);
     },
 
-    moveSelectedItemsToGroup: async (groupId) => {
+    moveSelectedItemsToTarget: async (groupId, parentId = null) => {
         const { activeBoardId, selectedItemIds, boards } = get();
         if (!activeBoardId) return;
 
         set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? {
                 ...b,
-                items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId } : i),
+                items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId, parentId } : i),
                 groups: b.groups.map(g => {
                     if (g.id === groupId) {
                         // Add moved items
                         const currentItems = g.items;
                         const incoming = boards.find(bd => bd.id === activeBoardId)?.items.filter(i => selectedItemIds.includes(i.id)) || [];
-                        return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId }))] };
+                        // Make sure to append the updated items so UI renders appropriately
+                        return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId, parentId }))] };
                     }
                     // Remove moved items from other groups
                     return { ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) };
@@ -556,7 +557,7 @@ export const createItemSlice: StateCreator<
             selectedItemIds: []
         }));
 
-        await supabase.from('items').update({ group_id: groupId }).in('id', selectedItemIds);
+        await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
     },
 
     setDraft: (itemId, content) => set(state => ({ drafts: { ...state.drafts, [itemId]: content } })),

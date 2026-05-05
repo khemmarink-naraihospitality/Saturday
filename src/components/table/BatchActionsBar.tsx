@@ -9,7 +9,7 @@ export const BatchActionsBar = () => {
     const duplicateSelectedItems = useBoardStore(state => state.duplicateSelectedItems);
     const hideSelectedItems = useBoardStore(state => state.hideSelectedItems);
     const unhideSelectedItems = useBoardStore(state => state.unhideSelectedItems);
-    const moveSelectedItemsToGroup = useBoardStore(state => state.moveSelectedItemsToGroup);
+    const moveSelectedItemsToTarget = useBoardStore(state => state.moveSelectedItemsToTarget);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
 
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -17,6 +17,7 @@ export const BatchActionsBar = () => {
     const activeBoard = boards.find(b => b.id === activeBoardId);
 
     const [showMoveMenu, setShowMoveMenu] = useState(false);
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     if (selectedItemIds.length === 0) return null;
 
@@ -117,33 +118,73 @@ export const BatchActionsBar = () => {
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                             padding: '4px',
-                            minWidth: '180px',
+                            minWidth: '220px',
+                            maxHeight: '300px',
+                            overflowY: 'auto',
                             border: '1px solid hsl(var(--color-border))'
                         }} onClick={e => e.stopPropagation()}>
-                            <div style={{ padding: '4px 8px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))', fontWeight: 600 }}>Select Group</div>
-                            {activeBoard.groups.map(g => (
-                                <div
-                                    key={g.id}
-                                    onClick={() => {
-                                        moveSelectedItemsToGroup(g.id);
-                                        setShowMoveMenu(false);
-                                    }}
-                                    style={{
-                                        padding: '8px',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        borderRadius: '4px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        color: 'hsl(var(--color-text-primary))'
-                                    }}
-                                    className="menu-item"
-                                >
-                                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: g.color }} />
-                                    {g.title}
+                            <div style={{ padding: '4px 8px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))', fontWeight: 600 }}>Select Destination</div>
+                            {activeBoard.groups.map(g => {
+                                const groupMainItems = activeBoard.items.filter(i => i.groupId === g.id && !i.parentId);
+                                const isExpanded = expandedGroups[g.id];
+                                return (
+                                <div key={g.id}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div
+                                            onClick={() => {
+                                                moveSelectedItemsToTarget(g.id, null);
+                                                setShowMoveMenu(false);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px',
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                borderRadius: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                color: 'hsl(var(--color-text-primary))'
+                                            }}
+                                            className="menu-item"
+                                            title="Move to root of Group"
+                                        >
+                                            <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: g.color }} />
+                                            <span style={{flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{g.title}</span>
+                                        </div>
+                                        {groupMainItems.length > 0 && (
+                                            <div 
+                                                onClick={() => setExpandedGroups(prev => ({...prev, [g.id]: !prev[g.id]}))}
+                                                style={{ padding: '8px', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
+                                                className="menu-item"
+                                            >
+                                                {isExpanded ? '▼' : '▶'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isExpanded && groupMainItems.map(item => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => {
+                                                moveSelectedItemsToTarget(g.id, item.id);
+                                                setShowMoveMenu(false);
+                                            }}
+                                            style={{
+                                                padding: '6px 8px 6px 28px',
+                                                fontSize: '13px',
+                                                cursor: 'pointer',
+                                                borderRadius: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                color: 'hsl(var(--color-text-primary))'
+                                            }}
+                                            className="menu-item sub-item"
+                                        >
+                                            ↳ <span style={{marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{item.title || 'Untitled'}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     )}
                 </div>

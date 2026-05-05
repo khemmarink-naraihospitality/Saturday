@@ -219,7 +219,7 @@ export const WorkspaceDashboardPage = () => {
                 // Batch fetch columns and items for all boards in the workspace
                 const [colsRes, itemsRes] = await Promise.all([
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
-                    supabase.from('items').select('id, board_id, group_id, values, is_hidden').in('board_id', boardIds)
+                    supabase.from('items').select('id, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds)
                 ]);
 
                 const columns = colsRes.data || [];
@@ -338,9 +338,15 @@ export const WorkspaceDashboardPage = () => {
 
                 (entries as any[]).forEach(([key, label]: [string, any]) => {
                     if (!key || !label) return;
+                    
+                    const parsedLabel = typeof label === 'string' ? label : (label.text || label.label || label.title || 'Unknown');
+                    
+                    // Exclude "Unknown" status from being calculated in the dashboard
+                    if (parsedLabel.toLowerCase() === 'unknown') return;
+
                     if (!statusCounts[key]) {
                         statusCounts[key] = {
-                            label: (typeof label === 'string' ? label : (label.text || label.label || label.title || 'Unknown')),
+                            label: parsedLabel,
                             color: label.color || '#cbd5e1',
                             count: 0,
                             workloadCount: 0,
@@ -357,8 +363,11 @@ export const WorkspaceDashboardPage = () => {
         let doneCount = 0;
         let totalStatusValues = 0;
 
-        // 2. Count statuses and workload
-        workspaceData.items.forEach(item => {
+        // Filter out Subitems (items that have a parent_id)
+        const mainItems = workspaceData.items.filter(item => !item.parent_id);
+
+        // 2. Count statuses and workload (Only for main items)
+        mainItems.forEach(item => {
             if (!item || !item.values) return;
 
             statusCols.forEach(sCol => {
@@ -423,7 +432,7 @@ export const WorkspaceDashboardPage = () => {
         
         // Limit cats for visuals & performance
         const maxCats = 30;
-        const shuffledItems = [...workspaceData.items].sort(() => Math.random() - 0.5);
+        const shuffledItems = [...mainItems].sort(() => Math.random() - 0.5);
         const limitedItems = shuffledItems.slice(0, maxCats);
 
         limitedItems.forEach((item, index) => {

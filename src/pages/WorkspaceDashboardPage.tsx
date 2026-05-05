@@ -219,7 +219,7 @@ export const WorkspaceDashboardPage = () => {
                 // Batch fetch columns and items for all boards in the workspace
                 const [colsRes, itemsRes] = await Promise.all([
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
-                    supabase.from('items').select('*').in('board_id', boardIds)
+                    supabase.from('items').select('id, board_id, group_id, values, is_hidden').in('board_id', boardIds)
                 ]);
 
                 const columns = colsRes.data || [];

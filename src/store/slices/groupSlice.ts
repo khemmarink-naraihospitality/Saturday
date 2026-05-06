@@ -22,7 +22,7 @@ export const createGroupSlice: StateCreator<
         const { activeBoardId } = get();
         if (!activeBoardId) return;
         const newGroupId = uuidv4();
-        const color = '#579bfc';
+        const color = '#7C3FE4';
 
         const board = get().boards.find(b => b.id === activeBoardId);
         const minOrder = board && board.groups.length > 0 

@@ -13,27 +13,27 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    color: #323338;
-    font-weight: 500;
+    color: hsl(var(--color-text-primary));
+    font-weight: 600;
     font-size: 14px;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition: all 0.2s ease;
     gap: 10px;
     position: relative;
     z-index: 1;
 }
 
 .tree-node-parent:hover {
-    background-color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Lighter and elevated */
+    background-color: hsl(var(--color-bg-surface));
+    box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
     z-index: 10;
 }
 
 .tree-node-parent .chevron {
     margin-left: auto;
-    color: #676879;
+    color: hsl(var(--color-text-tertiary));
     transition: transform 0.2s ease;
 }
 
@@ -48,23 +48,10 @@
 /* Children Container */
 .tree-node-children {
     margin-left: 0px;
-    /* Alignment for the vertical line */
     position: relative;
     padding-top: 4px;
     padding-bottom: 4px;
 }
-
-/* The vertical line that spans all children */
-/* .tree-node-children::before {
-    content: '';
-    position: absolute;
-    left: 10px;
-    top: -10px;
-    bottom: 20px;
-    width: 1.5px;
-    background-color: #e0e0e0;
-    z-index: 1;
-} */
 
 /* Leaf Node (Board) */
 .tree-node-leaf {
@@ -75,45 +62,30 @@
     z-index: 2;
 }
 
-/* The curved connector line */
-/* .tree-node-leaf::after {
-    content: '';
-    position: absolute;
-    left: 10px;
-    top: -8px;
-    width: 14px;
-    height: 20px;
-    border-left: 1.5px solid #e0e0e0;
-    border-bottom: 1.5px solid #e0e0e0;
-    border-bottom-left-radius: 8px;
-    pointer-events: none;
-    z-index: 1;
-} */
-
 /* Adjusted sidebar-item for tree-view */
 .tree-sidebar-item {
     display: flex;
     align-items: center;
     padding: 6px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    color: #676879;
-    font-size: 13.5px;
-    transition: all 0.1s ease;
+    color: hsl(var(--color-text-secondary));
+    font-size: 13px;
+    transition: all 0.2s ease;
     gap: 8px;
     background-color: transparent;
     user-select: none;
 }
 
 .tree-sidebar-item:hover {
-    background-color: #f5f6f8;
-    color: #323338;
+    background-color: hsl(var(--color-bg-surface-hover));
+    color: hsl(var(--color-text-primary));
 }
 
 .tree-sidebar-item.active {
-    background-color: #f3e8ff;
-    color: #7c3aed;
-    font-weight: 500;
+    background-color: hsl(var(--color-brand-light));
+    color: hsl(var(--color-brand-primary));
+    font-weight: 700;
 }
 
 .tree-sidebar-item .item-icon {
@@ -134,7 +106,7 @@
     transition: opacity 0.2s;
     padding: 4px;
     border-radius: 4px;
-    color: #676879;
+    color: hsl(var(--color-text-tertiary));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,6 +127,6 @@
 }
 
 .sidebar-item-action:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #323338;
+    background-color: hsla(var(--color-brand-primary), 0.1);
+    color: hsl(var(--color-brand-primary));
 }

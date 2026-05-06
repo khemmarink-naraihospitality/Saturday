@@ -43,9 +43,9 @@ export const createColumnSlice: StateCreator<
         let options: any[] = [];
         if (type === 'status') {
             options = [
-                { id: uuidv4(), label: 'Done', color: '#00c875' },
-                { id: uuidv4(), label: 'Working on it', color: '#fdab3d' },
-                { id: uuidv4(), label: 'Stuck', color: '#e2445c' },
+                { id: uuidv4(), label: 'Done', color: '#279966' },
+                { id: uuidv4(), label: 'Working on it', color: '#F0960A' },
+                { id: uuidv4(), label: 'Stuck', color: '#E03333' },
             ];
         }
 

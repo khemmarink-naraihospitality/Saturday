@@ -1,102 +1,107 @@
 :root {
-  /* Monday.com Light Mode Inspired */
+  /* Brand CI Color System v1.1.0 */
 
-  /* Primary Brand (Premium Purple) */
-  --color-brand-primary: 255 83% 60%;
-  /* #9159FF */
-  --color-brand-hover: 255 83% 53%;
-  --color-brand-light: 255 83% 96%;
+  /* ── Primary Violet Scale ── */
+  --color-brand-primary: 255 83% 60%; /* #7C3FE4 */
+  --color-brand-hover: 255 83% 48%;   /* #6327CC (violet-600) */
+  --color-brand-active: 255 83% 36%;  /* #4A1C99 (violet-700) */
+  --color-brand-light: 255 83% 95%;   /* #F0EEFF (violet-50) */
+  --color-brand-subtle: 255 83% 88%;  /* #D9CEFF (violet-100) */
 
-  /* Backgrounds */
+  /* ── Neutrals (White Canvas) ── */
+  --color-bg: 0 0% 100%;               /* White */
   --color-bg-canvas: 0 0% 100%;
-  /* #FFFFFF - Main Background */
-  --color-bg-surface: 220 14% 96%;
-  /* #F5F6F8 - Sidebar/Header/Cards */
-  --color-bg-surface-hover: 220 14% 92%;
-  --color-bg-subtle: 220 14% 96%;
+  --color-bg-surface: 255 40% 98%;    /* #F8F7FF (Very Light Violet Tint for Surface) */
+  --color-bg-surface-hover: 255 20% 91%; /* #E4E1F0 (neutral-200) */
+  --color-bg-subtle: 255 40% 95%;
 
-  /* Text */
-  --color-text-primary: 230 8% 21%;
-  /* #323338 - Main Text */
-  --color-text-secondary: 237 8% 44%;
-  /* #676879 - Secondary */
-  --color-text-tertiary: 237 8% 60%;
+  /* ── Text ── */
+  --color-text-primary: 255 22% 12%;   /* #1A1728 (neutral-900) */
+  --color-text-secondary: 255 13% 38%; /* #5A5470 (neutral-700) */
+  --color-text-tertiary: 255 13% 60%;  /* #8B85A8 (neutral-500) */
+  --color-text-disabled: 255 13% 60%;
 
-  /* Borders */
-  --color-border: 220 13% 91%;
-  /* #E6E9EF */
-  --color-border-hover: 220 13% 85%;
+  /* ── Borders ── */
+  --color-border: 255 20% 91%;         /* #E4E1F0 (neutral-200) */
+  --color-border-hover: 255 20% 82%;   /* #C9C4E0 (neutral-300) */
+  --color-cell-border: 255 20% 91%;
+  --color-border-strong: 255 20% 82%;
 
-  /* Table specific */
-  --color-table-header-bg: 0 0% 100%;
-  --color-cell-border: 220 13% 91%;
-  --color-group-header-bg: 0 0% 100%;
-
-  /* Status Colors (Vibrant) */
-  --color-status-green-bg: 155 100% 39%;
-  /* #00C875 */
+  /* ── Semantic Colors ── */
+  --color-status-green-bg: 155 60% 40%;  /* #279966 (success-500) */
   --color-status-green-text: 0 0% 100%;
-  --color-status-red-bg: 351 77% 58%;
-  /* #E2445C */
+  --color-status-red-bg: 0 75% 57%;      /* #E03333 (danger-500) */
   --color-status-red-text: 0 0% 100%;
-  --color-status-gray-bg: 0 0% 77%;
-  /* #C4C4C4 */
+  --color-status-gray-bg: 255 13% 60%;   /* #8B85A8 (neutral-500) */
   --color-status-gray-text: 0 0% 100%;
 
+  --color-success: 155 60% 40%;
+  --color-success-bg: 155 60% 90%;
+  --color-warning: 35 90% 52%;
+  --color-warning-bg: 35 90% 92%;
+  --color-danger: 0 75% 57%;
+  --color-danger-bg: 0 75% 93%;
+
+  /* ── Gradients ── */
+  --gradient-brand: linear-gradient(135deg, #7C3FE4, #C03FE4);
+  --gradient-spectrum: linear-gradient(135deg, #3F6FE4, #7C3FE4, #C03FE4);
+  --gradient-energy: linear-gradient(90deg, #7C3FE4, #B8E030);
+  --gradient-depth: linear-gradient(135deg, #311266, #7C3FE4);
+
+  /* Table specific mapping */
+  --color-table-header-bg: 0 0% 100%;
+  --color-group-header-bg: 0 0% 100%;
+
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 3px rgba(80, 60, 160, 0.1);
+  --shadow-md: 0 4px 12px rgba(80, 60, 160, 0.12);
+  --shadow-lg: 0 8px 24px rgba(80, 60, 160, 0.15);
 
-  /* Spacing */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Spacing & Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-
-  /* Typography */
+  /* Typography - Reverted to Original */
   --font-family: 'Roboto', 'Inter', 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  --font-size-xs: 11.5px;
+
+  --font-size-xs: 11px;
   --font-size-sm: 12.5px;
-  --font-size-md: 13.5px;
-  --font-size-lg: 15.5px;
-  --font-size-xl: 18px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
 }
 
 [data-theme='dark'],
 .dark {
-  /* Dark Mode Palette */
+  /* ── Dark Surfaces ── */
+  --color-bg: 255 45% 7%;             /* #0C0A1A (dark-bg) */
+  --color-bg-canvas: 255 45% 7%;
+  --color-bg-surface: 255 43% 11%;    /* #13102A (dark-surface) */
+  --color-bg-surface-hover: 255 35% 20%;
+  --color-bg-subtle: 255 32% 16%;
 
-  /* Backgrounds */
-  --color-bg-canvas: 220 13% 18%;
-  /* #292f4c - Main Background (Dark Blue/Gray) */
-  --color-bg-surface: 220 13% 22%;
-  /* #313752 - Surface */
-  --color-bg-surface-hover: 220 13% 26%;
-  --color-bg-subtle: 220 13% 22%;
+  /* ── Dark Text ── */
+  --color-text-primary: 255 100% 97%;   /* #F0EEFF (dark-text-primary) */
+  --color-text-secondary: 255 18% 74%; /* #B3ADCC (dark-text-secondary) */
+  --color-text-tertiary: 255 13% 46%;  /* #6B6487 (dark-text-disabled) */
 
-  /* Text */
-  --color-text-primary: 0 0% 100%;
-  /* #FFFFFF */
-  --color-text-secondary: 220 13% 70%;
-  /* #B0B5C6 */
-  --color-text-tertiary: 220 13% 50%;
+  /* ── Dark Borders ── */
+  --color-border: 255 32% 24%;         /* #2E2850 (dark-border) */
+  --color-border-hover: 255 32% 31%;   /* #3D3668 (dark-border-strong) */
+  --color-cell-border: 255 32% 24%;
 
-  /* Borders */
-  --color-border: 220 13% 30%;
-  /* Darker Border */
-  --color-border-hover: 220 13% 40%;
-  --color-cell-border: 220 13% 30%;
+  /* ── Dark Brand Adjustments ── */
+  --color-brand-primary: 255 83% 60%;  /* #7C3FE4 */
+  --color-brand-hover: 255 100% 78%;   /* #B28EFF (dark-brand-hover) */
+  --color-brand-active: 255 80% 68%;   /* #9B6FF0 (dark-brand-link) */
+  --color-brand-light: 255 83% 60% / 0.15; /* dark-brand-subtle */
 
-  /* Table specific */
-  --color-table-header-bg: 220 13% 20%;
-  --color-group-header-bg: 220 13% 22%;
-  /* Match surface */
-
-  /* Brand Adjustments for Dark Mode */
-  --color-brand-light: 211 100% 25%;
-  /* Darker blue bg for brand highlights */
+  /* ── Dark Semantic ── */
+  --color-success: 155 52% 49%;        /* #3DBD85 */
+  --color-success-bg: 155 52% 11%;     /* #0D2B1E */
+  --color-warning: 35 90% 59%;         /* #F5AE3A */
+  --color-warning-bg: 35 78% 10%;      /* #2B1E06 */
+  --color-danger: 0 80% 69%;           /* #F07070 */
+  --color-danger-bg: 0 62% 11%;        /* #2B0A0A */
 }

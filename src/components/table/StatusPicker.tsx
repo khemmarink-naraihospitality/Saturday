@@ -53,13 +53,15 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
 
     // Define standard colors for picker
     const LABEL_COLORS = [
-        '#00c875', '#e2445c', '#fdab3d', '#0086c0', '#579bfc',
-        '#a25ddc', '#ffcb00', '#c4c4c4', '#333333', '#784bd1'
+        '#7C3FE4', '#3F6FE4', '#C03FE4', '#92BF0A', '#279966',
+        '#F0960A', '#E03333', '#8B85A8', '#1A1728', '#B89BFF'
     ];
 
     const handleAddLabel = () => {
         addColumnOption(columnId, 'New Label', '#c4c4c4');
     };
+
+    const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
 
     if (isEditingLabels) {
         return createPortal(
@@ -97,9 +99,9 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                     borderBottom: shouldShowAbove ? '1px solid hsl(var(--color-border))' : 'none',
                 }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'visible' }}>
                     {safeOptions.map((opt) => (
-                        <div key={opt.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div key={opt.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
                             <div style={{
                                 width: '24px',
                                 height: '24px',
@@ -112,15 +114,47 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                                 cursor: 'pointer',
                                 flexShrink: 0
                             }}
-                                onClick={() => {
-                                    const idx = LABEL_COLORS.indexOf(opt.color);
-                                    const nextColor = LABEL_COLORS[(idx + 1) % LABEL_COLORS.length];
-                                    updateColumnOption(columnId, opt.id, { color: nextColor });
-                                }}
-                                title="Click to cycle color"
+                                onClick={() => setActiveColorPickerId(activeColorPickerId === opt.id ? null : opt.id)}
+                                title="Change color"
                             >
                                 <PaintBucket size={12} />
                             </div>
+
+                            {activeColorPickerId === opt.id && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '30px',
+                                    left: '0',
+                                    backgroundColor: 'white',
+                                    border: '1px solid hsl(var(--color-border))',
+                                    borderRadius: '6px',
+                                    padding: '8px',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(5, 1fr)',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    zIndex: 10000,
+                                    width: '140px'
+                                }}>
+                                    {LABEL_COLORS.map(c => (
+                                        <div
+                                            key={c}
+                                            onClick={() => {
+                                                updateColumnOption(columnId, opt.id, { color: c });
+                                                setActiveColorPickerId(null);
+                                            }}
+                                            style={{
+                                                width: '20px',
+                                                height: '20px',
+                                                backgroundColor: c,
+                                                borderRadius: '3px',
+                                                cursor: 'pointer',
+                                                border: opt.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
                             <input
                                 value={opt.label}

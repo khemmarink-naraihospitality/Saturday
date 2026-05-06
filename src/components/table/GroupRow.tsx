@@ -30,8 +30,8 @@ export const GroupRow = ({
     const colorBtnRef = useRef<HTMLDivElement>(null);
 
     const GROUP_COLORS = [
-        '#579bfc', '#00c875', '#e2445c', '#ffcb00', '#a25ddc',
-        '#ffadad', '#c4c4c4', '#333333', '#784bd1', '#ff158a'
+        '#7C3FE4', '#3F6FE4', '#C03FE4', '#92BF0A', '#279966',
+        '#F0960A', '#E03333', '#8B85A8', '#1A1728', '#B89BFF'
     ];
 
     const handleSave = () => {

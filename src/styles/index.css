@@ -32,7 +32,7 @@ body {
     font-size: var(--font-size-md);
     -webkit-font-smoothing: antialiased;
     accent-color: hsl(var(--color-brand-primary));
-    line-height: 1.5;
+    line-height: 1.6;
     color-scheme: light;
 }
 
@@ -48,7 +48,7 @@ input {
     color: inherit;
 }
 
-/* Custom Scrollbar - Dark Mode */
+/* Custom Scrollbar - Violet Tinted */
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -60,11 +60,10 @@ input {
 
 ::-webkit-scrollbar-thumb {
     background: hsl(var(--color-border));
-    border-radius: 5px;
-    border: 2px solid hsl(var(--color-bg-canvas));
-    /* gap */
+    border-radius: 99px;
+    border: 2.5px solid hsl(var(--color-bg-canvas));
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--color-text-secondary));
+    background-color: hsl(var(--color-text-tertiary));
 }

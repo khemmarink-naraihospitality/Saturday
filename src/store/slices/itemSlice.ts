@@ -541,14 +541,14 @@ export const createItemSlice: StateCreator<
         set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? {
                 ...b,
-                items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId, parentId } : i),
+                items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId, parentId: parentId || undefined } : i),
                 groups: b.groups.map(g => {
                     if (g.id === groupId) {
                         // Add moved items
                         const currentItems = g.items;
                         const incoming = boards.find(bd => bd.id === activeBoardId)?.items.filter(i => selectedItemIds.includes(i.id)) || [];
                         // Make sure to append the updated items so UI renders appropriately
-                        return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId, parentId }))] };
+                        return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId, parentId: parentId || undefined }))] };
                     }
                     // Remove moved items from other groups
                     return { ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) };

@@ -19,6 +19,10 @@ export const BatchActionsBar = () => {
     const [showMoveMenu, setShowMoveMenu] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+    const handleCloseMoveMenu = () => {
+        setShowMoveMenu(false);
+    };
+
     if (selectedItemIds.length === 0) return null;
 
     return (
@@ -101,7 +105,13 @@ export const BatchActionsBar = () => {
 
                 <div
                     className="batch-action-btn"
-                    onClick={() => setShowMoveMenu(!showMoveMenu)}
+                    onClick={() => {
+                        if (showMoveMenu) {
+                            handleCloseMoveMenu();
+                        } else {
+                            setShowMoveMenu(true);
+                        }
+                    }}
                     style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px', borderRadius: '4px', position: 'relative' }}
                 >
                     <LayoutDashboard size={16} color="hsl(var(--color-text-secondary))" />
@@ -133,7 +143,7 @@ export const BatchActionsBar = () => {
                                         <div
                                             onClick={() => {
                                                 moveSelectedItemsToTarget(g.id, null);
-                                                setShowMoveMenu(false);
+                                                handleCloseMoveMenu();
                                             }}
                                             style={{
                                                 flex: 1,
@@ -167,7 +177,7 @@ export const BatchActionsBar = () => {
                                             key={item.id}
                                             onClick={() => {
                                                 moveSelectedItemsToTarget(g.id, item.id);
-                                                setShowMoveMenu(false);
+                                                handleCloseMoveMenu();
                                             }}
                                             style={{
                                                 padding: '6px 8px 6px 28px',

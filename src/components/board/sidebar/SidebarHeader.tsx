@@ -47,7 +47,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
     };
 
     return (
-        <div className="sidebar-header" style={{ padding: '0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div className="sidebar-header" style={{ padding: '12px 16px 0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
             <div
                 onClick={() => navigateTo('home')}
                 style={{

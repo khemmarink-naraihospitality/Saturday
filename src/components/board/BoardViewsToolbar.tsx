@@ -38,7 +38,8 @@ export const BoardViewsToolbar = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '4px 24px', // Reduced vertical and horizontal padding
+            padding: '8px 0', // Removed horizontal padding to align with container, adjusted vertical
+            marginTop: '16px', // Gap above toolbar
             backgroundColor: 'hsl(var(--color-bg-canvas))',
         }}>
             {/* Toolbar Items: Primary Action & Tools */}

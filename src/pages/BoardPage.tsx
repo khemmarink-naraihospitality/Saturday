@@ -60,24 +60,34 @@ export const BoardPage = () => {
     const activeViewId = activeBoard.activeViewId || 'main_table';
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>
             <BoardHeader boardId={activeBoardId} />
-            <BoardViewsToolbar />
-            <div style={{ flex: 1, overflow: 'hidden', padding: '0', display: 'flex', flexDirection: 'column' }}>
-                {activeViewId === 'main_table' ? (
-                    <Table boardId={activeBoardId} />
-                ) : activeViewId === 'timeline' ? (
-                    <TimelineView />
-                ) : activeViewId === 'kanban' ? (
-                    <KanbanView />
-                ) : activeViewId === 'calendar' ? (
-                    <CalendarView />
-                ) : (
-                    <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
-                        <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>{activeViewId.charAt(0).toUpperCase() + activeViewId.slice(1)} View</h2>
-                        <p>This view is currently being implemented to match the requested premium design.</p>
-                    </div>
-                )}
+            
+            <div style={{ 
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                overflow: 'hidden',
+                padding: '0 var(--spacing-board-x) var(--spacing-board-y) var(--spacing-board-x)'
+            }}>
+                <BoardViewsToolbar />
+                
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', marginTop: '16px' }}>
+                    {activeViewId === 'main_table' ? (
+                        <Table boardId={activeBoardId} />
+                    ) : activeViewId === 'timeline' ? (
+                        <TimelineView />
+                    ) : activeViewId === 'kanban' ? (
+                        <KanbanView />
+                    ) : activeViewId === 'calendar' ? (
+                        <CalendarView />
+                    ) : (
+                        <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
+                            <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>{activeViewId.charAt(0).toUpperCase() + activeViewId.slice(1)} View</h2>
+                            <p>This view is currently being implemented to match the requested premium design.</p>
+                        </div>
+                    )}
+                </div>
             </div>
             <BatchActionsBar />
         </div>

@@ -183,11 +183,12 @@ export const Table = ({ boardId }: { boardId: string }) => {
         getScrollElement: () => parentRef.current,
         estimateSize: (index) => {
             const type = virtualItems[index]?.type;
-            if (type === 'group') return 44; // Compact-ish group row
-            if (type === 'header' || type === 'subitem-header') return 34; // Compact-ish header
+            const gap = 32; // var(--spacing-group-gap)
+            if (type === 'group') return (index === 0 ? 44 : 44 + gap); 
+            if (type === 'header' || type === 'subitem-header') return 34;
             if (type === 'subitem-footer') return 40;
-            if (type === 'footer') return 80; // Add item (36) + margin (4) + Summary (40)
-            return 30; // item or subitem
+            if (type === 'footer') return 80;
+            return 30;
         },
         overscan: 5,
     });
@@ -323,11 +324,18 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                 style={{ height: '100%' }}
                                             >
                                                 {isGroup ? (
-                                                    <div style={{ position: 'relative', height: '100%' }}>
+                                                    <div style={{ 
+                                                        position: 'relative', 
+                                                        height: '100%', 
+                                                        display: 'flex', 
+                                                        flexDirection: 'column', 
+                                                        justifyContent: 'flex-end',
+                                                        paddingTop: virtualRow.index === 0 ? 0 : '32px' 
+                                                    }}>
                                                         <div style={{
                                                             position: 'absolute',
                                                             left: 0,
-                                                            top: '0px',
+                                                            top: virtualRow.index === 0 ? '0px' : '32px',
                                                             bottom: '0px',
                                                             width: '6px',
                                                             backgroundColor: vItem.groupColor,

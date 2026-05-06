@@ -58,6 +58,10 @@
   --shadow-lg: 0 8px 24px rgba(80, 60, 160, 0.15);
 
   /* Spacing & Radius */
+  --spacing-board-x: 40px;
+  --spacing-board-y: 24px;
+  --spacing-group-gap: 32px;
+  
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;

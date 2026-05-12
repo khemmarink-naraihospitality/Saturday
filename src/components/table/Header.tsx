@@ -12,8 +12,6 @@ import { ColumnMenu } from './ColumnMenu';
 import { FilterMenu } from './FilterMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
-
-
 // Sortable Header Cell Component
 const SortableHeaderCell = ({
     col,
@@ -25,7 +23,6 @@ const SortableHeaderCell = ({
     startEditing,
     openMenu,
     handleResizeStart,
-    // input props
     editValue,
     setEditValue,
     saveTitle,
@@ -66,7 +63,7 @@ const SortableHeaderCell = ({
                     onBlur={saveTitle}
                     onKeyDown={handleKeyDown}
                     className="cell-input"
-                    onMouseDown={(e) => e.stopPropagation()} // Prevent drag start on input
+                    onMouseDown={(e) => e.stopPropagation()}
                     style={{ fontWeight: 500 }}
                 />
             ) : (
@@ -81,14 +78,12 @@ const SortableHeaderCell = ({
                 </span>
             )}
 
-            {/* Sort Indicator */}
             {activeSort?.columnId === col.id && (
                 <div style={{ marginRight: '4px', color: '#0073ea', fontSize: '10px' }}>
                     {activeSort.direction === 'asc' ? '▲' : '▼'}
                 </div>
             )}
 
-            {/* Filter Indicator */}
             {activeFilters.some((f: any) => f.columnId === col.id) && (
                 <div style={{
                     width: 6,
@@ -105,13 +100,12 @@ const SortableHeaderCell = ({
                     className="icon-btn"
                     style={{ opacity: activeMenuColId === col.id ? 1 : 0.5 }}
                     title="Column Actions"
-                    onMouseDown={(e) => e.stopPropagation()} // Prevent drag
+                    onMouseDown={(e) => e.stopPropagation()}
                 >
                     <MoreHorizontal size={16} />
                 </button>
             )}
 
-            {/* Resize Handle - Needs stopPropagation */}
             {canManage && (
                 <div
                     onMouseDown={(e) => handleResizeStart(e, col.id, col.width || 150)}
@@ -139,11 +133,9 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const duplicateColumn = useBoardStore(state => state.duplicateColumn);
     const { can } = usePermission();
 
-    // Sort/Filter
     const setColumnSort = useBoardStore(state => state.setColumnSort);
     const setColumnFilter = useBoardStore(state => state.setColumnFilter);
 
-    // Active Board Info
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeSort = activeBoard?.sort;
     const items = activeBoard?.items || [];
@@ -152,7 +144,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const [editingColId, setEditingColId] = React.useState<string | null>(null);
     const [editValue, setEditValue] = React.useState('');
 
-    // Menu State
     const [activeMenuColId, setActiveMenuColId] = React.useState<string | null>(null);
     const [activeFilterColId, setActiveFilterColId] = React.useState<string | null>(null);
     const [menuPos, setMenuPos] = React.useState<{ top: number, left: number } | null>(null);
@@ -163,11 +154,10 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const [insertColIndex, setInsertColIndex] = React.useState<number | null>(null);
     const [addMenuPos, setAddMenuPos] = React.useState<{ top: number, bottom: number, left: number } | null>(null);
 
-    // Dnd Sensors
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // 5px movement required for drag
+                distance: 5,
             },
         }),
         useSensor(KeyboardSensor, {
@@ -250,19 +240,16 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     };
 
     const updateColumnWidth = useBoardStore(state => state.updateColumnWidth);
-    const [_resizingColId, setResizingColId] = React.useState<string | null>(null);
     const startXRef = React.useRef(0);
     const startWidthRef = React.useRef(0);
 
     const handleResizeStart = (e: React.MouseEvent, colId: string, currentWidth: number, isItemCol = false) => {
         e.preventDefault();
-        e.stopPropagation(); // Crucial for not triggering dnd
-        setResizingColId(colId);
+        e.stopPropagation();
         startXRef.current = e.clientX;
         startWidthRef.current = currentWidth;
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
-            // ... (keep existing logic)
             const diff = moveEvent.clientX - startXRef.current;
             const newWidth = Math.max(100, startWidthRef.current + diff);
             if (isItemCol) {
@@ -273,7 +260,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         };
 
         const handleMouseUp = () => {
-            setResizingColId(null);
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
@@ -283,7 +269,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     };
 
     const openMenu = (e: React.MouseEvent, colId: string) => {
-        e.stopPropagation(); // Stop drag start
+        e.stopPropagation();
         e.preventDefault();
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setMenuPos({ top: rect.bottom + 4, left: rect.left });
@@ -295,7 +281,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
     const filterOptions = useMemo(() => {
         if (!activeFilterColumn) return [];
-        // ... (keep existing logic)
         if (activeFilterColumn.type === 'status' || activeFilterColumn.type === 'dropdown') {
             return (activeFilterColumn.options || []).map((opt: any) => ({ ...opt, id: opt.label }));
         }
@@ -316,8 +301,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         return filter?.values || [];
     }, [activeFilters, activeFilterColumn]);
 
-
     const isFirstGroup = !groupId || (activeBoard?.groups[0]?.id === groupId);
+
     const content = (
         <div className="table-header-row" style={{
             position: 'relative',
@@ -325,23 +310,22 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             backgroundColor: 'hsl(var(--color-table-header-bg))',
             borderBottom: '1px solid hsl(var(--color-border))',
             boxSizing: 'border-box',
-            height: '34px', // Compact height
+            height: '34px',
             alignItems: 'center'
         }}>
             {groupColor && (
                 <div style={{
-                    position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px',
-                    backgroundColor: groupColor, zIndex: 65
+                    position: 'absolute', left: '10px', top: '4px', bottom: '4px', width: '4px',
+                    backgroundColor: groupColor, zIndex: 65, borderRadius: '100px'
                 }} />
             )}
 
-            {/* Frozen First Column */}
             <div className="table-cell table-header-cell sticky-col" style={{
                 width: `${itemColumnWidth}px`,
                 position: 'sticky', left: 0, zIndex: 60,
                 backgroundColor: 'hsl(var(--color-table-header-bg))',
                 borderRight: '1px solid hsl(var(--color-border))',
-                paddingLeft: groupColor ? '14px' : '8px',
+                paddingLeft: groupColor ? '24px' : '8px',
                 display: 'flex', alignItems: 'center', gap: '8px',
                 boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
                 fontSize: '13px'
@@ -369,8 +353,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                     </span>
                 )}
 
-
-
                 {can('manage_columns') && isFirstGroup && (
                     <div
                         onMouseDown={(e) => handleResizeStart(e, 'item-col', itemColumnWidth, true)}
@@ -381,12 +363,11 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             </div>
 
             {isFirstGroup ? (
-                <SortableContext items={columns} strategy={horizontalListSortingStrategy}>
-                    {columns.map((col, index) => (
+                <SortableContext items={columns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                    {columns.map((col) => (
                         <SortableHeaderCell
                             key={col.id}
                             col={col}
-                            index={index}
                             canManage={can('manage_columns')}
                             editingColId={editingColId}
                             activeMenuColId={activeMenuColId}
@@ -416,7 +397,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 ))
             )}
 
-            {/* Add Column Button */}
             {can('manage_columns') && isFirstGroup && (
                 <div className="table-cell table-header-cell" style={{ width: '50px', justifyContent: 'center', padding: 0, position: 'relative' }}>
                     <button
@@ -446,7 +426,6 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             >
                 {content}
                 
-                {/* Menus and Modals (only once) */}
                 {activeMenuColId && menuPos && activeMenuColumn && (
                     <ColumnMenu
                         isOpen={true}

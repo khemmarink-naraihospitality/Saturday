@@ -89,7 +89,7 @@ export const Row = React.memo(({
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    bottom: '-1px', // Extends over the row border
+                    bottom: 0,
                     width: '6px',
                     backgroundColor: groupColor,
                     zIndex: 65
@@ -99,15 +99,12 @@ export const Row = React.memo(({
             {/* Frozen First Column: Item Name */}
             <div className="table-cell sticky-col" style={{
                 width: `${itemColumnWidth}px`,
-                position: 'sticky',
-                left: 0,
-                zIndex: 5,
-                backgroundColor: isSelected ? 'hsl(var(--color-brand-primary-subtle))' : (item.isHidden ? 'hsl(var(--color-bg-subtle))' : 'hsl(var(--color-bg-canvas))'),
-                paddingLeft: groupColor ? (isSubItem ? '86px' : '18px') : (isSubItem ? '76px' : '8px'),
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
+                position: 'sticky', left: 0, zIndex: 60,
+                backgroundColor: 'hsl(var(--color-bg-primary))',
+                borderRight: '1px solid hsl(var(--color-border))',
+                paddingLeft: groupColor ? (isSubItem ? '86px' : '14px') : (isSubItem ? '76px' : '8px'),
+                display: 'flex', alignItems: 'center', gap: '8px',
+                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)'
             }}>
                 {/* Drag Handle (Visible on Hover via CSS) */}
                 {can('edit_items') && (

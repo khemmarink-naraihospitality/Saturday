@@ -334,12 +334,12 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                     }}>
                                                         <div style={{
                                                             position: 'absolute',
-                                                            left: 0,
-                                                            top: virtualRow.index === 0 ? '0px' : '32px',
-                                                            bottom: '0px',
-                                                            width: '6px',
+                                                            left: '10px',
+                                                            top: virtualRow.index === 0 ? '4px' : '36px',
+                                                            bottom: '4px',
+                                                            width: '4px',
                                                             backgroundColor: vItem.groupColor,
-                                                            borderRadius: '8px 0 0 0',
+                                                            borderRadius: '100px',
                                                             zIndex: 10
                                                         }} />
                                                         <GroupRow
@@ -361,13 +361,13 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             {vItem.groupColor && (
                                                                 <div style={{
                                                                     position: 'absolute',
-                                                                    left: 0,
-                                                                    top: 0,
-                                                                    bottom: 0,
-                                                                    width: '6px',
+                                                                    left: '10px',
+                                                                    top: '4px',
+                                                                    bottom: '4px',
+                                                                    width: '4px',
                                                                     backgroundColor: vItem.groupColor,
                                                                     zIndex: 65,
-                                                                    borderRadius: '0 0 0 8px'
+                                                                    borderRadius: '100px'
                                                                 }} />
                                                             )}
                                                             <div className="sticky-col" style={{
@@ -379,7 +379,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 borderRight: '1px solid hsl(var(--color-border))',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
-                                                                paddingLeft: vItem.groupColor ? '18px' : '8px',
+                                                                paddingLeft: vItem.groupColor ? '24px' : '8px',
                                                                 borderBottom: '1px solid hsl(var(--color-border))',
                                                                 boxSizing: 'border-box',
                                                                 flexShrink: 0,

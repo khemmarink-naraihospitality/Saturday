@@ -334,12 +334,13 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                     }}>
                                                         <div style={{
                                                             position: 'absolute',
-                                                            left: '10px',
-                                                            top: virtualRow.index === 0 ? '4px' : '36px',
-                                                            bottom: '4px',
-                                                            width: '4px',
+                                                            left: '0px',
+                                                            top: virtualRow.index === 0 ? '0px' : '32px',
+                                                            bottom: '0px',
+                                                            width: '6px',
                                                             backgroundColor: vItem.groupColor,
-                                                            borderRadius: '100px',
+                                                            borderTopLeftRadius: '6px',
+                                                            borderBottomLeftRadius: '0px',
                                                             zIndex: 10
                                                         }} />
                                                         <GroupRow
@@ -361,13 +362,14 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             {vItem.groupColor && (
                                                                 <div style={{
                                                                     position: 'absolute',
-                                                                    left: '10px',
-                                                                    top: '4px',
-                                                                    bottom: '4px',
-                                                                    width: '4px',
+                                                                    left: '0px',
+                                                                    top: '0px',
+                                                                    bottom: '-44px',
+                                                                    width: '6px',
                                                                     backgroundColor: vItem.groupColor,
                                                                     zIndex: 65,
-                                                                    borderRadius: '100px'
+                                                                    borderTopLeftRadius: '0px',
+                                                                    borderBottomLeftRadius: '6px'
                                                                 }} />
                                                             )}
                                                             <div className="sticky-col" style={{
@@ -623,7 +625,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         position: 'relative'
                                                     }}>
                                                         {vItem.groupColor && (
-                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 0.5 }} />
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1 }} />
                                                         )}
                                                         <div className="table-cell sticky-col" style={{ 
                                                             width: `${itemColumnWidth}px`, 
@@ -667,7 +669,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         alignItems: 'center'
                                                     }}>
                                                         {vItem.groupColor && (
-                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 0.5 }} />
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1 }} />
                                                         )}
                                                         <div
                                                             onClick={() => useBoardStore.getState().addItem('New Sub-item', vItem.data.groupId, vItem.data.parentId)}

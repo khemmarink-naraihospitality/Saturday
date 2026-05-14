@@ -315,8 +315,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         }}>
             {groupColor && (
                 <div style={{
-                    position: 'absolute', left: '10px', top: '4px', bottom: '4px', width: '4px',
-                    backgroundColor: groupColor, zIndex: 65, borderRadius: '100px'
+                    position: 'absolute', left: '0px', top: '0px', bottom: '0px', width: '6px',
+                    backgroundColor: groupColor, zIndex: 65, borderRadius: '0px'
                 }} />
             )}
 

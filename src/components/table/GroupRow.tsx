@@ -59,14 +59,14 @@ export const GroupRow = ({
             width: '100%', // Group row spans the whole table row width
         }}>
             {/* Visual Left Border */}
-            {data.color && (
+            {(data.color || '#579bfc') && (
                 <div style={{
                     position: 'absolute',
                     left: 0,
                     top: 0,
                     bottom: 0,
                     width: '6px',
-                    backgroundColor: data.color,
+                    backgroundColor: data.color || '#579bfc',
                     borderTopLeftRadius: '6px',
                     zIndex: 65
                 }} />

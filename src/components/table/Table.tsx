@@ -341,7 +341,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             backgroundColor: vItem.groupColor,
                                                             borderTopLeftRadius: '6px',
                                                             borderBottomLeftRadius: '0px',
-                                                            zIndex: 10
+                                                            zIndex: 65
                                                         }} />
                                                         <GroupRow
                                                             data={vItem.data as any}

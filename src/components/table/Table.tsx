@@ -332,17 +332,6 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         justifyContent: 'flex-end',
                                                         paddingTop: virtualRow.index === 0 ? 0 : '32px' 
                                                     }}>
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            left: '0px',
-                                                            top: virtualRow.index === 0 ? '0px' : '32px',
-                                                            bottom: '0px',
-                                                            width: '6px',
-                                                            backgroundColor: vItem.groupColor,
-                                                            borderTopLeftRadius: '6px',
-                                                            borderBottomLeftRadius: '0px',
-                                                            zIndex: 65
-                                                        }} />
                                                         <GroupRow
                                                             data={vItem.data as any}
                                                             isCollapsed={(board.collapsedGroups || []).includes(vItem.id)}

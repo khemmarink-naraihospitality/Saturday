@@ -58,6 +58,19 @@ export const GroupRow = ({
             backgroundColor: 'hsl(var(--color-bg-canvas))',
             width: '100%', // Group row spans the whole table row width
         }}>
+            {/* Visual Left Border */}
+            {data.color && (
+                <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '6px',
+                    backgroundColor: data.color,
+                    borderTopLeftRadius: '6px',
+                    zIndex: 65
+                }} />
+            )}
             {/* Hover Drag Handle */}
             {can('group_ungroup') && (
                 <div 

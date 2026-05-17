@@ -334,6 +334,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                     }}>
                                                         <GroupRow
                                                             data={vItem.data as any}
+                                                            groupColor={vItem.groupColor}
                                                             isCollapsed={(board.collapsedGroups || []).includes(vItem.id)}
                                                             onToggle={() => toggleGroup(board.id, vItem.id)}
                                                             dragHandleProps={listeners}

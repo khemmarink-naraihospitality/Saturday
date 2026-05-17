@@ -714,7 +714,7 @@ export const WorkspaceDashboardPage = () => {
                             <MoreHorizontal size={18} color="#64748b" style={{ cursor: 'pointer' }} />
                         </div>
                         
-                        <div style={{ height: '260px', display: 'flex', alignItems: 'flex-end', gap: '20px', paddingBottom: '40px', paddingLeft: '40px', paddingRight: '20px', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', position: 'relative', marginTop: '20px' }}>
+                        <div style={{ height: '260px', position: 'relative', marginTop: '20px' }}>
                             {(() => {
                                 const maxValue = Math.max(...Object.values(stats.statusCounts).map(s => s.workloadCount), 5);
                                 const rawStep = Math.ceil(maxValue / 5);
@@ -726,60 +726,77 @@ export const WorkspaceDashboardPage = () => {
 
                                 return (
                                     <>
-                                        {/* Background Grid Lines */}
-                                        <div style={{ position: 'absolute', top: 0, left: '40px', right: '20px', bottom: '40px', pointerEvents: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                        {/* Background Grid Lines (Fixed) */}
+                                        <div style={{ position: 'absolute', top: 0, left: '40px', right: 0, bottom: '40px', pointerEvents: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', zIndex: 0 }}>
                                             {ySteps.map(val => (
                                                 <div key={val} style={{ width: '100%', borderTop: '1px solid #f1f5f9', position: 'relative' }}></div>
                                             ))}
                                         </div>
 
-                                        {/* Y-axis labels */}
-                                        <div style={{ position: 'absolute', left: '-35px', top: 0, bottom: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', textAlign: 'right', width: '30px' }}>
+                                        {/* Y-axis labels (Fixed) */}
+                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', textAlign: 'right', width: '30px', zIndex: 10 }}>
                                             {ySteps.map(val => (
                                                 <span key={val}>{val}</span>
                                             ))}
                                         </div>
 
-                                        {/* Stacked Bars */}
-                                        {Object.entries(stats.statusCounts)
-                                            .sort((a, b) => a[1].workloadCount - b[1].workloadCount)
-                                            .map(([label, status], i) => {
-                                                const barHeight = (status.workloadCount / yCeiling) * 220;
-                                                const sortedPeople = Object.entries(status.people).sort((a, b) => b[1].count - a[1].count);
+                                        {/* Chart Area wrapper with scroll */}
+                                        <div className="interesting-scroll" style={{ 
+                                            height: '100%', 
+                                            marginLeft: '40px', 
+                                            borderLeft: '1px solid #e2e8f0', 
+                                            borderBottom: '1px solid #e2e8f0', 
+                                            position: 'relative',
+                                            overflowX: 'auto',
+                                            overflowY: 'hidden',
+                                            display: 'flex',
+                                            alignItems: 'flex-end',
+                                            paddingBottom: '40px', // Extra padding for x-labels
+                                            paddingTop: '20px' // Space for bar top numbers
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', paddingRight: '20px', paddingLeft: '16px', height: '100%', minWidth: 'min-content' }}>
+                                                {/* Stacked Bars */}
+                                                {Object.entries(stats.statusCounts)
+                                                    .sort((a, b) => a[1].workloadCount - b[1].workloadCount)
+                                                    .map(([label, status], i) => {
+                                                        const barHeight = (status.workloadCount / yCeiling) * 200; // Adjusted for padding
+                                                        const sortedPeople = Object.entries(status.people).sort((a, b) => b[1].count - a[1].count);
 
-                                                return (
-                                                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '60px', position: 'relative' }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '2px' }}>
-                                                            {status.workloadCount > 0 ? status.workloadCount : ''}
-                                                        </div>
-                                                        <div style={{ width: '100%', height: `${Math.max(2, barHeight)}px`, display: 'flex', flexDirection: 'column-reverse', borderRadius: '3px 3px 0 0', overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
-                                                            {sortedPeople.map(([pName, pData], j) => (
-                                                                <div 
-                                                                    key={j}
-                                                                    title={`${label} - ${pName}: ${pData.count} tasks`}
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        height: `${(pData.count / status.workloadCount) * 100}%`,
-                                                                        backgroundColor: (stats.peopleMap as Record<string, any>)[pName]?.color || '#cbd5e1',
-                                                                        borderBottom: j < sortedPeople.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        color: 'white',
-                                                                        fontSize: '10px',
-                                                                        fontWeight: 'bold'
-                                                                    }}
-                                                                >
-                                                                    {(pData.count / status.workloadCount) * 100 > 15 ? pData.count : ''}
+                                                        return (
+                                                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '60px', position: 'relative' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '2px', position: 'absolute', bottom: `${Math.max(2, barHeight) + 4}px` }}>
+                                                                    {status.workloadCount > 0 ? status.workloadCount : ''}
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                        <span style={{ position: 'absolute', top: 'calc(100% + 10px)', fontSize: '11px', color: '#64748b', fontWeight: 600, textAlign: 'center', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                            {status.label}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
+                                                                <div style={{ width: '100%', height: `${Math.max(2, barHeight)}px`, display: 'flex', flexDirection: 'column-reverse', borderRadius: '3px 3px 0 0', overflow: 'hidden', backgroundColor: '#f1f5f9', zIndex: 2 }}>
+                                                                    {sortedPeople.map(([pName, pData], j) => (
+                                                                        <div 
+                                                                            key={j}
+                                                                            title={`${label} - ${pName}: ${pData.count} tasks`}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                height: `${(pData.count / status.workloadCount) * 100}%`,
+                                                                                backgroundColor: (stats.peopleMap as Record<string, any>)[pName]?.color || '#cbd5e1',
+                                                                                borderBottom: j < sortedPeople.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                color: 'white',
+                                                                                fontSize: '10px',
+                                                                                fontWeight: 'bold'
+                                                                            }}
+                                                                        >
+                                                                            {(pData.count / status.workloadCount) * 100 > 15 ? pData.count : ''}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                <span title={status.label} style={{ position: 'absolute', top: '100%', marginTop: '10px', fontSize: '11px', color: '#64748b', fontWeight: 600, textAlign: 'center', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {status.label}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                            </div>
+                                        </div>
                                     </>
                                 );
                             })()}

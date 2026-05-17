@@ -7,11 +7,13 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 
 export const GroupRow = ({ 
     data, 
+    groupColor,
     isCollapsed, 
     onToggle,
     dragHandleProps
 }: { 
     data: any, 
+    groupColor?: string,
     isCollapsed: boolean, 
     onToggle: () => void,
     dragHandleProps?: any
@@ -59,16 +61,17 @@ export const GroupRow = ({
             width: '100%', // Group row spans the whole table row width
         }}>
             {/* Visual Left Border */}
-            {(data.color || '#579bfc') && (
+            {(groupColor || data.color || '#579bfc') && (
                 <div style={{
                     position: 'absolute',
                     left: 0,
                     top: 0,
                     bottom: 0,
                     width: '6px',
-                    backgroundColor: data.color || '#579bfc',
+                    backgroundColor: groupColor || data.color || '#579bfc',
                     borderTopLeftRadius: '6px',
-                    zIndex: 65
+                    zIndex: 65,
+                    pointerEvents: 'none'
                 }} />
             )}
             {/* Hover Drag Handle */}

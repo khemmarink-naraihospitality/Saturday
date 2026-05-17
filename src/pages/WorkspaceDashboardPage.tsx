@@ -425,6 +425,13 @@ export const WorkspaceDashboardPage = () => {
             });
         });
 
+        // Clean up empty statuses so they don't appear in the graphs
+        Object.keys(statusCounts).forEach(key => {
+            if (statusCounts[key].workloadCount === 0) {
+                delete statusCounts[key];
+            }
+        });
+
         const completionPercent = totalStatusValues > 0 ? ((doneCount / totalStatusValues) * 100).toFixed(1) : "0";
         
         // 3. Generate Cats for the farm

@@ -215,6 +215,7 @@ export const createBoardSlice: StateCreator<
                     id: b.id,
                     workspaceId: b.workspace_id,
                     title: b.title,
+                    description: b.description,
                     is_archived: b.is_archived,
                     isFavorite: favoritedBoardIds.has(b.id),
                     lastViewedAt: lastViewedMap[b.id] || undefined,

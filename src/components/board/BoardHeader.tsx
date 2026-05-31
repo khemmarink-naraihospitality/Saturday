@@ -113,34 +113,41 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             }}
                         />
                     ) : (
-                        <h1
-                            onClick={() => can('create_board') && setIsEditing(true)}
-                            style={{
-                                fontSize: '18px',
-                                fontWeight: 600,
-                                margin: 0,
-                                color: 'hsl(var(--color-text-primary))',
-                                cursor: can('create_board') ? 'pointer' : 'default',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
-                        >
-                            {board.title}
-                            <Star 
-                                size={18} 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    useBoardStore.getState().toggleFavorite(board.id);
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <h1
+                                onClick={() => can('create_board') && setIsEditing(true)}
+                                style={{
+                                    fontSize: '18px',
+                                    fontWeight: 600,
+                                    margin: 0,
+                                    color: 'hsl(var(--color-text-primary))',
+                                    cursor: can('create_board') ? 'pointer' : 'default',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
                                 }}
-                                style={{ 
-                                    cursor: 'pointer',
-                                    fill: board.isFavorite ? '#ffcb00' : 'transparent',
-                                    color: board.isFavorite ? '#ffcb00' : 'hsl(var(--color-text-tertiary))',
-                                    transition: 'all 0.2s ease'
-                                }} 
-                            />
-                        </h1>
+                            >
+                                {board.title}
+                                <Star 
+                                    size={18} 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        useBoardStore.getState().toggleFavorite(board.id);
+                                    }}
+                                    style={{ 
+                                        cursor: 'pointer',
+                                        fill: board.isFavorite ? '#ffcb00' : 'transparent',
+                                        color: board.isFavorite ? '#ffcb00' : 'hsl(var(--color-text-tertiary))',
+                                        transition: 'all 0.2s ease'
+                                    }} 
+                                />
+                            </h1>
+                            {board.description && (
+                                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                    {board.description}
+                                </p>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

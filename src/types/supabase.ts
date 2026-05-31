@@ -112,6 +112,7 @@ export interface BoardRow {
     id: string;
     workspace_id: string;
     title: string;
+    description?: string | null;
     columns: BoardColumn[];
     groups: BoardGroup[];
     created_at: string;

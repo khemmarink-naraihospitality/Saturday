@@ -43,6 +43,16 @@ export interface BoardSlice {
     loadUserData: (isSilent?: boolean) => Promise<void>;
     loadBoardData: (boardId: string) => Promise<void>;
     loadingBoardIds: Set<string>;
+
+    // Import Actions
+    importExcelBoard: (
+        title: string, 
+        data: {
+            description?: string;
+            groups: { title: string; color: string; items: any[] }[];
+            columns: { title: string; type: ColumnType; options?: any[] }[];
+        }
+    ) => Promise<void>;
 }
 
 const parseSqlJson = (val: any, fallback: any) => {
@@ -737,4 +747,133 @@ export const createBoardSlice: StateCreator<
             }));
         }
     },
+
+    importExcelBoard: async (title, data) => {
+        const { activeWorkspaceId } = get();
+        if (!activeWorkspaceId) throw new Error('No active workspace');
+
+        const boardId = uuidv4();
+        
+        // 1. Prepare Columns
+        const dbColumns = data.columns.map((c, idx) => ({
+            id: uuidv4(),
+            board_id: boardId,
+            title: c.title,
+            type: c.type,
+            order: idx,
+            width: c.type === 'status' ? 140 : 200,
+            options: c.options || []
+        }));
+
+        // 2. Prepare Groups and Items
+        const dbGroups: any[] = [];
+        const dbItems: any[] = [];
+
+        data.groups.forEach((group, gIdx) => {
+            const groupId = uuidv4();
+            dbGroups.push({
+                id: groupId,
+                board_id: boardId,
+                title: group.title,
+                color: group.color,
+                order: gIdx
+            });
+
+            group.items.forEach((item, iIdx) => {
+                const itemId = uuidv4();
+                
+                // Map item values to column IDs
+                const itemValues: Record<string, any> = {};
+                Object.entries(item.values).forEach(([colTitle, val]) => {
+                    const col = dbColumns.find(c => c.title === colTitle);
+                    if (col) {
+                        // Special handling for Status mapping
+                        if (col.type === 'status' && col.options) {
+                            const matchedOption = (col.options as any[]).find(opt => 
+                                opt.label?.toLowerCase() === (val as string)?.toLowerCase()
+                            );
+                            itemValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
+                        } else {
+                            itemValues[col.id] = val;
+                        }
+                    }
+                });
+
+                dbItems.push({
+                    id: itemId,
+                    board_id: boardId,
+                    group_id: groupId,
+                    title: item.title,
+                    values: itemValues,
+                    order: iIdx,
+                    parent_id: null
+                });
+
+                // Handle Subitems
+                if (item.subitems && Array.isArray(item.subitems)) {
+                    item.subitems.forEach((sub, sIdx) => {
+                        const subValues: Record<string, any> = {};
+                        Object.entries(sub.values || {}).forEach(([colTitle, val]) => {
+                            const col = dbColumns.find(c => c.title === colTitle);
+                            if (col) {
+                                if (col.type === 'status' && col.options) {
+                                    const matchedOption = (col.options as any[]).find(opt => 
+                                        opt.label?.toLowerCase() === (val as string)?.toLowerCase()
+                                    );
+                                    subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
+                                } else {
+                                    subValues[col.id] = val;
+                                }
+                            }
+                        });
+
+                        dbItems.push({
+                            id: uuidv4(),
+                            board_id: boardId,
+                            group_id: groupId,
+                            title: sub.title,
+                            values: subValues,
+                            order: (iIdx * 100) + sIdx + 1,
+                            parent_id: itemId
+                        });
+                    });
+                }
+            });
+        });
+
+        // 3. Database Insertion (Sequence for FK constraints)
+        const { error: bErr } = await supabase.from('boards').insert({
+            id: boardId,
+            workspace_id: activeWorkspaceId,
+            title: title || 'Imported Board',
+            description: data.description || null,
+            order: get().boards.length
+        });
+        if (bErr) throw bErr;
+
+        const { error: cErr } = await supabase.from('columns').insert(dbColumns);
+        if (cErr) throw cErr;
+
+        const { error: gErr } = await supabase.from('groups').insert(dbGroups);
+        if (gErr) throw gErr;
+        
+        if (dbItems.length > 0) {
+            const { error: iErr } = await supabase.from('items').insert(dbItems);
+            if (iErr) throw iErr;
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase.from('board_members').insert({
+                board_id: boardId,
+                user_id: user.id,
+                role: 'owner'
+            });
+        }
+
+        // 4. Update UI
+        await get().loadUserData(true);
+        get().setActiveBoard(boardId);
+        get().navigateTo('board');
+    }
 });

@@ -94,6 +94,7 @@ export interface Board {
     subWorkspaceId?: string; // Optional: Link to a SubWorkspace
     isFavorite?: boolean;
     title: string;
+    description?: string;
     columns: Column[];
     groups: Group[]; // Ordered list of groups
     items: Item[];

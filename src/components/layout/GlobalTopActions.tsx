@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, Bell, Sun, Moon, ShieldCheck } from 'lucide-react';
+import { LogOut, Bell, Sun, Moon, ShieldCheck, FileUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CloudStatus } from './CloudStatus';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { NotificationItem } from '../notifications/NotificationItem';
 import { useUserStore } from '../../store/useUserStore';
+import { ImportBoardModal } from '../workspace/ImportBoardModal';
 
 export const GlobalTopActions = () => {
     const { user, signOut } = useAuth();
@@ -19,6 +20,7 @@ export const GlobalTopActions = () => {
 
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const notificationMenuRef = useRef<HTMLDivElement>(null);
 
@@ -277,6 +279,32 @@ export const GlobalTopActions = () => {
                                 <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
                             </>
                         )}
+                        
+                        <button
+                            onClick={() => {
+                                setShowProfileMenu(false);
+                                setShowImportModal(true);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                border: 'none',
+                                backgroundColor: 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                fontSize: '14px',
+                                color: 'hsl(var(--color-text-primary))',
+                                transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <FileUp size={16} color="#2563eb" />
+                            <span style={{ fontWeight: 500 }}>Import Board</span>
+                        </button>
+                        <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
 
                         {/* Logout Button */}
                         <button
@@ -303,6 +331,7 @@ export const GlobalTopActions = () => {
                     </div>
                 )}
             </div>
+            {showImportModal && <ImportBoardModal onClose={() => setShowImportModal(false)} />}
         </div>
     );
 };

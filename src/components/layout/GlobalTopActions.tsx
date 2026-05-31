@@ -248,6 +248,34 @@ export const GlobalTopActions = () => {
                                 {user?.email}
                             </div>
                         </div>
+                        
+                        {/* Import Board - Visible to ALL users */}
+                        <button
+                            onClick={() => {
+                                setShowProfileMenu(false);
+                                setShowImportModal(true);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                border: 'none',
+                                backgroundColor: 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                fontSize: '14px',
+                                color: 'hsl(var(--color-text-primary))',
+                                transition: 'background-color 0.2s',
+                                textAlign: 'left'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <FileSpreadsheet size={16} color="#6366f1" />
+                            <span style={{ fontWeight: 500 }}>Import Board</span>
+                        </button>
+                        <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
 
                         {/* Admin Console Button (Only for admins) */}
                         {(currentUser?.system_role === 'super_admin' || currentUser?.system_role === 'it_admin') && (
@@ -280,32 +308,6 @@ export const GlobalTopActions = () => {
                             </>
                         )}
                         
-                        {/* Import Board - Visible to ALL users */}
-                        <button
-                            onClick={() => {
-                                setShowProfileMenu(false);
-                                setShowImportModal(true);
-                            }}
-                            style={{
-                                width: '100%',
-                                padding: '12px 16px',
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                fontSize: '14px',
-                                color: 'hsl(var(--color-text-primary))',
-                                transition: 'background-color 0.2s',
-                                textAlign: 'left'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <FileSpreadsheet size={16} style={{ color: '#107c10' }} />
-                            <span style={{ fontWeight: 500, color: 'hsl(var(--color-text-primary))' }}>Import Board from Excel</span>
-                        </button>
                         <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
 
                         {/* Logout Button */}

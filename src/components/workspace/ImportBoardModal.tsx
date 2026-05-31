@@ -178,16 +178,25 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
         if (!preview) return;
         setIsImporting(true);
         try {
+            console.log('[Import] Starting import with:', {
+                title: preview.title,
+                description: preview.description,
+                groupCount: preview.groups.length,
+                columnCount: preview.columns.length,
+                totalItems: preview.groups.reduce((sum: number, g: any) => sum + (g.items?.length || 0), 0)
+            });
             await importExcelBoard(preview.title, { 
                 description: preview.description,
                 groups: preview.groups, 
                 columns: preview.columns 
             });
-            showToast('Board imported successfully', 'success');
+            console.log('[Import] Import completed successfully');
+            showToast('Board imported successfully!', 'success');
             onClose();
-        } catch (err) {
-            console.error(err);
-            showToast('Import failed. Please check file format.', 'error');
+        } catch (err: any) {
+            console.error('[Import] Import failed:', err);
+            const errorMsg = err?.message || err?.details || 'Unknown error';
+            showToast(`Import failed: ${errorMsg}`, 'error');
         } finally {
             setIsImporting(false);
         }

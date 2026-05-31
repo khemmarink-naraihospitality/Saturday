@@ -68,8 +68,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#ffd533' }
                     ]},
                     { title: 'Champion', type: 'text' },
-                    { title: 'Timeline - Start', type: 'date' },
-                    { title: 'Timeline - End', type: 'date' },
+                    { title: 'Timeline', type: 'timeline' },
                     { title: 'Date', type: 'date' },
                     { title: 'ST Files', type: 'files' },
                     { title: 'SOR Complete', type: 'text' },
@@ -121,13 +120,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         groups.push(currentGroup);
                     }
 
+                    let timelineValue = null;
+                    if (row[4] || row[5]) {
+                        timelineValue = {
+                            from: row[4] ? String(row[4]).trim() : null,
+                            to: row[5] ? String(row[5]).trim() : null,
+                        };
+                    }
+
                     // Map all specific values horizontally according to column B -> Q (Indices 1 -> 16)
                     const valuesMap: Record<string, any> = {
                         'Subitems': row[1] || '',
                         'Status': row[2] || '',
                         'Champion': row[3] || '',
-                        'Timeline - Start': row[4] || '',
-                        'Timeline - End': row[5] || '',
+                        'Timeline': timelineValue,
                         'Date': row[6] || '',
                         'ST Files': row[7] || '',
                         'SOR Complete': row[8] || '',

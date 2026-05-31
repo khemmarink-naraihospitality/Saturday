@@ -31,12 +31,19 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [title, setTitle] = useState(board?.title || '');
 
+    // Description Logic
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [descriptionValue, setDescriptionValue] = useState(board?.description || '');
+
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Sync title when board changes (e.g. from sidebar rename)
+    // Sync title/description when board changes
     useEffect(() => {
-        if (board) setTitle(board.title);
-    }, [board?.title]);
+        if (board) {
+            setTitle(board.title);
+            setDescriptionValue(board.description || '');
+        }
+    }, [board?.title, board?.description]);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -57,11 +64,27 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
         setIsEditing(false);
     };
 
+    const handleUpdateDescription = () => {
+        if (!board) return;
+        if (descriptionValue.trim() !== (board.description || '')) {
+            updateBoard(board.id, { description: descriptionValue.trim() || undefined });
+        }
+        setIsEditingDescription(false);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleRename();
         if (e.key === 'Escape') {
             setTitle(board?.title || '');
             setIsEditing(false);
+        }
+    };
+
+    const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleUpdateDescription();
+        if (e.key === 'Escape') {
+            setDescriptionValue(board?.description || '');
+            setIsEditingDescription(false);
         }
     };
 
@@ -142,10 +165,41 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                     }} 
                                 />
                             </h1>
-                            {board.description && (
-                                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                    {board.description}
-                                </p>
+                            
+                            {isEditingDescription ? (
+                                <input
+                                    autoFocus
+                                    value={descriptionValue}
+                                    onChange={(e) => setDescriptionValue(e.target.value)}
+                                    onBlur={handleUpdateDescription}
+                                    onKeyDown={handleDescriptionKeyDown}
+                                    placeholder="Add description..."
+                                    style={{
+                                        margin: '4px 0 0 0',
+                                        fontSize: '12px',
+                                        color: 'hsl(var(--color-text-primary))',
+                                        border: '1px solid hsl(var(--color-brand-primary))',
+                                        borderRadius: '4px',
+                                        padding: '0 4px',
+                                        outline: 'none',
+                                        background: 'white',
+                                        minWidth: '200px'
+                                    }}
+                                />
+                            ) : (
+                                <div 
+                                    onClick={() => can('create_board') && setIsEditingDescription(true)}
+                                    style={{ 
+                                        margin: '2px 0 0 0', 
+                                        fontSize: '12px', 
+                                        color: board.description ? 'hsl(var(--color-text-tertiary))' : 'hsl(var(--color-text-tertiary))',
+                                        opacity: board.description ? 1 : 0.6,
+                                        cursor: can('create_board') ? 'pointer' : 'default',
+                                        fontStyle: board.description ? 'normal' : 'italic'
+                                    }}
+                                >
+                                    {board.description || (can('create_board') ? '+ Add description' : '')}
+                                </div>
                             )}
                         </div>
                     )}

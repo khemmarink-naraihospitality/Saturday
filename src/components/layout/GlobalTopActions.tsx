@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, Bell, Sun, Moon, ShieldCheck, FileUp } from 'lucide-react';
+import { LogOut, Bell, Sun, Moon, ShieldCheck, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CloudStatus } from './CloudStatus';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -280,6 +280,7 @@ export const GlobalTopActions = () => {
                             </>
                         )}
                         
+                        {/* Import Board - Visible to ALL users */}
                         <button
                             onClick={() => {
                                 setShowProfileMenu(false);
@@ -296,13 +297,14 @@ export const GlobalTopActions = () => {
                                 gap: '12px',
                                 fontSize: '14px',
                                 color: 'hsl(var(--color-text-primary))',
-                                transition: 'background-color 0.2s'
+                                transition: 'background-color 0.2s',
+                                textAlign: 'left'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                            <FileUp size={16} color="#2563eb" />
-                            <span style={{ fontWeight: 500 }}>Import Board</span>
+                            <FileSpreadsheet size={16} style={{ color: '#107c10' }} />
+                            <span style={{ fontWeight: 500, color: 'hsl(var(--color-text-primary))' }}>Import Board from Excel</span>
                         </button>
                         <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
 

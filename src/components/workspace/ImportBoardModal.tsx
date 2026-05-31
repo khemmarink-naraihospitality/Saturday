@@ -16,7 +16,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     const importExcelBoard = useBoardStore(state => state.importExcelBoard);
-    const { addToast } = useToast();
+    const { showToast } = useToast();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -25,7 +25,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 setFile(selectedFile);
                 parseExcel(selectedFile);
             } else {
-                addToast('Please select a valid .xlsx file', 'error');
+                showToast('Please select a valid .xlsx file', 'error');
             }
         }
     };
@@ -162,7 +162,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             reader.readAsArrayBuffer(file);
         } catch (err) {
             console.error(err);
-            addToast('Failed to parse file', 'error');
+            showToast('Failed to parse Excel file', 'error');
         } finally {
             setIsParsing(false);
         }
@@ -177,11 +177,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 groups: preview.groups, 
                 columns: preview.columns 
             });
-            addToast('Board imported successfully!', 'success');
+            showToast('Board imported successfully', 'success');
             onClose();
         } catch (err) {
             console.error(err);
-            addToast('Import failed. Please check file format.', 'error');
+            showToast('Import failed. Please check file format.', 'error');
         } finally {
             setIsImporting(false);
         }

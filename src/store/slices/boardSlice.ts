@@ -812,7 +812,7 @@ export const createBoardSlice: StateCreator<
 
                 // Handle Subitems
                 if (item.subitems && Array.isArray(item.subitems)) {
-                    item.subitems.forEach((sub, sIdx) => {
+                    item.subitems.forEach((sub: any, sIdx: number) => {
                         const subValues: Record<string, any> = {};
                         Object.entries(sub.values || {}).forEach(([colTitle, val]) => {
                             const col = dbColumns.find(c => c.title === colTitle);

@@ -105,11 +105,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
             <header style={{
-                height: '48px',
+                minHeight: '68px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0 24px',
+                padding: '16px 24px',
                 position: 'relative'
             }}>
             {/* Left Side: Title & Description */}

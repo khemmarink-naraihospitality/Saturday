@@ -55,7 +55,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 const columns: any[] = [];
                 const groups: any[] = [];
                 
-                // Full Saturday Schema mapped as per implementation plan
+                // Full Saturday Schema mapped as per implementation plan (A-Q)
                 const defaultCols: any[] = [
                     { title: 'Subitems', type: 'text' },
                     { title: 'Status', type: 'status', options: [
@@ -75,11 +75,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     { title: 'SOR Complete', type: 'text' },
                     { title: 'SOR File', type: 'text' },
                     { title: 'Stakeholders', type: 'text' },
-                    { title: 'Remark', type: 'text' },
-                    { title: 'Dropdown', type: 'text' },
                     { title: 'Numbers', type: 'text' },
                     { title: 'If I Sent', type: 'text' },
                     { title: 'Current', type: 'text' },
+                    { title: 'Remark', type: 'text' },
+                    { title: 'Dropdown', type: 'text' },
                     { title: 'Item ID', type: 'text' }
                 ];
 
@@ -121,24 +121,24 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         groups.push(currentGroup);
                     }
 
-                    // Map all specific values horizontally according to column B -> Q
+                    // Map all specific values horizontally according to column B -> Q (Indices 1 -> 16)
                     const valuesMap: Record<string, any> = {
                         'Subitems': row[1] || '',
                         'Status': row[2] || '',
                         'Champion': row[3] || '',
                         'Timeline - Start': row[4] || '',
                         'Timeline - End': row[5] || '',
-                        'SOR Complete': row[6] || '',
-                        'SOR File': row[7] || '',
-                        'Stakeholders': row[8] || '',
-                        'Numbers': row[9] || '',
-                        'If I Sent': row[10] || '',
-                        'Current': row[11] || '',
-                        // Some columns might be slightly offset depending on the exact excel export, 
-                        // mapping remaining using index loosely. Assuming this matches the visual list:
-                        'Remark': row[12] || '',
-                        'Dropdown': row[13] || '',
-                        'Item ID': row[16] || row[15] || row[14] || '' // Fallback based on visual
+                        'Date': row[6] || '',
+                        'ST Files': row[7] || '',
+                        'SOR Complete': row[8] || '',
+                        'SOR File': row[9] || '',
+                        'Stakeholders': row[10] || '',
+                        'Numbers': row[11] || '',
+                        'If I Sent': row[12] || '',
+                        'Current': row[13] || '',
+                        'Remark': row[14] || '',
+                        'Dropdown': row[15] || '',
+                        'Item ID': row[16] || ''
                     };
                     
                     // Note: Excel export might shift depending on hidden columns. We extract all text.

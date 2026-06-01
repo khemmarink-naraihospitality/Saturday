@@ -99,12 +99,12 @@ export const Row = React.memo(({
             {/* Frozen First Column: Item Name */}
             <div className="table-cell sticky-col" style={{
                 width: `${itemColumnWidth}px`,
-                position: 'sticky', left: 0, zIndex: 60,
-                backgroundColor: 'hsl(var(--color-bg-primary))',
+                position: 'sticky', left: 0, zIndex: 70,
+                backgroundColor: 'hsl(var(--color-bg-canvas))',
                 borderRight: '1px solid hsl(var(--color-border))',
                 paddingLeft: groupColor ? (isSubItem ? '86px' : '14px') : (isSubItem ? '76px' : '8px'),
                 display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)'
+                boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)'
             }}>
                 {/* Drag Handle (Visible on Hover via CSS) */}
                 {can('edit_items') && (

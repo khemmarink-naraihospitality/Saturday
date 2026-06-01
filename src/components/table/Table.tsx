@@ -425,11 +425,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 width: `${itemColumnWidth}px`,
                                                                 position: 'sticky',
                                                                 left: 0,
-                                                                zIndex: 55,
+                                                                zIndex: 70,
                                                                 backgroundColor: 'hsl(var(--color-bg-canvas))',
                                                                 flexShrink: 0,
                                                                 borderRight: '1px solid hsl(var(--color-border))',
-                                                                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                                                                boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 justifyContent: 'flex-end',
@@ -621,7 +621,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             width: `${itemColumnWidth}px`, 
                                                             position: 'sticky', 
                                                             left: 0, 
-                                                            zIndex: 5, 
+                                                            zIndex: 70, 
                                                             backgroundColor: 'hsl(var(--color-bg-canvas))', 
                                                             display: 'flex', 
                                                             alignItems: 'center', 
@@ -630,7 +630,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             fontWeight: 400,
                                                             fontSize: '11px',
                                                             borderRight: '1px solid hsl(var(--color-border))',
-                                                            boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
+                                                            boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)'
                                                         }}>
                                                             {vItem.type === 'subitem-header' ? 'Sub-Items' : board.itemColumnTitle}
                                                         </div>

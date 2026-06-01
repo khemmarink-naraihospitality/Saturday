@@ -487,7 +487,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         <CheckCircle2 size={40} color="#10b981" />
                     </div>
                     <div>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#111827', fontFamily: 'serif' }}>
+                        <h3 style={{ 
+                            margin: '0 0 8px 0', fontSize: '22px', fontWeight: 800, 
+                            color: '#111827', fontFamily: "'Nib Pro', 'Georgia', serif",
+                            letterSpacing: '-0.01em'
+                        }}>
                             Import Successful!
                         </h3>
                         <p style={{ color: '#6b7280', fontSize: '15px', margin: 0, lineHeight: '1.5' }}>
@@ -594,13 +598,24 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             padding: '24px', borderBottom: '1px solid #f1f5f9',
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '0px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
-                                    <Layers size={20} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ 
+                                    width: '44px', height: '44px', borderRadius: '0px', 
+                                    backgroundColor: 'hsl(var(--color-brand-primary) / 0.08)', 
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                    color: 'hsl(var(--color-brand-primary))',
+                                    border: '1px solid hsl(var(--color-brand-primary) / 0.15)'
+                                }}>
+                                    <Layers size={22} />
                                 </div>
                                 <div>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b', fontFamily: 'serif' }}>Multi-File Project Import</h2>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Import multiple files and sheets as concurrent boards</p>
+                                    <h2 style={{ 
+                                        margin: 0, fontSize: '18px', fontWeight: 600, 
+                                        color: '#1e293b'
+                                    }}>Multi-File Project Import</h2>
+                                    <p style={{ 
+                                        margin: 0, fontSize: '13px', color: '#64748b'
+                                    }}>Import multiple files and sheets as concurrent boards</p>
                                 </div>
                             </div>
                             <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>

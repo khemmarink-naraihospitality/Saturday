@@ -72,7 +72,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     { title: 'Champion', type: 'text' },
                     { title: 'Timeline', type: 'timeline' },
                     { title: 'SOR Complete', type: 'status', options: [
-                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
                         { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
                         { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
                         { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },

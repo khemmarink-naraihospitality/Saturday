@@ -322,6 +322,7 @@ export const Row = React.memo(({
                             column={col} 
                             value={item.values[col.id]}
                             groupColor={groupColor} 
+                            isSubItem={isSubItem}
                         />
                     </div>
                 ))

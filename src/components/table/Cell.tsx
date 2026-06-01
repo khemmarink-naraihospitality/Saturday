@@ -14,14 +14,21 @@ export const Cell = memo(({
     boardId,
     column, 
     value, 
-    groupColor 
+    groupColor,
+    isSubItem
 }: { 
     itemId: string, 
     boardId: string,
     column: Column, 
     value: any,
-    groupColor?: string 
+    groupColor?: string,
+    isSubItem?: boolean
 }) => {
+    // Dynamic Override: If it's a subitem and the SOR Complete column, treat as Date type
+    if (isSubItem && column.title === 'SOR Complete') {
+        return <DateCell itemId={itemId} value={value} column={column} />;
+    }
+
     // Dispatch to specific cell type components
     switch (column.type) {
         case 'status':

@@ -843,7 +843,7 @@ export const createBoardSlice: StateCreator<
         });
 
         // 3. Database Insertion (Sequence for FK constraints)
-        console.log('[ImportBoard] Inserting board:', boardId);
+        console.log('[Import] Inserting board:', { boardId, activeWorkspaceId, title });
         const { error: bErr } = await supabase.from('boards').insert({
             id: boardId,
             workspace_id: activeWorkspaceId,
@@ -851,20 +851,32 @@ export const createBoardSlice: StateCreator<
             description: data.description || null,
             order: get().boards.length
         });
-        if (bErr) { console.error('[ImportBoard] Board insert error:', bErr); throw bErr; }
+        if (bErr) {
+            console.error('[Import] Board insert error:', bErr);
+            throw new Error(`Board creation failed: ${bErr.message}`);
+        }
 
-        console.log('[ImportBoard] Inserting', dbColumns.length, 'columns');
+        console.log('[Import] Inserting columns:', dbColumns.length);
         const { error: cErr } = await supabase.from('columns').insert(dbColumns);
-        if (cErr) { console.error('[ImportBoard] Column insert error:', cErr); throw cErr; }
+        if (cErr) {
+            console.error('[Import] Column insert error:', cErr);
+            throw new Error(`Columns creation failed: ${cErr.message}`);
+        }
 
-        console.log('[ImportBoard] Inserting', dbGroups.length, 'groups');
+        console.log('[Import] Inserting groups:', dbGroups.length);
         const { error: gErr } = await supabase.from('groups').insert(dbGroups);
-        if (gErr) { console.error('[ImportBoard] Group insert error:', gErr); throw gErr; }
+        if (gErr) {
+            console.error('[Import] Group insert error:', gErr);
+            throw new Error(`Groups creation failed: ${gErr.message}`);
+        }
         
         if (dbItems.length > 0) {
-            console.log('[ImportBoard] Inserting', dbItems.length, 'items');
+            console.log('[Import] Inserting items:', dbItems.length);
             const { error: iErr } = await supabase.from('items').insert(dbItems);
-            if (iErr) { console.error('[ImportBoard] Item insert error:', iErr); throw iErr; }
+            if (iErr) {
+                console.error('[Import] Items insert error:', iErr);
+                throw new Error(`Items creation failed: ${iErr.message}`);
+            }
         }
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -877,7 +889,6 @@ export const createBoardSlice: StateCreator<
         }
 
         // 4. Update UI
-        console.log('[ImportBoard] Loading user data and navigating to board');
         await get().loadUserData(true);
         get().setActiveBoard(boardId);
         get().navigateTo('board');

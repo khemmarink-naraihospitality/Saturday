@@ -837,10 +837,16 @@ export const createBoardSlice: StateCreator<
                             const col = dbColumns.find(c => c.title === colTitle);
                             if (col) {
                                 if (col.type === 'status' && col.options) {
-                                    const matchedOption = (col.options as any[]).find(opt => 
-                                        opt.label?.toLowerCase() === (val as string)?.toLowerCase()
-                                    );
-                                    subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
+                                    // Hybrid Handling: If it's the SOR Complete column, don't try to match status options
+                                    // Just keep the value as is (which should be a date string from parser)
+                                    if (col.title === 'SOR Complete') {
+                                        subValues[col.id] = val || null;
+                                    } else {
+                                        const matchedOption = (col.options as any[]).find(opt => 
+                                            opt.label?.toLowerCase() === (val as string)?.toLowerCase()
+                                        );
+                                        subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
+                                    }
                                 } else {
                                     subValues[col.id] = val;
                                 }

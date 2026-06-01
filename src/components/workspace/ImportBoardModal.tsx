@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { X, Upload, Loader2, FileText, CheckCircle2, Layers, Plus, AlertCircle } from 'lucide-react';
-import { useBoardStore } from '@/store/useBoardStore';
+import { useBoardStore } from '../../store/useBoardStore';
 import { showToast } from '@/utils/toast';
 
 interface ImportBoardModalProps {

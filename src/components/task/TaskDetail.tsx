@@ -12,7 +12,6 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const board = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeItem = board?.items.find(i => i.id === itemId);
     const addUpdate = useBoardStore(state => state.addUpdate);
-    const deleteUpdate = useBoardStore(state => state.deleteUpdate);
     const editUpdate = useBoardStore(state => state.editUpdate);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
 
@@ -100,10 +99,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         setDeleteConfirmId(updateId);
     };
 
-    const confirmDelete = (updateId: string) => {
-        deleteUpdate(itemId, updateId);
-        setDeleteConfirmId(null);
-    };
+
 
     const tabs = [
         { id: 'updates', label: 'Updates', icon: MessageSquare },

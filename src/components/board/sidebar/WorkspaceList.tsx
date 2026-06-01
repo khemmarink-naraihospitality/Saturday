@@ -272,7 +272,12 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                             size={14}
                                             onClick={(e) => {
                                                 const rect = e.currentTarget.getBoundingClientRect();
-                                                setMenuPosition({ top: rect.bottom, left: rect.left });
+                                                const menuHeight = 150; // Approx height of workspace menu
+                                                let top = rect.bottom;
+                                                if (top + menuHeight > window.innerHeight) {
+                                                    top = rect.top - menuHeight;
+                                                }
+                                                setMenuPosition({ top, left: rect.left });
                                                 setActiveWorkspaceMenu(activeWorkspaceMenu === ws.id ? null : ws.id);
                                                 setActiveBoardMenu(null);
                                             }}
@@ -323,7 +328,13 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                                     handleRename={handleRename}
                                                     handleContextMenu={(e, id, rect) => {
                                                         e.stopPropagation();
-                                                        setMenuPosition({ top: rect.bottom, left: rect.left });
+                                                        // Smart vertical positioning to prevent menu cutoff
+                                                        const menuHeight = 220; // Approx height of board menu
+                                                        let top = rect.bottom;
+                                                        if (top + menuHeight > window.innerHeight) {
+                                                            top = rect.top - menuHeight;
+                                                        }
+                                                        setMenuPosition({ top, left: rect.left });
                                                         setActiveBoardMenu(activeBoardMenu === id ? null : id);
                                                         setActiveWorkspaceMenu(null);
                                                     }}

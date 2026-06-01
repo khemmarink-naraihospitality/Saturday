@@ -62,23 +62,28 @@ The Board Import feature follows strict parsing rules to maintain data integrity
 - **Group Detection:** Rows starting with "Priority" or solo-text rows are converted to Group headers.
 
 ### 2. Logic & Behavior
-- **Overwrite Mechanism:** If a board with the same title exists in the workspace, it is **deleted and replaced** automatically.
+- **Robust Overwrite:** If one or more boards with the same title exist in the workspace, **all matching boards** are deleted and replaced automatically to ensure a clean import.
 - **Subitem Logic:** When in sub-item mode, rows with an **EMPTY Column A** are nested under the last non-empty row (Main Item).
+- **Hybrid Column Types:** The system intelligently switches column types between Items and Sub-items:
+    - `SOR Complete`: `status` (Main Item) -> `date` (Sub-item)
+    - `RFI Sent`: `status` (Main Item) -> `text` (Sub-item)
 - **Timeline Merging:** Columns **E (Start)** and **F (End)** are merged into a single system `timeline` object `{from, to}`. Supports `DD-MM-YY` and Excel serial dates.
+- **File & Link Detection:** `SOR File` and `ST Files` detect URLs and convert them into interactive file object arrays.
 - **Feedback:** A success screen with a 2-second delay is shown upon completion before closing the modal.
 
-### 3. Column & Type Mapping
-| Col | Excel Header       | Saturday.com Column | System Type | Special Handling |
-|-----|--------------------|---------------------|-------------|------------------|
-| A   | Name               | (Title)             | item        | Empty = Subitem  |
-| B   | (Reserved)         | -                   | -           | Skipped in UI    |
-| C   | Status             | Status              | status      | Color Mapping    |
-| D   | Champion           | Champion            | text        | 12px Font Size   |
-| E+F | Timeline S/E       | Timeline            | timeline    | Merged Object    |
-| G   | SOR Complete / Date| SOR Complete        | status      | UI Header: Date  |
-| H   | SOR File / ST Files| SOR File            | link        | URL Support      |
-| I   | Stakeholders / Rem | Stakeholders        | text        | -                |
-| J   | Numbers / Dropdown | Numbers             | text        | -                |
+### 3. Column & Type Mapping (Excel Tech Stack Template)
+| Col | Excel Header       | Saturday.com Column | System Type | Context Mapping (Item -> Sub-item) |
+|-----|--------------------|---------------------|-------------|------------------------------------|
+| A   | Name               | (Title)             | item        | Empty = Subitem                    |
+| C   | Status             | Status              | status      | Status -> Status                   |
+| D   | Champion           | Champion            | text        | Champion -> Champion               |
+| E+F | Timeline S/E       | Timeline            | timeline    | Merged Object                      |
+| G   | SOR Complete / Date| SOR Complete        | status/date | **Hybrid**: Status -> Date         |
+| H   | SOR File / ST Files| SOR File            | files       | **Files**: Supports Multiple URLs  |
+| I   | Stakeholders / Rem | Stakeholders        | text        | Text -> Text                       |
+| J   | Numbers / Dropdown | Numbers             | number/text | Number -> Text                     |
+| K   | RFI Sent / ID      | RFI Sent            | status/text | **Hybrid**: Status -> Item ID      |
+| O   | Item ID            | Item ID             | text        | Raw ID String                      |
 
 ### 4. Status Color Standards (NHG Brand)
 | Status Label        | Hex Color | Brand Meaning |

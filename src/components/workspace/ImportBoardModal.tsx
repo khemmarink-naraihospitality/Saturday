@@ -139,15 +139,25 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             return date.toISOString().split('T')[0];
                         }
                         const str = String(val).trim();
-                        if (str.includes('-')) {
-                            const parts = str.split('-');
+                        const separator = str.includes('-') ? '-' : (str.includes('/') ? '/' : null);
+                        if (separator) {
+                            const parts = str.split(separator);
                             if (parts.length === 3) {
-                                // DD-MM-YY or DD-MM-YYYY
-                                const d = parts[0].padStart(2, '0');
-                                const m = parts[1].padStart(2, '0');
-                                let y = parts[2];
-                                if (y.length === 2) y = '20' + y;
-                                return `${y}-${m}-${d}`;
+                                // Detect if first part is Year (YYYY-MM-DD) or Day (DD-MM-YYYY)
+                                if (parts[0].length === 4) {
+                                    // YYYY-MM-DD format
+                                    const y = parts[0];
+                                    const m = parts[1].padStart(2, '0');
+                                    const d = parts[2].padStart(2, '0');
+                                    return `${y}-${m}-${d}`;
+                                } else {
+                                    // DD-MM-YYYY or DD-MM-YY format
+                                    const d = parts[0].padStart(2, '0');
+                                    const m = parts[1].padStart(2, '0');
+                                    let y = parts[2];
+                                    if (y.length === 2) y = '20' + y;
+                                    return `${y}-${m}-${d}`;
+                                }
                             }
                         }
                         return str;

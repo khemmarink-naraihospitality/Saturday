@@ -22,9 +22,15 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
     const cellRef = useRef<HTMLDivElement>(null);
 
     const formatDate = (dateStr: string) => {
-        if (!dateStr) return '';
-        const [y, m, d] = dateStr.split('-').map(Number);
+        if (!dateStr || dateStr === 'Invalid Date') return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+
+        const [y, m, d] = parts.map(Number);
         const date = new Date(y, m - 1, d);
+        
+        if (isNaN(date.getTime())) return '';
+        
         const today = new Date();
         const isCurrentYear = date.getFullYear() === today.getFullYear();
 

@@ -75,10 +75,10 @@ The Board Import feature follows strict parsing rules to maintain data integrity
 | C   | Status             | Status              | status      | Color Mapping    |
 | D   | Champion           | Champion            | text        | 12px Font Size   |
 | E+F | Timeline S/E       | Timeline            | timeline    | Merged Object    |
-| G   | (Reserved)         | -                   | -           | Date (Subitem only) |
-| H   | ST Files           | ST Files            | files       | -                |
-| I   | SOR Complete       | SOR Complete        | text        | -                |
-| J   | Budget             | Numbers             | text        | -                |
+| G   | SOR Complete / Date| SOR Complete        | status      | UI Header: Date  |
+| H   | SOR File / ST Files| SOR File            | link        | URL Support      |
+| I   | Stakeholders / Rem | Stakeholders        | text        | -                |
+| J   | Numbers / Dropdown | Numbers             | text        | -                |
 
 ### 4. Status Color Standards (NHG Brand)
 | Status Label        | Hex Color | Brand Meaning |

@@ -645,7 +645,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 color: 'hsl(var(--color-text-secondary))',
                                                                 fontWeight: 400
                                                             }}>
-                                                                {col.title}
+                                                                {col.title === 'SOR Complete' ? 'Date' : col.title}
                                                             </div>
                                                         ))}
                                                     </div>

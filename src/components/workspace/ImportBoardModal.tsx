@@ -1,36 +1,71 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { X, Upload, FileText, CheckCircle2, AlertCircle, Loader2, Layers } from 'lucide-react';
-import { useBoardStore } from '../../store/useBoardStore';
-import { useToast } from '../../hooks/useToast';
+import { X, Upload, Loader2, FileText, CheckCircle2, Layers, Plus, AlertCircle } from 'lucide-react';
+import { useBoardStore } from '@/store/boardStore';
+import { showToast } from '@/utils/toast';
 
 interface ImportBoardModalProps {
     onClose: () => void;
 }
 
+const parseDate = (val: any, isUpdate = false) => {
+    if (!val) return null;
+    if (val instanceof Date) return val.toISOString();
+    
+    const s = String(val).trim();
+    if (!s) return null;
+
+    // Excel Serial Date check
+    if (!isNaN(Number(s)) && Number(s) > 30000) {
+        const d = new Date((Number(s) - 25569) * 86400 * 1000);
+        return d.toISOString();
+    }
+
+    // Try various formats
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d.toISOString();
+
+    return isUpdate ? null : s;
+};
+
+const parseFiles = (val: any) => {
+    if (!val) return [];
+    const s = String(val).trim();
+    if (!s) return [];
+    
+    const urls = s.split(/[\s,]+/).filter(u => u.startsWith('http'));
+    return urls.map(url => ({
+        id: Math.random().toString(36).substring(7),
+        name: url.split('/').pop() || 'File',
+        url: url,
+        type: 'link'
+    }));
+};
+
 export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) => {
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [isParsing, setIsParsing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [importResults, setImportResults] = useState<{ boards: number; items: number } | null>(null);
     const [previews, setPreviews] = useState<any[]>([]);
-    const [selectedSheetIndices, setSelectedSheetIndices] = useState<number[]>([]);
+    const [selectedSheetIds, setSelectedSheetIds] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     const importExcelBoard = useBoardStore(state => state.importExcelBoard);
-    const { showToast } = useToast();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            if (selectedFile.name.endsWith('.xlsx')) {
-                setFile(selectedFile);
-                parseExcel(selectedFile);
+        const selectedFiles = Array.from(e.target.files || []);
+        if (selectedFiles.length > 0) {
+            const excelFiles = selectedFiles.filter(f => f.name.endsWith('.xlsx'));
+            if (excelFiles.length > 0) {
+                setFiles(prev => [...prev, ...excelFiles]);
+                excelFiles.forEach(f => parseExcel(f));
             } else {
-                showToast('Please select a valid .xlsx file', 'error');
+                showToast('Please select valid .xlsx files', 'error');
             }
         }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const parseExcel = async (file: File) => {
@@ -41,60 +76,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
                 
-                const updatesSheetName = workbook.SheetNames.find(s => s.toLowerCase() === 'updates' || s.toLowerCase().includes('update'));
-                const updatesRows: any[] = updatesSheetName 
-                    ? XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheetName], { header: 1 })
-                    : [];
-
-                // --- Global Helpers ---
-                const parseDate = (val: any, includeTime = false) => {
-                    if (!val) return null;
-                    let date: Date;
-                    if (typeof val === 'number') {
-                        date = new Date((val - 25569) * 86400 * 1000);
-                    } else {
-                        const str = String(val).trim();
-                        date = new Date(str);
-                        if (isNaN(date.getTime())) {
-                            const separator = str.includes('-') ? '-' : (str.includes('/') ? '/' : null);
-                            if (separator) {
-                                const parts = str.split(separator);
-                                if (parts.length === 3) {
-                                    if (parts[0].length === 4) {
-                                        date = new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`);
-                                    } else {
-                                        let y = parts[2];
-                                        if (y.length === 2) y = '20' + y;
-                                        date = new Date(`${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (isNaN(date.getTime())) return String(val);
-                    return includeTime ? date.toISOString() : date.toISOString().split('T')[0];
-                };
-
-                const parseFiles = (val: any) => {
-                    if (!val) return [];
-                    const str = String(val).trim();
-                    const urls = str.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http') || u.startsWith('/'));
-                    return urls.map(url => ({
-                        id: Math.random().toString(36).substring(7),
-                        name: url.split('/').pop() || 'File',
-                        url: url,
-                        type: 'link'
-                    }));
-                };
-
-                // --- 1. Parse Updates Map (Shared) ---
+                // --- 1. Parse Updates Map ---
                 const updatesMap: Record<string, any[]> = {};
-                if (updatesRows.length > 0) {
-                    // Optimized specific indices based on user request:
-                    // Column E: User (idx 4)
-                    // Column F: Created At (idx 5)
-                    // Column G: Update Content (idx 6)
-                    const uHeader = (updatesRows[0] || []).map((h: any) => String(h || '').toLowerCase().trim());
+                const updatesSheet = workbook.SheetNames.find(n => n.toLowerCase().includes('update'));
+                if (updatesSheet) {
+                    const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1 });
+                    const uHeader = (uRows[0] || []).map((h: any) => String(h || '').toLowerCase().trim());
+                    
                     const colIdx = {
                         itemId: uHeader.indexOf('item id') !== -1 ? uHeader.indexOf('item id') : 0,
                         user: 4, // Column E
@@ -105,7 +93,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         parentId: uHeader.indexOf('parent post id') !== -1 ? uHeader.indexOf('parent post id') : 8
                     };
 
-                    updatesRows.forEach((uRow, uIdx) => {
+                    uRows.forEach((uRow, uIdx) => {
                         if (uIdx === 0) return;
                         const itemId = String(uRow[colIdx.itemId] || '').trim();
                         if (!itemId) return;
@@ -115,7 +103,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const dateVal = parseDate(createdAtRaw, true);
                         const dateObj = new Date(dateVal && !isNaN(new Date(dateVal).getTime()) ? dateVal : new Date());
 
-                        let content = String(uRow[colIdx.content] || '');
+                        let content = String(uRow[colIdx.content] || '').trim();
+                        // Clean "Update [Date]" redundant markers
+                        content = content.replace(/^Update\s+\d{1,2}\s+\w{3,9}\s+\d{4}\s*/i, '').trim();
                         
                         const imgRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/gi;
                         content = content.replace(imgRegex, (url) => `<img src="${url}" style="max-width: 100%; border-radius: 0px; margin-top: 10px; border: 1px solid #eee;" />`);
@@ -132,9 +122,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     });
                 }
 
-                // --- 2. Iterate Sheets for Boards ---
-                const detectedPreviews: any[] = [];
-                workbook.SheetNames.forEach((sheetName, sheetIdx) => {
+                // --- 2. Iterate Data Sheets ---
+                const filePreviews: any[] = [];
+                workbook.SheetNames.forEach((sheetName) => {
                     if (sheetName.toLowerCase().includes('update')) return;
 
                     const worksheet = workbook.Sheets[sheetName];
@@ -226,20 +216,16 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     let isInsideSubitems = false;
 
                     rows.forEach((row, rIdx) => {
-                        // Skip board title and description rows
                         if (rIdx < 2) return;
-                        
                         const firstVal = row[0]?.toString().trim();
                         const secondVal = row[1]?.toString().trim();
                         
-                        // Detect Group (Priority 1, 2, 3, etc.)
-                        // Groups are often standalone values in the first column or contain "Priority"
                         if (firstVal && (firstVal.startsWith('Priority') || (rIdx > 1 && row.filter((v: any) => v !== undefined && v !== '').length === 1 && firstVal !== 'Subitems' && firstVal !== 'Name'))) {
                             let groupColor = '#579bfc';
-                            if (firstVal.includes('1')) groupColor = '#ff9800'; // Orange
-                            else if (firstVal.includes('2')) groupColor = '#e2445c'; // Red
-                            else if (firstVal.includes('3')) groupColor = '#00c875'; // Green
-                            else if (firstVal.includes('Integration') || firstVal.includes('Project')) groupColor = '#a25ddc'; // Purple
+                            if (firstVal.includes('1')) groupColor = '#ff9800';
+                            else if (firstVal.includes('2')) groupColor = '#e2445c';
+                            else if (firstVal.includes('3')) groupColor = '#00c875';
+                            else if (firstVal.includes('Integration') || firstVal.includes('Project')) groupColor = '#a25ddc';
                             
                             currentGroup = { title: firstVal, color: groupColor, items: [] };
                             groups.push(currentGroup);
@@ -248,7 +234,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             return;
                         }
 
-                        // Skip header row and metadata rows for item processing
                         if (headerRowIdx !== -1 && rIdx <= headerRowIdx) return;
                         if (!firstVal && !secondVal) return;
 
@@ -263,9 +248,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
 
                         let timelineValue = null;
-                        const startDate = parseDate(getVal(row, 'timelineStart', 4));
-                        const endDate = parseDate(getVal(row, 'timelineEnd', 5));
-                        if (startDate || endDate) timelineValue = { from: startDate, to: endDate || startDate };
+                        const sd = parseDate(getVal(row, 'timelineStart', 4));
+                        const ed = parseDate(getVal(row, 'timelineEnd', 5));
+                        if (sd || ed) timelineValue = { from: sd, to: ed || sd };
 
                         const itemData = {
                             title: firstVal || secondVal || 'Missing Title',
@@ -304,17 +289,24 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
                     });
 
-                    detectedPreviews.push({ title: sheetName, groups, columns, updatesMap, sheetIdx });
+                    filePreviews.push({ 
+                        id: `${file.name}-${sheetName}`,
+                        fileName: file.name,
+                        title: sheetName, 
+                        groups, 
+                        columns, 
+                        updatesMap 
+                    });
                 });
 
-                setPreviews(detectedPreviews);
-                setSelectedSheetIndices(detectedPreviews.map(p => p.sheetIdx));
+                setPreviews(prev => [...prev, ...filePreviews]);
+                setSelectedSheetIds(prev => [...prev, ...filePreviews.map(p => p.id)]);
+                setIsParsing(false);
             };
             reader.readAsArrayBuffer(file);
         } catch (err) {
             console.error(err);
             showToast('Failed to parse Excel file', 'error');
-        } finally {
             setIsParsing(false);
         }
     };
@@ -327,10 +319,10 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
         try {
             for (const preview of previews) {
-                if (!selectedSheetIndices.includes(preview.sheetIdx)) continue;
+                if (!selectedSheetIds.includes(preview.id)) continue;
                 
                 await importExcelBoard(preview.title, { 
-                    description: '',
+                    description: `Imported from ${preview.fileName}`,
                     groups: preview.groups, 
                     columns: preview.columns,
                     updatesMap: preview.updatesMap
@@ -342,7 +334,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
             setImportResults({ boards: boardCount, items: totalItems });
             setIsSuccess(true);
-            showToast('Multi-board import completed', 'success');
+            showToast('Multi-file import completed', 'success');
         } catch (err: any) {
             console.error(err);
             showToast(err.message || 'Import failed.', 'error');
@@ -354,35 +346,37 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)'
+            backgroundColor: 'rgba(26, 23, 40, 0.8)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+            backdropFilter: 'blur(4px)'
         }}>
             <div style={{
-                backgroundColor: 'white', borderRadius: '0px', width: '900px', maxWidth: '95vw',
-                maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                backgroundColor: 'white', width: '900px', maxWidth: '95vw',
+                maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+                borderRadius: '0px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                border: '1px solid #eee', overflow: 'hidden', position: 'relative'
             }}>
-                {isSuccess && importResults ? (
-                    <div style={{ 
-                        padding: '60px 40px', display: 'flex', flexDirection: 'column', 
-                        alignItems: 'center', justifyContent: 'center', gap: '24px', textAlign: 'center'
+                {isSuccess ? (
+                    <div style={{
+                        padding: '60px 40px', display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', textAlign: 'center', gap: '24px'
                     }}>
                         <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <CheckCircle2 size={48} color="#10b981" />
                         </div>
                         <div>
-                            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: '0 0 8px 0' }}>Import Complete!</h2>
-                            <p style={{ color: '#6b7280', fontSize: '16px' }}>Successfully created <strong>{importResults.boards} boards</strong> with <strong>{importResults.items} items</strong>.</p>
+                            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: '0 0 8px 0', fontFamily: 'serif' }}>Import Complete!</h2>
+                            <p style={{ color: '#6b7280', fontSize: '16px' }}>Successfully created <strong>{importResults?.boards} boards</strong> with <strong>{importResults?.items} items</strong> across all files.</p>
                         </div>
                         <button 
-                            onClick={() => { useBoardStore.getState().navigateTo('board'); onClose(); }}
+                            onClick={onClose}
                             style={{ 
-                                padding: '12px 32px', backgroundColor: '#2563eb', color: 'white', 
-                                border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer',
-                                boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)'
+                                padding: '12px 32px', backgroundColor: '#1a1728', color: 'white', 
+                                border: 'none', borderRadius: '0px', fontWeight: 600, cursor: 'pointer',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                             }}
                         >
-                            Go to Boards
+                            Close Summary
                         </button>
                     </div>
                 ) : (
@@ -392,93 +386,110 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '0px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
                                     <Layers size={20} />
                                 </div>
                                 <div>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>Multi-Board Project Import</h2>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Every sheet becomes a new board</p>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b', fontFamily: 'serif' }}>Multi-File Project Import</h2>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Import multiple files and sheets as concurrent boards</p>
                                 </div>
                             </div>
                             <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
                         </div>
 
                         <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-                            {!file ? (
+                            {files.length === 0 ? (
                                 <div 
                                     onClick={() => fileInputRef.current?.click()}
                                     style={{
-                                        height: '240px', border: '2px dashed #e2e8f0', borderRadius: '12px',
+                                        height: '280px', border: '2px dashed #e2e8f0', borderRadius: '0px',
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                         cursor: 'pointer', transition: 'all 0.2s ease', backgroundColor: '#f8fafc'
                                     }}
-                                    onMouseOver={e => (e.currentTarget.style.borderColor = '#2563eb', e.currentTarget.style.backgroundColor = '#f0f9ff')}
-                                    onMouseOut={e => (e.currentTarget.style.borderColor = '#e2e8f0', e.currentTarget.style.backgroundColor = '#f8fafc')}
                                 >
-                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx" style={{ display: 'none' }} />
-                                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx" multiple style={{ display: 'none' }} />
+                                    <div style={{ width: '56px', height: '56px', borderRadius: '0px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
                                         <Upload size={28} color="#2563eb" />
                                     </div>
-                                    <span style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>Select multi-sheet Excel file</span>
-                                    <span style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>Updates history will be linked automatically</span>
+                                    <span style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>Select Excel files to import</span>
+                                    <span style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>You can select multiple files at once</span>
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
-                                        <FileText size={32} color="#2563eb" />
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{file.name}</div>
-                                            <div style={{ fontSize: '13px', color: '#64748b' }}>Detected {previews.length} target boards</div>
-                                        </div>
-                                        <button onClick={() => { setFile(null); setPreviews([]); }} style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Change</button>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Selected Files & Previews</h3>
+                                        <button 
+                                            onClick={() => fileInputRef.current?.click()}
+                                            style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                            <Plus size={14} /> Add More Files
+                                        </button>
+                                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx" multiple style={{ display: 'none' }} />
                                     </div>
 
-                                    {isParsing ? (
+                                    {isParsing && previews.length === 0 ? (
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '12px' }}>
                                             <Loader2 className="animate-spin" size={24} color="#2563eb" />
-                                            <span style={{ fontSize: '15px', color: '#64748b' }}>Scanning all sheets for board data...</span>
+                                            <span style={{ fontSize: '15px', color: '#64748b' }}>Parsing Excel workbooks...</span>
                                         </div>
-                                    ) : previews.length > 0 && (
+                                    ) : (
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Select Sheets to Import</h3>
-                                                <span style={{ fontSize: '12px', color: '#64748b' }}>{selectedSheetIndices.length} of {previews.length} selected</span>
-                                            </div>
+                                            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+                                                Detected <strong>{previews.length}</strong> possible boards across <strong>{files.length}</strong> files.
+                                            </p>
                                             
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
-                                                {previews.map((sheet, idx) => (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '12px', maxHeight: '300px', overflowY: 'auto', padding: '4px' }}>
+                                                {previews.map((sheet) => (
                                                     <div 
-                                                        key={idx}
+                                                        key={sheet.id}
                                                         onClick={() => {
-                                                            setSelectedSheetIndices(prev => 
-                                                                prev.includes(sheet.sheetIdx) 
-                                                                    ? prev.filter(i => i !== sheet.sheetIdx)
-                                                                    : [...prev, sheet.sheetIdx]
+                                                            setSelectedSheetIds(prev => 
+                                                                prev.includes(sheet.id) 
+                                                                    ? prev.filter(id => id !== sheet.id)
+                                                                    : [...prev, sheet.id]
                                                             )
                                                         }}
                                                         style={{
                                                             padding: '16px', border: '2px solid', 
-                                                            borderColor: selectedSheetIndices.includes(sheet.sheetIdx) ? '#2563eb' : '#f1f5f9',
-                                                            backgroundColor: selectedSheetIndices.includes(sheet.sheetIdx) ? '#f0f9ff' : 'white',
-                                                            borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s',
+                                                            borderColor: selectedSheetIds.includes(sheet.id) ? '#2563eb' : '#f1f5f9',
+                                                            backgroundColor: selectedSheetIds.includes(sheet.id) ? '#f0f9ff' : 'white',
+                                                            borderRadius: '0px', cursor: 'pointer', transition: 'all 0.2s',
                                                             display: 'flex', alignItems: 'center', gap: '12px'
                                                         }}
                                                     >
-                                                        <input type="checkbox" checked={selectedSheetIndices.includes(sheet.sheetIdx)} readOnly style={{ accentColor: '#2563eb', width: '18px', height: '18px' }} />
+                                                        <input type="checkbox" checked={selectedSheetIds.includes(sheet.id)} readOnly style={{ accentColor: '#2563eb', width: '18px', height: '18px' }} />
                                                         <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>{sheet.title}</div>
-                                                            <div style={{ fontSize: '12px', color: '#64748b' }}>{sheet.groups.reduce((acc: number, g: any) => acc + g.items.length, 0)} Items found</div>
+                                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '2px' }}>{sheet.title}</div>
+                                                            <div style={{ fontSize: '11px', color: '#64748b' }}>File: {sheet.fileName}</div>
+                                                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{sheet.groups.reduce((acc: number, g: any) => acc + g.items.length, 0)} Items found</div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
 
-                                            <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                <AlertCircle size={20} color="#16a34a" />
-                                                <p style={{ margin: 0, fontSize: '13px', color: '#166534', fontWeight: 500 }}>
-                                                    Updates column mapping (User, Created At, Content) has been optimized for Columns E, F, and G.
-                                                </p>
-                                            </div>
+                                            {selectedSheetIds.length > 0 && (
+                                                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '0px', backgroundColor: 'white' }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#666', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>Import Statistics</div>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>{selectedSheetIds.length}</div>
+                                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>BOARDS</div>
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>
+                                                                {previews.filter(p => selectedSheetIds.includes(p.id)).reduce((acc, p) => acc + p.groups.length, 0)}
+                                                            </div>
+                                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>GROUPS</div>
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>
+                                                                {previews.filter(p => selectedSheetIds.includes(p.id)).reduce((acc, p) => acc + p.groups.reduce((a: number, g: any) => a + g.items.length, 0), 0)}
+                                                            </div>
+                                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>ITEMS</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -489,24 +500,23 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             <button 
                                 onClick={onClose}
                                 disabled={isImporting}
-                                style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', color: '#64748b' }}
+                                style={{ padding: '10px 20px', borderRadius: '0px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', color: '#64748b' }}
                             >
                                 Cancel
                             </button>
                             <button 
                                 onClick={handleImport}
-                                disabled={selectedSheetIndices.length === 0 || isImporting}
+                                disabled={selectedSheetIds.length === 0 || isImporting}
                                 style={{ 
-                                    padding: '10px 28px', borderRadius: '6px', border: 'none', 
-                                    background: selectedSheetIndices.length > 0 ? '#2563eb' : '#94a3b8', 
+                                    padding: '10px 28px', borderRadius: '0px', border: 'none', 
+                                    background: selectedSheetIds.length > 0 ? '#1a1728' : '#94a3b8', 
                                     color: 'white', fontSize: '14px', fontWeight: 700, 
-                                    cursor: selectedSheetIndices.length > 0 ? 'pointer' : 'not-allowed',
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    boxShadow: selectedSheetIndices.length > 0 ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none'
+                                    cursor: selectedSheetIds.length > 0 ? 'pointer' : 'not-allowed',
+                                    display: 'flex', alignItems: 'center', gap: '10px'
                                 }}
                             >
                                 {isImporting ? <Loader2 className="animate-spin" size={18} /> : <Layers size={18} />}
-                                {isImporting ? `Importing ${selectedSheetIndices.length} Boards...` : `Import ${selectedSheetIndices.length} Boards`}
+                                {isImporting ? `Importing ${selectedSheetIds.length} Boards...` : `Import ${selectedSheetIds.length} Boards`}
                             </button>
                         </div>
                     </>

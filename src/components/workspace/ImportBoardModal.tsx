@@ -345,6 +345,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     let currentMainItem: any = null;
                     let isInsideSubitems = false;
 
+                    const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
+                    let groupCount = 0;
+
                     rows.forEach((row, rIdx) => {
                         // 1. Skip system rows
                         if (hasNoDescription) {
@@ -380,14 +383,19 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         // Allow index 1 if we've determined there's no description
                         const isPotentialGroupRow = hasNoDescription ? rIdx >= 1 : rIdx > 1;
                         if (firstVal && (firstVal.startsWith('Priority') || (isPotentialGroupRow && row.filter((v: any) => v !== undefined && v !== '').length === 1))) {
-                            let groupColor = '#579bfc';
-                            if (firstVal.includes('1')) groupColor = '#ff9800';
-                            else if (firstVal.includes('2')) groupColor = '#e2445c';
-                            else if (firstVal.includes('3')) groupColor = '#00c875';
-                            else if (firstVal.includes('Integration') || firstVal.includes('Project')) groupColor = '#a25ddc';
+                            let groupColor = palette[groupCount % palette.length];
+                            
+                            const lowVal = firstVal.toLowerCase();
+                            if (lowVal.includes('priority 1') || lowVal.includes('urgent') || lowVal.includes('critical')) groupColor = '#e2445c';
+                            else if (lowVal.includes('priority 2') || lowVal.includes('working')) groupColor = '#fdab3d';
+                            else if (lowVal.includes('priority 3') || lowVal.includes('done') || lowVal.includes('complete')) groupColor = '#00c875';
+                            else if (lowVal.includes('mews') || lowVal.includes('pms') || lowVal.includes('sync')) groupColor = '#579bfc';
+                            else if (lowVal.includes('finance') || lowVal.includes('budget') || lowVal.includes('payment')) groupColor = '#00c875';
+                            else if (lowVal.includes('design') || lowVal.includes('ui') || lowVal.includes('layout')) groupColor = '#a25ddc';
                             
                             currentGroup = { title: firstVal, color: groupColor, items: [] };
                             groups.push(currentGroup);
+                            groupCount++;
                             currentMainItem = null;
                             isInsideSubitems = false;
                             return;

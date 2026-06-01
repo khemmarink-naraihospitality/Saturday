@@ -837,7 +837,7 @@ export const createBoardSlice: StateCreator<
                             if (col) {
                                 if (col.type === 'status' && col.options) {
                                     // Hybrid Handling: Columns that are status in main board but something else in subitems
-                                    const hybridColumns = ['SOR Complete', 'SOR File', 'RFI Sent'];
+                                    const hybridColumns = ['SOR Complete', 'RFI Sent'];
                                     if (hybridColumns.includes(col.title)) {
                                         subValues[col.id] = val || null;
                                     } else {

@@ -24,9 +24,15 @@ export const Cell = memo(({
     groupColor?: string,
     isSubItem?: boolean
 }) => {
-    // Dynamic Override: If it's a subitem and the SOR Complete column, treat as Date type
-    if (isSubItem && column.title === 'SOR Complete') {
-        return <DateCell itemId={itemId} value={value} column={column} />;
+    // Hybrid Rendering Logic: Switch types for Sub-items in certain columns
+    if (isSubItem) {
+        if (column.title === 'SOR Complete') {
+            return <DateCell itemId={itemId} value={value} column={column} />;
+        }
+        if (column.title === 'RFI Sent' || column.title === 'Numbers') {
+            // RFI Sent (Item ID) and Numbers (Dropdown) in subitems are treated as Text
+            return <TextCell itemId={itemId} value={value} column={column} />;
+        }
     }
 
     // Dispatch to specific cell type components

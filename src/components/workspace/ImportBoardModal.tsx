@@ -82,11 +82,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         { id: 'na-black-id', label: 'N/A', color: '#333333' },
                         { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' }
                     ]},
-                    { title: 'SOR File', type: 'status', options: [
-                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
-                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                    ]},
+                    { title: 'SOR File', type: 'files' },
                     { title: 'Stakeholders', type: 'text' },
                     { title: 'Numbers', type: 'number' },
                     { title: 'RFI Sent', type: 'status', options: [
@@ -139,7 +135,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     }
                     
                     // Combined Timeline Parsing
-                    const parseDate = (val: any) => {
+                    const parseFiles = (val: any) => {
+                    if (!val) return [];
+                    const str = String(val).trim();
+                    // Split by comma, newline or space if it looks like multiple URLs
+                    const urls = str.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http') || u.startsWith('/'));
+                    return urls.map(url => ({
+                        id: Math.random().toString(36).substring(7),
+                        name: url.split('/').pop() || 'File',
+                        url: url,
+                        type: 'link'
+                    }));
+                };
+
+                const parseDate = (val: any) => {
                         if (!val) return null;
                         if (typeof val === 'number') {
                             // Excel serial date to JS date
@@ -188,14 +197,14 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'Champion': row[3] || '',
                         'Timeline': timelineValue,
                         'SOR Complete': isInsideSubitems ? parseDate(row[6]) : (row[6] || ''),
-                        'SOR File': row[7] || '',
+                        'SOR File': parseFiles(row[7]),
                         'Stakeholders': row[8] || '',
                         'Numbers': row[9] || '',
                         'RFI Sent': row[10] || '',
                         'Current': row[11] || '',
                         'Remark': row[12] || '',
                         'Dropdown': row[13] || '',
-                        'Item ID': row[14] || ''
+                        'Item ID': String(row[14] || '')
                     };
                     
                     // Note: Excel export might shift depending on hidden columns. We extract all text.

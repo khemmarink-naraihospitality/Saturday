@@ -136,13 +136,16 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             }}
                         />
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                             <h1
                                 onClick={() => can('create_board') && setIsEditing(true)}
                                 style={{
                                     fontSize: '18px',
                                     fontWeight: 600,
                                     margin: 0,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
                                     color: 'hsl(var(--color-text-primary))',
                                     cursor: can('create_board') ? 'pointer' : 'default',
                                     display: 'flex',
@@ -195,7 +198,11 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                         color: board.description ? 'hsl(var(--color-text-tertiary))' : 'hsl(var(--color-text-tertiary))',
                                         opacity: board.description ? 1 : 0.6,
                                         cursor: can('create_board') ? 'pointer' : 'default',
-                                        fontStyle: board.description ? 'normal' : 'italic'
+                                        fontStyle: board.description ? 'normal' : 'italic',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        maxWidth: '450px'
                                     }}
                                 >
                                     {board.description || (can('create_board') ? '+ Add description' : '')}

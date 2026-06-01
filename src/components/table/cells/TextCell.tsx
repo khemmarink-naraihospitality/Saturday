@@ -79,7 +79,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                     border: 'none',
                     background: 'transparent',
                     width: '100%',
-                    fontSize: '13px',
+                    fontSize: column.title === 'Champion' ? '12px' : '13px',
                     color: 'inherit',
                     outline: 'none',
                     paddingLeft: '4px', // Same as Item column on focus
@@ -134,6 +134,8 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
             style={{ 
                 ...cellStyle, 
                 justifyContent: column.type === 'number' ? 'flex-end' : 'flex-start',
+                fontSize: column.title === 'Champion' ? '12px' : '13px',
+                color: column.title === 'Champion' ? 'hsl(var(--color-text-secondary))' : 'inherit',
                 transition: 'background-color 0.2s ease',
                 cursor: can('edit_items') ? 'text' : 'default'
             }}

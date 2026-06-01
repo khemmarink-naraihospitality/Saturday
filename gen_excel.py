@@ -1,0 +1,25 @@
+import pandas as pd
+
+data = {
+    'Item Title': ['Task 1', 'Task 2'],
+    'Subitems': [None, None],
+    'Status': ['Working on it', 'Done'],
+    'Champion': ['Khun K', 'Khun J'],
+    'Timeline - Start': ['2026-06-01', '2026-06-01'],
+    'Timeline - End': ['2026-06-30', '2026-06-15'],
+    'Date': ['2026-06-01', '2026-06-01'],
+    'ST Files': [None, None],
+    'SOR Complete': ['No', 'Yes'],
+    'Budget': [1000, 2000],
+    'Priority': ['High', 'Low'],
+    'Link': ['http://test.com', 'http://test2.com'],
+    'Owner': ['K', 'J'],
+    'Notes': ['Note 1', 'Note 2'],
+    'Department': ['IT', 'Finance'],
+    'Last Updated': ['2026-06-01', '2026-06-01'],
+    'Updates': ['Update 1', 'Update 2']
+}
+
+df = pd.DataFrame(data)
+df.to_excel('test_import.xlsx', index=False)
+print("Created test_import.xlsx")

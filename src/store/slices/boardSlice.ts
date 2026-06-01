@@ -408,6 +408,7 @@ export const createBoardSlice: StateCreator<
                     })),
                     groups: bGroups.map(g => {
                         const groupItems = (parsedItemsMap[g.id] || [])
+                            .filter(i => !i.parentId) // Only top-level items in the main group list
                             .slice()
                             .sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id));
 
@@ -753,6 +754,24 @@ export const createBoardSlice: StateCreator<
         const { activeWorkspaceId } = get();
         if (!activeWorkspaceId) throw new Error('No active workspace');
 
+        // --- OVERWRITE LOGIC ---
+        // Check if board with same title exists in this workspace
+        const { data: existingBoard } = await supabase
+            .from('boards')
+            .select('id')
+            .eq('workspace_id', activeWorkspaceId)
+            .eq('title', title)
+            .single();
+
+        if (existingBoard) {
+            console.log('[Import] Found existing board, overwriting:', existingBoard.id);
+            // Delete the existing board. Cascading RLS or DB rules should handle related data,
+            // but we'll do a clean delete.
+            const { error: delErr } = await supabase.from('boards').delete().eq('id', existingBoard.id);
+            if (delErr) console.error('[Import] Error deleting old board for overwrite:', delErr);
+        }
+        // -----------------------
+
         const boardId = uuidv4();
         
         // 1. Prepare Columns
@@ -890,7 +909,7 @@ export const createBoardSlice: StateCreator<
 
         // 4. Update UI
         await get().loadUserData(true);
+        // We set active board but DON'T navigate yet to allow Modal to show success state
         get().setActiveBoard(boardId);
-        get().navigateTo('board');
     }
 });

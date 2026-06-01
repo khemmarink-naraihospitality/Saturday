@@ -12,6 +12,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const [file, setFile] = useState<File | null>(null);
     const [isParsing, setIsParsing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
     const [preview, setPreview] = useState<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
@@ -57,24 +58,33 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 
                 // Full Saturday Schema mapped as per implementation plan (A-Q)
                 const defaultCols: any[] = [
-                    { title: 'Subitems', type: 'text' },
                     { title: 'Status', type: 'status', options: [
                         { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
                         { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
                         { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
                         { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },
-                        { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#579bfc' },
-                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#e2445c' },
-                        { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#ffd533' }
+                        { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#fdab3d' },
+                        { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
+                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
+                        { id: 'na-black-id', label: 'N/A', color: '#333333' },
+                        { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' }
                     ]},
                     { title: 'Champion', type: 'text' },
                     { title: 'Timeline', type: 'timeline' },
-                    { title: 'Date', type: 'date' },
-                    { title: 'ST Files', type: 'files' },
-                    { title: 'SOR Complete', type: 'text' },
-                    { title: 'SOR File', type: 'text' },
-                    { title: 'Stakeholders', type: 'text' },
-                    { title: 'Numbers', type: 'text' },
+                    { title: 'SOR Complete / Date', type: 'status', options: [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },
+                        { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#fdab3d' },
+                        { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
+                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
+                        { id: 'na-black-id', label: 'N/A', color: '#333333' },
+                        { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' }
+                    ]},
+                    { title: 'SOR File / ST Files', type: 'link' },
+                    { title: 'Stakeholders / Remark', type: 'text' },
+                    { title: 'Numbers / Dropdown', type: 'text' },
                     { title: 'If I Sent', type: 'text' },
                     { title: 'Current', type: 'text' },
                     { title: 'Remark', type: 'text' },
@@ -119,32 +129,55 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         currentGroup = { title: 'Imported Group', color: '#579bfc', items: [] };
                         groups.push(currentGroup);
                     }
+                    
+                    // Combined Timeline Parsing
+                    const parseDate = (val: any) => {
+                        if (!val) return null;
+                        if (typeof val === 'number') {
+                            // Excel serial date to JS date
+                            const date = new Date((val - 25569) * 86400 * 1000);
+                            return date.toISOString().split('T')[0];
+                        }
+                        const str = String(val).trim();
+                        if (str.includes('-')) {
+                            const parts = str.split('-');
+                            if (parts.length === 3) {
+                                // DD-MM-YY or DD-MM-YYYY
+                                const d = parts[0].padStart(2, '0');
+                                const m = parts[1].padStart(2, '0');
+                                let y = parts[2];
+                                if (y.length === 2) y = '20' + y;
+                                return `${y}-${m}-${d}`;
+                            }
+                        }
+                        return str;
+                    };
 
                     let timelineValue = null;
-                    if (row[4] || row[5]) {
+                    const startDate = parseDate(row[4]);
+                    const endDate = parseDate(row[5]);
+                    
+                    if (startDate || endDate) {
                         timelineValue = {
-                            from: row[4] ? String(row[4]).trim() : null,
-                            to: row[5] ? String(row[5]).trim() : null,
+                            from: startDate,
+                            to: endDate || startDate, // Default to start if end is missing
                         };
                     }
 
-                    // Map all specific values horizontally according to column B -> Q (Indices 1 -> 16)
+                    // Hybrid mapping logic (Main context vs Sub context)
                     const valuesMap: Record<string, any> = {
-                        'Subitems': row[1] || '',
                         'Status': row[2] || '',
                         'Champion': row[3] || '',
                         'Timeline': timelineValue,
-                        'Date': row[6] || '',
-                        'ST Files': row[7] || '',
-                        'SOR Complete': row[8] || '',
-                        'SOR File': row[9] || '',
-                        'Stakeholders': row[10] || '',
-                        'Numbers': row[11] || '',
-                        'If I Sent': row[12] || '',
-                        'Current': row[13] || '',
-                        'Remark': row[14] || '',
-                        'Dropdown': row[15] || '',
-                        'Item ID': row[16] || ''
+                        'SOR Complete / Date': isInsideSubitems ? parseDate(row[6]) : (row[6] || ''),
+                        'SOR File / ST Files': row[7] || '',
+                        'Stakeholders / Remark': row[8] || '',
+                        'Numbers / Dropdown': row[9] || '',
+                        'If I Sent': row[10] || '',
+                        'Current': row[11] || '',
+                        'Remark': row[12] || '',
+                        'Dropdown': row[13] || '',
+                        'Item ID': row[14] || ''
                     };
                     
                     // Note: Excel export might shift depending on hidden columns. We extract all text.
@@ -154,12 +187,14 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         subitems: []
                     };
 
-                    if (isInsideSubitems && currentMainItem) {
+                    // Logic: If we are inside subitems section AND the first column is empty, 
+                    // it means the title is in second column and it's a subitem.
+                    if (isInsideSubitems && currentMainItem && (!firstVal || firstVal === '')) {
                         currentMainItem.subitems.push(itemData);
                     } else {
                         currentMainItem = itemData;
                         currentGroup.items.push(currentMainItem);
-                        isInsideSubitems = false; // Reset subitem flag for new main items
+                        isInsideSubitems = false; // Successfully found a new main item or reset
                     }
                 });
 
@@ -183,8 +218,14 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 groups: preview.groups, 
                 columns: preview.columns 
             });
+            setIsSuccess(true);
             showToast('Board imported successfully', 'success');
-            onClose();
+            
+            // Wait 2 seconds so user sees the success state in modal
+            setTimeout(() => {
+                useBoardStore.getState().navigateTo('board');
+                onClose();
+            }, 2000);
         } catch (err: any) {
             console.error(err);
             showToast(err.message || 'Import failed. Please check file format.', 'error');
@@ -200,13 +241,26 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)'
         }}>
             <div style={{
-                width: '600px', backgroundColor: 'white', borderRadius: '12px',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden',
-                display: 'flex', flexDirection: 'column', maxHeight: '90vh'
+                backgroundColor: 'white', borderRadius: '0px', width: '900px', maxWidth: '95vw',
+                maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
             }}>
-                {/* Header */}
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {isSuccess ? (
+                    <div style={{ 
+                        padding: '60px 40px', display: 'flex', flexDirection: 'column', 
+                        alignItems: 'center', justifyContent: 'center', gap: '20px' 
+                    }}>
+                        <CheckCircle2 size={64} color="hsl(var(--color-brand-primary))" className="animate-bounce" />
+                        <h2 style={{ fontSize: '24px', fontWeight: 600 }}>Import successful!</h2>
+                        <p style={{ color: 'hsl(var(--color-text-tertiary))' }}>Your board has been created and populated.</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Header */}
+                        <div style={{
+                            padding: '24px', borderBottom: '1px solid hsl(var(--color-border))',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
                             <Upload size={20} />
                         </div>
@@ -284,30 +338,32 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     )}
                 </div>
 
-                {/* Footer */}
-                <div style={{ padding: '20px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: '#f8fafc' }}>
-                    <button 
-                        onClick={onClose}
-                        disabled={isImporting}
-                        style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 500, cursor: 'pointer', color: '#64748b' }}
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleImport}
-                        disabled={!preview || isImporting}
-                        style={{ 
-                            padding: '8px 24px', borderRadius: '6px', border: 'none', 
-                            background: preview ? '#2563eb' : '#94a3b8', 
-                            color: 'white', fontSize: '14px', fontWeight: 600, 
-                            cursor: preview ? 'pointer' : 'not-allowed',
-                            display: 'flex', alignItems: 'center', gap: '8px'
-                        }}
-                    >
-                        {isImporting && <Loader2 className="animate-spin" size={16} />}
-                        {isImporting ? 'Importing...' : 'Confirm Import'}
-                    </button>
-                </div>
+                        {/* Footer */}
+                        <div style={{ padding: '20px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: '#f8fafc' }}>
+                            <button 
+                                onClick={onClose}
+                                disabled={isImporting}
+                                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 500, cursor: 'pointer', color: '#64748b' }}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleImport}
+                                disabled={!preview || isImporting}
+                                style={{ 
+                                    padding: '8px 24px', borderRadius: '6px', border: 'none', 
+                                    background: preview ? '#2563eb' : '#94a3b8', 
+                                    color: 'white', fontSize: '14px', fontWeight: 600, 
+                                    cursor: preview ? 'pointer' : 'not-allowed',
+                                    display: 'flex', alignItems: 'center', gap: '8px'
+                                }}
+                            >
+                                {isImporting && <Loader2 className="animate-spin" size={16} />}
+                                {isImporting ? 'Importing...' : 'Confirm Import'}
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

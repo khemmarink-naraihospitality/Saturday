@@ -36,10 +36,14 @@ export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, val
 
     const options = Array.isArray(column.options) ? column.options : [];
     const statusOption = options.find(opt => opt.id === value || opt.label === value);
-    const color = statusOption?.color || (value ? '#c4c4c4' : '#c4c4c4');
+    
+    // Hybrid logic: If no status option matches and we has a value, 
+    // treat it as plain text (e.g. for Date in hybrid column)
+    const isHybridValue = !statusOption && value;
+    
+    const backgroundColor = isHybridValue ? 'transparent' : (statusOption?.color || (value ? '#c4c4c4' : 'transparent'));
+    const textColor = isHybridValue ? 'hsl(var(--color-text-primary))' : '#fff';
     const content = statusOption ? statusOption.label : (value || '');
-    const backgroundColor = color;
-    const textColor = '#fff';
 
     return (
         <>

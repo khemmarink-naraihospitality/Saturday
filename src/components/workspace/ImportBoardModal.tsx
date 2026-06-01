@@ -90,10 +90,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
                         { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
                     ]},
-                    { title: 'Current', type: 'text' },
-                    { title: 'Remark', type: 'text' },
-                    { title: 'Dropdown', type: 'text' },
-                    { title: 'Item ID', type: 'text' }
+                    { title: 'Current Contract', type: 'text' },
+                    { title: 'RFI FILE', type: 'files' },
+                    { title: 'Quotes', type: 'files' },
+                    { title: 'Milestones', type: 'text' },
+                    { title: 'System Cost', type: 'number' },
+                    { title: 'annual cost 5 properties IT', type: 'number' },
+                    { title: 'Setup Cost', type: 'number' },
+                    { title: 'Consultant Budget', type: 'number' },
+                    { title: 'Consultant Name', type: 'text' },
+                    { title: 'Interface with', type: 'text' },
+                    { title: 'Testing capabilities?', type: 'text' },
+                    { title: 'Interface milestone', type: 'text' },
+                    { title: 'Tags', type: 'text' },
+                    { title: 'Item ID (auto generated)', type: 'text' }
                 ];
 
                 columns.push(...defaultCols);
@@ -201,10 +211,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'Stakeholders': row[8] || '',
                         'Numbers': row[9] || '',
                         'RFI Sent': row[10] || '',
-                        'Current': row[11] || '',
-                        'Remark': row[12] || '',
-                        'Dropdown': row[13] || '',
-                        'Item ID': String(row[14] || '')
+                        'Current Contract': row[11] || '',
+                        'RFI FILE': parseFiles(row[12]),
+                        'Quotes': parseFiles(row[13]),
+                        'Milestones': row[14] || '',
+                        'System Cost': row[15] || '',
+                        'annual cost 5 properties IT': row[16] || '',
+                        'Setup Cost': row[17] || '',
+                        'Consultant Budget': row[18] || '',
+                        'Consultant Name': row[19] || '',
+                        'Interface with': row[20] || '',
+                        'Testing capabilities?': row[21] || '',
+                        'Interface milestone': row[22] || '',
+                        'Tags': row[23] || '',
+                        'Item ID (auto generated)': String(row[24] || '')
                     };
                     
                     // Note: Excel export might shift depending on hidden columns. We extract all text.

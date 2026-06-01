@@ -208,8 +208,17 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         if (color) coloredGroupRows.set(r, color);
                     }
 
-                    // If A2 (row index 1) has colored text → no Board Description
-                    const hasNoDescription = coloredGroupRows.has(1);
+                    // Heuristic No Description Detection:
+                    // 1. If A2 (idx 1) has colored text (Requires Pro XLSX, fallback to heuristic)
+                    // 2. If row 1 has a single value, row 2 is the header, and row 1 text is short (< 30 chars)
+                    const headerRowIdx = rows.findIndex(r => Array.isArray(r) && r.some((c: any) => {
+                        const s = String(c).toLowerCase();
+                        return s === 'status' || s === 'champion' || s === 'owner' || s === 'person' || s === 'subitems';
+                    }));
+
+                    const row1Values = rows[1]?.filter((v: any) => v !== undefined && v !== '');
+                    const hasNoDescription = coloredGroupRows.has(1) || 
+                                           (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40);
 
                     const columns: any[] = [
                         { title: 'Status', type: 'status', options: [
@@ -255,7 +264,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     ];
 
                     let mainColIdx: Record<string, number> = {};
-                    const headerRowIdx = rows.findIndex(r => Array.isArray(r) && r.some((c: any) => String(c).toLowerCase() === 'status' || String(c).toLowerCase() === 'champion'));
+                    // Re-use headerRowIdx found above
                     if (headerRowIdx !== -1) {
                         const h = rows[headerRowIdx].map((c: any) => String(c || '').toLowerCase().trim());
                         mainColIdx = {
@@ -339,7 +348,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
                         
                         // 5. Fallback: text-pattern group detection
-                        if (firstVal && (firstVal.startsWith('Priority') || (rIdx > 1 && row.filter((v: any) => v !== undefined && v !== '').length === 1))) {
+                        // Allow index 1 if we've determined there's no description
+                        const isPotentialGroupRow = hasNoDescription ? rIdx >= 1 : rIdx > 1;
+                        if (firstVal && (firstVal.startsWith('Priority') || (isPotentialGroupRow && row.filter((v: any) => v !== undefined && v !== '').length === 1))) {
                             let groupColor = '#579bfc';
                             if (firstVal.includes('1')) groupColor = '#ff9800';
                             else if (firstVal.includes('2')) groupColor = '#e2445c';

@@ -55,11 +55,31 @@
 ## Excel Import Rules & Column Mapping (A-Q)
 The Board Import feature follows strict parsing rules to maintain data integrity and NHG branding:
 
-### 1. File Structure Parsing
-- **Row 1:** Board Title (Column A).
-- **Row 2:** Board Description (Column A).
+### 1. File Structure & Version Detection
+The system automatically distinguishes between two file formats based on Row 2 (A2):
+
+#### **Format A: With Board Description**
+- **Row 1:** Board Title.
+- **Row 2:** Board Description (Long text, no special color).
+- **Row 3:** **Header Row** (Status, Champion, etc.).
+- **Row 4+:** Data starts (First row is usually a Group Name).
+
+#### **Format B: No Board Description (Direct to Group)**
+- **Row 1:** Board Title.
+- **Row 2:** **First Group Name** (e.g., "Mews"). *Detected if A2 text is short (< 40 chars) OR colored blue.*
+- **Row 3:** **Header Row** (Status, Champion, etc.).
+- **Row 4+:** Data items.
+
+#### **Heuristic Detection (Version Locking)**
+- If `rIdx = 1` contains a single-column value AND `rIdx = 2` is a valid Header Row, then:
+    - If the value is **Short (< 40 chars)** or has **Colored Font**: System treats File as **Format B** (A2 = Group).
+    - Otherwise: System treats File as **Format A** (A2 = Description).
+
+### 2. Group & Item Parsing
+- **Group Detection:** 
+    - Text-pattern: "Priority 1", "Priority 2", etc.
+    - Architectural: Solo-text rows (only column A has data) after the header.
 - **Subitems Marker:** A row with "Subitems" in Column A triggers sub-item mode.
-- **Group Detection:** Rows starting with "Priority" or solo-text rows are converted to Group headers.
 - **Board Title:** Extracted from **Row 1, Column A**. The title is preserved **exactly** as it appears in Excel (including prefixes like "1) ").
 
 ### 2. Logic & Behavior

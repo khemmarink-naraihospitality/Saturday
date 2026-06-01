@@ -308,17 +308,28 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     let isInsideSubitems = false;
 
                     rows.forEach((row, rIdx) => {
-                        // Skip title row (0) and description row (1) — unless no description detected
+                        // 1. Skip system rows
                         if (hasNoDescription) {
                             if (rIdx < 1) return; // skip only title
                         } else {
                             if (rIdx < 2) return; // skip title + description
                         }
+
                         const firstVal = row[0]?.toString().trim();
                         const secondVal = row[1]?.toString().trim();
 
-                        // --- Colored text group detection (Monday.com style) ---
-                        if (coloredGroupRows.has(rIdx) && firstVal) {
+                        // 2. Skip Header Row (must be done before group detection)
+                        if (headerRowIdx !== -1 && rIdx === headerRowIdx) return;
+                        
+                        // 3. Skip 'Name' or 'Subitems' headers
+                        if (firstVal === 'Name' || firstVal === 'Subitems') {
+                            if (firstVal === 'Subitems') isInsideSubitems = true;
+                            return;
+                        }
+
+                        // 4. Colored text group detection (Exclude common header words)
+                        const commonHeaders = ['name', 'item', 'subitems', 'status', 'champion', 'timeline'];
+                        if (coloredGroupRows.has(rIdx) && firstVal && !commonHeaders.includes(firstVal.toLowerCase())) {
                             const groupColor = coloredGroupRows.get(rIdx) || '#579bfc';
                             currentGroup = { title: firstVal, color: groupColor, items: [] };
                             groups.push(currentGroup);
@@ -327,8 +338,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             return;
                         }
                         
-                        // --- Fallback: text-pattern group detection ---
-                        if (firstVal && (firstVal.startsWith('Priority') || (rIdx > 1 && row.filter((v: any) => v !== undefined && v !== '').length === 1 && firstVal !== 'Subitems' && firstVal !== 'Name'))) {
+                        // 5. Fallback: text-pattern group detection
+                        if (firstVal && (firstVal.startsWith('Priority') || (rIdx > 1 && row.filter((v: any) => v !== undefined && v !== '').length === 1))) {
                             let groupColor = '#579bfc';
                             if (firstVal.includes('1')) groupColor = '#ff9800';
                             else if (firstVal.includes('2')) groupColor = '#e2445c';
@@ -342,13 +353,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             return;
                         }
 
-                        if (headerRowIdx !== -1 && rIdx <= headerRowIdx) return;
                         if (!firstVal && !secondVal) return;
-
-                        if (firstVal === 'Name' || firstVal === 'Subitems') {
-                            if (firstVal === 'Subitems') isInsideSubitems = true;
-                            return;
-                        }
 
                         if (!currentGroup) {
                             currentGroup = { title: 'Imported Group', color: '#579bfc', items: [] };

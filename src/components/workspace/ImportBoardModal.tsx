@@ -88,13 +88,30 @@ const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | 
     // 1. Check for explicit RGB color
     let rgb = s?.font?.color?.rgb || s?.color?.rgb || s?.fgColor?.rgb;
     
-    // 2. Fallback to common Theme colors if RGB is missing (Blue=1, Red=2, Green=3 etc approx)
+    // 2. Fallback to common Theme colors if RGB is missing
     if (!rgb && s?.font?.color?.theme !== undefined) {
         const theme = s.font.color.theme;
-        if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Core Blue/Accent
-        if (theme === 6) rgb = 'e2445c'; // Accent 2 (Red-ish)
-        if (theme === 7) rgb = 'fdab3d'; // Accent 3 (Orange-ish)
-        if (theme === 8) rgb = '00c875'; // Accent 4 (Green-ish)
+        if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Blue
+        if (theme === 6) rgb = 'e2445c'; // Red
+        if (theme === 7) rgb = 'fdab3d'; // Orange
+        if (theme === 8) rgb = '00c875'; // Green
+    }
+
+    // 3. Fallback to Indexed colors
+    if (!rgb && s?.font?.color?.indexed !== undefined) {
+        const idx = s.font.color.indexed;
+        const indexMap: Record<number, string> = {
+            2: 'e2445c', // Red
+            3: '00c875', // Green
+            4: '579bfc', // Blue
+            5: 'ff9800', // Yellow/Orange
+            6: 'a25ddc', // Purple
+            8: 'e2445c', // Red
+            10: 'e2445c', // Red
+            11: '00c875', // Green
+            12: '579bfc'  // Blue
+        };
+        if (indexMap[idx]) rgb = indexMap[idx];
     }
 
     if (!rgb) return null;

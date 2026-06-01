@@ -8,24 +8,89 @@ interface ImportBoardModalProps {
     onClose: () => void;
 }
 
-const parseDate = (val: any, isUpdate = false) => {
-    if (!val) return null;
-    if (val instanceof Date) return val.toISOString();
-    
+// Returns YYYY-MM-DD format for compatibility with TimelineCell
+const toYMD = (d: Date): string => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+};
+
+const parseDate = (val: any, _isUpdate = false): string | null => {
+    if (val === null || val === undefined || val === '') return null;
+
+    // 1. JS Date object (xlsx returns this with cellDates:true)
+    if (val instanceof Date) {
+        if (isNaN(val.getTime())) return null;
+        return toYMD(val);
+    }
+
+    // 2. Number → Excel serial date
+    const num = Number(val);
+    if (!isNaN(num) && num > 1 && num < 2958466) {
+        const d = new Date(Math.round((num - 25569) * 86400 * 1000));
+        if (!isNaN(d.getTime())) return toYMD(d);
+        return null;
+    }
+
     const s = String(val).trim();
     if (!s) return null;
 
-    // Excel Serial Date check
-    if (!isNaN(Number(s)) && Number(s) > 30000) {
-        const d = new Date((Number(s) - 25569) * 86400 * 1000);
-        return d.toISOString();
+    // 3. Already YYYY-MM-DD
+    const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (ymd) {
+        const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+        if (!isNaN(d.getTime())) return toYMD(d);
     }
 
-    // Try various formats
-    const d = new Date(s);
-    if (!isNaN(d.getTime())) return d.toISOString();
+    // 4. dd/mm/yyyy or dd-mm-yyyy
+    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) {
+        const d = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+        if (!isNaN(d.getTime())) return toYMD(d);
+    }
 
-    return isUpdate ? null : s;
+    // 5. dd-MMM-yyyy  e.g. "15-Jun-2025", "1 Jan 2025"
+    const monthNames: Record<string, number> = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+    const dmm = s.match(/^(\d{1,2})[\/\-\s](\w{3,9})[\/\-\s](\d{4})$/i);
+    if (dmm) {
+        const mIdx = monthNames[dmm[2].substring(0, 3).toLowerCase()];
+        if (mIdx !== undefined) {
+            const d = new Date(Number(dmm[3]), mIdx, Number(dmm[1]));
+            if (!isNaN(d.getTime())) return toYMD(d);
+        }
+    }
+
+    // 6. MMM dd, yyyy  e.g. "Jun 15, 2025"
+    const mdy2 = s.match(/^(\w{3,9})\s+(\d{1,2}),?\s+(\d{4})$/i);
+    if (mdy2) {
+        const mIdx = monthNames[mdy2[1].substring(0, 3).toLowerCase()];
+        if (mIdx !== undefined) {
+            const d = new Date(Number(mdy2[3]), mIdx, Number(mdy2[2]));
+            if (!isNaN(d.getTime())) return toYMD(d);
+        }
+    }
+
+    // 7. General JS Date.parse fallback
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return toYMD(d);
+
+    // 8. Unparsable → null
+    return null;
+};
+
+// Helper to extract font color from an Excel cell
+const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | null => {
+    const cell = worksheet[cellRef];
+    if (!cell || !cell.s) return null;
+    const s = cell.s as any;
+    // Try multiple paths where xlsx stores font color
+    const rgb = s?.font?.color?.rgb || s?.color?.rgb || s?.fgColor?.rgb;
+    if (!rgb) return null;
+    // Strip alpha prefix if present (AARRGGBB → RRGGBB)
+    const hex = rgb.length > 6 ? rgb.substring(2) : rgb;
+    if (hex === '000000') return null; // black = default, not colored
+    return `#${hex}`;
 };
 
 const parseFiles = (val: any) => {
@@ -48,6 +113,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const [isImporting, setIsImporting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [importResults, setImportResults] = useState<{ boards: number; items: number } | null>(null);
+    const [importError, setImportError] = useState<string | null>(null);
+    const [parseWarnings, setParseWarnings] = useState<string[]>([]);
     const [previews, setPreviews] = useState<any[]>([]);
     const [selectedSheetIds, setSelectedSheetIds] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +141,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             const reader = new FileReader();
             reader.onload = (e) => {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellStyles: true });
                 
                 // --- 1. Parse Updates Map ---
                 const updatesMap: Record<string, any[]> = {};
@@ -128,8 +195,21 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     if (sheetName.toLowerCase().includes('update')) return;
 
                     const worksheet = workbook.Sheets[sheetName];
-                    const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
                     if (rows.length < 3) return;
+
+                    // --- Detect colored text in column A for Group Names ---
+                    // Build a map of row indices where column A has colored font
+                    const coloredGroupRows: Map<number, string> = new Map();
+                    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+                    for (let r = range.s.r; r <= range.e.r; r++) {
+                        const ref = XLSX.utils.encode_cell({ r, c: 0 });
+                        const color = getCellFontColor(worksheet, ref);
+                        if (color) coloredGroupRows.set(r, color);
+                    }
+
+                    // If A2 (row index 1) has colored text → no Board Description
+                    const hasNoDescription = coloredGroupRows.has(1);
 
                     const columns: any[] = [
                         { title: 'Status', type: 'status', options: [
@@ -181,8 +261,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         mainColIdx = {
                             status: h.indexOf('status'),
                             champion: h.indexOf('champion'),
-                            timelineStart: h.indexOf('timeline') !== -1 ? h.indexOf('timeline') : h.indexOf('start date'),
-                            timelineEnd: h.indexOf('timeline') !== -1 ? h.indexOf('timeline') + 1 : h.indexOf('end date'),
+                            timelineStart: (() => {
+                                let idx = h.findIndex((c: string) => c === 'timeline - start' || c === 'timeline  - start');
+                                if (idx === -1) idx = h.findIndex((c: string) => c.startsWith('timeline') && c.includes('start'));
+                                if (idx === -1) idx = h.indexOf('start date');
+                                if (idx === -1) idx = h.indexOf('timeline');
+                                return idx;
+                            })(),
+                            timelineEnd: (() => {
+                                let idx = h.findIndex((c: string) => c === 'timeline - end' || c === 'timeline  - end');
+                                if (idx === -1) idx = h.findIndex((c: string) => c.startsWith('timeline') && c.includes('end'));
+                                if (idx === -1) idx = h.indexOf('end date');
+                                if (idx === -1) { const ts = h.indexOf('timeline'); return ts !== -1 ? ts + 1 : -1; }
+                                return idx;
+                            })(),
                             sorComplete: h.indexOf('sor complete'),
                             sorFile: h.indexOf('sor file'),
                             stakeholders: h.indexOf('stakeholders'),
@@ -216,10 +308,26 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     let isInsideSubitems = false;
 
                     rows.forEach((row, rIdx) => {
-                        if (rIdx < 2) return;
+                        // Skip title row (0) and description row (1) — unless no description detected
+                        if (hasNoDescription) {
+                            if (rIdx < 1) return; // skip only title
+                        } else {
+                            if (rIdx < 2) return; // skip title + description
+                        }
                         const firstVal = row[0]?.toString().trim();
                         const secondVal = row[1]?.toString().trim();
+
+                        // --- Colored text group detection (Monday.com style) ---
+                        if (coloredGroupRows.has(rIdx) && firstVal) {
+                            const groupColor = coloredGroupRows.get(rIdx) || '#579bfc';
+                            currentGroup = { title: firstVal, color: groupColor, items: [] };
+                            groups.push(currentGroup);
+                            currentMainItem = null;
+                            isInsideSubitems = false;
+                            return;
+                        }
                         
+                        // --- Fallback: text-pattern group detection ---
                         if (firstVal && (firstVal.startsWith('Priority') || (rIdx > 1 && row.filter((v: any) => v !== undefined && v !== '').length === 1 && firstVal !== 'Subitems' && firstVal !== 'Name'))) {
                             let groupColor = '#579bfc';
                             if (firstVal.includes('1')) groupColor = '#ff9800';
@@ -289,6 +397,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
                     });
 
+                    const totalItems = groups.reduce((acc: number, g: any) => acc + g.items.length, 0);
+                    if (totalItems === 0) {
+                        setParseWarnings(prev => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
+                    }
+
                     filePreviews.push({ 
                         id: `${file.name}-${sheetName}`,
                         fileName: file.name,
@@ -304,9 +417,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 setIsParsing(false);
             };
             reader.readAsArrayBuffer(file);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            showToast('Failed to parse Excel file', 'error');
+            setImportError(`Failed to parse "${file.name}": ${err.message || 'Unknown error'}`);
             setIsParsing(false);
         }
     };
@@ -337,13 +450,128 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             showToast('Multi-file import completed', 'success');
         } catch (err: any) {
             console.error(err);
+            setImportError(`Import failed: ${err.message || 'Unknown error. Please check the file format and try again.'}`);
             showToast(err.message || 'Import failed.', 'error');
         } finally {
             setIsImporting(false);
         }
     };
 
+    const SuccessPopup = () => isSuccess ? (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 2000,
+            backdropFilter: 'blur(4px)', animation: 'fadeIn 0.3s ease'
+        }}>
+            <div style={{
+                backgroundColor: 'white', width: '480px', maxWidth: '90vw',
+                borderRadius: '0px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                overflow: 'hidden', animation: 'fadeIn 0.4s ease'
+            }}>
+                <div style={{
+                    padding: '32px 24px', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', textAlign: 'center', gap: '20px'
+                }}>
+                    <div style={{
+                        width: '72px', height: '72px', borderRadius: '50%',
+                        backgroundColor: '#ecfdf5', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 0 0 8px rgba(16, 185, 129, 0.1)'
+                    }}>
+                        <CheckCircle2 size={40} color="#10b981" />
+                    </div>
+                    <div>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#111827', fontFamily: 'serif' }}>
+                            Import Successful!
+                        </h3>
+                        <p style={{ color: '#6b7280', fontSize: '15px', margin: 0, lineHeight: '1.5' }}>
+                            Successfully imported <strong style={{ color: '#111827' }}>{importResults?.boards} board{(importResults?.boards || 0) > 1 ? 's' : ''}</strong> with <strong style={{ color: '#111827' }}>{importResults?.items} item{(importResults?.items || 0) > 1 ? 's' : ''}</strong> across all files.
+                        </p>
+                    </div>
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px',
+                        width: '100%', padding: '16px', backgroundColor: '#f0fdf4',
+                        border: '1px solid #bbf7d0', borderRadius: '0px'
+                    }}>
+                        <div>
+                            <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.boards}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Boards</div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.items}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Items</div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            width: '100%', padding: '14px', backgroundColor: '#065f46', color: 'white',
+                            border: 'none', borderRadius: '0px', fontWeight: 700, fontSize: '15px',
+                            cursor: 'pointer', letterSpacing: '0.02em',
+                            transition: 'background-color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#047857')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#065f46')}
+                    >
+                        Done — Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
+    const ErrorPopup = () => importError ? (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 2000,
+            backdropFilter: 'blur(4px)'
+        }}>
+            <div style={{
+                backgroundColor: 'white', width: '480px', maxWidth: '90vw',
+                borderRadius: '0px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                overflow: 'hidden'
+            }}>
+                <div style={{ padding: '24px 24px 0 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <AlertCircle size={24} color="#dc2626" />
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827', fontFamily: 'serif' }}>Import Error</h3>
+                </div>
+                <div style={{ padding: '16px 24px 24px 24px' }}>
+                    <p style={{ color: '#4b5563', fontSize: '14px', lineHeight: '1.6', margin: '0 0 20px 0', wordBreak: 'break-word' }}>{importError}</p>
+                    <button
+                        onClick={() => setImportError(null)}
+                        style={{
+                            width: '100%', padding: '12px', backgroundColor: '#1a1728', color: 'white',
+                            border: 'none', borderRadius: '0px', fontWeight: 600, fontSize: '14px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Understood
+                    </button>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
+    const WarningBanner = () => parseWarnings.length > 0 ? (
+        <div style={{
+            margin: '0 0 12px 0', padding: '12px 16px', backgroundColor: '#fffbeb',
+            border: '1px solid #fbbf24', borderRadius: '0px', fontSize: '13px', color: '#92400e'
+        }}>
+            <div style={{ fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertCircle size={14} /> Parse Warnings
+            </div>
+            {parseWarnings.map((w, i) => <div key={i} style={{ marginTop: '4px' }}>• {w}</div>)}
+        </div>
+    ) : null;
+
     return (
+        <>
+        <SuccessPopup />
+        <ErrorPopup />
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(26, 23, 40, 0.8)', display: 'flex',
@@ -356,30 +584,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 borderRadius: '0px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
                 border: '1px solid #eee', overflow: 'hidden', position: 'relative'
             }}>
-                {isSuccess ? (
-                    <div style={{
-                        padding: '60px 40px', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', textAlign: 'center', gap: '24px'
-                    }}>
-                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CheckCircle2 size={48} color="#10b981" />
-                        </div>
-                        <div>
-                            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: '0 0 8px 0', fontFamily: 'serif' }}>Import Complete!</h2>
-                            <p style={{ color: '#6b7280', fontSize: '16px' }}>Successfully created <strong>{importResults?.boards} boards</strong> with <strong>{importResults?.items} items</strong> across all files.</p>
-                        </div>
-                        <button 
-                            onClick={onClose}
-                            style={{ 
-                                padding: '12px 32px', backgroundColor: '#1a1728', color: 'white', 
-                                border: 'none', borderRadius: '0px', fontWeight: 600, cursor: 'pointer',
-                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                            }}
-                        >
-                            Close Summary
-                        </button>
-                    </div>
-                ) : (
                     <>
                         <div style={{
                             padding: '24px', borderBottom: '1px solid #f1f5f9',
@@ -434,6 +638,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         </div>
                                     ) : (
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                                            <WarningBanner />
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
                                                 Detected <strong>{previews.length}</strong> possible boards across <strong>{files.length}</strong> files.
                                             </p>
@@ -520,8 +725,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             </button>
                         </div>
                     </>
-                )}
             </div>
         </div>
+        </>
     );
 };

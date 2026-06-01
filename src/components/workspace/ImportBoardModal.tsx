@@ -84,12 +84,24 @@ const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | 
     const cell = worksheet[cellRef];
     if (!cell || !cell.s) return null;
     const s = cell.s as any;
-    // Try multiple paths where xlsx stores font color
-    const rgb = s?.font?.color?.rgb || s?.color?.rgb || s?.fgColor?.rgb;
+    
+    // 1. Check for explicit RGB color
+    let rgb = s?.font?.color?.rgb || s?.color?.rgb || s?.fgColor?.rgb;
+    
+    // 2. Fallback to common Theme colors if RGB is missing (Blue=1, Red=2, Green=3 etc approx)
+    if (!rgb && s?.font?.color?.theme !== undefined) {
+        const theme = s.font.color.theme;
+        if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Core Blue/Accent
+        if (theme === 6) rgb = 'e2445c'; // Accent 2 (Red-ish)
+        if (theme === 7) rgb = 'fdab3d'; // Accent 3 (Orange-ish)
+        if (theme === 8) rgb = '00c875'; // Accent 4 (Green-ish)
+    }
+
     if (!rgb) return null;
+    
     // Strip alpha prefix if present (AARRGGBB → RRGGBB)
-    const hex = rgb.length > 6 ? rgb.substring(2) : rgb;
-    if (hex === '000000') return null; // black = default, not colored
+    const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
+    if (hex.toLowerCase() === '000000') return null; 
     return `#${hex}`;
 };
 

@@ -82,10 +82,18 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         { id: 'na-black-id', label: 'N/A', color: '#333333' },
                         { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' }
                     ]},
-                    { title: 'SOR File', type: 'link' },
+                    { title: 'SOR File', type: 'status', options: [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
+                    ]},
                     { title: 'Stakeholders', type: 'text' },
-                    { title: 'Numbers', type: 'text' },
-                    { title: 'If I Sent', type: 'text' },
+                    { title: 'Numbers', type: 'number' },
+                    { title: 'RFI Sent', type: 'status', options: [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
+                    ]},
                     { title: 'Current', type: 'text' },
                     { title: 'Remark', type: 'text' },
                     { title: 'Dropdown', type: 'text' },
@@ -183,7 +191,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'SOR File': row[7] || '',
                         'Stakeholders': row[8] || '',
                         'Numbers': row[9] || '',
-                        'If I Sent': row[10] || '',
+                        'RFI Sent': row[10] || '',
                         'Current': row[11] || '',
                         'Remark': row[12] || '',
                         'Dropdown': row[13] || '',

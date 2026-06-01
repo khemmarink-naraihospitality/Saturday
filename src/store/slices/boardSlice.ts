@@ -837,9 +837,9 @@ export const createBoardSlice: StateCreator<
                             const col = dbColumns.find(c => c.title === colTitle);
                             if (col) {
                                 if (col.type === 'status' && col.options) {
-                                    // Hybrid Handling: If it's the SOR Complete column, don't try to match status options
-                                    // Just keep the value as is (which should be a date string from parser)
-                                    if (col.title === 'SOR Complete') {
+                                    // Hybrid Handling: Columns that are status in main board but something else in subitems
+                                    const hybridColumns = ['SOR Complete', 'SOR File', 'RFI Sent'];
+                                    if (hybridColumns.includes(col.title)) {
                                         subValues[col.id] = val || null;
                                     } else {
                                         const matchedOption = (col.options as any[]).find(opt => 

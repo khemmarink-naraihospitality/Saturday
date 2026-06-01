@@ -645,7 +645,16 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 color: 'hsl(var(--color-text-secondary))',
                                                                 fontWeight: 400
                                                             }}>
-                                                                {col.title === 'SOR Complete' ? 'Date' : col.title}
+                                                                {(() => {
+                                                                    const mapping: Record<string, string> = {
+                                                                        'SOR Complete': 'Date',
+                                                                        'SOR File': 'ST Files',
+                                                                        'Stakeholders': 'Remark',
+                                                                        'Numbers': 'Dropdown',
+                                                                        'RFI Sent': 'Item ID (auto generated)'
+                                                                    };
+                                                                    return mapping[col.title] || col.title;
+                                                                })()}
                                                             </div>
                                                         ))}
                                                     </div>

@@ -271,38 +271,46 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
                                     const renderUpdate = (update: any, depth = 0) => (
                                         <div key={update.id} style={{
-                                            backgroundColor: depth === 0 ? 'hsl(var(--color-bg-surface))' : 'transparent',
-                                            borderRadius: '8px',
+                                            backgroundColor: depth === 0 ? 'white' : 'transparent',
+                                            borderRadius: '0px', // Sharp architectural corners
                                             border: depth === 0 ? '1px solid hsl(var(--color-border))' : 'none',
-                                            padding: depth === 0 ? '20px' : '12px 0 0 44px',
+                                            padding: depth === 0 ? '24px' : '16px 0 0 52px',
                                             position: 'relative',
-                                            borderLeft: depth === 0 && deleteConfirmId === update.id ? '4px solid hsl(var(--color-dangerous))' : (depth === 0 ? '1px solid hsl(var(--color-border))' : 'none')
+                                            marginBottom: depth === 0 ? '16px' : '0',
+                                            borderLeft: depth === 0 && deleteConfirmId === update.id ? '4px solid hsl(var(--color-dangerous))' : (depth === 0 ? '1px solid hsl(var(--color-border))' : 'none'),
+                                            boxShadow: depth === 0 ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
                                         }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <div style={{
-                                                        width: depth === 0 ? '32px' : '24px',
-                                                        height: depth === 0 ? '32px' : '24px',
-                                                        borderRadius: '50%',
-                                                        backgroundColor: update.contentType === 'Reply' ? '#3498db' : '#00c875',
+                                                        width: depth === 0 ? '40px' : '32px',
+                                                        height: depth === 0 ? '40px' : '32px',
+                                                        borderRadius: '0px', // Narai Sharp Corners
+                                                        backgroundColor: update.author.toLowerCase().includes('lubd') ? '#1a1728' : (update.contentType === 'Reply' ? '#2563eb' : '#00c875'),
                                                         color: 'white',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        fontSize: depth === 0 ? '14px' : '11px',
-                                                        fontWeight: 600
+                                                        fontSize: depth === 0 ? '16px' : '12px',
+                                                        fontWeight: 700,
+                                                        flexShrink: 0,
+                                                        fontFamily: 'serif'
                                                     }}>
                                                         {update.author.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: 600, fontSize: depth === 0 ? '14px' : '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <div style={{ fontWeight: 700, fontSize: depth === 0 ? '15px' : '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#1a1728' }}>
                                                             {update.author}
                                                             {update.contentType === 'Reply' && (
-                                                                <span style={{ fontSize: '10px', color: '#888', fontWeight: 400, backgroundColor: '#f3f4f6', padding: '1px 4px', borderRadius: '3px' }}>REPLY</span>
+                                                                <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700, backgroundColor: '#eff6ff', padding: '2px 6px', letterSpacing: '0.05em' }}>REPLY</span>
                                                             )}
                                                         </div>
-                                                        <div style={{ fontSize: '12px', color: '#888' }}>
-                                                            {new Date(update.createdAt).toLocaleString()}
+                                                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                                                            {(() => {
+                                                                const d = new Date(update.createdAt);
+                                                                if (isNaN(d.getTime())) return update.createdAt;
+                                                                return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -337,7 +345,15 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="prose prose-sm max-w-none" style={{ color: 'hsl(var(--color-text-primary))' }} dangerouslySetInnerHTML={{ __html: update.content }} />
+                                                <div 
+                                                    className="prose prose-sm max-w-none narai-update-content" 
+                                                    style={{ 
+                                                        color: '#1a1728', 
+                                                        lineHeight: 1.6,
+                                                        fontSize: '14px'
+                                                    }} 
+                                                    dangerouslySetInnerHTML={{ __html: update.content }} 
+                                                />
                                             )}
                                             
                                             {/* Render Replies for this update */}

@@ -755,20 +755,19 @@ export const createBoardSlice: StateCreator<
         if (!activeWorkspaceId) throw new Error('No active workspace');
 
         // --- OVERWRITE LOGIC ---
-        // Check if board with same title exists in this workspace
-        const { data: existingBoard } = await supabase
+        // Check if boards with same title exist in this workspace
+        const { data: existingBoards } = await supabase
             .from('boards')
             .select('id')
             .eq('workspace_id', activeWorkspaceId)
-            .eq('title', title)
-            .single();
+            .eq('title', title);
 
-        if (existingBoard) {
-            console.log('[Import] Found existing board, overwriting:', existingBoard.id);
-            // Delete the existing board. Cascading RLS or DB rules should handle related data,
-            // but we'll do a clean delete.
-            const { error: delErr } = await supabase.from('boards').delete().eq('id', existingBoard.id);
-            if (delErr) console.error('[Import] Error deleting old board for overwrite:', delErr);
+        if (existingBoards && existingBoards.length > 0) {
+            console.log(`[Import] Found ${existingBoards.length} existing board(s), overwriting...`);
+            // Delete all existing boards with this title
+            const idsToDelete = existingBoards.map(b => b.id);
+            const { error: delErr } = await supabase.from('boards').delete().in('id', idsToDelete);
+            if (delErr) console.error('[Import] Error deleting old boards for overwrite:', delErr);
         }
         // -----------------------
 

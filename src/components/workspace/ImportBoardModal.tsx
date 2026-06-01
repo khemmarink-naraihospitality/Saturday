@@ -38,9 +38,37 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             reader.onload = (e) => {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+                const mainSheetName = workbook.SheetNames[0];
+                const updatesSheetName = workbook.SheetNames.find(s => s.toLowerCase() === 'updates' || s.toLowerCase().includes('update'));
+                
+                const worksheet = workbook.Sheets[mainSheetName];
                 const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                const updatesRows: any[] = updatesSheetName 
+                    ? XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheetName], { header: 1 })
+                    : [];
+
+                // Parse Updates Sheet if it exists
+                // Expected columns: Item ID, Item Name, Content Type, User, Created At, Content, Post ID, Parent Post ID
+                const updatesMap: Record<string, any[]> = {};
+                if (updatesRows.length > 1) {
+                    updatesRows.forEach((uRow, uIdx) => {
+                        if (uIdx === 0) return; // Skip header
+                        const itemId = String(uRow[0] || '').trim();
+                        if (!itemId) return;
+                        
+                        if (!updatesMap[itemId]) updatesMap[itemId] = [];
+                        updatesMap[itemId].push({
+                            id: Math.random().toString(36).substring(7),
+                            author: String(uRow[3] || 'System'),
+                            createdAt: uRow[4] ? new Date(uRow[4]).toISOString() : new Date().toISOString(),
+                            content: String(uRow[5] || ''),
+                            contentType: String(uRow[2] || 'Update'),
+                            postId: String(uRow[6] || ''),
+                            parentId: String(uRow[7] || '')
+                        });
+                    });
+                }
 
                 // Row 1 is board title, Row 2 is description
                 let boardTitle = file.name.replace('.xlsx', '');
@@ -245,7 +273,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     }
                 });
 
-                setPreview({ title: boardTitle, description, groups, columns });
+                setPreview({ title: boardTitle, description, groups, columns, updatesMap });
             };
             reader.readAsArrayBuffer(file);
         } catch (err) {
@@ -263,7 +291,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             await importExcelBoard(preview.title, { 
                 description: preview.description,
                 groups: preview.groups, 
-                columns: preview.columns 
+                columns: preview.columns,
+                updatesMap: preview.updatesMap
             });
             setIsSuccess(true);
             showToast('Board imported successfully', 'success');

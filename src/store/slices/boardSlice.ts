@@ -51,6 +51,7 @@ export interface BoardSlice {
             description?: string;
             groups: { title: string; color: string; items: any[] }[];
             columns: { title: string; type: ColumnType; options?: any[] }[];
+            updatesMap?: Record<string, any[]>;
         }
     ) => Promise<void>;
 }
@@ -817,6 +818,11 @@ export const createBoardSlice: StateCreator<
                         }
                     }
                 });
+                
+                // --- UPDATES MAPPING ---
+                const excelItemId = String(item.values?.['Item ID (auto generated)'] || '').trim();
+                const itemUpdates = data.updatesMap?.[excelItemId] || [];
+                // -----------------------
 
                 dbItems.push({
                     id: itemId,
@@ -824,6 +830,7 @@ export const createBoardSlice: StateCreator<
                     group_id: groupId,
                     title: item.title,
                     values: itemValues,
+                    updates: itemUpdates,
                     order: iIdx,
                     parent_id: null
                 });

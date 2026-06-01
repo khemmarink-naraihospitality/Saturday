@@ -262,178 +262,91 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                {activeItem.updates.filter(u => typeof u === 'object' && u?.id).map(update => (
-                                    <div key={update.id} style={{
-                                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                                        borderRadius: '8px',
-                                        border: '1px solid hsl(var(--color-border))',
-                                        padding: '20px',
-                                        position: 'relative',
-                                        borderLeft: deleteConfirmId === update.id ? '4px solid hsl(var(--color-dangerous))' : '1px solid hsl(var(--color-border))'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: '#00c875',
-                                                    color: 'white',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '14px',
-                                                    fontWeight: 600
-                                                }}>
-                                                    {update.author.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{update.author}</div>
-                                                    <div style={{ fontSize: '12px', color: '#888' }}>
-                                                        {new Date(update.createdAt).toLocaleString()}
+                                {(() => {
+                                    const validUpdates = activeItem.updates.filter(u => typeof u === 'object' && u?.id);
+                                    
+                                    // Separate top-level updates and replies
+                                    const topLevel = validUpdates.filter(u => !u.parentId || !validUpdates.find(p => p.postId === u.parentId));
+                                    const replies = validUpdates.filter(u => u.parentId && validUpdates.find(p => p.postId === u.parentId));
+
+                                    const renderUpdate = (update: any, depth = 0) => (
+                                        <div key={update.id} style={{
+                                            backgroundColor: depth === 0 ? 'hsl(var(--color-bg-surface))' : 'transparent',
+                                            borderRadius: '8px',
+                                            border: depth === 0 ? '1px solid hsl(var(--color-border))' : 'none',
+                                            padding: depth === 0 ? '20px' : '12px 0 0 44px',
+                                            position: 'relative',
+                                            borderLeft: depth === 0 && deleteConfirmId === update.id ? '4px solid hsl(var(--color-dangerous))' : (depth === 0 ? '1px solid hsl(var(--color-border))' : 'none')
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{
+                                                        width: depth === 0 ? '32px' : '24px',
+                                                        height: depth === 0 ? '32px' : '24px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: update.contentType === 'Reply' ? '#3498db' : '#00c875',
+                                                        color: 'white',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: depth === 0 ? '14px' : '11px',
+                                                        fontWeight: 600
+                                                    }}>
+                                                        {update.author.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, fontSize: depth === 0 ? '14px' : '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            {update.author}
+                                                            {update.contentType === 'Reply' && (
+                                                                <span style={{ fontSize: '10px', color: '#888', fontWeight: 400, backgroundColor: '#f3f4f6', padding: '1px 4px', borderRadius: '3px' }}>REPLY</span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ fontSize: '12px', color: '#888' }}>
+                                                            {new Date(update.createdAt).toLocaleString()}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                {(update.userId === currentUser.id || update.author === currentUser.name) && (
+                                                    <div style={{ position: 'relative', display: 'flex', gap: '4px' }}>
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingUpdateId(update.id);
+                                                                setEditUpdateContent(update.content);
+                                                            }}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteClick(update.id)}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {/* Delete and Edit Actions - Strictly restricted to Author only */}
-                                            {(update.userId === currentUser.id || update.author === currentUser.name) && (
-                                                <div style={{ position: 'relative', display: 'flex', gap: '4px' }}>
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingUpdateId(update.id);
-                                                            setEditUpdateContent(update.content);
-                                                        }}
-                                                        style={{
-                                                            background: 'none',
-                                                            border: 'none',
-                                                            cursor: 'pointer',
-                                                            color: '#9ca3af',
-                                                            padding: '4px'
-                                                        }}
-                                                        title="Edit Update"
-                                                    >
-                                                        <Edit2 size={14} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(update.id)}
-                                                        style={{
-                                                            background: 'none',
-                                                            border: 'none',
-                                                            cursor: 'pointer',
-                                                            color: '#9ca3af',
-                                                            padding: '4px'
-                                                        }}
-                                                        title="Delete Update"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-
-                                                    {deleteConfirmId === update.id && (
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            top: '100%',
-                                                            right: 0,
-                                                            marginTop: '4px',
-                                                            backgroundColor: 'hsl(var(--color-bg-surface))',
-                                                            border: '1px solid #fee2e2',
-                                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                                            borderRadius: '6px',
-                                                            padding: '8px',
-                                                            zIndex: 10,
-                                                            minWidth: '120px'
-                                                        }}>
-                                                            <div style={{ fontSize: '12px', marginBottom: '8px', color: 'hsl(var(--color-brand-primary))', fontWeight: 500 }}>Delete this update?</div>
-                                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                                 <button
-                                                                    onClick={() => confirmDelete(update.id)}
-                                                                    style={{
-                                                                        flex: 1,
-                                                                        backgroundColor: 'hsl(var(--color-brand-primary))',
-                                                                        color: 'white',
-                                                                        border: 'none',
-                                                                        borderRadius: '4px',
-                                                                        padding: '4px',
-                                                                        fontSize: '11px',
-                                                                        cursor: 'pointer'
-                                                                    }}
-                                                                >
-                                                                    Delete
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setDeleteConfirmId(null)}
-                                                                    style={{
-                                                                        flex: 1,
-                                                                        backgroundColor: '#f3f4f6',
-                                                                        color: '#374151',
-                                                                        border: '1px solid #d1d5db',
-                                                                        borderRadius: '4px',
-                                                                        padding: '4px',
-                                                                        fontSize: '11px',
-                                                                        cursor: 'pointer'
-                                                                    }}
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                            {editingUpdateId === update.id ? (
+                                                <div style={{ marginTop: '12px' }}>
+                                                    <RichTextEditor value={editUpdateContent} onChange={(val) => setEditUpdateContent(val)} />
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+                                                        <button onClick={() => setEditingUpdateId(null)} style={{ background: 'transparent', color: 'hsl(var(--color-text-secondary))', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+                                                        <button onClick={() => { editUpdate(itemId, update.id, editUpdateContent); setEditingUpdateId(null); }} style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>Save</button>
+                                                    </div>
                                                 </div>
+                                            ) : (
+                                                <div className="prose prose-sm max-w-none" style={{ color: 'hsl(var(--color-text-primary))' }} dangerouslySetInnerHTML={{ __html: update.content }} />
                                             )}
+                                            
+                                            {/* Render Replies for this update */}
+                                            {replies.filter(r => r.parentId === update.postId).map(reply => renderUpdate(reply, depth + 1))}
                                         </div>
-                                        {/* Render HTML Content or Editor */}
-                                        {editingUpdateId === update.id ? (
-                                            <div style={{ marginTop: '12px' }}>
-                                                <RichTextEditor
-                                                    value={editUpdateContent}
-                                                    onChange={(val) => setEditUpdateContent(val)}
-                                                />
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-                                                    <button
-                                                        onClick={() => setEditingUpdateId(null)}
-                                                        style={{
-                                                            backgroundColor: 'transparent',
-                                                            color: 'hsl(var(--color-text-secondary))',
-                                                            border: 'none',
-                                                            padding: '6px 16px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            fontSize: '13px',
-                                                            fontWeight: 500
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            editUpdate(itemId, update.id, editUpdateContent);
-                                                            setEditingUpdateId(null);
-                                                        }}
-                                                        style={{
-                                                            backgroundColor: 'hsl(var(--color-brand-primary))',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            padding: '6px 16px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            fontSize: '13px',
-                                                            fontWeight: 500
-                                                        }}
-                                                    >
-                                                        Save
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className="prose prose-sm max-w-none"
-                                                style={{ color: 'hsl(var(--color-text-primary))' }}
-                                                dangerouslySetInnerHTML={{ __html: update.content }}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+
+                                    return topLevel.map(u => renderUpdate(u));
+                                })()}
                             </div>
                         )}
                     </div>

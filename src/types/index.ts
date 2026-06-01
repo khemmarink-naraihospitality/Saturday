@@ -48,8 +48,11 @@ export interface Comment {
     id: string;
     content: string;
     createdAt: string;
-    userId?: string; // Optional for backward compatibility
+    userId?: string; 
     author: string;
+    parentId?: string; // For nesting replies
+    contentType?: 'Update' | 'Reply'; // From Excel sheet
+    postId?: string; // Original Post ID from Excel
 }
 
 export interface Item {

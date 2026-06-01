@@ -47,7 +47,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 let description = '';
                 
                 if (rows[0] && rows[0][0]) {
-                    boardTitle = String(rows[0][0]).replace(/^1\)\s*/, '').trim(); // Remove "1) " prefix
+                    boardTitle = String(rows[0][0]).trim(); // Preserve original title (including prefixes like "1) ")
                 }
                 if (rows[1] && rows[1][0]) {
                     description = String(rows[1][0]).trim();

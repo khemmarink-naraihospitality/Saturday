@@ -60,6 +60,7 @@ The Board Import feature follows strict parsing rules to maintain data integrity
 - **Row 2:** Board Description (Column A).
 - **Subitems Marker:** A row with "Subitems" in Column A triggers sub-item mode.
 - **Group Detection:** Rows starting with "Priority" or solo-text rows are converted to Group headers.
+- **Board Title:** Extracted from **Row 1, Column A**. The title is preserved **exactly** as it appears in Excel (including prefixes like "1) ").
 
 ### 2. Logic & Behavior
 - **Robust Overwrite:** If one or more boards with the same title exist in the workspace, **all matching boards** are deleted and replaced automatically to ensure a clean import.

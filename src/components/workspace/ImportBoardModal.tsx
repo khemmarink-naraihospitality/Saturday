@@ -386,12 +386,25 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             let groupColor = palette[groupCount % palette.length];
                             
                             const lowVal = firstVal.toLowerCase();
-                            if (lowVal.includes('priority 1') || lowVal.includes('urgent') || lowVal.includes('critical')) groupColor = '#e2445c';
-                            else if (lowVal.includes('priority 2') || lowVal.includes('working')) groupColor = '#fdab3d';
-                            else if (lowVal.includes('priority 3') || lowVal.includes('done') || lowVal.includes('complete')) groupColor = '#00c875';
-                            else if (lowVal.includes('mews') || lowVal.includes('pms') || lowVal.includes('sync')) groupColor = '#579bfc';
-                            else if (lowVal.includes('finance') || lowVal.includes('budget') || lowVal.includes('payment')) groupColor = '#00c875';
-                            else if (lowVal.includes('design') || lowVal.includes('ui') || lowVal.includes('layout')) groupColor = '#a25ddc';
+                            
+                            // 🌈 Smart Keyword-to-Color Mapping (Narai Standard)
+                            if (lowVal.match(/priority\s*1|urgent|critical|hot|emergency|failed|error|asap|high|risk|issue/)) {
+                                groupColor = '#e2445c'; // Red
+                            } else if (lowVal.match(/priority\s*2|working|progress|pending|review|medium|warning|draft|dev/)) {
+                                groupColor = '#fdab3d'; // Orange
+                            } else if (lowVal.match(/priority\s*3|done|complete|success|archive|finance|budget|payment|paid|billing|approved|final|low/)) {
+                                groupColor = '#00c875'; // Green
+                            } else if (lowVal.match(/mews|pms|sync|system|it|infra|network|db|sql|backlog|idea|plan|strategy|integration|api/)) {
+                                groupColor = '#579bfc'; // Blue
+                            } else if (lowVal.match(/design|ui|ux|frontend|marketing|brand|content|social|creative|artwork|figma|research/)) {
+                                groupColor = '#a25ddc'; // Purple
+                            } else if (lowVal.match(/legal|compliance|audit|security|standard|doc|policy|contract|agreement/)) {
+                                groupColor = '#ffcb00'; // Yellow
+                            } else if (lowVal.match(/hr|people|culture|career|recruit|train|welfare|meeting/)) {
+                                groupColor = '#ff642c'; // Pink/Light Red
+                            } else if (lowVal.match(/vendor|outsource|hardware|maintenance|external|legacy/)) {
+                                groupColor = '#333333'; // Black
+                            }
                             
                             currentGroup = { title: firstVal, color: groupColor, items: [] };
                             groups.push(currentGroup);

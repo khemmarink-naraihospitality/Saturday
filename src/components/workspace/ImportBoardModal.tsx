@@ -282,17 +282,17 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     
                     if (headerRowIdx !== -1) {
                         const h = rows[headerRowIdx].map((c: any) => String(c || '').trim());
-                        const hLower = h.map(s => s.toLowerCase());
+                        const hLower = h.map((s: string) => s.toLowerCase());
 
                         // Find System column: Item ID
-                        itemIdIdx = hLower.findIndex(c => c === 'item id (auto generated)' || c === 'item id' || c === 'id');
+                        itemIdIdx = hLower.findIndex((c: string) => c === 'item id (auto generated)' || c === 'item id' || c === 'id');
                         
                         // Find Timeline pairs
-                        let timelineStartIdx = hLower.findIndex(c => c === 'timeline - start' || c === 'timeline  - start' || (c.startsWith('timeline') && c.includes('start')) || c === 'start date');
-                        let timelineEndIdx = hLower.findIndex(c => c === 'timeline - end' || c === 'timeline  - end' || (c.startsWith('timeline') && c.includes('end')) || c === 'end date');
+                        let timelineStartIdx = hLower.findIndex((c: string) => c === 'timeline - start' || c === 'timeline  - start' || (c.startsWith('timeline') && c.includes('start')) || c === 'start date');
+                        let timelineEndIdx = hLower.findIndex((c: string) => c === 'timeline - end' || c === 'timeline  - end' || (c.startsWith('timeline') && c.includes('end')) || c === 'end date');
                         let timelineAdded = false;
 
-                        h.forEach((headerText, idx) => {
+                        h.forEach((headerText: string, idx: number) => {
                             if (!headerText) return;
                             const lowerText = headerText.toLowerCase();
                             
@@ -417,7 +417,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
 
                         const itemValues: Record<string, any> = {};
-                        dynamicColumns.forEach(c => {
+                        dynamicColumns.forEach((c: any) => {
                             if (c.type === 'timeline' && c.originalIndices) {
                                 const sd = parseDate(row[c.originalIndices[0]]);
                                 const ed = parseDate(row[c.originalIndices[1]]);
@@ -460,7 +460,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                     const totalItems = groups.reduce((acc: number, g: any) => acc + g.items.length, 0);
                     if (totalItems === 0) {
-                        setParseWarnings(prev => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
+                        setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }
 
                     filePreviews.push({ 
@@ -473,8 +473,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     });
                 });
 
-                setPreviews(prev => [...prev, ...filePreviews]);
-                setSelectedSheetIds(prev => [...prev, ...filePreviews.map(p => p.id)]);
+                setPreviews((prev: any[]) => [...prev, ...filePreviews]);
+                setSelectedSheetIds((prev: string[]) => [...prev, ...filePreviews.map((p: any) => p.id)]);
                 setIsParsing(false);
             };
             reader.readAsArrayBuffer(file);

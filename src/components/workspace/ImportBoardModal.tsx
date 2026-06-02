@@ -563,22 +563,33 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         };
                         const actualItemId = itemIdIdx !== -1 ? normalizeId(row[itemIdIdx]) : normalizeId(row[24]);
 
+                        // 🧠 Sub-item Association Logic
+                        const isSubRow = isInsideSubitems && (!firstVal || firstVal === '');
+                        
                         const itemData = {
-                            title: firstVal || secondVal || 'Missing Title',
+                            title: (isSubRow && secondVal) ? secondVal : (firstVal || secondVal || 'Missing Title'),
                             values: itemValues,
                             updates: updatesMap[actualItemId] || [],
                             subitems: []
                         };
 
-                        if (isInsideSubitems && currentMainItem && (!firstVal || firstVal === '')) {
+                        if (isSubRow && currentMainItem) {
                             currentMainItem.subitems.push(itemData);
                         } else {
+                            // If firstVal exists, it's a MAIN item (Hotel/Project)
+                            // We reset isInsideSubitems to false to ensure any following sub-items MUST have their own sub-header or be empty
+                            // But usually, in Monday.com exports, once sub-items start, they belong to the item immediately above.
                             currentMainItem = itemData;
                             currentGroup.items.push(currentMainItem);
+                            
+                            // Reset flag if we have a proper main item title in Col A
+                            if (firstVal && firstVal !== 'Subitems' && firstVal !== 'Name') {
+                                isInsideSubitems = false;
+                            }
                         }
                     });
 
-                    const totalItems = groups.reduce((acc: number, g: any) => acc + g.items.length, 0);
+                    const totalItems = groups.reduce((acc: number, g: any) => acc + (g.items?.length || 0), 0);
                     if (totalItems === 0) {
                         setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }

@@ -640,7 +640,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'rfp': '#ff158a',
                         'not start': '#333333',
                         'n/a': '#333333',
-                        ...statusMappings // Override with user settings
+                        // Normalize keys to lowercase for reliable matching
+                        ...Object.keys(statusMappings).reduce((acc, k) => ({
+                            ...acc,
+                            [k.toLowerCase()]: statusMappings[k]
+                        }), {})
                     };
 
                     dynamicColumns.forEach(c => {

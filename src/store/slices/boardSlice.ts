@@ -820,8 +820,7 @@ export const createBoardSlice: StateCreator<
                 });
                 
                 // --- UPDATES MAPPING ---
-                const excelItemId = String(item.values?.['Item ID (auto generated)'] || '').trim();
-                const itemUpdates = data.updatesMap?.[excelItemId] || [];
+                const itemUpdates = item.updates || [];
                 // -----------------------
 
                 dbItems.push({

@@ -301,19 +301,17 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         hLower.forEach((text: string, i: number) => {
                             if (handledIndices.has(i)) return;
                             
-                            // Check if this is a "Start" column
                             const isStart = text.includes('timeline') && (text.includes('start') || text.includes('เริ่ม'));
                             if (isStart) {
-                                // Extract the prefix by removing 'timeline', 'start', etc.
-                                const prefix = text.replace(/timeline|start|begin|เริ่ม|-|\s/g, '');
+                                const clean = (s: string) => s.replace(/timeline|start|begin|end|finish|เริ่ม|จบ|date|[^a-z0-9]/g, '').trim();
+                                const prefix = clean(text);
                                 
-                                // Look for a matching "End" column in the remaining headers
                                 const endIdx = hLower.findIndex((endText: string, j: number) => 
                                     j > i && 
                                     !handledIndices.has(j) &&
                                     endText.includes('timeline') && 
                                     (endText.includes('end') || endText.includes('finish') || endText.includes('จบ')) &&
-                                    endText.replace(/timeline|end|finish|จบ|-|\s/g, '') === prefix
+                                    clean(endText) === prefix
                                 );
 
                                 if (endIdx !== -1) {

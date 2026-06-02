@@ -110,7 +110,8 @@ export const GroupRow = ({
                 alignItems: 'center',
                 paddingLeft: '24px', 
                 boxSizing: 'border-box',
-                flexShrink: 0
+                flexShrink: 0,
+                minWidth: 'max-content'
             }}>
                 {/* Color Picker / Expand Trigger */}
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '4px' }}>

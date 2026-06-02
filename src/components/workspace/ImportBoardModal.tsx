@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { X, Upload, Loader2, CheckCircle2, Layers, Plus, AlertCircle } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { showToast } from '../../utils/toast';
+import { supabase } from '../../lib/supabase';
 
 interface ImportBoardModalProps {
     onClose: () => void;
@@ -177,7 +178,28 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const [selectedSheetIds, setSelectedSheetIds] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
+    const [statusMappings, setStatusMappings] = useState<Record<string, string>>({});
+    
     const importExcelBoard = useBoardStore(state => state.importExcelBoard);
+
+    useEffect(() => {
+        const fetchStatusMappings = async () => {
+            try {
+                const { data } = await supabase
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'status_color_mapping')
+                    .single();
+                
+                if (data?.value) {
+                    setStatusMappings(data.value as Record<string, string>);
+                }
+            } catch (err) {
+                console.error('Failed to fetch status mappings:', err);
+            }
+        };
+        fetchStatusMappings();
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = Array.from(e.target.files || []);
@@ -604,7 +626,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
                     });
 
-                    // 🌈 6. Post-Process Status Options (Consolidate labels and colors detected from cells)
+                    // 🌈 6. Post-Process Status Options (Use DB mappings or fallback)
                     const standardStatusColorMap: Record<string, string> = {
                         'done': '#00c875',
                         'completed': '#00c875',
@@ -617,7 +639,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'on hold': '#a1a1a1',
                         'rfp': '#ff158a',
                         'not start': '#333333',
-                        'n/a': '#333333'
+                        'n/a': '#333333',
+                        ...statusMappings // Override with user settings
                     };
 
                     dynamicColumns.forEach(c => {

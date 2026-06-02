@@ -181,6 +181,58 @@ export const BoardViewsToolbar = () => {
                         }}>
                             <div style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-text-tertiary))', textTransform: 'uppercase' }}>Filter by</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                                {/* Group Filters */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>Group</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                        {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.groups.map(group => {
+                                            const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
+                                            const currentFilters = board?.filters || [];
+                                            const isActive = currentFilters.some(f => f.columnId === '__group__' && f.values.includes(group.id));
+                                            
+                                            return (
+                                                <button
+                                                    key={group.id}
+                                                    onClick={() => {
+                                                        const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
+                                                        if (!board) return;
+                                                        const currentFilters = [...(board.filters || [])];
+                                                        const existingFilterIdx = currentFilters.findIndex(f => f.columnId === '__group__');
+                                                        const val = group.id;
+
+                                                        if (existingFilterIdx !== -1) {
+                                                            const values = [...currentFilters[existingFilterIdx].values];
+                                                            if (values.includes(val)) {
+                                                                currentFilters[existingFilterIdx].values = values.filter(v => v !== val);
+                                                                if (currentFilters[existingFilterIdx].values.length === 0) {
+                                                                    currentFilters.splice(existingFilterIdx, 1);
+                                                                }
+                                                            } else {
+                                                                currentFilters[existingFilterIdx].values.push(val);
+                                                            }
+                                                        } else {
+                                                            currentFilters.push({ columnId: '__group__', values: [val] });
+                                                        }
+                                                        useBoardStore.getState().setBoardFilters(activeBoardId, currentFilters);
+                                                    }}
+                                                    style={{
+                                                        padding: '2px 8px',
+                                                        borderRadius: '12px',
+                                                        fontSize: '11px',
+                                                        border: 'none',
+                                                        backgroundColor: isActive ? group.color : 'hsl(var(--color-bg-subtle))',
+                                                        color: isActive ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.1s'
+                                                    }}
+                                                >
+                                                    {group.title}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                {/* Column Filters */}
                                 {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.map(col => (
                                     <div key={col.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 500 }}>{col.title}</div>

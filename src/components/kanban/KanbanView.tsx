@@ -232,11 +232,15 @@ export const KanbanView = () => {
             items = items.filter(item => (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
-        // Column Filters
+        // Column Filters and Group Filter
         if (activeBoard.filters && activeBoard.filters.length > 0) {
             activeBoard.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
                     items = items.filter(item => {
+                        if (filter.columnId === '__group__') {
+                            return filter.values.includes(item.groupId);
+                        }
+                        
                         const val = item.values[filter.columnId];
                         return Array.isArray(val) ? val.some(v => filter.values.includes(v)) : filter.values.includes(val);
                     });

@@ -113,11 +113,15 @@ export const Table = ({ boardId }: { boardId: string }) => {
             items = items.filter(item => !item.isHidden);
         }
 
-        // 2. Column Filter (Simple Value Match)
+        // 2. Column Filter and Group Filter
         if (board.filters && board.filters.length > 0) {
             board.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
                     items = items.filter(item => {
+                        if (filter.columnId === '__group__') {
+                            return filter.values.includes(item.groupId);
+                        }
+
                         const val = item.values[filter.columnId];
 
                         // Handle Array values (Dropdown) -> Intersection Check

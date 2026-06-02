@@ -51,11 +51,15 @@ export const TimelineView = () => {
             filtered = filtered.filter(i => !i.isHidden);
         }
 
-        // 3. Board Filters
+        // 3. Board Filters and Group Filter
         if (activeBoard.filters && activeBoard.filters.length > 0) {
             activeBoard.filters.forEach(filter => {
                 if (filter.values && filter.values.length > 0) {
                     filtered = filtered.filter(item => {
+                        if (filter.columnId === '__group__') {
+                            return filter.values.includes(item.groupId);
+                        }
+
                         const val = item.values[filter.columnId];
                         return Array.isArray(val) ? val.some(v => filter.values.includes(v)) : filter.values.includes(val);
                     });

@@ -178,28 +178,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const [selectedSheetIds, setSelectedSheetIds] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
-    const [statusMappings, setStatusMappings] = useState<Record<string, string>>({});
     
     const importExcelBoard = useBoardStore(state => state.importExcelBoard);
 
-    useEffect(() => {
-        const fetchStatusMappings = async () => {
-            try {
-                const { data } = await supabase
-                    .from('system_settings')
-                    .select('value')
-                    .eq('key', 'status_color_mapping')
-                    .single();
-                
-                if (data?.value) {
-                    setStatusMappings(data.value as Record<string, string>);
-                }
-            } catch (err) {
-                console.error('Failed to fetch status mappings:', err);
-            }
-        };
-        fetchStatusMappings();
-    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = Array.from(e.target.files || []);
@@ -218,6 +199,25 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const parseExcel = async (file: File) => {
         setIsParsing(true);
         try {
+            // 🔄 Fetch latest status mappings directly before parsing to avoid stale state/closures
+            console.log('[Import] Fetching status mappings from DB...');
+            let currentMappings: Record<string, string> = {};
+            try {
+                const { data } = await supabase
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'status_color_mapping')
+                    .single();
+                
+                if (data?.value) {
+                    currentMappings = data.value as Record<string, string>;
+                    console.log('[Import] Mappings loaded:', currentMappings);
+                    setStatusMappings(currentMappings); // Update state for UI if needed
+                }
+            } catch (err) {
+                console.error('[Import] Failed to fetch mappings:', err);
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
@@ -641,11 +641,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         'not start': '#333333',
                         'n/a': '#333333',
                         // Normalize keys to lowercase for reliable matching
-                        ...Object.keys(statusMappings).reduce((acc, k) => ({
+                        ...Object.keys(currentMappings).reduce((acc, k) => ({
                             ...acc,
-                            [k.toLowerCase()]: statusMappings[k]
+                            [k.toLowerCase()]: currentMappings[k]
                         }), {})
                     };
+                    console.log('[Import] Effective Color Map:', standardStatusColorMap);
 
                     dynamicColumns.forEach(c => {
                         if (c.type === 'status') {

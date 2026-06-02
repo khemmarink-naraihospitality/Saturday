@@ -177,20 +177,30 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 const updatesSheet = workbook.SheetNames.find(n => n.toLowerCase().includes('update'));
                 if (updatesSheet) {
                     const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1 });
-                    const uHeader = (uRows[0] || []).map((h: any) => String(h || '').toLowerCase().trim());
+                    
+                    // 🔍 Robust Header Detection for Updates Sheet
+                    let uHeaderRowIdx = uRows.findIndex(r => Array.isArray(r) && r.some(c => {
+                        const s = String(c || '').toLowerCase();
+                        return s.includes('user') || s.includes('created at') || s.includes('update content');
+                    }));
+                    if (uHeaderRowIdx === -1) uHeaderRowIdx = 0; // Fallback to first row
+
+                    const uHeader = (uRows[uHeaderRowIdx] || []).map((h: any) => String(h || '').toLowerCase().trim());
                     
                     const colIdx = {
                         itemId: uHeader.indexOf('item id') !== -1 ? uHeader.indexOf('item id') : 0,
-                        user: 4, // Column E
-                        createdAt: 5, // Column F
-                        content: 6, // Column G
-                        contentType: uHeader.indexOf('content type') !== -1 ? uHeader.indexOf('content type') : 2,
+                        user: uHeader.indexOf('user') !== -1 ? uHeader.indexOf('user') : 4, // Default Column E
+                        createdAt: uHeader.indexOf('created at') !== -1 ? uHeader.indexOf('created at') : 5, // Default Column F
+                        content: uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') !== -1 
+                            ? uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') 
+                            : 6, // Default Column G
+                        contentType: uHeader.indexOf('content type') !== -1 ? uHeader.indexOf('content type') : 3, // Column D
                         postId: uHeader.indexOf('post id') !== -1 ? uHeader.indexOf('post id') : 7,
                         parentId: uHeader.indexOf('parent post id') !== -1 ? uHeader.indexOf('parent post id') : 8
                     };
 
                     uRows.forEach((uRow, uIdx) => {
-                        if (uIdx === 0) return;
+                        if (uIdx <= uHeaderRowIdx) return; // Skip header and anything above it
                         const itemId = String(uRow[colIdx.itemId] || '').trim();
                         if (!itemId) return;
                         if (!updatesMap[itemId]) updatesMap[itemId] = [];
@@ -200,7 +210,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const dateObj = new Date(dateVal && !isNaN(new Date(dateVal).getTime()) ? dateVal : new Date());
 
                         let content = String(uRow[colIdx.content] || '').trim();
-                        // Clean "Update [Date]" redundant markers
+                        // Clean redundant markers if any
                         content = content.replace(/^Update\s+\d{1,2}\s+\w{3,9}\s+\d{4}\s*/i, '').trim();
                         
                         const imgRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/gi;

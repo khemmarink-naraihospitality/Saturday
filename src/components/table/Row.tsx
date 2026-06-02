@@ -92,7 +92,7 @@ export const Row = React.memo(({
                     bottom: 0,
                     width: '6px',
                     backgroundColor: groupColor,
-                    zIndex: 65
+                    zIndex: 80
                 }} />
             )}
 
@@ -101,10 +101,10 @@ export const Row = React.memo(({
                 width: `${itemColumnWidth}px`,
                 position: 'sticky', left: 0, zIndex: 70,
                 backgroundColor: 'hsl(var(--color-bg-canvas))',
-                borderRight: '1px solid hsl(var(--color-border))',
+                borderRight: 'none',
                 paddingLeft: groupColor ? (isSubItem ? '86px' : '14px') : (isSubItem ? '76px' : '8px'),
                 display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)'
+                boxShadow: 'none'
             }}>
                 {/* Drag Handle (Visible on Hover via CSS) */}
                 {can('edit_items') && (

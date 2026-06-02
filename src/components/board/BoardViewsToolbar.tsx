@@ -117,12 +117,11 @@ export const BoardViewsToolbar = () => {
                 </div>
 
                 <div 
-                    className="toolbar-item" 
                     style={{ 
                         ...toolbarItemStyle, 
                         padding: '0 8px', 
                         gap: '4px',
-                        border: isSearchFocused ? '1px solid hsl(var(--color-brand-primary))' : '1px solid transparent',
+                        border: isSearchFocused ? '1px solid hsl(var(--color-brand-primary))' : 'none',
                         backgroundColor: isSearchFocused ? 'white' : 'transparent',
                         boxShadow: isSearchFocused ? '0 0 0 2px rgba(var(--color-brand-primary-rgb), 0.1)' : 'none',
                         transition: 'all 0.2s'
@@ -131,7 +130,7 @@ export const BoardViewsToolbar = () => {
                     <Search size={16} />
                     <input
                         type="text"
-                        placeholder="Search"
+                        placeholder="Search items..."
                         value={useBoardStore(state => state.searchQuery)}
                         onChange={(e) => useBoardStore.getState().setSearchQuery(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
@@ -148,11 +147,9 @@ export const BoardViewsToolbar = () => {
                     />
                 </div>
                 
-                <div style={{ width: '1px', height: '16px', backgroundColor: 'hsl(var(--color-border))', margin: '0 4px' }} />
 
                 <div 
                     ref={filterBtnRef}
-                    className="toolbar-item" 
                     style={toolbarItemStyle}
                     onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
@@ -259,7 +256,6 @@ export const BoardViewsToolbar = () => {
 
                 <div 
                     ref={sortBtnRef}
-                    className="toolbar-item" 
                     style={toolbarItemStyle}
                     onClick={() => setShowSortDropdown(!showSortDropdown)}
                 >
@@ -328,7 +324,6 @@ export const BoardViewsToolbar = () => {
 
                 <div 
                     ref={groupByBtnRef}
-                    className="toolbar-item" 
                     style={toolbarItemStyle}
                     onClick={() => setShowGroupByDropdown(!showGroupByDropdown)}
                 >
@@ -391,7 +386,6 @@ export const BoardViewsToolbar = () => {
                 )}
 
                 <div 
-                    className="toolbar-item" 
                     style={toolbarItemStyle}
                     onClick={() => useBoardStore.getState().toggleShowHiddenItems()}
                 >

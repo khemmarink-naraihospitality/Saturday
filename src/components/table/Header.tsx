@@ -316,7 +316,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             {groupColor && (
                 <div style={{
                     position: 'absolute', left: '0px', top: '0px', bottom: '0px', width: '6px',
-                    backgroundColor: groupColor, zIndex: 65, borderRadius: '0px'
+                    backgroundColor: groupColor, zIndex: 80, borderRadius: '0px'
                 }} />
             )}
 
@@ -324,10 +324,10 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 width: `${itemColumnWidth}px`,
                 position: 'sticky', left: 0, zIndex: 60,
                 backgroundColor: 'hsl(var(--color-table-header-bg))',
-                borderRight: '1px solid hsl(var(--color-border))',
+                borderRight: 'none',
                 paddingLeft: groupColor ? '24px' : '8px',
                 display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                boxShadow: 'none',
                 fontSize: '13px'
             }}>
                 {isEditingItemCol ? (

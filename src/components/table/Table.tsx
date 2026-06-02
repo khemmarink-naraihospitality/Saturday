@@ -357,7 +357,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     bottom: '-44px',
                                                                     width: '6px',
                                                                     backgroundColor: vItem.groupColor,
-                                                                    zIndex: 65,
+                                                                    zIndex: 80,
                                                                     borderTopLeftRadius: '0px',
                                                                     borderBottomLeftRadius: '6px'
                                                                 }} />
@@ -368,7 +368,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 left: 0,
                                                                 zIndex: 55,
                                                                 backgroundColor: 'hsl(var(--color-bg-canvas))',
-                                                                borderRight: '1px solid hsl(var(--color-border))',
+                                                                borderRight: 'none',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 paddingLeft: vItem.groupColor ? '24px' : '8px',
@@ -406,7 +406,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             {board.columns.map(col => (
                                                                 <div key={col.id} style={{
                                                                     width: `${col.width || 150}px`,
-                                                                    borderRight: '1px solid hsl(var(--color-border))',
+                                                                    borderRight: 'none',
                                                                     borderBottom: '1px solid hsl(var(--color-border))',
                                                                     boxSizing: 'border-box',
                                                                     flexShrink: 0
@@ -428,8 +428,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 zIndex: 70,
                                                                 backgroundColor: 'hsl(var(--color-bg-canvas))',
                                                                 flexShrink: 0,
-                                                                borderRight: '1px solid hsl(var(--color-border))',
-                                                                boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)',
+                                                                borderRight: 'none',
+                                                                boxShadow: 'none',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 justifyContent: 'flex-end',
@@ -615,7 +615,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         position: 'relative'
                                                     }}>
                                                         {vItem.groupColor && (
-                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1 }} />
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1, zIndex: 80 }} />
                                                         )}
                                                         <div className="table-cell sticky-col" style={{ 
                                                             width: `${itemColumnWidth}px`, 
@@ -629,8 +629,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             paddingLeft: 0,
                                                             fontWeight: 400,
                                                             fontSize: '11px',
-                                                            borderRight: '1px solid hsl(var(--color-border))',
-                                                            boxShadow: '4px 0 8px -4px rgba(0,0,0,0.15)'
+                                                            borderRight: 'none',
+                                                            boxShadow: 'none'
                                                         }}>
                                                             {vItem.type === 'subitem-header' ? 'Sub-Items' : board.itemColumnTitle}
                                                         </div>
@@ -668,7 +668,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         alignItems: 'center'
                                                     }}>
                                                         {vItem.groupColor && (
-                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1 }} />
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1, zIndex: 80 }} />
                                                         )}
                                                         <div
                                                             onClick={() => useBoardStore.getState().addItem('New Sub-item', vItem.data.groupId, vItem.data.parentId)}

@@ -502,8 +502,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 if (isInsideSubitems) {
                                     if (c.subIndices) {
                                         [sIdx, eIdx] = c.subIndices;
+                                        // 🧠 Greedy Timeline Shift (+1): Handle case where data is shifted relative to header
+                                        if (!row[sIdx] && !row[eIdx] && (row[sIdx + 1] || row[eIdx + 1])) {
+                                            sIdx++; eIdx++;
+                                        }
                                     } else if (c.subIndex !== undefined) {
                                         sIdx = c.subIndex; eIdx = c.subIndex;
+                                        if (!row[sIdx] && row[sIdx + 1]) sIdx++; eIdx++;
                                     }
                                 } else {
                                     if (c.originalIndices) {
@@ -519,18 +524,34 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                     if (sd || ed) itemValues[c.title] = { from: sd, to: ed || sd };
                                 }
                             } else if (dataIdx !== -1) {
+                                let rawVal = row[dataIdx];
+                                
+                                // 🧠 Greedy Fallback: If empty, check neighbors (+/- 1) for data that matches the type
+                                if (isInsideSubitems && (!rawVal || rawVal.toString().trim() === '')) {
+                                    const neighbors = [dataIdx + 1, dataIdx - 1];
+                                    for (const nIdx of neighbors) {
+                                        if (nIdx >= 0 && row[nIdx]) {
+                                            const nVal = row[nIdx];
+                                            if (c.type === 'status' && typeof nVal === 'string' && (nVal.toLowerCase().includes('working') || nVal.toLowerCase().includes('done') || nVal.toLowerCase().includes('progress'))) {
+                                                rawVal = nVal; break;
+                                            }
+                                            if (c.type === 'date' && parseDate(nVal)) {
+                                                rawVal = nVal; break;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if (c.type === 'files') {
-                                    itemValues[c.title] = parseFiles(row[dataIdx]);
+                                    itemValues[c.title] = parseFiles(rawVal);
                                 } else if (c.type === 'date') {
-                                    itemValues[c.title] = parseDate(row[dataIdx]) || '';
+                                    itemValues[c.title] = parseDate(rawVal) || '';
                                 } else if (isInsideSubitems && c.type === 'status') {
-                                    // Hybrid mapping trick: If it parses as a date in subitems, keep it raw, else string
-                                    const rawVal = row[dataIdx];
+                                    // Hybrid mapping trick
                                     const possibleDate = parseDate(rawVal);
-                                    // If it looks like exactly a date format YYYY-MM-DD or similar and is inside a hybrid field (like Budget Approved etc)
                                     itemValues[c.title] = possibleDate || rawVal || '';
                                 } else {
-                                    itemValues[c.title] = row[dataIdx]?.toString() || '';
+                                    itemValues[c.title] = rawVal?.toString() || '';
                                 }
                             }
                         });

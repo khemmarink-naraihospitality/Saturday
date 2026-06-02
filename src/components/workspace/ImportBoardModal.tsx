@@ -210,8 +210,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const dateObj = new Date(dateVal && !isNaN(new Date(dateVal).getTime()) ? dateVal : new Date());
 
                         let content = String(uRow[colIdx.content] || '').trim();
-                        // Clean redundant markers if any
-                        content = content.replace(/^Update\s+\d{1,2}\s+\w{3,9}\s+\d{4}\s*/i, '').trim();
+                        
                         
                         const imgRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/gi;
                         content = content.replace(imgRegex, (url) => `<img src="${url}" style="max-width: 100%; border-radius: 0px; margin-top: 10px; border: 1px solid #eee;" />`);

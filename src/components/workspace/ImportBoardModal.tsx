@@ -605,6 +605,21 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     });
 
                     // 🌈 6. Post-Process Status Options (Consolidate labels and colors detected from cells)
+                    const standardStatusColorMap: Record<string, string> = {
+                        'done': '#00c875',
+                        'completed': '#00c875',
+                        'working on it': '#fdab3d',
+                        'in progress': '#fdab3d',
+                        'stuck': '#e2445c',
+                        'at risk': '#e2445c',
+                        'ready for review': '#ffd533',
+                        'waiting': '#ffd533',
+                        'on hold': '#a1a1a1',
+                        'rfp': '#ff158a',
+                        'not start': '#333333',
+                        'n/a': '#333333'
+                    };
+
                     dynamicColumns.forEach(c => {
                         if (c.type === 'status') {
                             const optionsMap: Record<string, string> = {};
@@ -617,13 +632,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 if (dIdx === -1 || dIdx === undefined) return;
                                 
                                 const val = String(row[dIdx] || '').trim();
-                                if (!val || val.toLowerCase() === 'subitems' || val.toLowerCase() === 'name') return;
+                                if (!val || val.toLowerCase() === 'subitems' || val.toLowerCase() === 'name' || val.toLowerCase() === 'item') return;
                                 
                                 if (!optionsMap[val]) {
-                                    // Extract color from this specific cell
-                                    const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
-                                    const color = getCellBgColor(worksheet, ref) || '#c4c4c4';
-                                    optionsMap[val] = color;
+                                    // 1. Check Standard Map first
+                                    const standardColor = standardStatusColorMap[val.toLowerCase()];
+                                    if (standardColor) {
+                                        optionsMap[val] = standardColor;
+                                    } else {
+                                        // 2. Try to extract color from Excel
+                                        const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
+                                        const excelColor = getCellBgColor(worksheet, ref);
+                                        // 3. Fallback to Black (#333333) as requested
+                                        optionsMap[val] = excelColor || '#333333';
+                                    }
                                 }
                             });
                             

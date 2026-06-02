@@ -349,7 +349,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 colType = 'timeline'; 
                             }
 
-                            const colDef: any = { title: headerText, type: colType, originalIndex: idx };
+                            const colDef: any = { title: headerText, type: colType, originalIndex: idx, subIndex: idx };
                             if (colType === 'status') colDef.options = [...defaultStatusOptions];
                             
                             dynamicColumns.push(colDef);
@@ -383,8 +383,58 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         if (headerRowIdx !== -1 && rIdx === headerRowIdx) return;
                         
                         // 3. Skip 'Name' or 'Subitems' headers
-                        if (firstVal === 'Name' || firstVal === 'Subitems') {
-                            if (firstVal === 'Subitems') isInsideSubitems = true;
+                        // 3. Handle 'Subitems' or 'Name' header rows
+                        if (firstVal === 'Subitems' || (firstVal === 'Name' && isInsideSubitems)) {
+                            if (firstVal === 'Subitems') {
+                                isInsideSubitems = true;
+                                
+                                // 🔍 RESCAN FOR SUBITEM HEADERS
+                                const subHeaders = row.map((c: any) => String(c || '').trim());
+                                
+                                subHeaders.forEach((sh: string, shIdx: number) => {
+                                    if (!sh || sh.toLowerCase() === 'subitems') return;
+                                    const shLower = sh.toLowerCase();
+                                    if (shLower === 'name' || shLower === 'item') return;
+                                    
+                                    // Find existing column by title
+                                    let col = dynamicColumns.find(c => c.title.toLowerCase() === shLower);
+                                    
+                                    if (col) {
+                                        col.subIndex = shIdx;
+                                    } else {
+                                        // Check for Timeline Start in sub-row
+                                        const isSTimeline = shLower.includes('timeline') && (shLower.includes('start') || shLower.includes('เริ่ม'));
+                                        if (isSTimeline) {
+                                            const eIdx = subHeaders.findIndex((et: string, j: number) => 
+                                                j > shIdx && et.toLowerCase().includes('timeline') && 
+                                                (et.toLowerCase().includes('end') || et.toLowerCase().includes('จบ'))
+                                            );
+                                            if (eIdx !== -1) {
+                                                const pTitle = sh.replace(/-\s*start|start|เริ่ม/gi, '').trim() || 'Timeline';
+                                                let tCol = dynamicColumns.find(cc => cc.title.toLowerCase() === pTitle.toLowerCase());
+                                                if (tCol) {
+                                                    tCol.subIndices = [shIdx, eIdx];
+                                                } else {
+                                                    dynamicColumns.push({ title: pTitle, type: 'timeline', subIndices: [shIdx, eIdx], originalIndices: [-1, -1] });
+                                                }
+                                                return;
+                                            }
+                                        }
+                                        
+                                        // Create NEW column for subitems
+                                        let cType = 'text';
+                                        if (shLower.includes('status') || shLower.includes('complete')) cType = 'status';
+                                        else if (shLower.includes('file')) cType = 'files';
+                                        else if (shLower.includes('person') || shLower.includes('owner') || shLower.includes('responsible')) cType = 'people';
+                                        else if (shLower.includes('cost') || shLower.includes('budget') || shLower.includes('number')) cType = 'number';
+                                        else if (shLower === 'date') cType = 'date';
+                                        
+                                        const newCol: any = { title: sh, type: cType, subIndex: shIdx, originalIndex: -1 };
+                                        if (cType === 'status') newCol.options = [...defaultStatusOptions];
+                                        dynamicColumns.push(newCol);
+                                    }
+                                });
+                            }
                             return;
                         }
 
@@ -443,26 +493,45 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                         const itemValues: Record<string, any> = {};
                         dynamicColumns.forEach((c: any) => {
-                            if (c.type === 'timeline' && c.originalIndices) {
-                                const sd = parseDate(row[c.originalIndices[0]]);
-                                const ed = parseDate(row[c.originalIndices[1]]);
-                                if (sd || ed) itemValues[c.title] = { from: sd, to: ed || sd };
-                            } else if (c.type === 'timeline' && c.originalIndex !== undefined) {
-                                // Single column timeline fallback
-                                const sd = parseDate(row[c.originalIndex]);
-                                if (sd) itemValues[c.title] = { from: sd, to: sd };
-                            } else if (c.type === 'files') {
-                                itemValues[c.title] = parseFiles(row[c.originalIndex]);
-                            } else if (c.type === 'date') {
-                                itemValues[c.title] = parseDate(row[c.originalIndex]) || '';
-                            } else if (isInsideSubitems && c.type === 'status') {
-                                // Hybrid mapping trick: If it parses as a date in subitems, keep it raw, else string
-                                const rawVal = row[c.originalIndex];
-                                const possibleDate = parseDate(rawVal);
-                                // If it looks like exactly a date format YYYY-MM-DD or similar and is inside a hybrid field (like Budget Approved etc)
-                                itemValues[c.title] = possibleDate || rawVal || '';
-                            } else {
-                                itemValues[c.title] = row[c.originalIndex] || '';
+                            const dataIdx = isInsideSubitems ? (c.subIndex !== undefined ? c.subIndex : -1) : c.originalIndex;
+                            
+                            if (c.type === 'timeline') {
+                                let sIdx = -1;
+                                let eIdx = -1;
+                                
+                                if (isInsideSubitems) {
+                                    if (c.subIndices) {
+                                        [sIdx, eIdx] = c.subIndices;
+                                    } else if (c.subIndex !== undefined) {
+                                        sIdx = c.subIndex; eIdx = c.subIndex;
+                                    }
+                                } else {
+                                    if (c.originalIndices) {
+                                        [sIdx, eIdx] = c.originalIndices;
+                                    } else if (c.originalIndex !== undefined) {
+                                        sIdx = c.originalIndex; eIdx = c.originalIndex;
+                                    }
+                                }
+                                
+                                if (sIdx !== -1) {
+                                    const sd = parseDate(row[sIdx]);
+                                    const ed = parseDate(row[eIdx !== -1 ? eIdx : sIdx]);
+                                    if (sd || ed) itemValues[c.title] = { from: sd, to: ed || sd };
+                                }
+                            } else if (dataIdx !== -1) {
+                                if (c.type === 'files') {
+                                    itemValues[c.title] = parseFiles(row[dataIdx]);
+                                } else if (c.type === 'date') {
+                                    itemValues[c.title] = parseDate(row[dataIdx]) || '';
+                                } else if (isInsideSubitems && c.type === 'status') {
+                                    // Hybrid mapping trick: If it parses as a date in subitems, keep it raw, else string
+                                    const rawVal = row[dataIdx];
+                                    const possibleDate = parseDate(rawVal);
+                                    // If it looks like exactly a date format YYYY-MM-DD or similar and is inside a hybrid field (like Budget Approved etc)
+                                    itemValues[c.title] = possibleDate || rawVal || '';
+                                } else {
+                                    itemValues[c.title] = row[dataIdx]?.toString() || '';
+                                }
                             }
                         });
                         

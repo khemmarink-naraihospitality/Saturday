@@ -226,6 +226,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             parentId: String(uRow[colIdx.parentId] || '')
                         });
                     });
+                    
+                    // 🕒 Sort updates by date descending (latest first)
+                    Object.keys(updatesMap).forEach(itemId => {
+                        updatesMap[itemId].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    });
                 }
 
                 // --- 2. Iterate Data Sheets ---
@@ -341,7 +346,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             testing: h.indexOf('testing capabilities?'),
                             milestone: h.indexOf('interface milestone'),
                             tags: h.indexOf('tags'),
-                            itemId: h.indexOf('item id (auto generated)')
+                            itemId: (() => {
+                                let idx = h.indexOf('item id (auto generated)');
+                                if (idx === -1) idx = h.indexOf('item id');
+                                if (idx === -1) idx = h.indexOf('id');
+                                return idx;
+                            })()
                         };
                     }
 
@@ -462,6 +472,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 'Tags': getVal(row, 'tags', 23) || '',
                                 'Item ID (auto generated)': String(getVal(row, 'itemId', 24) || '')
                             },
+                            updates: updatesMap[String(getVal(row, 'itemId', 24) || '').trim()] || [],
                             subitems: []
                         };
 

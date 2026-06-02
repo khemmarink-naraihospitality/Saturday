@@ -283,33 +283,52 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     if (headerRowIdx !== -1) {
                         const h = rows[headerRowIdx].map((c: any) => String(c || '').trim());
                         const hLower = h.map((s: string) => s.toLowerCase());
+                        const handledIndices = new Set<number>();
 
-                        // Find System column: Item ID
+                        // 1. Find System column: Item ID
                         itemIdIdx = hLower.findIndex((c: string) => c === 'item id (auto generated)' || c === 'item id' || c === 'id');
-                        
-                        // Find Timeline pairs
-                        let timelineStartIdx = hLower.findIndex((c: string) => c === 'timeline - start' || c === 'timeline  - start' || (c.startsWith('timeline') && c.includes('start')) || c === 'start date');
-                        let timelineEndIdx = hLower.findIndex((c: string) => c === 'timeline - end' || c === 'timeline  - end' || (c.startsWith('timeline') && c.includes('end')) || c === 'end date');
-                        let timelineAdded = false;
+                        if (itemIdIdx !== -1) handledIndices.add(itemIdIdx);
 
-                        h.forEach((headerText: string, idx: number) => {
-                            if (!headerText) return;
-                            const lowerText = headerText.toLowerCase();
+                        // 2. Identify Timeline Pairs (Robustly handle prefixes like "2022")
+                        hLower.forEach((text: string, i: number) => {
+                            if (handledIndices.has(i)) return;
                             
-                            // Skip system non-board columns
-                            if (lowerText === 'name' || lowerText === 'item' || lowerText === 'subitems') return;
-                            if (idx === itemIdIdx) return; // itemId is saved in system fields, not board values
+                            // Check if this is a "Start" column
+                            const isStart = text.includes('timeline') && (text.includes('start') || text.includes('เริ่ม'));
+                            if (isStart) {
+                                // Extract the prefix by removing 'timeline', 'start', etc.
+                                const prefix = text.replace(/timeline|start|begin|เริ่ม|-|\s/g, '');
+                                
+                                // Look for a matching "End" column in the remaining headers
+                                const endIdx = hLower.findIndex((endText: string, j: number) => 
+                                    j > i && 
+                                    !handledIndices.has(j) &&
+                                    endText.includes('timeline') && 
+                                    (endText.includes('end') || endText.includes('finish') || endText.includes('จบ')) &&
+                                    endText.replace(/timeline|end|finish|จบ|-|\s/g, '') === prefix
+                                );
 
-                            // Handle Timeline pair
-                            if (idx === timelineStartIdx || idx === timelineEndIdx) {
-                                if (timelineStartIdx !== -1 && timelineEndIdx !== -1) {
-                                    if (!timelineAdded) {
-                                        dynamicColumns.push({ title: 'Timeline', type: 'timeline', originalIndices: [timelineStartIdx, timelineEndIdx] });
-                                        timelineAdded = true;
-                                    }
-                                    return;
+                                if (endIdx !== -1) {
+                                    // Found a pair! Use the prefix + "Timeline" as title or just the part without "Start"
+                                    const pairTitle = h[i].replace(/-\s*start|start|เริ่ม/gi, '').trim() || 'Timeline';
+                                    dynamicColumns.push({ 
+                                        title: pairTitle, 
+                                        type: 'timeline', 
+                                        originalIndices: [i, endIdx] 
+                                    });
+                                    handledIndices.add(i);
+                                    handledIndices.add(endIdx);
                                 }
                             }
+                        });
+
+                        // 3. Process all other columns
+                        h.forEach((headerText: string, idx: number) => {
+                            if (!headerText || handledIndices.has(idx)) return;
+                            const lowerText = headerText.toLowerCase();
+                            
+                            // Skip system internal markers
+                            if (lowerText === 'name' || lowerText === 'item' || lowerText === 'subitems') return;
 
                             // Dynamic Type Inference
                             let colType = 'text';
@@ -322,13 +341,14 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             } else if (lowerText === 'date' || lowerText.includes(' date')) {
                                 colType = 'date';
                             } else if (lowerText.includes('timeline')) {
-                                colType = 'timeline'; // single column timeline fallback
+                                colType = 'timeline'; // single column fallback
                             }
 
                             const colDef: any = { title: headerText, type: colType, originalIndex: idx };
                             if (colType === 'status') colDef.options = [...defaultStatusOptions];
                             
                             dynamicColumns.push(colDef);
+                            handledIndices.add(idx);
                         });
                     }
 

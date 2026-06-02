@@ -600,8 +600,15 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const actualItemId = itemIdIdx !== -1 ? normalizeId(row[itemIdIdx]) : normalizeId(row[24]);
 
                         // 🧠 Sub-item Association Logic
+                        // A row is sub-item if we've seen a 'Subitems' header AND the first column is empty
                         const isSubRow = isInsideSubitems && (!firstVal || firstVal === '');
                         
+                        // 🔄 CRITICAL FIX: Reset sub-item flag if we encounter a MAIN item row (non-empty first column)
+                        if (firstVal && isInsideSubitems) {
+                            console.log(`[Import] Row ${rIdx}: Non-empty first column "${firstVal}". Resetting isInsideSubitems to false.`);
+                            isInsideSubitems = false;
+                        }
+
                         const itemData = {
                             title: (isSubRow && secondVal) ? secondVal : (firstVal || secondVal || 'Missing Title'),
                             values: itemValues,
@@ -610,18 +617,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         };
 
                         if (isSubRow && currentMainItem) {
+                            console.log(`[Import] Row ${rIdx}: Adding as sub-item to "${currentMainItem.title}"`);
                             currentMainItem.subitems.push(itemData);
                         } else {
                             // If firstVal exists, it's a MAIN item (Hotel/Project)
-                            // We reset isInsideSubitems to false to ensure any following sub-items MUST have their own sub-header or be empty
-                            // But usually, in Monday.com exports, once sub-items start, they belong to the item immediately above.
+                            console.log(`[Import] Row ${rIdx}: Adding as main item "${itemData.title}"`);
                             currentMainItem = itemData;
                             currentGroup.items.push(currentMainItem);
-                            
-                            // Reset flag if we have a proper main item title in Col A
-                            if (firstVal && firstVal !== 'Subitems' && firstVal !== 'Name') {
-                                isInsideSubitems = false;
-                            }
                         }
                     });
 

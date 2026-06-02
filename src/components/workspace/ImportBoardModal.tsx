@@ -273,7 +273,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
                             { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
                             { id: 'na-black-id', label: 'N/A', color: '#333333' },
-                            { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' }
+                            { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' },
+                            { id: 'rfp-pink-id', label: 'RFP', color: '#ff158a' },
+                            { id: 'onhold-gray-id', label: 'On Hold', color: '#a1a1a1' }
                         ]},
                         { title: 'Champion', type: 'text' },
                         { title: 'Timeline', type: 'timeline' },

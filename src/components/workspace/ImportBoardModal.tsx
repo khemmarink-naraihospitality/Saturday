@@ -188,20 +188,28 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     const uHeader = (uRows[uHeaderRowIdx] || []).map((h: any) => String(h || '').toLowerCase().trim());
                     
                     const colIdx = {
-                        itemId: uHeader.indexOf('item id') !== -1 ? uHeader.indexOf('item id') : 0,
-                        user: uHeader.indexOf('user') !== -1 ? uHeader.indexOf('user') : 4, // Default Column E
-                        createdAt: uHeader.indexOf('created at') !== -1 ? uHeader.indexOf('created at') : 5, // Default Column F
+                        itemId: uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) !== -1 
+                            ? uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) 
+                            : 0,
+                        user: uHeader.indexOf('user') !== -1 ? uHeader.indexOf('user') : 4,
+                        createdAt: uHeader.indexOf('created at') !== -1 ? uHeader.indexOf('created at') : 5,
                         content: uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') !== -1 
                             ? uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') 
-                            : 6, // Default Column G
-                        contentType: uHeader.indexOf('content type') !== -1 ? uHeader.indexOf('content type') : 3, // Column D
+                            : 6,
+                        contentType: uHeader.indexOf('content type') !== -1 ? uHeader.indexOf('content type') : 3,
                         postId: uHeader.indexOf('post id') !== -1 ? uHeader.indexOf('post id') : 7,
                         parentId: uHeader.indexOf('parent post id') !== -1 ? uHeader.indexOf('parent post id') : 8
                     };
 
+                    const normalizeId = (id: any): string => {
+                        let s = String(id || '').trim();
+                        if (s.endsWith('.0')) s = s.substring(0, s.length - 2);
+                        return s;
+                    };
+
                     uRows.forEach((uRow, uIdx) => {
-                        if (uIdx <= uHeaderRowIdx) return; // Skip header and anything above it
-                        const itemId = String(uRow[colIdx.itemId] || '').trim();
+                        if (uIdx <= uHeaderRowIdx) return;
+                        const itemId = normalizeId(uRow[colIdx.itemId]);
                         if (!itemId) return;
                         if (!updatesMap[itemId]) updatesMap[itemId] = [];
                         
@@ -286,7 +294,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const handledIndices = new Set<number>();
 
                         // 1. Find System column: Item ID
-                        itemIdIdx = hLower.findIndex((c: string) => c === 'item id (auto generated)' || c === 'item id' || c === 'id');
+                        itemIdIdx = hLower.findIndex((c: string) => c.includes('item id') || c === 'id' || c.startsWith('item id') || c.endsWith('id'));
                         if (itemIdIdx !== -1) handledIndices.add(itemIdIdx);
 
                         // 2. Identify Timeline Pairs (Robustly handle prefixes like "2022")
@@ -461,7 +469,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             }
                         });
                         
-                        const actualItemId = itemIdIdx !== -1 ? String(row[itemIdIdx] || '').trim() : String(row[24] || '').trim();
+                        const normalizeId = (id: any): string => {
+                            let s = String(id || '').trim();
+                            if (s.endsWith('.0')) s = s.substring(0, s.length - 2);
+                            return s;
+                        };
+                        const actualItemId = itemIdIdx !== -1 ? normalizeId(row[itemIdIdx]) : normalizeId(row[24]);
 
                         const itemData = {
                             title: firstVal || secondVal || 'Missing Title',

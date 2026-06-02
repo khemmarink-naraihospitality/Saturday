@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { X, Upload, Loader2, CheckCircle2, Layers, Plus, AlertCircle } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -212,7 +212,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 if (data?.value) {
                     currentMappings = data.value as Record<string, string>;
                     console.log('[Import] Mappings loaded:', currentMappings);
-                    setStatusMappings(currentMappings); // Update state for UI if needed
                 }
             } catch (err) {
                 console.error('[Import] Failed to fetch mappings:', err);

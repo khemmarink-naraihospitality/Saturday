@@ -1,122 +1,33 @@
-# Saturday.com — Project Context
+# สรุป Logic การ Import ข้อมูลแบบ Dynamic (NHGOne)
 
-## Product Name
-**Saturday.com** — A project management and task tracking platform designed for **Narai Hospitality Group (NHG)**.
+เอกสารนี้สรุปตรรกะใหม่ล่าสุดที่ใช้ในการนำเข้าข้อมูลจาก Excel ซึ่งทำงานแบบ Dynamic และยืดหยุ่นสูง เพื่อรองรับไฟล์หลายรูปแบบ
 
-> **IMPORTANT:** The application is called "Saturday.com". The folder name "Workera" is only the local workspace folder name and does NOT represent the product name.
+---
 
-## Core Identity
-- **Brand:** NHG Saturday.com
-- **Organization:** Narai Hospitality Group
-- **Domain:** https://saturday.naraihospitalitygroup.com
-- **Powered by:** Jirawat.K
+## 1. การตรวจหาคอลัมน์ (Dynamic Header Detection)
+- **ลำดับคอลัมน์ (Preserve Order):** ระบบจะสแกนหัวตารางจากซ้ายไปขวาตาม Excel เป๊ะๆ เพื่อรักษาลำดับคอลัมน์เดิมไว้
+- **การระบุประเภทคอลัมน์ (Auto Type Mapping):**
+  - **People:** สแกนหาคำว่า "Person", "Owner", "Responsible", "User" เพื่อเปิดใช้งานฟีเจอร์รูปโปรไฟล์
+  - **Status:** สแกนหาคำว่า "Status", "Complete", "Approved", "Sent" และจับคู่กับสถานะพื้นฐาน (Done, Working on it, ฯลฯ)
+  - **Timeline:** สแกนหาคำว่า "Timeline" (ดูรายละเอียดในหัวข้อถัดไป)
+  - **Number:** สแกนหาคำว่า "Cost", "Budget", "Amount", "Number"
+  - **Date:** สแกนหาคำว่า "Date"
+  - **Files:** สแกนหาคำว่า "File", "Quote"
 
-## Tech Stack
-| Layer           | Technology                    |
-|-----------------|-------------------------------|
-| Frontend        | React + TypeScript + Vite     |
-| State           | Zustand (boardSlice.ts)       |
-| Database        | Supabase (PostgreSQL + RLS)   |
-| Auth            | Supabase Auth (Google OAuth, Email) |
-| Hosting         | Vercel (auto-deploy from `main` branch) |
-| Backend (NHGOne)| Railway (Python FastAPI)      |
-| Styling         | Vanilla CSS (Narai Design System) |
+## 2. การรวม Timeline (Aggressive Timeline Pairing)
+- **เงื่อนไขการรวม:** เมื่อเจอคอลัมน์ที่มีคำว่า **"Timeline"** และ **"Start/เริ่ม"** ระบบจะมองหาคอลัมน์ถัดไปที่มีคำว่า **"Timeline"** และ **"End/จบ"** ทันที
+- **ผลลัพธ์:** ทั้งสองคอลัมน์จะถูกยุบรวมเป็นคอลัมน์เดียว (Timeline Type) และแสดงผลเป็นแถบช่วงวันที่ (Date Range) ในบอร์ด
 
-## Design System — Narai Hospitality Group
-- **Aesthetic:** Quiet confidence, editorial, premium
-- **Corners:** Sharp architectural (0px border-radius)  
-- **Primary Color:** Galangal / Narai Green (#2d5016)
-- **Typography:** Nib Pro (display), tracked-caps (subheaders)
-- **Tone:** Minimal, confident, clean
+## 3. การนำเข้าข้อมูลอัปเดต (Updates/Conversations Integration)
+- **การตรวจหาแผ่นงาน:** ระบบค้นหา Sheet ที่ชื่อว่า "Update", "อัพเดท", "อัปเดต" หรือ "Record"
+- **ID Normalization:** แก้ไขปัญหาตัวเลข ID จาก Excel (เช่น 123.0) ให้เป็น String ที่ถูกต้อง (123) เพื่อให้จับคู่กับข้อมูลในแผ่นงานหลักได้แม่นยำ
+- **Auto Mapping:** ข้อมูล Update จะถูกดึงมาใส่ในแต่ละ Item โดยอัตโนมัติตาม Item ID
 
-## Key Features
-- **Board Management:** Create, edit, archive, reorder boards
-- **Workspaces:** Business Tech, Finance, Operations, Marketing, Chinatown x Tech
-- **Views:** Main Table, Timeline, Kanban, Calendar
-- **User Roles:** Super Admin, Admin, User, Viewer
-- **Import Board:** Import boards from Excel (.xlsx) files — Saturday-style template (columns A-Q)
-- **Activity Log:** Tracks user actions (create, update, delete, import)
-- **NHGOne Integration:** Auto-sync reservations, members, payments from MEWS PMS
+## 4. โครงสร้างข้อมูล (Data Hierarchy)
+- **Groups:** แยกกลุ่มตามแถวที่มีคำว่า "Priority" หรือแถวหัวข้อกลุ่ม
+- **Subitems:** ตรวจจับคำว่า "Subitems" เพื่อสลับเข้าสู่โหมดแถวย่อย โดยจะเชื่อมต่อกับ Item หลักตัวล่าสุดผ่าน `parent_id`
+- **Hybrid Support:** รองรับคอลัมน์ที่เป็นทั้งคอลัมน์สถานะใน Item หลัก และเป็นคอลัมน์วันที่/ข้อความใน Item ย่อย (เช่น SOR Complete)
 
-## Supabase Projects
-| Name              | Project ID              | Region           |
-|-------------------|-------------------------|------------------|
-| NHG Saturday.com  | susgfswicrxdxaioegps    | ap-south-1       |
-| NHGOne            | zstkslczesscigdacubm    | ap-southeast-1   |
-
-## Key Users
-- **Khemmarin Khuntong (UI)** — Super Admin (khemmarin.k@naraihospitality.com)
-- User ID: `0bd65220-4756-4e2b-8f02-7cc360d072b2`
-
-## GitHub Repository
-- **Repo:** khemmarink-naraihospitality/Saturday
-- **Branch:** main (auto-deploy to Vercel)
-
-## Excel Import Rules & Column Mapping (A-Q)
-The Board Import feature follows strict parsing rules to maintain data integrity and NHG branding:
-
-### 1. File Structure & Version Detection
-The system automatically distinguishes between two file formats based on Row 2 (A2):
-
-#### **Format A: With Board Description**
-- **Row 1:** Board Title.
-- **Row 2:** Board Description (Long text, no special color).
-- **Row 3:** **Header Row** (Status, Champion, etc.).
-- **Row 4+:** Data starts (First row is usually a Group Name).
-
-#### **Format B: No Board Description (Direct to Group)**
-- **Row 1:** Board Title.
-- **Row 2:** **First Group Name** (e.g., "Mews"). *Detected if A2 text is short (< 40 chars) OR colored blue.*
-- **Row 3:** **Header Row** (Status, Champion, etc.).
-- **Row 4+:** Data items.
-
-#### **Heuristic Detection (Version Locking)**
-- If `rIdx = 1` contains a single-column value AND `rIdx = 2` is a valid Header Row, then:
-    - If the value is **Short (< 40 chars)** or has **Colored Font**: System treats File as **Format B** (A2 = Group).
-    - Otherwise: System treats File as **Format A** (A2 = Description).
-
-### 2. Group & Item Parsing
-- **Group Detection:** 
-    - Text-pattern: "Priority 1", "Priority 2", etc.
-    - Architectural: Solo-text rows (only column A has data) after the header.
-- **Subitems Marker:** A row with "Subitems" in Column A triggers sub-item mode.
-- **Board Title:** Extracted from **Row 1, Column A**. The title is preserved **exactly** as it appears in Excel (including prefixes like "1) ").
-
-### 2. Logic & Behavior
-- **Robust Overwrite:** If one or more boards with the same title exist in the workspace, **all matching boards** are deleted and replaced automatically to ensure a clean import.
-- **Subitem Logic:** When in sub-item mode, rows with an **EMPTY Column A** are nested under the last non-empty row (Main Item).
-- **Hybrid Column Types:** The system intelligently switches column types between Items and Sub-items:
-    - `SOR Complete`: `status` (Main Item) -> `date` (Sub-item)
-    - `RFI Sent`: `status` (Main Item) -> `text` (Sub-item)
-- **Timeline Merging:** Columns **E (Start)** and **F (End)** are merged into a single system `timeline` object `{from, to}`. Supports `DD-MM-YY` and Excel serial dates.
-- **File & Link Detection:** `SOR File` and `ST Files` detect URLs and convert them into interactive file object arrays.
-- **Feedback:** A success screen with a 2-second delay is shown upon completion before closing the modal.
-
-### 3. Column & Type Mapping (Excel Tech Stack Template)
-| Col | Excel Header       | Saturday.com Column | System Type | Context Mapping (Item -> Sub-item) |
-|-----|--------------------|---------------------|-------------|------------------------------------|
-| A   | Name               | (Title)             | item        | Empty = Subitem                    |
-| C   | Status             | Status              | status      | Status -> Status                   |
-| D   | Champion           | Champion            | text        | Champion -> Champion               |
-| E+F | Timeline S/E       | Timeline            | timeline    | Merged Object                      |
-| G   | SOR Complete / Date| SOR Complete        | status/date | **Hybrid**: Status -> Date         |
-| H   | SOR File / ST Files| SOR File            | files       | **Files**: Supports Multiple URLs  |
-| I   | Stakeholders / Rem | Stakeholders        | text        | Text -> Text                       |
-| J   | Numbers / Dropdown | Numbers             | number/text | Number -> Text                     |
-| K   | RFI Sent / ID      | RFI Sent            | status/text | **Hybrid**: Status -> Item ID      |
-| O   | Item ID            | Item ID             | text        | Raw ID String                      |
-
-### 4. Status Color Standards (NHG Brand)
-| Status Label        | Hex Color | Brand Meaning |
-|---------------------|-----------|---------------|
-| Done / Completed    | `#00c875` | Success Green |
-| In Progress         | `#fdab3d` | Working Orange|
-| Working on it       | `#fdab3d` | Working Orange|
-| Stuck               | `#e2445c` | Critical Red  |
-| Waiting             | `#c4c4c4` | Pending Gray  |
-| N/A / Not Start     | `#333333` | Neutral Black |
-| Default             | `#c4c4c4` | Empty Gray    |
-
-### 5. UI Layout Constraints
-- **Header Description:** Truncated after **450px** with ellipsis to protect action buttons (Share/Invite).
-- **Champion Column:** Reduced font size (12px) to accommodate long email addresses.
+## 5. ความสวยงามของ UI (Refinement)
+- **Group Titles:** ชื่อกลุ่มจะแสดงบรรทัดเดียวเสมอ ไม่มีการตัดคำ (No wrap) และขยายกว้างตามความยาวชื่อ
+- **Table Layout:** ปรับแต่งขอบตารางให้ดูสะอาดตา (Clean look) โดยนำขอบขวาสุดออกเพื่อให้ดูโปร่งขึ้นตามมาตรฐาน Narai Hospitality Group

@@ -105,13 +105,12 @@ export const GroupRow = ({
                 left: 0,
                 zIndex: 60,
                 backgroundColor: 'hsl(var(--color-bg-canvas))',
-                width: '370px', // Match default itemColumnWidth or pass it as prop
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                paddingLeft: '24px', // Reduced padding
-                borderRight: '1px solid hsl(var(--color-border))',
-                boxSizing: 'border-box'
+                paddingLeft: '24px', 
+                boxSizing: 'border-box',
+                flexShrink: 0
             }}>
                 {/* Color Picker / Expand Trigger */}
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
@@ -225,7 +224,8 @@ export const GroupRow = ({
                             fontSize: '15px',
                             fontWeight: 600,
                             color: data.color || '#579bfc',
-                            cursor: can('group_ungroup') ? 'text' : 'default'
+                            cursor: can('group_ungroup') ? 'text' : 'default',
+                            whiteSpace: 'nowrap'
                         }}
                         onDoubleClick={() => {
                             if (can('group_ungroup')) setIsEditing(true);

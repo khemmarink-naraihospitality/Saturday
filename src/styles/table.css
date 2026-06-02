@@ -63,6 +63,11 @@
     border-right: none;
 }
 
+.table-cell:last-child,
+.table-header-cell:last-child {
+    border-right: none;
+}
+
 .sticky-col {
     background-color: hsl(var(--color-bg-canvas));
     /* Ensure consistent bg */

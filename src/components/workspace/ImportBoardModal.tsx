@@ -174,7 +174,10 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 
                 // --- 1. Parse Updates Map ---
                 const updatesMap: Record<string, any[]> = {};
-                const updatesSheet = workbook.SheetNames.find(n => n.toLowerCase().includes('update'));
+                const updatesSheet = workbook.SheetNames.find(n => {
+                    const low = n.toLowerCase();
+                    return low.includes('update') || low.includes('อัพเดท') || low.includes('อัปเดต') || low.includes('record');
+                });
                 if (updatesSheet) {
                     const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1 });
                     
@@ -782,7 +785,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                             {selectedSheetIds.length > 0 && (
                                                 <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '0px', backgroundColor: 'white' }}>
                                                     <div style={{ fontSize: '12px', fontWeight: 700, color: '#666', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>Import Statistics</div>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                                                         <div>
                                                             <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>{selectedSheetIds.length}</div>
                                                             <div style={{ fontSize: '11px', color: '#94a3b8' }}>BOARDS</div>
@@ -795,9 +798,19 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                                         </div>
                                                         <div>
                                                             <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>
-                                                                {previews.filter(p => selectedSheetIds.includes(p.id)).reduce((acc, p) => acc + p.groups.reduce((a: number, g: any) => a + g.items.length, 0), 0)}
+                                                                {previews.filter(p => selectedSheetIds.includes(p.id)).reduce((acc, p) => acc + p.groups.reduce((gAcc: number, g: any) => gAcc + g.items.length, 0), 0)}
                                                             </div>
                                                             <div style={{ fontSize: '11px', color: '#94a3b8' }}>ITEMS</div>
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1a1728' }}>
+                                                                {previews.filter(p => selectedSheetIds.includes(p.id)).reduce((acc, p) => {
+                                                                    let count = 0;
+                                                                    p.groups.forEach((g: any) => g.items.forEach((i: any) => count += (i.updates?.length || 0)));
+                                                                    return acc + count;
+                                                                }, 0)}
+                                                            </div>
+                                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>UPDATES</div>
                                                         </div>
                                                     </div>
                                                 </div>

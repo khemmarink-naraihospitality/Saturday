@@ -263,103 +263,77 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     const hasNoDescription = coloredGroupRows.has(1) || 
                                            (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40);
 
-                    const columns: any[] = [
-                        { title: 'Status', type: 'status', options: [
-                            { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
-                            { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                            { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
-                            { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },
-                            { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#fdab3d' },
-                            { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
-                            { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
-                            { id: 'na-black-id', label: 'N/A', color: '#333333' },
-                            { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' },
-                            { id: 'rfp-pink-id', label: 'RFP', color: '#ff158a' },
-                            { id: 'onhold-gray-id', label: 'On Hold', color: '#a1a1a1' }
-                        ]},
-                        { title: 'Champion', type: 'text' },
-                        { title: 'Timeline', type: 'timeline' },
-                        { title: 'SOR Complete', type: 'status', options: [
-                            { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
-                            { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                            { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                        ]},
-                        { title: 'SOR File', type: 'files' },
-                        { title: 'Stakeholders', type: 'text' },
-                        { title: 'Numbers', type: 'number' },
-                        { title: 'RFI Sent', type: 'status', options: [
-                            { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: '', color: '#c4c4c4' },
-                            { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                            { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                        ]},
-                        { title: 'Current Contract', type: 'text' },
-                        { title: 'RFI FILE', type: 'files' },
-                        { title: 'Quotes', type: 'files' },
-                        { title: 'Milestones', type: 'text' },
-                        { title: 'System Cost', type: 'number' },
-                        { title: 'annual cost 5 properties IT', type: 'number' },
-                        { title: 'Setup Cost', type: 'number' },
-                        { title: 'Consultant Budget', type: 'number' },
-                        { title: 'Consultant Name', type: 'text' },
-                        { title: 'Interface with', type: 'text' },
-                        { title: 'Testing capabilities?', type: 'text' },
-                        { title: 'Interface milestone', type: 'text' },
-                        { title: 'Tags', type: 'text' },
-                        { title: 'Item ID (auto generated)', type: 'text' }
+                    const defaultStatusOptions = [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },
+                        { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#fdab3d' },
+                        { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
+                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
+                        { id: 'na-black-id', label: 'N/A', color: '#333333' },
+                        { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' },
+                        { id: 'rfp-pink-id', label: 'RFP', color: '#ff158a' },
+                        { id: 'onhold-gray-id', label: 'On Hold', color: '#a1a1a1' }
                     ];
 
-                    let mainColIdx: Record<string, number> = {};
-                    // Re-use headerRowIdx found above
+                    let dynamicColumns: any[] = [];
+                    let itemIdIdx = -1;
+                    
                     if (headerRowIdx !== -1) {
-                        const h = rows[headerRowIdx].map((c: any) => String(c || '').toLowerCase().trim());
-                        mainColIdx = {
-                            status: h.indexOf('status'),
-                            champion: h.indexOf('champion'),
-                            timelineStart: (() => {
-                                let idx = h.findIndex((c: string) => c === 'timeline - start' || c === 'timeline  - start');
-                                if (idx === -1) idx = h.findIndex((c: string) => c.startsWith('timeline') && c.includes('start'));
-                                if (idx === -1) idx = h.indexOf('start date');
-                                if (idx === -1) idx = h.indexOf('timeline');
-                                return idx;
-                            })(),
-                            timelineEnd: (() => {
-                                let idx = h.findIndex((c: string) => c === 'timeline - end' || c === 'timeline  - end');
-                                if (idx === -1) idx = h.findIndex((c: string) => c.startsWith('timeline') && c.includes('end'));
-                                if (idx === -1) idx = h.indexOf('end date');
-                                if (idx === -1) { const ts = h.indexOf('timeline'); return ts !== -1 ? ts + 1 : -1; }
-                                return idx;
-                            })(),
-                            sorComplete: h.indexOf('sor complete'),
-                            sorFile: h.indexOf('sor file'),
-                            stakeholders: h.indexOf('stakeholders'),
-                            numbers: h.indexOf('numbers'),
-                            rfiSent: h.indexOf('rfi sent'),
-                            currentContract: h.indexOf('current contract'),
-                            rfiFile: h.indexOf('rfi file'),
-                            quotes: h.indexOf('quotes'),
-                            milestones: h.indexOf('milestones'),
-                            systemCost: h.indexOf('system cost'),
-                            annualCost: h.indexOf('annual cost 5 properties it'),
-                            setupCost: h.indexOf('setup cost'),
-                            consultantBudget: h.indexOf('consultant budget'),
-                            consultantName: h.indexOf('consultant name'),
-                            interfaceWith: h.indexOf('interface with'),
-                            testing: h.indexOf('testing capabilities?'),
-                            milestone: h.indexOf('interface milestone'),
-                            tags: h.indexOf('tags'),
-                            itemId: (() => {
-                                let idx = h.indexOf('item id (auto generated)');
-                                if (idx === -1) idx = h.indexOf('item id');
-                                if (idx === -1) idx = h.indexOf('id');
-                                return idx;
-                            })()
-                        };
+                        const h = rows[headerRowIdx].map((c: any) => String(c || '').trim());
+                        const hLower = h.map(s => s.toLowerCase());
+
+                        // Find System column: Item ID
+                        itemIdIdx = hLower.findIndex(c => c === 'item id (auto generated)' || c === 'item id' || c === 'id');
+                        
+                        // Find Timeline pairs
+                        let timelineStartIdx = hLower.findIndex(c => c === 'timeline - start' || c === 'timeline  - start' || (c.startsWith('timeline') && c.includes('start')) || c === 'start date');
+                        let timelineEndIdx = hLower.findIndex(c => c === 'timeline - end' || c === 'timeline  - end' || (c.startsWith('timeline') && c.includes('end')) || c === 'end date');
+                        let timelineAdded = false;
+
+                        h.forEach((headerText, idx) => {
+                            if (!headerText) return;
+                            const lowerText = headerText.toLowerCase();
+                            
+                            // Skip system non-board columns
+                            if (lowerText === 'name' || lowerText === 'item' || lowerText === 'subitems') return;
+                            if (idx === itemIdIdx) return; // itemId is saved in system fields, not board values
+
+                            // Handle Timeline pair
+                            if (idx === timelineStartIdx || idx === timelineEndIdx) {
+                                if (timelineStartIdx !== -1 && timelineEndIdx !== -1) {
+                                    if (!timelineAdded) {
+                                        dynamicColumns.push({ title: 'Timeline', type: 'timeline', originalIndices: [timelineStartIdx, timelineEndIdx] });
+                                        timelineAdded = true;
+                                    }
+                                    return;
+                                }
+                            }
+
+                            // Dynamic Type Inference
+                            let colType = 'text';
+                            if (lowerText.includes('status') || lowerText.includes('complete') || lowerText.includes('approved') || lowerText.includes('sent')) {
+                                colType = 'status';
+                            } else if (lowerText.includes('file') || lowerText.includes('quote')) {
+                                colType = 'files';
+                            } else if (lowerText.includes('cost') || lowerText.includes('budget') || lowerText.includes('number') || lowerText.includes('amount')) {
+                                colType = 'number';
+                            } else if (lowerText === 'date' || lowerText.includes(' date')) {
+                                colType = 'date';
+                            } else if (lowerText.includes('timeline')) {
+                                colType = 'timeline'; // single column timeline fallback
+                            }
+
+                            const colDef: any = { title: headerText, type: colType, originalIndex: idx };
+                            if (colType === 'status') colDef.options = [...defaultStatusOptions];
+                            
+                            dynamicColumns.push(colDef);
+                        });
                     }
 
-                    const getVal = (row: any[], key: keyof typeof mainColIdx, fallbackIdx: number) => {
-                        const idx = mainColIdx[key] === -1 || mainColIdx[key] === undefined ? fallbackIdx : mainColIdx[key];
-                        return row[idx];
-                    };
+                    // Fallback generating 'columns' variable for downstream use
+                    const columns = dynamicColumns;
 
                     const groups: any[] = [];
                     let currentGroup: any = null;
@@ -442,38 +416,37 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             groups.push(currentGroup);
                         }
 
-                        let timelineValue = null;
-                        const sd = parseDate(getVal(row, 'timelineStart', 4));
-                        const ed = parseDate(getVal(row, 'timelineEnd', 5));
-                        if (sd || ed) timelineValue = { from: sd, to: ed || sd };
+                        const itemValues: Record<string, any> = {};
+                        dynamicColumns.forEach(c => {
+                            if (c.type === 'timeline' && c.originalIndices) {
+                                const sd = parseDate(row[c.originalIndices[0]]);
+                                const ed = parseDate(row[c.originalIndices[1]]);
+                                if (sd || ed) itemValues[c.title] = { from: sd, to: ed || sd };
+                            } else if (c.type === 'timeline' && c.originalIndex !== undefined) {
+                                // Single column timeline fallback
+                                const sd = parseDate(row[c.originalIndex]);
+                                if (sd) itemValues[c.title] = { from: sd, to: sd };
+                            } else if (c.type === 'files') {
+                                itemValues[c.title] = parseFiles(row[c.originalIndex]);
+                            } else if (c.type === 'date') {
+                                itemValues[c.title] = parseDate(row[c.originalIndex]) || '';
+                            } else if (isInsideSubitems && c.type === 'status') {
+                                // Hybrid mapping trick: If it parses as a date in subitems, keep it raw, else string
+                                const rawVal = row[c.originalIndex];
+                                const possibleDate = parseDate(rawVal);
+                                // If it looks like exactly a date format YYYY-MM-DD or similar and is inside a hybrid field (like Budget Approved etc)
+                                itemValues[c.title] = possibleDate || rawVal || '';
+                            } else {
+                                itemValues[c.title] = row[c.originalIndex] || '';
+                            }
+                        });
+                        
+                        const actualItemId = itemIdIdx !== -1 ? String(row[itemIdIdx] || '').trim() : String(row[24] || '').trim();
 
                         const itemData = {
                             title: firstVal || secondVal || 'Missing Title',
-                            values: {
-                                'Status': getVal(row, 'status', 2) || '',
-                                'Champion': getVal(row, 'champion', 3) || '',
-                                'Timeline': timelineValue,
-                                'SOR Complete': isInsideSubitems ? parseDate(getVal(row, 'sorComplete', 6)) : (getVal(row, 'sorComplete', 6) || ''),
-                                'SOR File': parseFiles(getVal(row, 'sorFile', 7)),
-                                'Stakeholders': getVal(row, 'stakeholders', 8) || '',
-                                'Numbers': getVal(row, 'numbers', 9) || '',
-                                'RFI Sent': getVal(row, 'rfiSent', 10) || '',
-                                'Current Contract': getVal(row, 'currentContract', 11) || '',
-                                'RFI FILE': parseFiles(getVal(row, 'rfiFile', 12)),
-                                'Quotes': parseFiles(getVal(row, 'quotes', 13)),
-                                'Milestones': getVal(row, 'milestones', 14) || '',
-                                'System Cost': getVal(row, 'systemCost', 15) || '',
-                                'annual cost 5 properties IT': getVal(row, 'annualCost', 16) || '',
-                                'Setup Cost': getVal(row, 'setupCost', 17) || '',
-                                'Consultant Budget': getVal(row, 'consultantBudget', 18) || '',
-                                'Consultant Name': getVal(row, 'consultantName', 19) || '',
-                                'Interface with': getVal(row, 'interfaceWith', 20) || '',
-                                'Testing capabilities?': getVal(row, 'testing', 21) || '',
-                                'Interface milestone': getVal(row, 'milestone', 22) || '',
-                                'Tags': getVal(row, 'tags', 23) || '',
-                                'Item ID (auto generated)': String(getVal(row, 'itemId', 24) || '')
-                            },
-                            updates: updatesMap[String(getVal(row, 'itemId', 24) || '').trim()] || [],
+                            values: itemValues,
+                            updates: updatesMap[actualItemId] || [],
                             subitems: []
                         };
 

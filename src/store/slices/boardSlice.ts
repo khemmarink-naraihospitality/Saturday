@@ -810,7 +810,7 @@ export const createBoardSlice: StateCreator<
                         // Special handling for Status mapping
                         if (col.type === 'status' && col.options) {
                             const matchedOption = (col.options as any[]).find(opt => 
-                                opt.label?.toLowerCase() === (val as string)?.toLowerCase()
+                                opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
                             );
                             itemValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
                         } else {
@@ -848,7 +848,7 @@ export const createBoardSlice: StateCreator<
                                         subValues[col.id] = val || null;
                                     } else {
                                         const matchedOption = (col.options as any[]).find(opt => 
-                                            opt.label?.toLowerCase() === (val as string)?.toLowerCase()
+                                            opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
                                         );
                                         subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
                                     }

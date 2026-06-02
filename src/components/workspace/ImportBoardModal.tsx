@@ -628,7 +628,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             });
                             
                             c.options = Object.entries(optionsMap).map(([label, color]) => ({
-                                id: Math.random().toString(36).substring(7),
+                                id: label === 'Default' ? 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4' : Math.random().toString(36).substring(7),
                                 label,
                                 color
                             }));

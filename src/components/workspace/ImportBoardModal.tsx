@@ -236,6 +236,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     'rfp': '#ff158a',
                     'not start': '#333333',
                     'n/a': '#333333',
+                    'active': '#00c875',
+                    'inactive': '#e2445c',
+                    'ready': '#ffd533',
+                    'ready to use': '#333333',
+                    'in use': '#00c875',
+                    'cancelled': '#333333',
+                    'canceled': '#333333',
                     // Normalize keys to lowercase for reliable matching
                     ...Object.keys(currentMappings).reduce((acc, k) => ({
                         ...acc,
@@ -584,17 +591,23 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             } else if (dataIdx !== -1) {
                                 let rawVal = row[dataIdx];
                                 
-                                // 🧠 Greedy Fallback: If empty, check neighbors (+/- 1) or ALL columns for status
+                                // 🧠 Greedy Fallback: If empty, check neighbors (+/- 1), alternate indices, or ALL columns for status
                                 if (!rawVal || rawVal.toString().trim() === '') {
                                     if (c.type === 'status') {
-                                        // 🕵️‍♂️ Greedy Status Recovery: Search the whole row for known status labels
-                                        const knownLabels = Object.keys(standardStatusColorMap);
-                                        for (let i = 0; i < row.length; i++) {
-                                            const cellVal = String(row[i] || '').trim().toLowerCase();
-                                            if (cellVal && knownLabels.includes(cellVal)) {
-                                                console.log(`[Import] Greedy Recovery: Row ${rIdx} Status was empty at Col ${dataIdx}, found "${row[i]}" at Col ${i}`);
-                                                rawVal = row[i];
-                                                break;
+                                        // 🕵️‍♂️ Try alternate index first (e.g. use subIndex for main item if originalIndex is empty)
+                                        const altIdx = isInsideSubitems ? c.originalIndex : c.subIndex;
+                                        if (altIdx !== -1 && row[altIdx] && row[altIdx].toString().trim() !== '') {
+                                            rawVal = row[altIdx];
+                                        } else {
+                                            // 🕵️‍♂️ Greedy Status Recovery: Search the whole row for known status labels
+                                            const knownLabels = Object.keys(standardStatusColorMap);
+                                            for (let i = 0; i < row.length; i++) {
+                                                const cellVal = String(row[i] || '').trim().toLowerCase();
+                                                if (cellVal && knownLabels.includes(cellVal)) {
+                                                    console.log(`[Import] Greedy Recovery: Row ${rIdx} Status was empty, found "${row[i]}" at Col ${i}`);
+                                                    rawVal = row[i];
+                                                    break;
+                                                }
                                             }
                                         }
                                     } else if (isInsideSubitems) {

@@ -118,7 +118,36 @@ const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | 
     
     // Strip alpha prefix if present (AARRGGBB → RRGGBB)
     const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
-    if (hex.toLowerCase() === '000000') return null; 
+    if (hex.toLowerCase() === 'ffffff' || hex.toLowerCase() === '000000') return null; 
+    return `#${hex}`;
+};
+
+// Helper to extract background color from an Excel cell (Fill color)
+const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | null => {
+    const cell = worksheet[cellRef];
+    if (!cell || !cell.s || !cell.s.fill) return null;
+    const s = cell.s as any;
+    
+    // 1. Check for explicit RGB color in fgColor (Foreground of the pattern, i.e., the background color we see)
+    let rgb = s?.fill?.fgColor?.rgb || s?.fill?.bgColor?.rgb;
+    
+    // 2. Fallback to common Theme colors if RGB is missing
+    if (!rgb && s?.fill?.fgColor?.theme !== undefined) {
+        const theme = s.fill.fgColor.theme;
+        
+        // Common monday.com theme colors
+        if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Blue
+        if (theme === 6) rgb = 'e2445c'; // Red
+        if (theme === 7) rgb = 'fdab3d'; // Orange
+        if (theme === 8) rgb = '00c875'; // Green
+        if (theme === 9) rgb = 'a25ddc'; // Purple
+    }
+
+    if (!rgb) return null;
+    
+    // Strip alpha prefix if present (AARRGGBB → RRGGBB)
+    const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
+    if (hex.toLowerCase() === 'ffffff' || hex.toLowerCase() === '000000') return null;
     return `#${hex}`;
 };
 
@@ -274,19 +303,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     const hasNoDescription = coloredGroupRows.has(1) || 
                                            (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40);
 
-                    const defaultStatusOptions = [
-                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
-                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                        { id: '00c87501-c875-c875-c875-00c87500c876', label: 'Completed', color: '#00c875' },
-                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' },
-                        { id: 'fdab3d01-ab3d-ab3d-ab3d-fdab3d00fdac', label: 'In Progress', color: '#fdab3d' },
-                        { id: 'stuck-red-id', label: 'Stuck', color: '#e2445c' },
-                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Not Start', color: '#333333' },
-                        { id: 'na-black-id', label: 'N/A', color: '#333333' },
-                        { id: 'ffd53300-d533-d533-d533-ffd53300ffd5', label: 'Waiting', color: '#c4c4c4' },
-                        { id: 'rfp-pink-id', label: 'RFP', color: '#ff158a' },
-                        { id: 'onhold-gray-id', label: 'On Hold', color: '#a1a1a1' }
-                    ];
+                    const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
 
                     let dynamicColumns: any[] = [];
                     let itemIdIdx = -1;
@@ -349,9 +366,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 colType = 'timeline'; 
                             }
 
-                            const colDef: any = { title: headerText, type: colType, originalIndex: idx, subIndex: idx };
-                            if (colType === 'status') colDef.options = [...defaultStatusOptions];
-                            
+                            const colDef: any = { title: headerText, type: colType, originalIndex: idx, subIndex: idx, options: [] };
                             dynamicColumns.push(colDef);
                             handledIndices.add(idx);
                         });
@@ -365,7 +380,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     let currentMainItem: any = null;
                     let isInsideSubitems = false;
 
-                    const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
                     let groupCount = 0;
 
                     rows.forEach((row, rIdx) => {
@@ -429,8 +443,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         else if (shLower.includes('cost') || shLower.includes('budget') || shLower.includes('number')) cType = 'number';
                                         else if (shLower === 'date') cType = 'date';
                                         
-                                        const newCol: any = { title: sh, type: cType, subIndex: shIdx, originalIndex: -1 };
-                                        if (cType === 'status') newCol.options = [...defaultStatusOptions];
+                                        const newCol: any = { title: sh, type: cType, subIndex: shIdx, originalIndex: -1, options: [] };
                                         dynamicColumns.push(newCol);
                                     }
                                 });
@@ -586,6 +599,37 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             if (firstVal && firstVal !== 'Subitems' && firstVal !== 'Name') {
                                 isInsideSubitems = false;
                             }
+                        }
+                    });
+
+                    // 🌈 6. Post-Process Status Options (Consolidate labels and colors detected from cells)
+                    dynamicColumns.forEach(c => {
+                        if (c.type === 'status') {
+                            const optionsMap: Record<string, string> = {};
+                            
+                            // Initialize with default Grey
+                            optionsMap['Default'] = '#c4c4c4';
+                            
+                            rows.forEach((row, rIdx) => {
+                                const dIdx = c.originalIndex !== -1 ? c.originalIndex : c.subIndex;
+                                if (dIdx === -1 || dIdx === undefined) return;
+                                
+                                const val = String(row[dIdx] || '').trim();
+                                if (!val || val.toLowerCase() === 'subitems' || val.toLowerCase() === 'name') return;
+                                
+                                if (!optionsMap[val]) {
+                                    // Extract color from this specific cell
+                                    const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
+                                    const color = getCellBgColor(worksheet, ref) || '#c4c4c4';
+                                    optionsMap[val] = color;
+                                }
+                            });
+                            
+                            c.options = Object.entries(optionsMap).map(([label, color]) => ({
+                                id: Math.random().toString(36).substring(7),
+                                label,
+                                color
+                            }));
                         }
                     });
 

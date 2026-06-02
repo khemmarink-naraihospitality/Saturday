@@ -300,25 +300,23 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         itemIdIdx = hLower.findIndex((c: string) => c.includes('item id') || c === 'id' || c.startsWith('item id') || c.endsWith('id'));
                         if (itemIdIdx !== -1) handledIndices.add(itemIdIdx);
 
-                        // 2. Identify Timeline Pairs (Robustly handle prefixes like "2022")
+                        // 2. Identify Timeline Pairs (Even more dynamic)
                         hLower.forEach((text: string, i: number) => {
                             if (handledIndices.has(i)) return;
                             
+                            // 🔍 Detection: Must have 'timeline' and either 'start' or 'เริ่ม'
                             const isStart = text.includes('timeline') && (text.includes('start') || text.includes('เริ่ม'));
                             if (isStart) {
-                                const clean = (s: string) => s.replace(/timeline|start|begin|end|finish|เริ่ม|จบ|date|[^a-z0-9]/g, '').trim();
-                                const prefix = clean(text);
-                                
+                                // Greedily find the VERY NEXT "End" column that hasn't been handled yet and has 'timeline'
                                 const endIdx = hLower.findIndex((endText: string, j: number) => 
                                     j > i && 
                                     !handledIndices.has(j) &&
                                     endText.includes('timeline') && 
-                                    (endText.includes('end') || endText.includes('finish') || endText.includes('จบ')) &&
-                                    clean(endText) === prefix
+                                    (endText.includes('end') || endText.includes('finish') || endText.includes('จบ'))
                                 );
 
                                 if (endIdx !== -1) {
-                                    // Found a pair! Use the prefix + "Timeline" as title or just the part without "Start"
+                                    // Pair them up! Use the Start column's text (cleaned) as the title
                                     const pairTitle = h[i].replace(/-\s*start|start|เริ่ม/gi, '').trim() || 'Timeline';
                                     dynamicColumns.push({ 
                                         title: pairTitle, 

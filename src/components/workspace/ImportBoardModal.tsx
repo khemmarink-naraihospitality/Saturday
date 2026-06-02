@@ -300,55 +300,53 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         itemIdIdx = hLower.findIndex((c: string) => c.includes('item id') || c === 'id' || c.startsWith('item id') || c.endsWith('id'));
                         if (itemIdIdx !== -1) handledIndices.add(itemIdIdx);
 
-                        // 2. Identify Timeline Pairs (Even more dynamic)
-                        hLower.forEach((text: string, i: number) => {
-                            if (handledIndices.has(i)) return;
-                            
-                            // 🔍 Detection: Must have 'timeline' and either 'start' or 'เริ่ม'
+                        // 2. Process all columns in original order
+                        h.forEach((headerText: string, idx: number) => {
+                            if (!headerText || handledIndices.has(idx)) return;
+                            const text = headerText.toLowerCase();
+
+                            // Skip system internal markers
+                            if (text === 'name' || text === 'item' || text === 'subitems') return;
+
+                            // --- A. Timeline Pairing (Merge if found) ---
                             const isStart = text.includes('timeline') && (text.includes('start') || text.includes('เริ่ม'));
                             if (isStart) {
                                 // Greedily find the VERY NEXT "End" column that hasn't been handled yet and has 'timeline'
                                 const endIdx = hLower.findIndex((endText: string, j: number) => 
-                                    j > i && 
+                                    j > idx && 
                                     !handledIndices.has(j) &&
                                     endText.includes('timeline') && 
                                     (endText.includes('end') || endText.includes('finish') || endText.includes('จบ'))
                                 );
 
                                 if (endIdx !== -1) {
-                                    // Pair them up! Use the Start column's text (cleaned) as the title
-                                    const pairTitle = h[i].replace(/-\s*start|start|เริ่ม/gi, '').trim() || 'Timeline';
+                                    // Pair them up! 
+                                    const pairTitle = h[idx].replace(/-\s*start|start|เริ่ม/gi, '').trim() || 'Timeline';
                                     dynamicColumns.push({ 
                                         title: pairTitle, 
                                         type: 'timeline', 
-                                        originalIndices: [i, endIdx] 
+                                        originalIndices: [idx, endIdx] 
                                     });
-                                    handledIndices.add(i);
+                                    handledIndices.add(idx);
                                     handledIndices.add(endIdx);
+                                    return;
                                 }
                             }
-                        });
 
-                        // 3. Process all other columns
-                        h.forEach((headerText: string, idx: number) => {
-                            if (!headerText || handledIndices.has(idx)) return;
-                            const lowerText = headerText.toLowerCase();
-                            
-                            // Skip system internal markers
-                            if (lowerText === 'name' || lowerText === 'item' || lowerText === 'subitems') return;
-
-                            // Dynamic Type Inference
+                            // --- B. Map Other Types ---
                             let colType = 'text';
-                            if (lowerText.includes('status') || lowerText.includes('complete') || lowerText.includes('approved') || lowerText.includes('sent')) {
+                            if (text.includes('status') || text.includes('complete') || text.includes('approved') || text.includes('sent')) {
                                 colType = 'status';
-                            } else if (lowerText.includes('file') || lowerText.includes('quote')) {
+                            } else if (text.includes('file') || text.includes('quote')) {
                                 colType = 'files';
-                            } else if (lowerText.includes('cost') || lowerText.includes('budget') || lowerText.includes('number') || lowerText.includes('amount')) {
+                            } else if (text.includes('person') || text.includes('owner') || text.includes('responsible') || text.includes('user')) {
+                                colType = 'people';
+                            } else if (text.includes('cost') || text.includes('budget') || text.includes('number') || text.includes('amount')) {
                                 colType = 'number';
-                            } else if (lowerText === 'date' || lowerText.includes(' date')) {
+                            } else if (text === 'date' || text.includes(' date')) {
                                 colType = 'date';
-                            } else if (lowerText.includes('timeline')) {
-                                colType = 'timeline'; // single column fallback
+                            } else if (text.includes('timeline')) {
+                                colType = 'timeline'; 
                             }
 
                             const colDef: any = { title: headerText, type: colType, originalIndex: idx };

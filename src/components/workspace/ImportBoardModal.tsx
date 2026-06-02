@@ -395,10 +395,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                         // 2. Skip Header Row (must be done before group detection)
                         if (headerRowIdx !== -1 && rIdx === headerRowIdx) return;
-                        
-                        // 3. Skip 'Name' or 'Subitems' headers
+
                         // 3. Handle 'Subitems' or 'Name' header rows
-                        if (firstVal === 'Subitems' || (firstVal === 'Name' && isInsideSubitems)) {
+                        // 🧠 Skip any row that looks like a header (starting with Name, Item, or Subitems)
+                        const isHeaderRow = firstVal === 'Subitems' || firstVal === 'Name' || firstVal === 'Item' || firstVal === 'หัวข้อ';
+                        
+                        if (isHeaderRow) {
                             if (firstVal === 'Subitems') {
                                 isInsideSubitems = true;
                                 

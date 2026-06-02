@@ -222,6 +222,28 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellStyles: true });
                 
+                // 🌈 Define Status Color Map early for use in row parsing
+                const standardStatusColorMap: Record<string, string> = {
+                    'done': '#00c875',
+                    'completed': '#00c875',
+                    'working on it': '#fdab3d',
+                    'in progress': '#fdab3d',
+                    'stuck': '#e2445c',
+                    'at risk': '#e2445c',
+                    'ready for review': '#ffd533',
+                    'waiting': '#ffd533',
+                    'on hold': '#a1a1a1',
+                    'rfp': '#ff158a',
+                    'not start': '#333333',
+                    'n/a': '#333333',
+                    // Normalize keys to lowercase for reliable matching
+                    ...Object.keys(currentMappings).reduce((acc, k) => ({
+                        ...acc,
+                        [k.toLowerCase()]: currentMappings[k]
+                    }), {})
+                };
+                console.log('[Import] Effective Color Map:', standardStatusColorMap);
+
                 // --- 1. Parse Updates Map ---
                 const updatesMap: Record<string, any[]> = {};
                 const updatesSheet = workbook.SheetNames.find(n => {
@@ -562,17 +584,28 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             } else if (dataIdx !== -1) {
                                 let rawVal = row[dataIdx];
                                 
-                                // 🧠 Greedy Fallback: If empty, check neighbors (+/- 1) for data that matches the type
-                                if (isInsideSubitems && (!rawVal || rawVal.toString().trim() === '')) {
-                                    const neighbors = [dataIdx + 1, dataIdx - 1];
-                                    for (const nIdx of neighbors) {
-                                        if (nIdx >= 0 && row[nIdx]) {
-                                            const nVal = row[nIdx];
-                                            if (c.type === 'status' && typeof nVal === 'string' && (nVal.toLowerCase().includes('working') || nVal.toLowerCase().includes('done') || nVal.toLowerCase().includes('progress'))) {
-                                                rawVal = nVal; break;
+                                // 🧠 Greedy Fallback: If empty, check neighbors (+/- 1) or ALL columns for status
+                                if (!rawVal || rawVal.toString().trim() === '') {
+                                    if (c.type === 'status') {
+                                        // 🕵️‍♂️ Greedy Status Recovery: Search the whole row for known status labels
+                                        const knownLabels = Object.keys(standardStatusColorMap);
+                                        for (let i = 0; i < row.length; i++) {
+                                            const cellVal = String(row[i] || '').trim().toLowerCase();
+                                            if (cellVal && knownLabels.includes(cellVal)) {
+                                                console.log(`[Import] Greedy Recovery: Row ${rIdx} Status was empty at Col ${dataIdx}, found "${row[i]}" at Col ${i}`);
+                                                rawVal = row[i];
+                                                break;
                                             }
-                                            if (c.type === 'date' && parseDate(nVal)) {
-                                                rawVal = nVal; break;
+                                        }
+                                    } else if (isInsideSubitems) {
+                                        // Standard neighbor check for other types in sub-items
+                                        const neighbors = [dataIdx + 1, dataIdx - 1];
+                                        for (const nIdx of neighbors) {
+                                            if (nIdx >= 0 && row[nIdx]) {
+                                                const nVal = row[nIdx];
+                                                if (c.type === 'date' && parseDate(nVal)) {
+                                                    rawVal = nVal; break;
+                                                }
                                             }
                                         }
                                     }
@@ -627,27 +660,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         }
                     });
 
-                    // 🌈 6. Post-Process Status Options (Use DB mappings or fallback)
-                    const standardStatusColorMap: Record<string, string> = {
-                        'done': '#00c875',
-                        'completed': '#00c875',
-                        'working on it': '#fdab3d',
-                        'in progress': '#fdab3d',
-                        'stuck': '#e2445c',
-                        'at risk': '#e2445c',
-                        'ready for review': '#ffd533',
-                        'waiting': '#ffd533',
-                        'on hold': '#a1a1a1',
-                        'rfp': '#ff158a',
-                        'not start': '#333333',
-                        'n/a': '#333333',
-                        // Normalize keys to lowercase for reliable matching
-                        ...Object.keys(currentMappings).reduce((acc, k) => ({
-                            ...acc,
-                            [k.toLowerCase()]: currentMappings[k]
-                        }), {})
-                    };
-                    console.log('[Import] Effective Color Map:', standardStatusColorMap);
 
                     dynamicColumns.forEach(c => {
                         if (c.type === 'status') {

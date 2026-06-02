@@ -7,7 +7,7 @@
 ## 1. การตรวจหาคอลัมน์ (Dynamic Header Detection)
 - **ลำดับคอลัมน์ (Preserve Order):** ระบบจะสแกนหัวตารางจากซ้ายไปขวาตาม Excel เป๊ะๆ เพื่อรักษาลำดับคอลัมน์เดิมไว้
 - **การระบุประเภทคอลัมน์ (Auto Type Mapping):**
-  - **People:** สแกนหาคำว่า "Person", "Owner", "Responsible", "User" เพื่อเปิดใช้งานฟีเจอร์รูปโปรไฟล์
+  - **People:** สแกนหาคำว่า "Responsible", "User ID" (สำหรับคอลัมน์ "Person" หรือ "Owner" ระบบจะเลือกให้เป็น **Text** เพื่อป้องกันการอ่านค่าชื่อพนักงานผิดพลาดและให้แสดงผลตาม Excel เป๊ะๆ)
   - **Status:** สแกนหาคำว่า "Status", "Complete", "Approved", "Sent" และจับคู่กับสถานะพื้นฐาน (Done, Working on it, ฯลฯ)
   - **Timeline:** สแกนหาคำว่า "Timeline" (ดูรายละเอียดในหัวข้อถัดไป)
   - **Number:** สแกนหาคำว่า "Cost", "Budget", "Amount", "Number"

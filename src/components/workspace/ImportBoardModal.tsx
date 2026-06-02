@@ -339,7 +339,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 colType = 'status';
                             } else if (text.includes('file') || text.includes('quote')) {
                                 colType = 'files';
-                            } else if (text.includes('person') || text.includes('owner') || text.includes('responsible') || text.includes('user')) {
+                            } else if (text.includes('responsible') || text.includes('user ID')) {
                                 colType = 'people';
                             } else if (text.includes('cost') || text.includes('budget') || text.includes('number') || text.includes('amount')) {
                                 colType = 'number';

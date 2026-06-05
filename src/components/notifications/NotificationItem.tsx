@@ -12,7 +12,13 @@ interface NotificationItemProps {
 }
 
 export const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
-    const { markNotificationAsRead, handleAcceptInvite, handleDeclineInvite, dismissNotification, setActiveBoard, setActiveWorkspace, setActiveItem } = useBoardStore();
+    const markNotificationAsRead = useBoardStore(state => state.markNotificationAsRead);
+    const handleAcceptInvite = useBoardStore(state => state.handleAcceptInvite);
+    const handleDeclineInvite = useBoardStore(state => state.handleDeclineInvite);
+    const dismissNotification = useBoardStore(state => state.dismissNotification);
+    const setActiveBoard = useBoardStore(state => state.setActiveBoard);
+    const setActiveWorkspace = useBoardStore(state => state.setActiveWorkspace);
+    const setActiveItem = useBoardStore(state => state.setActiveItem);
     const [isProcessing, setIsProcessing] = useState(false);
 
     const isInvite = notification.type === 'workspace_invite' || notification.type === 'board_invite';

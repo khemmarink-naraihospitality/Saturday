@@ -16,7 +16,9 @@ interface PersonPickerProps {
 }
 
 export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNewEmail, onClose, boardId, itemId, columnId }: PersonPickerProps) => {
-    const { activeBoardMembers, searchUsers, inviteAndAssignUser } = useBoardStore();
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
+    const searchUsers = useBoardStore(state => state.searchUsers);
+    const inviteAndAssignUser = useBoardStore(state => state.inviteAndAssignUser);
     const { } = useAuth();
 
     const [searchTerm, setSearchTerm] = useState('');

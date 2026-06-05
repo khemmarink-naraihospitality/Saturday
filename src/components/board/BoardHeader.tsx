@@ -16,7 +16,10 @@ interface BoardHeaderProps {
 }
 
 export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
-    const { boards, updateBoard, deleteBoard, activeBoardMembers } = useBoardStore();
+    const boards = useBoardStore(state => state.boards);
+    const updateBoard = useBoardStore(state => state.updateBoard);
+    const deleteBoard = useBoardStore(state => state.deleteBoard);
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const board = boards.find(b => b.id === boardId);
 
     // Permission Hook

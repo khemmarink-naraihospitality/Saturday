@@ -9,7 +9,7 @@ interface InviteMemberFormProps {
 }
 
 export const InviteMemberForm = ({ onInvite, defaultRole = 'member', type = 'board' }: InviteMemberFormProps) => {
-    const { searchUsers } = useBoardStore();
+    const searchUsers = useBoardStore(state => state.searchUsers);
     const [email, setEmail] = useState('');
     const [role, setRole] = useState(defaultRole);
     const [isLoading, setIsLoading] = useState(false);

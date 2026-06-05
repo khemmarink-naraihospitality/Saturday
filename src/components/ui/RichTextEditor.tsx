@@ -62,7 +62,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [mentionPosition, setMentionPosition] = useState<{ top: number, left: number } | null>(null);
     const [mentionRange, setMentionRange] = useState<Range | null>(null);
-    const { activeBoardMembers } = useBoardStore();
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
 
     // Hyperlink State
     const [isLinkUIOpen, setIsLinkUIOpen] = useState(false);

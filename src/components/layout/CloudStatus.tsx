@@ -3,7 +3,8 @@ import { Cloud, CloudOff, RefreshCw, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CloudStatus = () => {
-    const { isSyncing, error } = useBoardStore();
+    const isSyncing = useBoardStore(state => state.isSyncing);
+    const error = useBoardStore(state => state.error);
 
     if (error) {
         return (

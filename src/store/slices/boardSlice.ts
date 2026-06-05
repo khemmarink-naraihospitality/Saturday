@@ -150,8 +150,8 @@ export const createBoardSlice: StateCreator<
                 { data: sharedWorkspacesData },
                 { data: userFavoritesData }
             ] = await Promise.all([
-                supabase.from('workspaces').select('*').order('order'),
-                supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
+                supabase.from('workspaces').select('id, title, order, owner_id').order('order'),
+                supabase.from('boards').select('id, title, description, workspace_id, order, is_archived, is_favorite, active_view_id, item_column_title, item_column_width, collapsed_groups, expanded_item_ids, settings').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
@@ -164,7 +164,7 @@ export const createBoardSlice: StateCreator<
             if (!workspaces || !boards) throw new Error('Failed to load core data');
 
             // 0. ENSURE PROFILE
-            let { data: existingProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            let { data: existingProfile } = await supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url').eq('id', user.id).single();
 
             // Fetch profiles for workspace owners to display names
             const workspaceOwnerIds = Array.from(new Set(workspaces.map((w: any) => w.owner_id).filter(Boolean)));
@@ -352,8 +352,8 @@ export const createBoardSlice: StateCreator<
                 { data: columns },
                 { data: items }
             ] = await Promise.all([
-                supabase.from('groups').select('*').eq('board_id', boardId).order('order'),
-                supabase.from('columns').select('*').eq('board_id', boardId).order('order'),
+                supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, settings').eq('board_id', boardId).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order')
             ]);
 
@@ -504,7 +504,7 @@ export const createBoardSlice: StateCreator<
                 role: 'owner'
             });
 
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            const { data: profile } = await supabase.from('profiles').select('id, full_name, email, avatar_url').eq('id', user.id).single();
             set(state => ({
                 activeBoardMembers: [{
                     id: uuidv4(),

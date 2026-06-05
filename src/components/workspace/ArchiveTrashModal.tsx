@@ -6,7 +6,8 @@ interface ArchiveTrashModalProps {
 }
 
 export const ArchiveTrashModal = ({ onClose }: ArchiveTrashModalProps) => {
-    const { boards, restoreBoard } = useBoardStore();
+    const boards = useBoardStore(state => state.boards);
+    const restoreBoard = useBoardStore(state => state.restoreBoard);
 
     // In a real implementation with a huge DB, we would fetch archived boards from the server.
     // For now, since boards might be filtered out of the main 'boards' array, let's assume 

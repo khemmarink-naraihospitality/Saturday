@@ -9,7 +9,9 @@ interface SidebarHeaderProps {
 }
 
 export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProps) => {
-    const { addWorkspace, navigateTo, activePage } = useBoardStore();
+    const addWorkspace = useBoardStore(state => state.addWorkspace);
+    const navigateTo = useBoardStore(state => state.navigateTo);
+    const activePage = useBoardStore(state => state.activePage);
 
     const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);

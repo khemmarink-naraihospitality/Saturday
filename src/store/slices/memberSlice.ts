@@ -77,7 +77,7 @@ export const createMemberSlice: StateCreator<
     getBoardMembers: async (boardId) => {
         const { data, error } = await supabase
             .from('board_members')
-            .select('*, profiles(*)')
+            .select('id, user_id, role, board_id, profiles(id, full_name, email, avatar_url)')
             .eq('board_id', boardId);
         if (error) throw error;
         return data || [];
@@ -233,7 +233,7 @@ export const createMemberSlice: StateCreator<
 
     searchUsers: async (query) => {
         if (!query || query.length < 2) return [];
-        const { data } = await supabase.from('profiles').select('*').ilike('email', `%${query}%`).limit(5);
+        const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').ilike('email', `%${query}%`).limit(5);
         return data || [];
     },
 

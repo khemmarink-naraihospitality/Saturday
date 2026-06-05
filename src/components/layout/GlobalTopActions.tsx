@@ -9,9 +9,12 @@ import { NotificationItem } from '../notifications/NotificationItem';
 import { useUserStore } from '../../store/useUserStore';
 import { ImportBoardModal } from '../workspace/ImportBoardModal';
 
+const selectUnreadCount = (state: ReturnType<typeof useBoardStore.getState>) =>
+    state.notifications?.filter(n => !n.is_read).length || 0;
+
 export const GlobalTopActions = () => {
     const { user, signOut } = useAuth();
-    const unreadCount = useBoardStore(state => state.notifications?.filter(n => !n.is_read).length || 0);
+    const unreadCount = useBoardStore(selectUnreadCount);
     const loadNotifications = useBoardStore(state => state.loadNotifications);
     const navigateTo = useBoardStore(state => state.navigateTo);
 

@@ -24,7 +24,7 @@ export interface ItemSlice {
     // Update/Comment
     addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }, files?: import('../../types').FileLink[]) => Promise<void>;
     deleteUpdate: (itemId: string, updateId: string) => Promise<void>;
-    editUpdate: (itemId: string, updateId: string, newContent: string) => Promise<void>;
+    editUpdate: (itemId: string, updateId: string, newContent: string, files?: import('../../types').FileLink[]) => Promise<void>;
 
     // View Options
     toggleShowHiddenItems: () => void;
@@ -430,16 +430,21 @@ export const createItemSlice: StateCreator<
         await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
     },
 
-    editUpdate: async (itemId, updateId, newContent) => {
+    editUpdate: async (itemId, updateId, newContent, files) => {
         const { activeBoardId } = get();
         set(state => ({
             boards: state.boards.map(b => {
                 if (b.id !== activeBoardId) return b;
                 return {
                     ...b,
-                    items: b.items.map(i => i.id !== itemId ? i : { 
-                        ...i, 
-                        updates: (i.updates || []).map(u => u.id === updateId ? { ...u, content: newContent } : u) 
+                    items: b.items.map(i => i.id !== itemId ? i : {
+                        ...i,
+                        updates: (i.updates || []).map(u => {
+                            if (u.id !== updateId) return u;
+                            const updated = { ...u, content: newContent };
+                            if (files !== undefined) updated.files = files;
+                            return updated;
+                        })
                     })
                 };
             })

@@ -47,6 +47,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [showEditEmojiPanel, setShowEditEmojiPanel] = useState(false);
     const [showEditGifPicker, setShowEditGifPicker] = useState(false);
     const [editGifPickerPos, setEditGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [showEditUrlPanel, setShowEditUrlPanel] = useState(false);
+    const [editAttachUrl, setEditAttachUrl] = useState('');
+    const [editDraftFiles, setEditDraftFiles] = useState<FileLink[]>([]);
     const editEmojiPanelRef = useRef<HTMLDivElement>(null);
     const editGifButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -144,6 +147,19 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleGifSelect = (url: string) => {
         setDraft(itemId, draftText + `<img src="${url}" alt="GIF" style="max-width:100%;border-radius:6px;margin:4px 0;" />`);
+    };
+
+    const handleAddEditAttachUrl = () => {
+        if (!editAttachUrl.trim()) return;
+        let url = editAttachUrl.trim();
+        if (!url.startsWith('http')) url = `https://${url}`;
+        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
+            ? getGoogleDriveFileName(url)
+            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
+        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
+        setEditDraftFiles(prev => [...prev, { id: uuidv4(), name, url, type }]);
+        setEditAttachUrl('');
+        setShowEditUrlPanel(false);
     };
 
     const handleEditEmojiSelect = (emoji: string) => {
@@ -525,6 +541,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                             onClick={() => {
                                                                 setEditingUpdateId(update.id);
                                                                 setEditUpdateContent(update.content);
+                                                                setEditDraftFiles(update.files || []);
+                                                                setShowEditUrlPanel(false);
                                                             }}
                                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
                                                             title="Edit"
@@ -558,6 +576,40 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                     />
                                                                 )}
 
+                                                                {/* URL Attach panel */}
+                                                                {showEditUrlPanel && (
+                                                                    <div style={{ padding: '10px 12px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', gap: '8px' }}>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={editAttachUrl}
+                                                                            onChange={(e) => setEditAttachUrl(e.target.value)}
+                                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddEditAttachUrl()}
+                                                                            placeholder="Paste link to attach..."
+                                                                            autoFocus
+                                                                            style={{ flex: 1, padding: '6px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', fontSize: '13px', outline: 'none', backgroundColor: 'hsl(var(--color-bg-canvas))', color: 'hsl(var(--color-text-primary))' }}
+                                                                        />
+                                                                        <button onClick={handleAddEditAttachUrl} disabled={!editAttachUrl.trim()} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: editAttachUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-brand-primary) / 0.3)', color: 'white', fontSize: '13px', fontWeight: 500, cursor: editAttachUrl.trim() ? 'pointer' : 'not-allowed' }}>Attach</button>
+                                                                        <button onClick={() => { setShowEditUrlPanel(false); setEditAttachUrl(''); }} style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px' }}>✕</button>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* File chips */}
+                                                                {editDraftFiles.length > 0 && (
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', borderBottom: '1px solid hsl(var(--color-border))' }}>
+                                                                        {editDraftFiles.map(file => (
+                                                                            <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
+                                                                                {file.type === 'google-drive' ? (
+                                                                                    <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                                                ) : (
+                                                                                    <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                                                )}
+                                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                                                                <button onClick={() => setEditDraftFiles(prev => prev.filter(f => f.id !== file.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, lineHeight: 1, fontSize: '11px', flexShrink: 0 }}>✕</button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Edit action bar */}
                                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
@@ -569,6 +621,15 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                         >@</button>
+
+                                                                        {/* Paperclip */}
+                                                                        <button
+                                                                            onClick={() => { setShowEditUrlPanel(!showEditUrlPanel); setShowEditGifPicker(false); }}
+                                                                            title="Attach file URL"
+                                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEditUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                        ><Paperclip size={16} /></button>
 
                                                                         {/* GIF */}
                                                                         <button
@@ -597,16 +658,29 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                                 </div>
                                                                             )}
                                                                         </div>
+
+                                                                        {/* Google Drive */}
+                                                                        <button
+                                                                            onClick={() => openPicker((result) => {
+                                                                                setEditDraftFiles(prev => [...prev, { id: uuidv4(), name: result.name, url: result.url, type: 'google-drive', iconUrl: result.iconUrl, mimeType: result.mimeType }]);
+                                                                            })}
+                                                                            title="Attach from Google Drive"
+                                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '18px', height: '18px' }} />
+                                                                        </button>
                                                                     </div>
 
                                                                     {/* Right: Cancel + Save */}
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <button
-                                                                            onClick={() => { setEditingUpdateId(null); setShowEditEmojiPanel(false); setShowEditGifPicker(false); }}
+                                                                            onClick={() => { setEditingUpdateId(null); setShowEditEmojiPanel(false); setShowEditGifPicker(false); setShowEditUrlPanel(false); setEditDraftFiles([]); }}
                                                                             style={{ background: 'transparent', color: 'hsl(var(--color-text-secondary))', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
                                                                         >Cancel</button>
                                                                         <button
-                                                                            onClick={() => { editUpdate(itemId, update.id, editUpdateContent); setEditingUpdateId(null); }}
+                                                                            onClick={() => { editUpdate(itemId, update.id, editUpdateContent, editDraftFiles); setEditingUpdateId(null); setEditDraftFiles([]); }}
                                                                             style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
                                                                         >Save</button>
                                                                     </div>

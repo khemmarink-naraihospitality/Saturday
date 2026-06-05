@@ -2,6 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff } from 'lucide-react';
 
+const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); padding: 36px 32px; text-align: center;">
+    <div style="font-size: 36px; margin-bottom: 12px;">💬</div>
+    <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">You were mentioned!</h1>
+    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Someone has tagged you in an update</p>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 32px;">
+    <p style="color: #1e293b; font-size: 16px; margin: 0 0 8px;">
+      <strong style="color: #f97316;">{{mentionedBy}}</strong> mentioned you in
+    </p>
+    <p style="color: #1e293b; font-size: 18px; font-weight: 600; margin: 0 0 4px;">{{itemName}}</p>
+    <p style="color: #64748b; font-size: 13px; margin: 0 0 24px;">Board: {{boardName}}</p>
+
+    <!-- Update Preview -->
+    <div style="background: #fff7ed; border-left: 4px solid #f97316; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 0 0 28px;">
+      <p style="color: #475569; margin: 0; font-size: 14px; line-height: 1.7; font-style: italic;">"{{updatePreview}}"</p>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="text-align: center;">
+      <a href="{{itemLink}}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #fb923c); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; letter-spacing: 0.2px;">
+        View Update →
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background: #f8fafc; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+      NHG Saturday.com · Project Management Platform<br/>
+      <span style="font-size: 11px;">You received this because you were mentioned in a project update.</span>
+    </p>
+  </div>
+</div>`;
+
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -30,6 +68,11 @@ export const EmailSettings = () => {
         bodyHtml: ''
     });
 
+    const [mentionTemplate, setMentionTemplate] = useState({
+        subject: '{{mentionedBy}} mentioned you in {{itemName}}',
+        bodyHtml: DEFAULT_MENTION_TEMPLATE
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
     
     // Test SMTP state
@@ -48,7 +91,7 @@ export const EmailSettings = () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template']);
+                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template']);
             
             if (error) throw error;
 
@@ -57,11 +100,13 @@ export const EmailSettings = () => {
                 const template = data.find(item => item.key === 'invite_email_template');
                 const existingTemplate = data.find(item => item.key === 'invite_existing_user_template');
                 const assignTemplate = data.find(item => item.key === 'assign_item_template');
-                
+                const mentionTmpl = data.find(item => item.key === 'mention_email_template');
+
                 if (smtp?.value) setSmtpConfig(smtp.value);
                 if (template?.value) setInviteTemplate(template.value);
                 if (existingTemplate?.value) setInviteExistingTemplate(existingTemplate.value);
                 if (assignTemplate?.value) setAssignItemTemplate(assignTemplate.value);
+                if (mentionTmpl?.value) setMentionTemplate(mentionTmpl.value);
             }
         } catch (error: any) {
             console.error('Error fetching settings:', error);
@@ -96,6 +141,11 @@ export const EmailSettings = () => {
                     key: 'assign_item_template',
                     value: assignItemTemplate,
                     description: 'Template for item assignments'
+                },
+                {
+                    key: 'mention_email_template',
+                    value: mentionTemplate,
+                    description: 'Template for @mention notifications'
                 }
             ];
 
@@ -514,6 +564,70 @@ export const EmailSettings = () => {
                                     .replace(/\{\{inviterName\}\}/g, 'Pattaravadee N.')
                                     .replace(/\{\{inviteLink\}\}/g, '#')
                             }} 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Mention Email Template ── */}
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={20} color="#f97316" />
+                    Mention Email Template
+                    <span title="สถานการณ์ที่ส่ง: เมื่อมีการ @mention ผู้ใช้ใน Updates&#10;จุดประสงค์: แจ้งเตือนทางอีเมล์พร้อมลิงก์กลับไปยัง Item นั้น" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong>{' '}
+                    <code style={codeStyle}>{'{{mentionedBy}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{boardName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{updatePreview}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemLink}}'}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input
+                        type="text"
+                        value={mentionTemplate.subject}
+                        onChange={e => setMentionTemplate({ ...mentionTemplate, subject: e.target.value })}
+                        style={inputStyle}
+                    />
+                </div>
+
+                <CollapsibleHtmlBody
+                    label="Email HTML Body"
+                    value={mentionTemplate.bodyHtml}
+                    onChange={val => setMentionTemplate({ ...mentionTemplate, bodyHtml: val })}
+                />
+
+                {/* Live Preview */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{ ...labelStyle, color: '#f97316', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{ marginTop: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span>{' '}
+                            <strong>
+                                {mentionTemplate.subject
+                                    .replace(/\{\{mentionedBy\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')}
+                            </strong>
+                        </div>
+                        <div
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{
+                                __html: mentionTemplate.bodyHtml
+                                    .replace(/\{\{mentionedBy\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')
+                                    .replace(/\{\{updatePreview\}\}/g, 'Hey, can you take a look at the latest design mockups and share your feedback by Friday?')
+                                    .replace(/\{\{itemLink\}\}/g, '#')
+                            }}
                         />
                     </div>
                 </div>

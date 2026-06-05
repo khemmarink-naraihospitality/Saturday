@@ -18,24 +18,37 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { 
-      email, 
-      redirectTo, 
-      workspaceName = 'NHG Saturday', 
+    const {
+      email,
+      userId,       // For mention: look up email from userId
+      redirectTo,
+      workspaceName = 'NHG Saturday',
       inviterName = 'A Team Member',
-      action = 'invite', // 'invite' | 'assign_item' | 'test_email'
+      action = 'invite', // 'invite' | 'assign_item' | 'test_email' | 'mention'
       itemName = '',
-      boardName = ''
+      boardName = '',
+      mentionedBy = '',
+      updatePreview = '',
+      itemLink = 'https://saturdaycom.vercel.app'
     } = await req.json();
 
     if (!email) {
       throw new Error('Email is required');
     }
 
+    // For mention action, resolve email from userId if not provided directly
+    let resolvedEmail = email;
+    if (action === 'mention' && !resolvedEmail && userId) {
+      const { data: userData, error: userErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (userErr || !userData?.user?.email) throw new Error('Could not resolve user email for mention notification');
+      resolvedEmail = userData.user.email;
+    }
+    if (!resolvedEmail) throw new Error('Email is required');
+
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
-      .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template']);
+      .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template']);
 
     if (settingsError) {
       console.error('Error fetching settings:', settingsError);
@@ -46,6 +59,7 @@ Deno.serve(async (req) => {
     const templateNew = settingsData?.find(s => s.key === 'invite_email_template')?.value;
     const templateExisting = settingsData?.find(s => s.key === 'invite_existing_user_template')?.value;
     const templateAssign = settingsData?.find(s => s.key === 'assign_item_template')?.value;
+    const templateMention = settingsData?.find(s => s.key === 'mention_email_template')?.value;
 
     if (!smtpConfig || !smtpConfig.host) {
       throw new Error('SMTP Configuration is missing or incomplete in system_settings');
@@ -59,7 +73,12 @@ Deno.serve(async (req) => {
     if (action === 'test_email') {
       finalTemplate = {
         subject: 'SMTP Connection Test Success',
-        bodyHtml: `<p>Hello!</p><p>If you see this email, it means your SMTP configuration in <b>{{workspaceName}}</b> is working correctly.</p><p>Sent to: ${email}</p>`
+        bodyHtml: `<p>Hello!</p><p>If you see this email, it means your SMTP configuration in <b>{{workspaceName}}</b> is working correctly.</p><p>Sent to: ${resolvedEmail}</p>`
+      };
+    } else if (action === 'mention') {
+      finalTemplate = templateMention || {
+        subject: '{{mentionedBy}} mentioned you in {{itemName}}',
+        bodyHtml: `<p><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><blockquote style="border-left:4px solid #f97316;padding:8px 16px;color:#475569;">"{{updatePreview}}"</blockquote><p><a href="{{itemLink}}" style="background:#f97316;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">View Update</a></p>`
       };
     } else if (action === 'assign_item') {
       finalTemplate = templateAssign;
@@ -103,13 +122,17 @@ Deno.serve(async (req) => {
     subject = subject.replace(/\{\{workspaceName\}\}/g, workspaceName)
                      .replace(/\{\{inviterName\}\}/g, inviterName)
                      .replace(/\{\{itemName\}\}/g, itemName)
-                     .replace(/\{\{boardName\}\}/g, boardName);
-                     
+                     .replace(/\{\{boardName\}\}/g, boardName)
+                     .replace(/\{\{mentionedBy\}\}/g, mentionedBy);
+
     htmlBody = htmlBody.replace(/\{\{workspaceName\}\}/g, workspaceName)
                        .replace(/\{\{inviterName\}\}/g, inviterName)
                        .replace(/\{\{inviteLink\}\}/g, actionLink)
+                       .replace(/\{\{itemLink\}\}/g, itemLink)
                        .replace(/\{\{itemName\}\}/g, itemName)
-                       .replace(/\{\{boardName\}\}/g, boardName);
+                       .replace(/\{\{boardName\}\}/g, boardName)
+                       .replace(/\{\{mentionedBy\}\}/g, mentionedBy)
+                       .replace(/\{\{updatePreview\}\}/g, updatePreview);
 
     const transporter = nodemailer.createTransport({
       host: smtpConfig.host,
@@ -126,12 +149,12 @@ Deno.serve(async (req) => {
 
     const mailOptions = {
       from: `"${smtpConfig.fromName || 'NHG Saturday'}" <${smtpConfig.fromEmail || smtpConfig.user}>`,
-      to: email,
+      to: resolvedEmail,
       subject: subject,
       html: htmlBody,
     };
 
-    console.log(`Sending email to ${email} with subject: ${subject}`);
+    console.log(`Sending email to ${resolvedEmail} with subject: ${subject}`);
     console.log(`Final HTML Body Preview: ${htmlBody.substring(0, 500)}...`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Message sent: %s', info.messageId);

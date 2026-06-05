@@ -116,6 +116,26 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
                         </p>
                     )}
 
+                    {isMention && notification.data?.updatePreview && (
+                        <div style={{
+                            marginTop: '8px',
+                            padding: '8px 12px',
+                            backgroundColor: 'hsl(var(--color-bg-canvas))',
+                            borderLeft: '3px solid #f97316',
+                            borderRadius: '0 6px 6px 0',
+                            fontSize: '12px',
+                            color: 'hsl(var(--color-text-secondary))',
+                            lineHeight: '1.5',
+                            fontStyle: 'italic',
+                            overflow: 'hidden',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                        } as React.CSSProperties}>
+                            "{notification.data.updatePreview}"
+                        </div>
+                    )}
+
                     {/* Invite Actions */}
                     {isInvite && (!notification.status || notification.status === 'pending') && (
                         <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }} onClick={e => e.stopPropagation()}>

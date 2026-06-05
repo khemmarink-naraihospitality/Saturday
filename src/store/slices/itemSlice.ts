@@ -381,12 +381,34 @@ export const createItemSlice: StateCreator<
         await supabase.from('items').update({ updates: updatedList }).eq('id', itemId);
         get().logActivity('item_comment_added', 'item', itemId, { board_id: activeBoardId, item_title: item?.title || 'Unknown Task' });
 
-        // Mentions Logic (Simplified - see original for full regex if needed, but keeping basic for slice)
+        // Mentions Logic
+        const textPreview = content.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+        const itemLink = `https://saturdaycom.vercel.app`;
         const dataIdRegex = /data-id="([^"]+)"/g;
         let dataIdMatch;
         while ((dataIdMatch = dataIdRegex.exec(content)) !== null) {
-            if (dataIdMatch[1] && dataIdMatch[1] !== author.id) {
-                await get().createNotification(dataIdMatch[1], 'mention', `${author.name} mentioned you in an update`, itemId, { board_id: activeBoardId });
+            const mentionedUserId = dataIdMatch[1];
+            if (mentionedUserId && mentionedUserId !== author.id) {
+                // In-app notification
+                await get().createNotification(
+                    mentionedUserId,
+                    'mention',
+                    `${author.name} mentioned you in "${item?.title || 'an update'}"`,
+                    itemId,
+                    { board_id: activeBoardId, updatePreview: textPreview }
+                );
+                // Email notification (fire-and-forget)
+                supabase.functions.invoke('invite-user', {
+                    body: {
+                        action: 'mention',
+                        userId: mentionedUserId,
+                        mentionedBy: author.name,
+                        itemName: item?.title || 'an item',
+                        boardName: board?.title || 'a board',
+                        updatePreview: textPreview,
+                        itemLink
+                    }
+                }).catch((e: unknown) => console.error('Mention email error:', e));
             }
         }
     },

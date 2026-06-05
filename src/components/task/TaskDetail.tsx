@@ -43,6 +43,13 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const emojiPanelRef = useRef<HTMLDivElement>(null);
     const gifButtonRef = useRef<HTMLButtonElement>(null);
 
+    // Edit mode action bar state
+    const [showEditEmojiPanel, setShowEditEmojiPanel] = useState(false);
+    const [showEditGifPicker, setShowEditGifPicker] = useState(false);
+    const [editGifPickerPos, setEditGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const editEmojiPanelRef = useRef<HTMLDivElement>(null);
+    const editGifButtonRef = useRef<HTMLButtonElement>(null);
+
     useEffect(() => {
         if (!showEmojiPanel) return;
         const handler = (e: MouseEvent) => {
@@ -53,6 +60,17 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [showEmojiPanel]);
+
+    useEffect(() => {
+        if (!showEditEmojiPanel) return;
+        const handler = (e: MouseEvent) => {
+            if (editEmojiPanelRef.current && !editEmojiPanelRef.current.contains(e.target as Node)) {
+                setShowEditEmojiPanel(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showEditEmojiPanel]);
 
 
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
@@ -126,6 +144,24 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleGifSelect = (url: string) => {
         setDraft(itemId, draftText + `<img src="${url}" alt="GIF" style="max-width:100%;border-radius:6px;margin:4px 0;" />`);
+    };
+
+    const handleEditEmojiSelect = (emoji: string) => {
+        setEditUpdateContent(editUpdateContent + emoji);
+        setShowEditEmojiPanel(false);
+    };
+
+    const handleEditGifSelect = (url: string) => {
+        setEditUpdateContent(editUpdateContent + `<img src="${url}" alt="GIF" style="max-width:100%;border-radius:6px;margin:4px 0;" />`);
+    };
+
+    const toggleEditGifPicker = () => {
+        if (showEditGifPicker) { setShowEditGifPicker(false); return; }
+        if (editGifButtonRef.current) {
+            const rect = editGifButtonRef.current.getBoundingClientRect();
+            setEditGifPickerPos({ bottom: window.innerHeight - rect.top + 8, left: rect.left });
+        }
+        setShowEditGifPicker(true);
     };
 
     const toggleGifPicker = () => {
@@ -220,11 +256,6 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                 }}
                             />
                         </h2>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: 'hsl(var(--color-text-secondary))' }}>
-                        <span>Pulse: {activeItem.title}</span>
-                        <span>•</span>
-                        <span>Group: {(board?.groups.find(g => g.id === activeItem.groupId)?.title)}</span>
                     </div>
                 </div>
                 <button
@@ -512,11 +543,77 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             </div>
                                             {editingUpdateId === update.id ? (
                                                 <div style={{ marginTop: '12px' }}>
-                                                    <RichTextEditor value={editUpdateContent} onChange={(val) => setEditUpdateContent(val)} />
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-                                                        <button onClick={() => setEditingUpdateId(null)} style={{ background: 'transparent', color: 'hsl(var(--color-text-secondary))', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
-                                                        <button onClick={() => { editUpdate(itemId, update.id, editUpdateContent); setEditingUpdateId(null); }} style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>Save</button>
-                                                    </div>
+                                                    <RichTextEditor
+                                                        value={editUpdateContent}
+                                                        onChange={(val) => setEditUpdateContent(val)}
+                                                        footer={
+                                                            <div>
+                                                                {/* GIF Picker for edit mode */}
+                                                                {showEditGifPicker && (
+                                                                    <GifStickerPicker
+                                                                        onSelect={handleEditGifSelect}
+                                                                        onClose={() => setShowEditGifPicker(false)}
+                                                                        anchorBottom={editGifPickerPos.bottom}
+                                                                        anchorLeft={editGifPickerPos.left}
+                                                                    />
+                                                                )}
+
+                                                                {/* Edit action bar */}
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                        {/* @ mention */}
+                                                                        <button
+                                                                            onMouseDown={(e) => { e.preventDefault(); setEditUpdateContent(editUpdateContent + '@'); }}
+                                                                            title="Mention someone"
+                                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '15px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))' }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                        >@</button>
+
+                                                                        {/* GIF */}
+                                                                        <button
+                                                                            ref={editGifButtonRef}
+                                                                            onClick={toggleEditGifPicker}
+                                                                            title="Insert GIF or Sticker"
+                                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px', padding: '0 7px', borderRadius: '5px', border: 'none', backgroundColor: showEditGifPicker ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))', letterSpacing: '0.03em' }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditGifPicker ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                        >GIF</button>
+
+                                                                        {/* Emoji */}
+                                                                        <div ref={editEmojiPanelRef} style={{ position: 'relative' }}>
+                                                                            <button
+                                                                                onClick={() => setShowEditEmojiPanel(!showEditEmojiPanel)}
+                                                                                title="Add emoji"
+                                                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
+                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                            >😊</button>
+                                                                            {showEditEmojiPanel && (
+                                                                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '10px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', padding: '8px', width: '264px', zIndex: 300, display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '2px' }}>
+                                                                                    {COMMON_EMOJIS.map(emoji => (
+                                                                                        <button key={emoji} onClick={() => handleEditEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '4px', borderRadius: '4px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>{emoji}</button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Right: Cancel + Save */}
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <button
+                                                                            onClick={() => { setEditingUpdateId(null); setShowEditEmojiPanel(false); setShowEditGifPicker(false); }}
+                                                                            style={{ background: 'transparent', color: 'hsl(var(--color-text-secondary))', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+                                                                        >Cancel</button>
+                                                                        <button
+                                                                            onClick={() => { editUpdate(itemId, update.id, editUpdateContent); setEditingUpdateId(null); }}
+                                                                            style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+                                                                        >Save</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    />
                                                 </div>
                                             ) : (
                                                 <>

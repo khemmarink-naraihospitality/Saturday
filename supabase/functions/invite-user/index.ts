@@ -32,18 +32,17 @@ Deno.serve(async (req) => {
       itemLink = 'https://saturdaycom.vercel.app'
     } = await req.json();
 
-    if (!email) {
-      throw new Error('Email is required');
-    }
-
-    // For mention action, resolve email from userId if not provided directly
+    // For mention action, resolve email from userId first (email field is not sent)
     let resolvedEmail = email;
     if (action === 'mention' && !resolvedEmail && userId) {
       const { data: userData, error: userErr } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (userErr || !userData?.user?.email) throw new Error('Could not resolve user email for mention notification');
       resolvedEmail = userData.user.email;
     }
-    if (!resolvedEmail) throw new Error('Email is required');
+
+    if (!resolvedEmail) {
+      throw new Error('Email is required');
+    }
 
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')

@@ -92,9 +92,12 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
 
     const filteredMembers = mentionQuery !== null
         ? activeBoardMembers.filter(m => {
-            const name = getDisplayName(m);
-            const match = name.toLowerCase().includes(mentionQuery.toLowerCase());
-            return match;
+            const profileData = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+            const profile = profileData || {};
+            const q = mentionQuery.toLowerCase();
+            const emailUser = (profile.email || '').split('@')[0].toLowerCase();
+            const fullName = (profile.full_name || '').toLowerCase();
+            return emailUser.includes(q) || fullName.includes(q);
         })
         : [];
 

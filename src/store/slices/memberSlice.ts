@@ -100,6 +100,9 @@ export const createMemberSlice: StateCreator<
                 role
             });
 
+            // Refresh activeBoardMembers so the new member appears in @mention immediately
+            set({ activeBoardMembers: await get().getBoardMembers(boardId) });
+
             // Ensure workspace access as board-guest if they don't have workspace access
             // NOTE: Removed insertion of `board-guest` to `workspace_members` per user request.
 

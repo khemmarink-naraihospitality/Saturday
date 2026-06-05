@@ -33,7 +33,8 @@ export const GroupRow = ({
 
     const GROUP_COLORS = [
         '#7C3FE4', '#3F6FE4', '#C03FE4', '#92BF0A', '#279966',
-        '#F0960A', '#E03333', '#8B85A8', '#1A1728', '#B89BFF'
+        '#F0960A', '#E03333', '#8B85A8', '#1A1728', '#B89BFF',
+        '#06B6D4', '#F472B6', '#FBBF24', '#14B8A6', '#84CC16'
     ];
 
     const handleSave = () => {

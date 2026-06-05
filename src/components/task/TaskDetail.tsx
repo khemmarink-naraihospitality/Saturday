@@ -40,23 +40,30 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [showEmojiPanel, setShowEmojiPanel] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [gifPickerPos, setGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
-    const emojiPanelRef = useRef<HTMLDivElement>(null);
+    const [emojiPickerPos, setEmojiPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [emojiSearch, setEmojiSearch] = useState('');
+    const emojiButtonRef = useRef<HTMLButtonElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
     const gifButtonRef = useRef<HTMLButtonElement>(null);
 
     // Edit mode action bar state
     const [showEditEmojiPanel, setShowEditEmojiPanel] = useState(false);
     const [showEditGifPicker, setShowEditGifPicker] = useState(false);
     const [editGifPickerPos, setEditGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [editEmojiPickerPos, setEditEmojiPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [editEmojiSearch, setEditEmojiSearch] = useState('');
     const [showEditUrlPanel, setShowEditUrlPanel] = useState(false);
     const [editAttachUrl, setEditAttachUrl] = useState('');
     const [editDraftFiles, setEditDraftFiles] = useState<FileLink[]>([]);
-    const editEmojiPanelRef = useRef<HTMLDivElement>(null);
+    const editEmojiButtonRef = useRef<HTMLButtonElement>(null);
+    const editEmojiPickerRef = useRef<HTMLDivElement>(null);
     const editGifButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         if (!showEmojiPanel) return;
         const handler = (e: MouseEvent) => {
-            if (emojiPanelRef.current && !emojiPanelRef.current.contains(e.target as Node)) {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node) &&
+                emojiButtonRef.current && !emojiButtonRef.current.contains(e.target as Node)) {
                 setShowEmojiPanel(false);
             }
         };
@@ -67,7 +74,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     useEffect(() => {
         if (!showEditEmojiPanel) return;
         const handler = (e: MouseEvent) => {
-            if (editEmojiPanelRef.current && !editEmojiPanelRef.current.contains(e.target as Node)) {
+            if (editEmojiPickerRef.current && !editEmojiPickerRef.current.contains(e.target as Node) &&
+                editEmojiButtonRef.current && !editEmojiButtonRef.current.contains(e.target as Node)) {
                 setShowEditEmojiPanel(false);
             }
         };
@@ -131,13 +139,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         );
     }
 
-    const COMMON_EMOJIS = [
-        '😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂',
-        '😉','😍','🥰','😘','😋','😎','🤩','🥳','😢','😭',
-        '😤','😠','🤯','😳','🥺','😱','🤔','🤗','😴','🫡',
-        '👍','👎','👋','✌️','🤞','👌','🙏','👏','🤝','💪',
-        '❤️','🧡','💛','💚','💙','💜','🖤','💯','🔥','⭐',
-        '✅','❌','⚠️','💡','📌','📎','🎯','🚀','💬','📝',
+    const EMOJI_CATEGORIES = [
+        { label: 'Smileys & People', emojis: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🤩','🥳','😢','😭','😤','😠','🤯','😳','🥺','😱','🤔','🤗','😴','🫡','😒','😏','🤭','🙄','😌'] },
+        { label: 'Gestures', emojis: ['👍','👎','👋','✌️','🤞','👌','🙏','👏','🤝','💪','🤙','🫶','🤜','🤛','👊','✊','🖐️','👐','🤲','🫱'] },
+        { label: 'Love & Symbols', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💯','🔥','⭐','✨','🌟','💫','🎊','🎉','🏆','🥇'] },
+        { label: 'Objects & Alerts', emojis: ['✅','❌','⚠️','💡','📌','📎','🎯','🚀','💬','📝','🔑','💎','🎁','📅','📊','🔔','🎶','🌈','🍕','🌙'] },
     ];
 
     const handleEmojiSelect = (emoji: string) => {
@@ -191,6 +197,28 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         }
         setShowGifPicker(true);
         setShowUrlPanel(false);
+    };
+
+    const toggleEmojiPicker = () => {
+        if (showEmojiPanel) { setShowEmojiPanel(false); return; }
+        if (emojiButtonRef.current) {
+            const rect = emojiButtonRef.current.getBoundingClientRect();
+            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
+            setEmojiPickerPos({ bottom: window.innerHeight - rect.top + 8, left });
+        }
+        setEmojiSearch('');
+        setShowEmojiPanel(true);
+    };
+
+    const toggleEditEmojiPicker = () => {
+        if (showEditEmojiPanel) { setShowEditEmojiPanel(false); return; }
+        if (editEmojiButtonRef.current) {
+            const rect = editEmojiButtonRef.current.getBoundingClientRect();
+            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
+            setEditEmojiPickerPos({ bottom: window.innerHeight - rect.top + 8, left });
+        }
+        setEditEmojiSearch('');
+        setShowEditEmojiPanel(true);
     };
 
     const handleAddAttachUrl = () => {
@@ -421,22 +449,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 >GIF</button>
 
                                                 {/* Emoji */}
-                                                <div ref={emojiPanelRef} style={{ position: 'relative' }}>
-                                                    <button
-                                                        onClick={() => setShowEmojiPanel(!showEmojiPanel)}
-                                                        title="Add emoji"
-                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
-                                                    >😊</button>
-                                                    {showEmojiPanel && (
-                                                        <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '10px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', padding: '8px', width: '264px', zIndex: 300, display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '2px' }}>
-                                                            {COMMON_EMOJIS.map(emoji => (
-                                                                <button key={emoji} onClick={() => handleEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '4px', borderRadius: '4px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>{emoji}</button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <button
+                                                    ref={emojiButtonRef}
+                                                    onClick={toggleEmojiPicker}
+                                                    title="Add emoji"
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                >😊</button>
 
                                                 {/* Google Drive */}
                                                 <button
@@ -642,22 +662,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         >GIF</button>
 
                                                                         {/* Emoji */}
-                                                                        <div ref={editEmojiPanelRef} style={{ position: 'relative' }}>
-                                                                            <button
-                                                                                onClick={() => setShowEditEmojiPanel(!showEditEmojiPanel)}
-                                                                                title="Add emoji"
-                                                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
-                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
-                                                                            >😊</button>
-                                                                            {showEditEmojiPanel && (
-                                                                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '10px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', padding: '8px', width: '264px', zIndex: 300, display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '2px' }}>
-                                                                                    {COMMON_EMOJIS.map(emoji => (
-                                                                                        <button key={emoji} onClick={() => handleEditEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '4px', borderRadius: '4px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>{emoji}</button>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
+                                                                        <button
+                                                                            ref={editEmojiButtonRef}
+                                                                            onClick={toggleEditEmojiPicker}
+                                                                            title="Add emoji"
+                                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                        >😊</button>
 
                                                                         {/* Google Drive */}
                                                                         <button
@@ -943,6 +955,105 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     </div>
                 )}
             </div>
+
+            {/* Emoji Picker — fixed portal for new update composer */}
+            {showEmojiPanel && (() => {
+                const allEmojis = EMOJI_CATEGORIES.flatMap(c => c.emojis);
+                const q = emojiSearch.trim().toLowerCase();
+                const filtered = q ? allEmojis.filter(e => e.includes(emojiSearch)) : null;
+                return (
+                    <div ref={emojiPickerRef} style={{
+                        position: 'fixed', bottom: emojiPickerPos.bottom, left: emojiPickerPos.left,
+                        width: '320px', maxHeight: '380px', zIndex: 9999,
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                        display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid hsl(var(--color-border))', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Emoji</span>
+                                <button onClick={() => setShowEmojiPanel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '18px', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>×</button>
+                            </div>
+                            <input type="text" placeholder="Search emoji..." value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)} autoFocus
+                                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid hsl(var(--color-border))', backgroundColor: 'hsl(var(--color-bg-canvas))', color: 'hsl(var(--color-text-primary))', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ overflowY: 'auto', flex: 1, padding: '8px 8px 4px' }}>
+                            {filtered ? (
+                                filtered.length > 0 ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                        {filtered.map((emoji, i) => (
+                                            <button key={i} onClick={() => handleEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>No results for "{emojiSearch}"</div>
+                                )
+                            ) : (
+                                EMOJI_CATEGORIES.map(cat => (
+                                    <div key={cat.label} style={{ marginBottom: '10px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-text-tertiary))', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.07em', paddingLeft: '4px' }}>{cat.label}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                            {cat.emojis.map((emoji, i) => (
+                                                <button key={i} onClick={() => handleEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* Emoji Picker — fixed portal for edit mode */}
+            {showEditEmojiPanel && (() => {
+                const allEmojis = EMOJI_CATEGORIES.flatMap(c => c.emojis);
+                const filtered = editEmojiSearch.trim() ? allEmojis.filter(e => e.includes(editEmojiSearch)) : null;
+                return (
+                    <div ref={editEmojiPickerRef} style={{
+                        position: 'fixed', bottom: editEmojiPickerPos.bottom, left: editEmojiPickerPos.left,
+                        width: '320px', maxHeight: '380px', zIndex: 9999,
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                        display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid hsl(var(--color-border))', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Emoji</span>
+                                <button onClick={() => setShowEditEmojiPanel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '18px', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>×</button>
+                            </div>
+                            <input type="text" placeholder="Search emoji..." value={editEmojiSearch} onChange={e => setEditEmojiSearch(e.target.value)} autoFocus
+                                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid hsl(var(--color-border))', backgroundColor: 'hsl(var(--color-bg-canvas))', color: 'hsl(var(--color-text-primary))', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ overflowY: 'auto', flex: 1, padding: '8px 8px 4px' }}>
+                            {filtered ? (
+                                filtered.length > 0 ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                        {filtered.map((emoji, i) => (
+                                            <button key={i} onClick={() => handleEditEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>No results for "{editEmojiSearch}"</div>
+                                )
+                            ) : (
+                                EMOJI_CATEGORIES.map(cat => (
+                                    <div key={cat.label} style={{ marginBottom: '10px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-text-tertiary))', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.07em', paddingLeft: '4px' }}>{cat.label}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                            {cat.emojis.map((emoji, i) => (
+                                                <button key={i} onClick={() => handleEditEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };

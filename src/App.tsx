@@ -40,6 +40,24 @@ function PageLoader() {
 }
 
 function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
+  const setUser = useUserStore(state => state.setUser);
+  const currentUser = useUserStore(state => state.currentUser);
+
+  // Poll DB every 10 seconds so the page auto-unblocks once admin approves
+  useEffect(() => {
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase.from('profiles').select('is_approved, system_role').eq('id', user.id).single();
+      if (profile?.is_approved && currentUser) {
+        setUser({ ...currentUser, is_approved: true, system_role: (profile.system_role as any) || currentUser.system_role });
+      }
+    };
+    check();
+    const timer = setInterval(check, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div style={{
       height: '100vh',
@@ -409,6 +427,7 @@ function MainApp() {
 
 function AppContent() {
   const { session, loading } = useAuth();
+  const currentUser = useUserStore(state => state.currentUser);
 
   if (loading) {
     return (
@@ -421,8 +440,6 @@ function AppContent() {
   if (!session) {
     return <LoginPage />;
   }
-
-  const currentUser = useUserStore.getState().currentUser;
   
   const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
   const userDomain = currentUser?.email?.split('@')[1];

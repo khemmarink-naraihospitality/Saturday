@@ -235,8 +235,16 @@ export const createMemberSlice: StateCreator<
     },
 
     searchUsers: async (query) => {
-        if (!query || query.length < 2) return [];
-        const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').ilike('email', `%${query}%`).limit(5);
+        if (!query) {
+            // Empty query: return first 8 users for @mention default list
+            const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').limit(8);
+            return data || [];
+        }
+        const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, avatar_url')
+            .or(`email.ilike.%${query}%,full_name.ilike.%${query}%`)
+            .limit(8);
         return data || [];
     },
 

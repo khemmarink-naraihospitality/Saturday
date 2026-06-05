@@ -62,7 +62,8 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [mentionPosition, setMentionPosition] = useState<{ top: number, left: number } | null>(null);
     const [mentionRange, setMentionRange] = useState<Range | null>(null);
-    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
+    const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+    const searchUsers = useBoardStore(state => state.searchUsers);
 
     // Hyperlink State
     const [isLinkUIOpen, setIsLinkUIOpen] = useState(false);
@@ -80,32 +81,18 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     // Font State
     const [isFontUIOpen, setIsFontUIOpen] = useState(false);
 
-    // Helper to get display name (prefer email username)
-    const getDisplayName = (member: any) => {
-        const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-        const profile = profileData || {};
-        if (profile.email) {
-            return profile.email.split('@')[0];
-        }
-        return profile.full_name || 'Unknown';
-    };
+    // Helper to get display name for mention chip (prefer full_name)
+    const getDisplayName = (user: any) => user.full_name || user.email?.split('@')[0] || 'Unknown';
 
-    const filteredMembers = mentionQuery !== null
-        ? activeBoardMembers.filter(m => {
-            const profileData = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-            const profile = profileData || {};
-            const q = mentionQuery.toLowerCase();
-            const emailUser = (profile.email || '').split('@')[0].toLowerCase();
-            const fullName = (profile.full_name || '').toLowerCase();
-            return emailUser.includes(q) || fullName.includes(q);
-        })
-        : [];
-
+    // Debounced search across all system users when mention is active
     useEffect(() => {
-        if (mentionQuery !== null) {
-            console.log('[RichTextEditor] Mention Active:', mentionQuery);
-        }
-    }, [mentionQuery, activeBoardMembers, filteredMembers.length]);
+        if (mentionQuery === null) { setMentionSuggestions([]); return; }
+        const timer = setTimeout(async () => {
+            const results = await searchUsers(mentionQuery);
+            setMentionSuggestions(results);
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [mentionQuery]);
 
     const isInternalUpdate = useRef(false);
 
@@ -744,75 +731,60 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             )}
 
             {/* Mention Suggestions Popup */}
-            {
-                mentionQuery !== null && filteredMembers.length > 0 && (
-                    <div style={{
-                        position: 'fixed', // Use fixed to handle viewport relative from getBoundingClientRect
-                        top: mentionPosition?.top,
-                        left: mentionPosition?.left,
-                        backgroundColor: 'hsl(var(--color-bg-surface))', // Dark mode fix
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        zIndex: 9999,
-                        minWidth: '200px',
-                        maxHeight: '200px',
-                        overflowY: 'auto'
-                    }}>
-                        {filteredMembers.map((member, i) => (
-                            <div
-                                key={member.user_id || i}
-                                onClick={() => insertMention(getDisplayName(member), member.user_id)}
-                                style={{
-                                    padding: '8px 12px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-
-                                    gap: '8px',
-                                    borderBottom: i < filteredMembers.length - 1 ? '1px solid hsl(var(--color-border))' : 'none', // Dark mode fix
-                                    backgroundColor: 'hsl(var(--color-bg-surface))' // default
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} // Dark mode fix
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface))'}
-                            >
-                                <div style={{
-                                    width: '24px', height: '24px', borderRadius: '50%',
-                                    backgroundColor: '#e0e7ff', overflow: 'hidden',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '10px', color: '#3730a3', fontWeight: 'bold'
-                                }}>
-                                    {(() => {
-                                        const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-                                        const profile = profileData || {};
-                                        return profile.avatar_url ? (
-                                            <img 
-                                                src={profile.avatar_url} 
-                                                alt="" 
-                                                referrerPolicy="no-referrer"
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                            />
-                                        ) : (
-                                            (profile.full_name?.[0] || profile.email?.[0] || '?').toUpperCase()
-                                        );
-                                    })()}
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-primary))', fontWeight: 500 }}>
-                                        {getDisplayName(member)}
-                                    </span>
-                                    <span style={{ fontSize: '11px', color: 'hsl(var(--color-text-secondary))' }}>
-                                        {member.profiles?.email || ''}
-                                        {member.role === 'owner' && <span style={{ marginLeft: '4px', color: '#f59e0b', fontWeight: 'bold' }}>(Owner)</span>}
-                                        {member.role === 'workspace_owner' && <span style={{ marginLeft: '4px', color: '#854d0e', fontWeight: 'bold', fontSize: '10px' }}>(Workspace Owner)</span>}
-                                    </span>
-                                </div>
+            {mentionQuery !== null && mentionSuggestions.length > 0 && (
+                <div style={{
+                    position: 'fixed',
+                    top: mentionPosition?.top,
+                    left: mentionPosition?.left,
+                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                    border: '1px solid hsl(var(--color-border))',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 9999,
+                    minWidth: '220px',
+                    maxHeight: '240px',
+                    overflowY: 'auto'
+                }}>
+                    {mentionSuggestions.map((user, i) => (
+                        <div
+                            key={user.id}
+                            onClick={() => insertMention(getDisplayName(user), user.id)}
+                            style={{
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                borderBottom: i < mentionSuggestions.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
+                                backgroundColor: 'hsl(var(--color-bg-surface))'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface))'}
+                        >
+                            <div style={{
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                backgroundColor: '#e0e7ff', overflow: 'hidden', flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '11px', color: '#3730a3', fontWeight: 'bold'
+                            }}>
+                                {user.avatar_url ? (
+                                    <img src={user.avatar_url} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    (user.full_name?.[0] || user.email?.[0] || '?').toUpperCase()
+                                )}
                             </div>
-                        ))}
-
-                    </div>
-                )
-            }
+                            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-primary))', fontWeight: 500 }}>
+                                    {user.full_name || user.email?.split('@')[0]}
+                                </span>
+                                <span style={{ fontSize: '11px', color: 'hsl(var(--color-text-secondary))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {user.email}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Hyperlink Popover */}
             {

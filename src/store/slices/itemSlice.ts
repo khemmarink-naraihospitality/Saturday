@@ -22,7 +22,7 @@ export interface ItemSlice {
     moveItem: (activeId: string, overId: string) => Promise<void>;
 
     // Update/Comment
-    addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }) => Promise<void>;
+    addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }, files?: import('../../types').FileLink[]) => Promise<void>;
     deleteUpdate: (itemId: string, updateId: string) => Promise<void>;
     editUpdate: (itemId: string, updateId: string, newContent: string) => Promise<void>;
 
@@ -353,14 +353,15 @@ export const createItemSlice: StateCreator<
         }
     },
 
-    addUpdate: async (itemId, content, author) => {
+    addUpdate: async (itemId, content, author, files) => {
         const { activeBoardId } = get();
-        const newUpdate: Comment = { 
-            id: uuidv4(), 
-            content, 
-            author: author.name, 
+        const newUpdate: Comment = {
+            id: uuidv4(),
+            content,
+            author: author.name,
             userId: author.id,
-            createdAt: new Date().toISOString() 
+            createdAt: new Date().toISOString(),
+            ...(files && files.length > 0 ? { files } : {})
         };
 
         set(state => ({

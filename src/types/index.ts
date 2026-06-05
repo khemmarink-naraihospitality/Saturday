@@ -48,11 +48,12 @@ export interface Comment {
     id: string;
     content: string;
     createdAt: string;
-    userId?: string; 
+    userId?: string;
     author: string;
     parentId?: string; // For nesting replies
     contentType?: 'Update' | 'Reply'; // From Excel sheet
     postId?: string; // Original Post ID from Excel
+    files?: FileLink[]; // Attached files
 }
 
 export interface Item {

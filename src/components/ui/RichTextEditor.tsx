@@ -11,6 +11,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 interface RichTextEditorProps {
     value: string; // HTML string
     onChange: (html: string) => void;
+    footer?: React.ReactNode;
 }
 
 const TEXT_COLORS = [
@@ -43,7 +44,17 @@ const TEXT_COLORS = [
     { label: 'Brown', value: '#7f5347' },
 ];
 
-export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
+const FONTS = [
+    { label: 'Default', value: 'inherit' },
+    { label: 'Arial', value: 'Arial, sans-serif' },
+    { label: 'Georgia', value: 'Georgia, serif' },
+    { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+    { label: 'Courier New', value: '"Courier New", Courier, monospace' },
+    { label: 'Trebuchet MS', value: '"Trebuchet MS", sans-serif' },
+    { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+];
+
+export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -65,6 +76,9 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
 
     // Typography State
     const [isTypeUIOpen, setIsTypeUIOpen] = useState(false);
+
+    // Font State
+    const [isFontUIOpen, setIsFontUIOpen] = useState(false);
 
     // Helper to get display name (prefer email username)
     const getDisplayName = (member: any) => {
@@ -96,23 +110,24 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            if (isColorUIOpen || isTypeUIOpen) {
+            if (isColorUIOpen || isTypeUIOpen || isFontUIOpen) {
                 // If the click is not inside a popover or a toolbar button
                 const isInsidePopover = target.closest('.editor-popover');
                 const isToolbarButton = target.closest('button[title]');
                 if (!isInsidePopover && !isToolbarButton) {
                     setIsColorUIOpen(false);
                     setIsTypeUIOpen(false);
+                    setIsFontUIOpen(false);
                 }
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isColorUIOpen, isTypeUIOpen]);
+    }, [isColorUIOpen, isTypeUIOpen, isFontUIOpen]);
 
     useEffect(() => {
         // Skip sync if UI is open
-        if (isLinkUIOpen || isColorUIOpen) return;
+        if (isLinkUIOpen || isColorUIOpen || isFontUIOpen) return;
 
         // Skip sync if we just performed an internal update (to avoid race with stale props)
         if (isInternalUpdate.current) {
@@ -314,6 +329,26 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
         setIsTypeUIOpen(false);
     };
 
+    const applyFont = (fontFamily: string) => {
+        if (fontFamily === 'inherit') {
+            const MARKER = '--font-reset--';
+            document.execCommand('fontName', false, MARKER);
+            if (editorRef.current) {
+                editorRef.current.querySelectorAll(`font[face="${MARKER}"]`).forEach(el => {
+                    const parent = el.parentNode;
+                    if (!parent) return;
+                    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                    parent.removeChild(el);
+                });
+                onChange(editorRef.current.innerHTML);
+            }
+        } else {
+            exec('fontName', fontFamily);
+        }
+        setIsFontUIOpen(false);
+        editorRef.current?.focus();
+    };
+
     const insertTable = () => {
         const tableHtml = `
             <table style="border-collapse: collapse; width: 100%; border: 1px solid hsl(var(--color-border)); margin: 12px 0;">
@@ -357,7 +392,8 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
 
 
     const tools = [
-        { id: 'type', icon: Type, label: 'Typography', action: () => { setIsTypeUIOpen(!isTypeUIOpen); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'type', icon: Type, label: 'Typography', action: () => { setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
         { type: 'separator' },
         { id: 'bold', icon: Bold, label: 'Bold', action: () => exec('bold') },
         { id: 'italic', icon: Italic, label: 'Italic', action: () => exec('italic') },
@@ -425,6 +461,9 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                     }
 
                     const Icon = tool.icon as any;
+                    const isDropdown = tool.id === 'type' || tool.id === 'color' || tool.id === 'font';
+                    const isActive = (tool.id === 'color' && isColorUIOpen) || (tool.id === 'type' && isTypeUIOpen) || (tool.id === 'font' && isFontUIOpen);
+                    const isWide = tool.id === 'type' || tool.id === 'font';
                     return (
                         <div key={tool.id} style={{ position: 'relative' }}>
                             <button
@@ -437,21 +476,25 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: tool.id === 'type' ? 'auto' : '28px',
+                                    width: isWide ? 'auto' : '28px',
                                     height: '28px',
-                                    padding: tool.id === 'type' ? '0 8px' : '0',
+                                    padding: isWide ? '0 8px' : '0',
                                     border: 'none',
-                                    background: tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : tool.id === 'type' && isTypeUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent',
+                                    background: isActive ? 'rgba(0,0,0,0.1)' : 'transparent',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
                                     color: 'hsl(var(--color-text-secondary))',
                                     gap: '4px'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} // Dark mode fix
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = tool.id === 'color' && isColorUIOpen ? 'rgba(0,0,0,0.1)' : tool.id === 'type' && isTypeUIOpen ? 'rgba(0,0,0,0.1)' : 'transparent'}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isActive ? 'rgba(0,0,0,0.1)' : 'transparent'}
                             >
-                                <Icon size={16} strokeWidth={2.5} />
-                                {(tool.id === 'type' || tool.id === 'color') && <ChevronDown size={12} />}
+                                {(tool as any).text ? (
+                                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{(tool as any).text}</span>
+                                ) : (
+                                    <Icon size={16} strokeWidth={2.5} />
+                                )}
+                                {isDropdown && <ChevronDown size={12} />}
                             </button>
 
                             {/* Typography Popover */}
@@ -494,6 +537,47 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                         >
                                             {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Font Picker Popover */}
+                            {tool.id === 'font' && isFontUIOpen && (
+                                <div className="editor-popover" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                                    border: '1px solid hsl(var(--color-border))',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    zIndex: 10002,
+                                    padding: '4px',
+                                    width: '210px',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}>
+                                    {FONTS.map(font => (
+                                        <button
+                                            key={font.value}
+                                            onClick={(e) => { e.preventDefault(); applyFont(font.value); }}
+                                            style={{
+                                                padding: '8px 12px',
+                                                textAlign: 'left',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'hsl(var(--color-text-primary))',
+                                                borderRadius: '4px',
+                                                fontFamily: font.value === 'inherit' ? 'inherit' : font.value,
+                                                fontSize: '14px'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {font.label}
                                         </button>
                                     ))}
                                 </div>
@@ -642,6 +726,19 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
                 }}
                 className="rich-text-content"
             />
+
+            {/* Footer slot */}
+            {footer && (
+                <div style={{
+                    borderTop: '1px solid hsl(var(--color-border))',
+                    backgroundColor: 'hsl(var(--color-bg-subtle))',
+                    borderBottomLeftRadius: '8px',
+                    borderBottomRightRadius: '8px',
+                    overflow: 'visible'
+                }}>
+                    {footer}
+                </div>
+            )}
 
             {/* Mention Suggestions Popup */}
             {

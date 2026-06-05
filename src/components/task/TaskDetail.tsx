@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, Send, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2 } from 'lucide-react';
+import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown } from 'lucide-react';
+import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { RichTextEditor } from '../ui/RichTextEditor';
 import { isValidGoogleDriveUrl, getGoogleDriveFileName } from '../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,6 +31,29 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [fileUrl, setFileUrl] = useState('');
     const [fileName, setFileName] = useState('');
     const [fileError, setFileError] = useState<string | null>(null);
+
+    // Updates Attach State
+    const [draftFiles, setDraftFiles] = useState<FileLink[]>([]);
+    const [showUrlPanel, setShowUrlPanel] = useState(false);
+    const [attachUrl, setAttachUrl] = useState('');
+    const [attachError, setAttachError] = useState<string | null>(null);
+    const [showEmojiPanel, setShowEmojiPanel] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
+    const [gifPickerPos, setGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const emojiPanelRef = useRef<HTMLDivElement>(null);
+    const gifButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!showEmojiPanel) return;
+        const handler = (e: MouseEvent) => {
+            if (emojiPanelRef.current && !emojiPanelRef.current.contains(e.target as Node)) {
+                setShowEmojiPanel(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showEmojiPanel]);
+
 
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
     const { openPicker } = useGooglePicker();
@@ -86,13 +110,60 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         );
     }
 
+    const COMMON_EMOJIS = [
+        '😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂',
+        '😉','😍','🥰','😘','😋','😎','🤩','🥳','😢','😭',
+        '😤','😠','🤯','😳','🥺','😱','🤔','🤗','😴','🫡',
+        '👍','👎','👋','✌️','🤞','👌','🙏','👏','🤝','💪',
+        '❤️','🧡','💛','💚','💙','💜','🖤','💯','🔥','⭐',
+        '✅','❌','⚠️','💡','📌','📎','🎯','🚀','💬','📝',
+    ];
+
+    const handleEmojiSelect = (emoji: string) => {
+        setDraft(itemId, draftText + emoji);
+        setShowEmojiPanel(false);
+    };
+
+    const handleGifSelect = (url: string) => {
+        setDraft(itemId, draftText + `<img src="${url}" alt="GIF" style="max-width:100%;border-radius:6px;margin:4px 0;" />`);
+    };
+
+    const toggleGifPicker = () => {
+        if (showGifPicker) {
+            setShowGifPicker(false);
+            return;
+        }
+        if (gifButtonRef.current) {
+            const rect = gifButtonRef.current.getBoundingClientRect();
+            setGifPickerPos({ bottom: window.innerHeight - rect.top + 8, left: rect.left });
+        }
+        setShowGifPicker(true);
+        setShowUrlPanel(false);
+    };
+
+    const handleAddAttachUrl = () => {
+        if (!attachUrl.trim()) return;
+        let url = attachUrl.trim();
+        if (!url.startsWith('http')) url = `https://${url}`;
+        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
+            ? getGoogleDriveFileName(url)
+            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
+        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
+        setDraftFiles(prev => [...prev, { id: uuidv4(), name, url, type }]);
+        setAttachUrl('');
+        setAttachError(null);
+        setShowUrlPanel(false);
+    };
+
     const handleSendUpdate = () => {
         // Strip HTML tags to check if empty
         const textOnly = draftText.replace(/<[^>]*>/g, '').trim();
-        if (!textOnly && !draftText.includes('<img')) return;
+        if (!textOnly && !draftText.includes('<img') && draftFiles.length === 0) return;
 
-        addUpdate(itemId, draftText, { name: currentUser.name, id: currentUser.id, userId: currentUser.id });
-        setDraft(itemId, ''); // Clear global draft
+        addUpdate(itemId, draftText, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, draftFiles);
+        setDraft(itemId, '');
+        setDraftFiles([]);
+        setShowUrlPanel(false);
     };
 
     const handleDeleteClick = (updateId: string) => {
@@ -221,30 +292,137 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                             <RichTextEditor
                                 value={draftText}
                                 onChange={(val) => setDraft(itemId, val)}
+                                footer={
+                                    <div>
+                                        {/* URL attach panel */}
+                                        {showUrlPanel && (
+                                            <div style={{ padding: '10px 12px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={attachUrl}
+                                                        onChange={(e) => { setAttachUrl(e.target.value); setAttachError(null); }}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleAddAttachUrl()}
+                                                        placeholder="Paste link to attach..."
+                                                        autoFocus
+                                                        style={{ flex: 1, padding: '6px 10px', borderRadius: '4px', border: attachError ? '1px solid #e11d48' : '1px solid hsl(var(--color-border))', fontSize: '13px', outline: 'none', backgroundColor: 'hsl(var(--color-bg-canvas))', color: 'hsl(var(--color-text-primary))' }}
+                                                    />
+                                                    <button onClick={handleAddAttachUrl} disabled={!attachUrl.trim()} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: attachUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-brand-primary) / 0.3)', color: 'white', fontSize: '13px', fontWeight: 500, cursor: attachUrl.trim() ? 'pointer' : 'not-allowed' }}>Attach</button>
+                                                    <button onClick={() => { setShowUrlPanel(false); setAttachUrl(''); setAttachError(null); }} style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px' }}>✕</button>
+                                                </div>
+                                                {attachError && <div style={{ fontSize: '12px', color: '#e11d48' }}>{attachError}</div>}
+                                            </div>
+                                        )}
+
+                                        {/* GIF Picker (rendered via fixed position) */}
+                                        {showGifPicker && (
+                                            <GifStickerPicker
+                                                onSelect={handleGifSelect}
+                                                onClose={() => setShowGifPicker(false)}
+                                                anchorBottom={gifPickerPos.bottom}
+                                                anchorLeft={gifPickerPos.left}
+                                            />
+                                        )}
+
+                                        {/* Pending file chips */}
+                                        {draftFiles.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', borderBottom: '1px solid hsl(var(--color-border))' }}>
+                                                {draftFiles.map(file => (
+                                                    <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
+                                                        {file.type === 'google-drive' ? (
+                                                            <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                        ) : (
+                                                            <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                        )}
+                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                                        <button onClick={() => setDraftFiles(prev => prev.filter(f => f.id !== file.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, lineHeight: 1, fontSize: '11px', flexShrink: 0 }}>✕</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Action bar */}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
+                                            {/* Left: action buttons */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                {/* @ mention */}
+                                                <button
+                                                    onMouseDown={(e) => { e.preventDefault(); setDraft(itemId, draftText + '@'); }}
+                                                    title="Mention someone"
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '15px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                >@</button>
+
+                                                {/* Paperclip / File URL */}
+                                                <button
+                                                    onClick={() => { setShowUrlPanel(!showUrlPanel); setShowGifPicker(false); }}
+                                                    title="Attach file URL"
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                ><Paperclip size={16} /></button>
+
+                                                {/* GIF */}
+                                                <button
+                                                    ref={gifButtonRef}
+                                                    onClick={toggleGifPicker}
+                                                    title="Insert GIF or Sticker"
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px', padding: '0 7px', borderRadius: '5px', border: 'none', backgroundColor: showGifPicker ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))', letterSpacing: '0.03em' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showGifPicker ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                >GIF</button>
+
+                                                {/* Emoji */}
+                                                <div ref={emojiPanelRef} style={{ position: 'relative' }}>
+                                                    <button
+                                                        onClick={() => setShowEmojiPanel(!showEmojiPanel)}
+                                                        title="Add emoji"
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '17px', padding: 0 }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEmojiPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                    >😊</button>
+                                                    {showEmojiPanel && (
+                                                        <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '10px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', padding: '8px', width: '264px', zIndex: 300, display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '2px' }}>
+                                                            {COMMON_EMOJIS.map(emoji => (
+                                                                <button key={emoji} onClick={() => handleEmojiSelect(emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '4px', borderRadius: '4px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>{emoji}</button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Google Drive */}
+                                                <button
+                                                    onClick={() => openPicker((result) => {
+                                                        setDraftFiles(prev => [...prev, { id: uuidv4(), name: result.name, url: result.url, type: 'google-drive', iconUrl: result.iconUrl, mimeType: result.mimeType }]);
+                                                    })}
+                                                    title="Attach from Google Drive"
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                >
+                                                    <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '18px', height: '18px' }} />
+                                                </button>
+                                            </div>
+
+                                            {/* Right: Update button */}
+                                            <div style={{ display: 'flex' }}>
+                                                <button
+                                                    onClick={handleSendUpdate}
+                                                    style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '6px 0 0 6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '13px' }}
+                                                >
+                                                    Update
+                                                </button>
+                                                <button
+                                                    style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.25)', padding: '7px 8px', borderRadius: '0 6px 6px 0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                >
+                                                    <ChevronDown size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
                             />
-                            <div style={{
-                                marginTop: '12px',
-                                display: 'flex',
-                                justifyContent: 'flex-end',
-                            }}>
-                                <button
-                                    onClick={handleSendUpdate}
-                                    style={{
-                                        backgroundColor: 'hsl(var(--color-brand-primary))',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '8px 24px',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        fontWeight: 500
-                                    }}
-                                >
-                                    Update <Send size={14} />
-                                </button>
-                            </div>
                         </div>
 
                         {/* Updates List */}
@@ -341,15 +519,52 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div 
-                                                    className="prose prose-sm max-w-none narai-update-content" 
-                                                    style={{ 
-                                                        color: '#1a1728', 
-                                                        lineHeight: 1.6,
-                                                        fontSize: '14px'
-                                                    }} 
-                                                    dangerouslySetInnerHTML={{ __html: update.content }} 
-                                                />
+                                                <>
+                                                    <div
+                                                        className="prose prose-sm max-w-none narai-update-content"
+                                                        style={{ color: '#1a1728', lineHeight: 1.6, fontSize: '14px' }}
+                                                        dangerouslySetInnerHTML={{ __html: update.content }}
+                                                    />
+                                                    {update.files && update.files.length > 0 && (
+                                                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid hsl(var(--color-border))' }}>
+                                                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-text-secondary))', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                                <Paperclip size={11} /> Attachments
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                                {update.files.map((file: FileLink) => (
+                                                                    <a
+                                                                        key={file.id}
+                                                                        href={file.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{
+                                                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                                                            padding: '5px 12px',
+                                                                            borderRadius: '6px',
+                                                                            border: '1px solid hsl(var(--color-border))',
+                                                                            backgroundColor: 'hsl(var(--color-bg-subtle))',
+                                                                            color: 'hsl(var(--color-text-primary))',
+                                                                            fontSize: '13px',
+                                                                            textDecoration: 'none',
+                                                                            maxWidth: '260px',
+                                                                            transition: 'background 0.15s'
+                                                                        }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                                                                    >
+                                                                        {file.type === 'google-drive' ? (
+                                                                            <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                                                                        ) : (
+                                                                            <Link2 size={13} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                                        )}
+                                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                                                        <ExternalLink size={10} style={{ flexShrink: 0, opacity: 0.5 }} />
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                             
                                             {/* Render Replies for this update */}

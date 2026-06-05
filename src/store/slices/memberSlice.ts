@@ -359,6 +359,10 @@ export const createMemberSlice: StateCreator<
                 }, (payload) => {
                     const newNotification = payload.new as Notification;
                     set(state => ({ notifications: [newNotification, ...state.notifications] }));
+                    // When granted board/workspace access, silently reload so sharedBoardIds updates immediately
+                    if (newNotification.type === 'access_granted') {
+                        get().loadUserData(true);
+                    }
                 })
                 .on('postgres_changes', {
                     event: '*',

@@ -2,43 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff } from 'lucide-react';
 
-const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-  <!-- Header -->
-  <div style="background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); padding: 36px 32px; text-align: center;">
-    <div style="font-size: 36px; margin-bottom: 12px;">💬</div>
-    <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">You were mentioned!</h1>
-    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Someone has tagged you in an update</p>
-  </div>
-
-  <!-- Body -->
-  <div style="padding: 32px;">
-    <p style="color: #1e293b; font-size: 16px; margin: 0 0 8px;">
-      <strong style="color: #f97316;">{{mentionedBy}}</strong> mentioned you in
-    </p>
-    <p style="color: #1e293b; font-size: 18px; font-weight: 600; margin: 0 0 4px;">{{itemName}}</p>
-    <p style="color: #64748b; font-size: 13px; margin: 0 0 24px;">Board: {{boardName}}</p>
-
-    <!-- Update Preview -->
-    <div style="background: #fff7ed; border-left: 4px solid #f97316; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 0 0 28px;">
-      <p style="color: #475569; margin: 0; font-size: 14px; line-height: 1.7; font-style: italic;">"{{updatePreview}}"</p>
-    </div>
-
-    <!-- CTA Button -->
-    <div style="text-align: center;">
-      <a href="{{itemLink}}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #fb923c); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; letter-spacing: 0.2px;">
-        View Update →
-      </a>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <div style="background: #f8fafc; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
-    <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-      NHG Saturday.com · Project Management Platform<br/>
-      <span style="font-size: 11px;">You received this because you were mentioned in a project update.</span>
-    </p>
-  </div>
-</div>`;
+const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);

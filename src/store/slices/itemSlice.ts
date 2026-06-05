@@ -389,6 +389,10 @@ export const createItemSlice: StateCreator<
         while ((dataIdMatch = dataIdRegex.exec(content)) !== null) {
             const mentionedUserId = dataIdMatch[1];
             if (mentionedUserId && mentionedUserId !== author.id) {
+                // Resolve mentioned user's display name from board members
+                const mentionedMember = get().activeBoardMembers.find((m: any) => m.user_id === mentionedUserId);
+                const mentionedUserName = mentionedMember?.profiles?.full_name || 'Someone';
+
                 // In-app notification
                 await get().createNotification(
                     mentionedUserId,
@@ -397,6 +401,14 @@ export const createItemSlice: StateCreator<
                     itemId,
                     { board_id: activeBoardId, updatePreview: textPreview }
                 );
+
+                // Board activity log
+                get().logActivity('item_mention', 'item', itemId, {
+                    board_id: activeBoardId,
+                    item_title: item?.title || 'Unknown Task',
+                    mentioned_user_name: mentionedUserName,
+                });
+
                 // Email notification (fire-and-forget)
                 supabase.functions.invoke('invite-user', {
                     body: {

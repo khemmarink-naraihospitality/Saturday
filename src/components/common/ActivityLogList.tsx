@@ -45,6 +45,7 @@ const ACTION_LABELS: Record<string, string> = {
     item_status_updated: 'Status Changed',
     item_value_updated: 'Item Updated',
     item_comment_added: 'Update Posted',
+    item_mention: 'Mentioned',
 };
 
 const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: (id: string) => void }) => {
@@ -138,6 +139,16 @@ const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: 
                 return <span>Deleted task <strong>{meta.item_title}</strong></span>;
             case 'item_comment_added':
                 return <span>Posted an update on <strong>{itemTitle}</strong></span>;
+            case 'item_mention':
+                return (
+                    <span>
+                        Mentioned{' '}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '1px 7px', borderRadius: '12px', fontWeight: 500, fontSize: '12px' }}>
+                            @{meta.mentioned_user_name || 'someone'}
+                        </span>
+                        {' '}in <strong>{itemTitle}</strong>
+                    </span>
+                );
 
             // ... system events ...
             default:

@@ -70,7 +70,13 @@ export const EmailSettings = () => {
                 if (template?.value) setInviteTemplate(template.value);
                 if (existingTemplate?.value) setInviteExistingTemplate(existingTemplate.value);
                 if (assignTemplate?.value) setAssignItemTemplate(assignTemplate.value);
-                if (mentionTmpl?.value) setMentionTemplate(mentionTmpl.value);
+                if (mentionTmpl?.value) {
+                    setMentionTemplate(mentionTmpl.value);
+                } else {
+                    // Auto-seed the default NHG mention template so Edge Function picks it up
+                    const defaultVal = { subject: '{{mentionedBy}} mentioned you in {{itemName}}', bodyHtml: DEFAULT_MENTION_TEMPLATE };
+                    await supabase.from('system_settings').upsert({ key: 'mention_email_template', value: defaultVal, description: 'Template for @mention notifications' }, { onConflict: 'key' });
+                }
             }
         } catch (error: any) {
             console.error('Error fetching settings:', error);

@@ -40,7 +40,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [showEmojiPanel, setShowEmojiPanel] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [gifPickerPos, setGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
-    const [emojiPickerPos, setEmojiPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [emojiPickerPos, setEmojiPickerPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
     const [emojiSearch, setEmojiSearch] = useState('');
     const emojiButtonRef = useRef<HTMLButtonElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [showEditEmojiPanel, setShowEditEmojiPanel] = useState(false);
     const [showEditGifPicker, setShowEditGifPicker] = useState(false);
     const [editGifPickerPos, setEditGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
-    const [editEmojiPickerPos, setEditEmojiPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [editEmojiPickerPos, setEditEmojiPickerPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
     const [editEmojiSearch, setEditEmojiSearch] = useState('');
     const [showEditUrlPanel, setShowEditUrlPanel] = useState(false);
     const [editAttachUrl, setEditAttachUrl] = useState('');
@@ -199,12 +199,21 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         setShowUrlPanel(false);
     };
 
+    const calcPickerPos = (rect: DOMRect): { top?: number; bottom?: number; left: number } => {
+        const PICKER_HEIGHT = 390;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
+        if (rect.top > PICKER_HEIGHT + 8) {
+            // Enough space above button → anchor from bottom (appear above)
+            return { bottom: window.innerHeight - rect.top + 8, left };
+        }
+        // Not enough space above → appear below button
+        return { top: rect.bottom + 8, left };
+    };
+
     const toggleEmojiPicker = () => {
         if (showEmojiPanel) { setShowEmojiPanel(false); return; }
         if (emojiButtonRef.current) {
-            const rect = emojiButtonRef.current.getBoundingClientRect();
-            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
-            setEmojiPickerPos({ bottom: window.innerHeight - rect.top + 8, left });
+            setEmojiPickerPos(calcPickerPos(emojiButtonRef.current.getBoundingClientRect()));
         }
         setEmojiSearch('');
         setShowEmojiPanel(true);
@@ -213,9 +222,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const toggleEditEmojiPicker = () => {
         if (showEditEmojiPanel) { setShowEditEmojiPanel(false); return; }
         if (editEmojiButtonRef.current) {
-            const rect = editEmojiButtonRef.current.getBoundingClientRect();
-            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
-            setEditEmojiPickerPos({ bottom: window.innerHeight - rect.top + 8, left });
+            setEditEmojiPickerPos(calcPickerPos(editEmojiButtonRef.current.getBoundingClientRect()));
         }
         setEditEmojiSearch('');
         setShowEditEmojiPanel(true);
@@ -963,7 +970,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                 const filtered = q ? allEmojis.filter(e => e.includes(emojiSearch)) : null;
                 return (
                     <div ref={emojiPickerRef} style={{
-                        position: 'fixed', bottom: emojiPickerPos.bottom, left: emojiPickerPos.left,
+                        position: 'fixed', top: emojiPickerPos.top, bottom: emojiPickerPos.bottom, left: emojiPickerPos.left,
                         width: '320px', maxHeight: '380px', zIndex: 9999,
                         backgroundColor: 'hsl(var(--color-bg-surface))',
                         border: '1px solid hsl(var(--color-border))',
@@ -1012,7 +1019,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                 const filtered = editEmojiSearch.trim() ? allEmojis.filter(e => e.includes(editEmojiSearch)) : null;
                 return (
                     <div ref={editEmojiPickerRef} style={{
-                        position: 'fixed', bottom: editEmojiPickerPos.bottom, left: editEmojiPickerPos.left,
+                        position: 'fixed', top: editEmojiPickerPos.top, bottom: editEmojiPickerPos.bottom, left: editEmojiPickerPos.left,
                         width: '320px', maxHeight: '380px', zIndex: 9999,
                         backgroundColor: 'hsl(var(--color-bg-surface))',
                         border: '1px solid hsl(var(--color-border))',

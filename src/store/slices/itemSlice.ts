@@ -42,7 +42,7 @@ export interface ItemSlice {
     duplicateSelectedItems: () => Promise<void>;
     hideSelectedItems: () => Promise<void>;
     unhideSelectedItems: () => Promise<void>;
-    moveSelectedItemsToTarget: (groupId: string, parentId?: string | null) => Promise<void>;
+    moveSelectedItemsToTarget: (groupId: string, targetBoardId: string, parentId?: string | null) => Promise<void>;
 
     // UI/Drafts
     drafts: Record<string, string>;
@@ -574,30 +574,67 @@ export const createItemSlice: StateCreator<
         await supabase.from('items').update({ is_hidden: false }).in('id', selectedItemIds);
     },
 
-    moveSelectedItemsToTarget: async (groupId, parentId = null) => {
+    moveSelectedItemsToTarget: async (groupId, targetBoardId, parentId = null) => {
         const { activeBoardId, selectedItemIds, boards } = get();
         if (!activeBoardId) return;
 
-        set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ? {
-                ...b,
-                items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId, parentId: parentId || undefined } : i),
-                groups: b.groups.map(g => {
-                    if (g.id === groupId) {
-                        // Add moved items
-                        const currentItems = g.items;
-                        const incoming = boards.find(bd => bd.id === activeBoardId)?.items.filter(i => selectedItemIds.includes(i.id)) || [];
-                        // Make sure to append the updated items so UI renders appropriately
-                        return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId, parentId: parentId || undefined }))] };
-                    }
-                    // Remove moved items from other groups
-                    return { ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) };
-                })
-            } : b),
-            selectedItemIds: []
-        }));
+        const isCrossBoard = targetBoardId !== activeBoardId;
 
-        await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
+        if (isCrossBoard) {
+            const movingItems = boards
+                .find(bd => bd.id === activeBoardId)?.items
+                .filter(i => selectedItemIds.includes(i.id))
+                .map(i => ({ ...i, groupId, boardId: targetBoardId, parentId: parentId || undefined })) || [];
+
+            set(state => ({
+                boards: state.boards.map(b => {
+                    if (b.id === activeBoardId) {
+                        return {
+                            ...b,
+                            items: b.items.filter(i => !selectedItemIds.includes(i.id)),
+                            groups: b.groups.map(g => ({
+                                ...g,
+                                items: g.items.filter(i => !selectedItemIds.includes(i.id))
+                            }))
+                        };
+                    }
+                    if (b.id === targetBoardId && b.isDataLoaded) {
+                        return {
+                            ...b,
+                            items: [...b.items, ...movingItems],
+                            groups: b.groups.map(g => g.id === groupId
+                                ? { ...g, items: [...g.items, ...movingItems] }
+                                : g
+                            )
+                        };
+                    }
+                    return b;
+                }),
+                selectedItemIds: []
+            }));
+
+            await supabase.from('items')
+                .update({ group_id: groupId, board_id: targetBoardId, parent_id: parentId })
+                .in('id', selectedItemIds);
+        } else {
+            set(state => ({
+                boards: state.boards.map(b => b.id === activeBoardId ? {
+                    ...b,
+                    items: b.items.map(i => selectedItemIds.includes(i.id) ? { ...i, groupId, parentId: parentId || undefined } : i),
+                    groups: b.groups.map(g => {
+                        if (g.id === groupId) {
+                            const currentItems = g.items;
+                            const incoming = boards.find(bd => bd.id === activeBoardId)?.items.filter(i => selectedItemIds.includes(i.id)) || [];
+                            return { ...g, items: [...currentItems, ...incoming.map(i => ({ ...i, groupId, parentId: parentId || undefined }))] };
+                        }
+                        return { ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) };
+                    })
+                } : b),
+                selectedItemIds: []
+            }));
+
+            await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
+        }
     },
 
     setDraft: (itemId, content) => set(state => ({ drafts: { ...state.drafts, [itemId]: content } })),

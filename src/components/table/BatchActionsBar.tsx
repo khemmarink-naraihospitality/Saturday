@@ -1,6 +1,9 @@
-import { Trash2, Copy, Eye, EyeOff, LayoutDashboard, X } from 'lucide-react';
+import { Trash2, Copy, Eye, EyeOff, LayoutDashboard, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { useState } from 'react';
+
+const WRITE_ROLES = ['member', 'editor', 'admin', 'owner'];
 
 export const BatchActionsBar = () => {
     const selectedItemIds = useBoardStore(state => state.selectedItemIds);
@@ -11,17 +14,46 @@ export const BatchActionsBar = () => {
     const unhideSelectedItems = useBoardStore(state => state.unhideSelectedItems);
     const moveSelectedItemsToTarget = useBoardStore(state => state.moveSelectedItemsToTarget);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
-
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
-    const activeBoard = boards.find(b => b.id === activeBoardId);
+    const workspaces = useBoardStore(state => state.workspaces);
+    const userBoardRoles = useBoardStore(state => state.userBoardRoles);
+    const userWorkspaceRoles = useBoardStore(state => state.userWorkspaceRoles);
+    const loadBoardData = useBoardStore(state => state.loadBoardData);
+    const { user } = useAuth();
 
     const [showMoveMenu, setShowMoveMenu] = useState(false);
-    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+    const [expandedBoards, setExpandedBoards] = useState<Record<string, boolean>>({});
 
     const handleCloseMoveMenu = () => {
         setShowMoveMenu(false);
+        setExpandedBoards({});
     };
+
+    const handleToggleBoard = (boardId: string, isDataLoaded: boolean) => {
+        if (!expandedBoards[boardId] && !isDataLoaded) {
+            loadBoardData(boardId);
+        }
+        setExpandedBoards(prev => ({ ...prev, [boardId]: !prev[boardId] }));
+    };
+
+    // Boards the user can write to
+    const editableBoards = boards.filter(b => {
+        const boardRole = userBoardRoles[b.id];
+        if (boardRole && WRITE_ROLES.includes(boardRole)) return true;
+        const ws = workspaces.find(w => w.id === b.workspaceId);
+        if (ws?.owner_id === user?.id) return true;
+        const wsRole = userWorkspaceRoles[b.workspaceId || ''];
+        return wsRole && WRITE_ROLES.includes(wsRole);
+    });
+
+    // Group by workspace
+    const boardsByWorkspace = workspaces
+        .map(ws => ({
+            workspace: ws,
+            boards: editableBoards.filter(b => b.workspaceId === ws.id)
+        }))
+        .filter(ws => ws.boards.length > 0);
 
     if (selectedItemIds.length === 0) return null;
 
@@ -37,7 +69,7 @@ export const BatchActionsBar = () => {
             padding: '8px 16px',
             display: 'flex',
             alignItems: 'center',
-            gap: '24px', // Spacing between sections
+            gap: '24px',
             zIndex: 1000,
             border: '1px solid hsl(var(--color-border))',
             minWidth: '600px',
@@ -66,13 +98,7 @@ export const BatchActionsBar = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div
                     className="batch-action-btn"
-                    onClick={() => {
-                        duplicateSelectedItems();
-                        // Optional: clear selection after or keep? usually keep for further actions
-                        // User might want to move copies? 
-                        // Standard behavior: keep selection on originals? or select copies?
-                        // Let's keep selection for now.
-                    }}
+                    onClick={() => duplicateSelectedItems()}
                     style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px', borderRadius: '4px' }}
                 >
                     <Copy size={16} color="hsl(var(--color-text-secondary))" />
@@ -81,16 +107,13 @@ export const BatchActionsBar = () => {
 
                 <div
                     className="batch-action-btn"
-                    onClick={() => {
-                        if (showHiddenItems) {
-                            unhideSelectedItems();
-                        } else {
-                            hideSelectedItems();
-                        }
-                    }}
+                    onClick={() => showHiddenItems ? unhideSelectedItems() : hideSelectedItems()}
                     style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px', borderRadius: '4px' }}
                 >
-                    {showHiddenItems ? <Eye size={16} color="hsl(var(--color-text-secondary))" /> : <EyeOff size={16} color="hsl(var(--color-text-secondary))" />}
+                    {showHiddenItems
+                        ? <Eye size={16} color="hsl(var(--color-text-secondary))" />
+                        : <EyeOff size={16} color="hsl(var(--color-text-secondary))" />
+                    }
                     <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>{showHiddenItems ? 'Unhide' : 'Hide'}</span>
                 </div>
 
@@ -103,105 +126,136 @@ export const BatchActionsBar = () => {
                     <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>Delete</span>
                 </div>
 
+                {/* Move to — with cross-workspace menu */}
                 <div
                     className="batch-action-btn"
-                    onClick={() => {
-                        if (showMoveMenu) {
-                            handleCloseMoveMenu();
-                        } else {
-                            setShowMoveMenu(true);
-                        }
-                    }}
+                    onClick={() => setShowMoveMenu(prev => !prev)}
                     style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px', borderRadius: '4px', position: 'relative' }}
                 >
                     <LayoutDashboard size={16} color="hsl(var(--color-text-secondary))" />
                     <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>Move to</span>
 
-                    {showMoveMenu && activeBoard && (
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            marginBottom: '12px', // gap
-                            backgroundColor: 'hsl(var(--color-bg-surface))',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            padding: '4px',
-                            minWidth: '220px',
-                            maxHeight: '300px',
-                            overflowY: 'auto',
-                            border: '1px solid hsl(var(--color-border))'
-                        }} onClick={e => e.stopPropagation()}>
-                            <div style={{ padding: '4px 8px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))', fontWeight: 600 }}>Select Destination</div>
-                            {activeBoard.groups.map(g => {
-                                const groupMainItems = activeBoard.items.filter(i => i.groupId === g.id && !i.parentId);
-                                const isExpanded = expandedGroups[g.id];
-                                return (
-                                <div key={g.id}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <div
-                                            onClick={() => {
-                                                moveSelectedItemsToTarget(g.id, null);
-                                                handleCloseMoveMenu();
-                                            }}
-                                            style={{
-                                                flex: 1,
-                                                padding: '8px',
-                                                fontSize: '14px',
-                                                cursor: 'pointer',
-                                                borderRadius: '4px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                color: 'hsl(var(--color-text-primary))'
-                                            }}
-                                            className="menu-item"
-                                            title="Move to root of Group"
-                                        >
-                                            <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: g.color }} />
-                                            <span style={{flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{g.title}</span>
-                                        </div>
-                                        {groupMainItems.length > 0 && (
-                                            <div 
-                                                onClick={() => setExpandedGroups(prev => ({...prev, [g.id]: !prev[g.id]}))}
-                                                style={{ padding: '8px', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
-                                                className="menu-item"
-                                            >
-                                                {isExpanded ? '▼' : '▶'}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {isExpanded && groupMainItems.map(item => (
-                                        <div
-                                            key={item.id}
-                                            onClick={() => {
-                                                moveSelectedItemsToTarget(g.id, item.id);
-                                                handleCloseMoveMenu();
-                                            }}
-                                            style={{
-                                                padding: '6px 8px 6px 28px',
-                                                fontSize: '13px',
-                                                cursor: 'pointer',
-                                                borderRadius: '4px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                color: 'hsl(var(--color-text-primary))'
-                                            }}
-                                            className="menu-item sub-item"
-                                        >
-                                            ↳ <span style={{marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{item.title || 'Untitled'}</span>
-                                        </div>
-                                    ))}
+                    {showMoveMenu && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 12px)',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                                padding: '4px',
+                                minWidth: '260px',
+                                maxHeight: '380px',
+                                overflowY: 'auto',
+                                border: '1px solid hsl(var(--color-border))',
+                                textAlign: 'left'
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div style={{ padding: '6px 10px 4px', fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                Select Destination
+                            </div>
+
+                            {boardsByWorkspace.length === 0 && (
+                                <div style={{ padding: '12px 10px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
+                                    No accessible boards found.
                                 </div>
-                            )})}
+                            )}
+
+                            {boardsByWorkspace.map(({ workspace, boards: wsBoards }) => (
+                                <div key={workspace.id}>
+                                    {/* Workspace label */}
+                                    <div style={{
+                                        padding: '8px 10px 2px',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        color: 'hsl(var(--color-text-secondary))',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em'
+                                    }}>
+                                        {workspace.title}
+                                    </div>
+
+                                    {wsBoards.map(board => {
+                                        const isExpanded = !!expandedBoards[board.id];
+                                        const isCurrent = board.id === activeBoardId;
+                                        return (
+                                            <div key={board.id}>
+                                                {/* Board row */}
+                                                <div
+                                                    className="move-menu-item"
+                                                    onClick={() => handleToggleBoard(board.id, !!board.isDataLoaded)}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '7px 10px',
+                                                        cursor: 'pointer',
+                                                        borderRadius: '5px',
+                                                        fontSize: '13px',
+                                                        color: isCurrent
+                                                            ? 'hsl(var(--color-brand-primary))'
+                                                            : 'hsl(var(--color-text-primary))'
+                                                    }}
+                                                >
+                                                    <LayoutDashboard size={13} style={{ flexShrink: 0 }} />
+                                                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {board.title}
+                                                        {isCurrent && <span style={{ fontSize: '11px', marginLeft: '4px', opacity: 0.6 }}>(current)</span>}
+                                                    </span>
+                                                    {isExpanded
+                                                        ? <ChevronDown size={13} style={{ flexShrink: 0 }} />
+                                                        : <ChevronRight size={13} style={{ flexShrink: 0 }} />
+                                                    }
+                                                </div>
+
+                                                {/* Groups within board */}
+                                                {isExpanded && (
+                                                    board.isDataLoaded
+                                                        ? board.groups.length > 0
+                                                            ? board.groups.map(g => (
+                                                                <div
+                                                                    key={g.id}
+                                                                    className="move-menu-item"
+                                                                    onClick={() => {
+                                                                        moveSelectedItemsToTarget(g.id, board.id);
+                                                                        handleCloseMoveMenu();
+                                                                    }}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '8px',
+                                                                        padding: '6px 10px 6px 30px',
+                                                                        cursor: 'pointer',
+                                                                        borderRadius: '5px',
+                                                                        fontSize: '13px',
+                                                                        color: 'hsl(var(--color-text-primary))'
+                                                                    }}
+                                                                >
+                                                                    <div style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: g.color, flexShrink: 0 }} />
+                                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.title}</span>
+                                                                </div>
+                                                            ))
+                                                            : <div style={{ padding: '6px 10px 6px 30px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>No groups</div>
+                                                        : <div style={{ padding: '6px 10px 6px 30px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>Loading…</div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
             </div>
 
             {/* Right: Close */}
-            <button onClick={clearSelection} style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
+            <button
+                onClick={clearSelection}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+            >
                 <X size={20} color="hsl(var(--color-text-secondary))" />
             </button>
 
@@ -215,7 +269,7 @@ export const BatchActionsBar = () => {
                 .batch-action-btn:hover span {
                     color: hsl(var(--color-text-primary)) !important;
                 }
-                .menu-item:hover {
+                .move-menu-item:hover {
                     background-color: hsl(var(--color-bg-hover));
                 }
             `}</style>

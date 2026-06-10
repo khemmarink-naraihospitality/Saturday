@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Share2, Activity, X, MoreHorizontal, Star, Trash2, Edit2, Plus, Download } from 'lucide-react';
+import { Share2, Activity, X, MoreHorizontal, Star, Trash2, Edit2, Plus, Download, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
@@ -7,6 +7,7 @@ import { ActivityLogList } from '../common/ActivityLogList';
 import { ShareBoardModal } from '../workspace/ShareBoardModal';
 import { SidePanel } from '../ui/SidePanel';
 import { ExportBoardModal } from './ExportBoardModal';
+import { ImportBoardModal } from '../workspace/ImportBoardModal';
 
 import { BoardViewsTabs } from './BoardViewsTabs';
 import { GlobalTopActions } from '../layout/GlobalTopActions';
@@ -29,6 +30,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     const [showActivityLog, setShowActivityLog] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     // Rename Logic
     const [isEditing, setIsEditing] = useState(false);
@@ -463,6 +465,26 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
                             <button
                                 onClick={() => {
+                                    setShowImportModal(true);
+                                    setShowMenu(false);
+                                }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    width: '100%', padding: '8px 16px',
+                                    textAlign: 'left', background: 'none', border: 'none',
+                                    fontSize: '14px', color: 'hsl(var(--color-text-secondary))',
+                                    cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <FileSpreadsheet size={14} /> Import Board
+                            </button>
+
+                            <div style={{ height: '1px', background: 'hsl(var(--color-border))', margin: '4px 0' }} />
+
+                            <button
+                                onClick={() => {
                                     setShowExportModal(true);
                                     setShowMenu(false);
                                 }}
@@ -507,6 +529,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                     }}
                 />
             )}
+
+            {showImportModal && <ImportBoardModal onClose={() => setShowImportModal(false)} />}
             </header>
             <BoardViewsTabs />
         </div>

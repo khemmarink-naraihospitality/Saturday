@@ -189,17 +189,17 @@ export const backupService = {
             console.log(`Starting ${format.toUpperCase()} Export...`);
 
             // 1. Fetch Data
-            const { data: board, error: boardError } = await supabase.from('boards').select('title').eq('id', boardId).single();
+            const { data: board, error: boardError } = await supabase.from('boards').select('title, description').eq('id', boardId).single();
             if (boardError) throw new Error('Failed to fetch board: ' + boardError.message);
 
             const { data: columns, error: colsError } = await supabase.from('columns').select('*').eq('board_id', boardId).order('order');
             if (colsError) throw new Error('Failed to fetch columns: ' + colsError.message);
 
-            // Fetch items explicitly ordered by creation date to flatten sub-items effectively
-            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId).order('created_at', { ascending: true });
+            // Fetch items ordered by their position so groups/sub-items stay in board order
+            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId).order('order', { ascending: true }).order('created_at', { ascending: true });
             if (itemsError) throw new Error('Failed to fetch items: ' + itemsError.message);
 
-            const { data: groups, error: groupsError } = await supabase.from('groups').select('id, title').eq('board_id', boardId);
+            const { data: groups, error: groupsError } = await supabase.from('groups').select('id, title, order').eq('board_id', boardId).order('order');
             if (groupsError) throw new Error('Failed to fetch groups: ' + groupsError.message);
 
             // Fetch profiles for name mapping
@@ -223,7 +223,10 @@ export const backupService = {
                 if (!Array.isArray(options)) options = [];
 
                 const option = options.find((o: any) => String(o.id) === valId);
-                return option ? option.label : valId;
+                if (option) return option.label;
+                // The "no status set" sentinel option used by the importer/UI
+                if (valId === 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4') return '';
+                return valId;
             };
 
             // Helper: Get People Names
@@ -236,7 +239,7 @@ export const backupService = {
                 } else if (typeof val === 'string') {
                     try { ids = JSON.parse(val); } catch (e) { ids = [val]; }
                 } else if (typeof val === 'object') {
-                    // Sometimes saved as { personsAndTeams: [...] } or similar? 
+                    // Sometimes saved as { personsAndTeams: [...] } or similar?
                     // Assuming array for standard case
                     return JSON.stringify(val);
                 }
@@ -247,12 +250,207 @@ export const backupService = {
                 return String(val);
             };
 
-            // 3. Build Array of Arrays (AoA) content
+            // Helper: Get space-separated file URLs (matches the Import parser's expected format)
+            const getFileUrls = (val: any): string => {
+                if (!val) return '';
+                let arr = val;
+                if (typeof val === 'string') {
+                    try { arr = JSON.parse(val); } catch (e) { return val; }
+                }
+                if (!Array.isArray(arr)) return '';
+                return arr.map((f: any) => (typeof f === 'string' ? f : f?.url)).filter(Boolean).join(' ');
+            };
+
+            // Filename sanitization
+            let safeTitle = '';
+            if (customFilename && customFilename.trim()) {
+                safeTitle = customFilename.replace(/[\/\\:*?"<>|]/g, '_');
+            } else {
+                safeTitle = (board?.title || 'Untitled_Board').replace(/[\/\\:*?"<>|]/g, '_');
+            }
+            if (!safeTitle || safeTitle.trim() === '') safeTitle = 'Board_Export';
+
+            // ------------------------------------------------------------
+            // XLSX: Build a sheet using the same layout the Import feature
+            // expects (Title row, Description row, Header row, Group rows,
+            // Item rows, "Subitems" sub-tables, plus an "Updates" sheet)
+            // ------------------------------------------------------------
+            if (format === 'xlsx') {
+                console.log('Generating Excel file via SheetJS (Import-compatible layout)...');
+                const filename = safeTitle.toLowerCase().endsWith('.xlsx') ? safeTitle : `${safeTitle}.xlsx`;
+
+                interface ColMeta {
+                    column: any | null;
+                    isTimeline: boolean;
+                    header?: string;
+                    headerStart?: string;
+                    headerEnd?: string;
+                }
+
+                let usedStatus = false;
+                let usedPeople = false;
+                let usedFiles = false;
+                let usedTimeline = false;
+
+                const colMetas: ColMeta[] = columns.map((col: any): ColMeta => {
+                    switch (col.type) {
+                        case 'status':
+                        case 'dropdown':
+                        case 'priority':
+                            if (!usedStatus) { usedStatus = true; return { column: col, isTimeline: false, header: 'Status' }; }
+                            return { column: col, isTimeline: false, header: col.title };
+                        case 'people':
+                            if (!usedPeople) { usedPeople = true; return { column: col, isTimeline: false, header: 'Responsible' }; }
+                            return { column: col, isTimeline: false, header: col.title };
+                        case 'files':
+                            if (!usedFiles) { usedFiles = true; return { column: col, isTimeline: false, header: 'Files' }; }
+                            return { column: col, isTimeline: false, header: `${col.title} Files` };
+                        case 'timeline':
+                            if (!usedTimeline) {
+                                usedTimeline = true;
+                                return { column: col, isTimeline: true, headerStart: 'Timeline Start', headerEnd: 'Timeline End' };
+                            }
+                            return { column: col, isTimeline: true, headerStart: `${col.title} Timeline Start`, headerEnd: `${col.title} Timeline End` };
+                        case 'date': {
+                            const t = String(col.title || '').toLowerCase();
+                            return { column: col, isTimeline: false, header: t.includes('date') ? col.title : `${col.title} Date` };
+                        }
+                        default:
+                            return { column: col, isTimeline: false, header: col.title };
+                    }
+                });
+
+                // The Import parser locates the header row by looking for a literal
+                // "Status"/"Champion"/"Owner"/"Person"/"Subitems" cell. Guarantee one
+                // exists even if the board has no status/dropdown column.
+                if (!usedStatus) {
+                    colMetas.push({ column: null, isTimeline: false, header: 'Status' });
+                }
+
+                const buildColumnHeaders = (): any[] => {
+                    const out: any[] = [];
+                    colMetas.forEach(m => {
+                        if (m.isTimeline) out.push(m.headerStart, m.headerEnd);
+                        else out.push(m.header);
+                    });
+                    return out;
+                };
+
+                const buildColumnValues = (item: any): any[] => {
+                    const out: any[] = [];
+                    const values = item.values || {};
+                    colMetas.forEach(m => {
+                        if (!m.column) { out.push(''); return; }
+                        const val = values[m.column.id];
+
+                        if (m.isTimeline) {
+                            const tv = (val && typeof val === 'object') ? val : {};
+                            out.push(tv.from || '', tv.to || '');
+                            return;
+                        }
+
+                        if (val === null || val === undefined || val === '') { out.push(''); return; }
+
+                        switch (m.column.type) {
+                            case 'status':
+                            case 'dropdown':
+                            case 'priority':
+                                out.push(getOptionLabel(m.column, val));
+                                break;
+                            case 'people':
+                                out.push(getPeopleNames(val));
+                                break;
+                            case 'files':
+                                out.push(getFileUrls(val));
+                                break;
+                            default:
+                                out.push(typeof val === 'object' ? JSON.stringify(val) : String(val));
+                        }
+                    });
+                    return out;
+                };
+
+                // Board sheet
+                const aoa: any[][] = [];
+                aoa.push([board?.title || 'Untitled Board']);
+                // The Import parser misreads a short single-cell description row as a
+                // bogus group ("hasNoDescription" heuristic). A trailing zero-width
+                // space keeps the row at 2 cells so it's correctly skipped as the
+                // description row instead.
+                aoa.push([board?.description || '', board?.description ? '​' : '']);
+                aoa.push(['Name', 'Item ID', ...buildColumnHeaders()]);
+
+                const subItemsByParent = new Map<string, any[]>();
+                items.forEach((i: any) => {
+                    if (i.parent_id) {
+                        if (!subItemsByParent.has(i.parent_id)) subItemsByParent.set(i.parent_id, []);
+                        subItemsByParent.get(i.parent_id)!.push(i);
+                    }
+                });
+                const topLevelItems = items.filter((i: any) => !i.parent_id);
+
+                groups.forEach(group => {
+                    aoa.push([group.title]);
+
+                    topLevelItems.filter((i: any) => i.group_id === group.id).forEach((item: any) => {
+                        aoa.push([item.title || '', item.id, ...buildColumnValues(item)]);
+
+                        const subs = subItemsByParent.get(item.id) || [];
+                        if (subs.length > 0) {
+                            aoa.push(['Subitems', 'Name', ...buildColumnHeaders()]);
+                            subs.forEach(sub => {
+                                aoa.push(['', sub.title || '', ...buildColumnValues(sub)]);
+                            });
+                        }
+                    });
+                });
+
+                // Updates sheet (column positions match what the Import parser expects)
+                const updatesAoa: any[][] = [
+                    ['Item ID', '', '', 'Content Type', 'User', 'Created At', 'Update Content', 'Post ID', 'Parent Post ID']
+                ];
+                items.forEach((item: any) => {
+                    (item.updates || []).forEach((u: any) => {
+                        updatesAoa.push([
+                            item.id, '', '',
+                            u.contentType || 'Update',
+                            u.author || '',
+                            u.createdAt || '',
+                            u.content || '',
+                            u.postId || '',
+                            u.parentId || ''
+                        ]);
+                    });
+                });
+
+                const sanitizeSheetName = (name: string): string => {
+                    let s = (name || 'Board').replace(/[\\/?*[\]:]/g, '_').trim();
+                    if (!s) s = 'Board';
+                    return s.length > 31 ? s.slice(0, 31) : s;
+                };
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(board?.title || 'Board'));
+
+                if (updatesAoa.length > 1) {
+                    const wsUpdates = XLSX.utils.aoa_to_sheet(updatesAoa);
+                    XLSX.utils.book_append_sheet(wb, wsUpdates, 'Updates');
+                }
+
+                XLSX.writeFile(wb, filename);
+                console.log('Excel Export Complete.');
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // CSV: Flat one-row-per-item table
+            // ------------------------------------------------------------
             console.log('Building content array...');
             const headers = ['Task Name', 'Group', ...columns.map(c => c.title), 'Created At'];
             const aoa: any[][] = [headers];
 
-            items.forEach(item => {
+            items.forEach((item: any) => {
                 const groupName = groupMap.get(item.group_id) || 'Unknown Group';
 
                 // Map dynamic column values
@@ -294,36 +492,12 @@ export const backupService = {
                 ]);
             });
 
-            // Filename sanitization
-            let safeTitle = '';
-            if (customFilename && customFilename.trim()) {
-                safeTitle = customFilename.replace(/[\/\\:*?"<>|]/g, '_');
-            } else {
-                safeTitle = (board?.title || 'Untitled_Board').replace(/[\/\\:*?"<>|]/g, '_');
-            }
-            if (!safeTitle || safeTitle.trim() === '') safeTitle = 'Board_Export';
-
-            // 4. Output Generation and Download Execution
-            if (format === 'xlsx') {
-                console.log('Generating Excel file via SheetJS...');
-                const filename = safeTitle.toLowerCase().endsWith('.xlsx') ? safeTitle : `${safeTitle}.xlsx`;
-                
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(aoa);
-                XLSX.utils.book_append_sheet(wb, ws, "Board Data");
-                
-                XLSX.writeFile(wb, filename);
-                console.log('Excel Export Complete.');
-                return;
-            }
-
-            // Fallback: CSV Logic
             console.log('Generating CSV file string...');
             const filename = safeTitle.toLowerCase().endsWith('.csv') ? safeTitle : `${safeTitle}.csv`;
             const BOM = '\uFEFF';
-            
+
             // Re-escape arrays for CSV syntax
-            const csvRows = aoa.map(row => 
+            const csvRows = aoa.map(row =>
                 row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
             );
             const csvContent = csvRows.join('\n');

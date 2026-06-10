@@ -320,7 +320,9 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             selection.removeAllRanges();
             selection.addRange(savedSelection);
         }
-        exec('formatBlock', tag);
+        // Angle-bracket form (e.g. "<h1>") is required for formatBlock in Firefox
+        // and is also accepted by Chromium/Safari.
+        exec('formatBlock', `<${tag}>`);
         setIsTypeUIOpen(false);
         setSavedSelection(null);
     };
@@ -915,6 +917,21 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 }
                 .rich-text-content li {
                     margin-bottom: 4px;
+                }
+                .rich-text-content h1 {
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin: 12px 0 8px;
+                }
+                .rich-text-content h2 {
+                    font-size: 20px;
+                    font-weight: 600;
+                    margin: 10px 0 6px;
+                }
+                .rich-text-content h3 {
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin: 8px 0 4px;
                 }
                 .rich-text-content a {
                     color: hsl(var(--color-brand-primary));

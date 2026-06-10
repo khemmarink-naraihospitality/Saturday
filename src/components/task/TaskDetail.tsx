@@ -14,6 +14,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const activeItem = board?.items.find(i => i.id === itemId);
     const addUpdate = useBoardStore(state => state.addUpdate);
     const editUpdate = useBoardStore(state => state.editUpdate);
+    const deleteUpdate = useBoardStore(state => state.deleteUpdate);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
 
     // Global Draft State (Persistence)
@@ -586,7 +587,33 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     </div>
                                                 )}
                                             </div>
-                                            {editingUpdateId === update.id ? (
+                                            {deleteConfirmId === update.id ? (
+                                                <div style={{
+                                                    marginTop: '12px',
+                                                    padding: '12px',
+                                                    borderRadius: '6px',
+                                                    backgroundColor: 'hsl(var(--color-dangerous) / 0.06)',
+                                                    border: '1px solid hsl(var(--color-dangerous) / 0.2)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    gap: '12px'
+                                                }}>
+                                                    <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-primary))' }}>
+                                                        Delete this update? This cannot be undone.
+                                                    </span>
+                                                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                                        <button
+                                                            onClick={() => setDeleteConfirmId(null)}
+                                                            style={{ background: 'none', border: '1px solid hsl(var(--color-border))', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}
+                                                        >Cancel</button>
+                                                        <button
+                                                            onClick={() => { deleteUpdate(itemId, update.id); setDeleteConfirmId(null); }}
+                                                            style={{ backgroundColor: 'hsl(var(--color-dangerous))', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+                                                        >Delete</button>
+                                                    </div>
+                                                </div>
+                                            ) : editingUpdateId === update.id ? (
                                                 <div style={{ marginTop: '12px' }}>
                                                     <RichTextEditor
                                                         value={editUpdateContent}

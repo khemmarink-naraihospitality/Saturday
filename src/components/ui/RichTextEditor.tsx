@@ -315,8 +315,14 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     };
 
     const applyTypography = (tag: string) => {
+        const selection = window.getSelection();
+        if (savedSelection && selection) {
+            selection.removeAllRanges();
+            selection.addRange(savedSelection);
+        }
         exec('formatBlock', tag);
         setIsTypeUIOpen(false);
+        setSavedSelection(null);
     };
 
     const applyFont = (fontFamily: string) => {
@@ -382,7 +388,13 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
 
 
     const tools = [
-        { id: 'type', icon: Type, label: 'Typography', action: () => { setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'type', icon: Type, label: 'Typography', action: () => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                setSavedSelection(selection.getRangeAt(0).cloneRange());
+            }
+            setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
+        } },
         { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
         { type: 'separator' },
         { id: 'bold', icon: Bold, label: 'Bold', action: () => exec('bold') },

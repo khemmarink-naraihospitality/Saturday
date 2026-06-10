@@ -172,6 +172,25 @@
     padding: 32px;
 }
 
+/* Rich Text / Prose overrides for headings */
+.prose h1, .rich-text-content h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 12px 0 8px;
+}
+
+.prose h2, .rich-text-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 10px 0 6px;
+}
+
+.prose h3, .rich-text-content h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 8px 0 4px;
+}
+
 /* Rich Text / Prose overrides for lists */
 .prose ul, .rich-text-content ul {
     list-style-type: disc;

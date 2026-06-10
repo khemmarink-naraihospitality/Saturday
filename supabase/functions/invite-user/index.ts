@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
       action = 'invite', // 'invite' | 'assign_item' | 'test_email' | 'mention'
       itemName = '',
       boardName = '',
+      groupName = '',
       mentionedBy = '',
       updatePreview = '',
       itemLink = 'https://saturdaycom.vercel.app'
@@ -122,6 +123,7 @@ Deno.serve(async (req) => {
                      .replace(/\{\{inviterName\}\}/g, inviterName)
                      .replace(/\{\{itemName\}\}/g, itemName)
                      .replace(/\{\{boardName\}\}/g, boardName)
+                     .replace(/\{\{groupName\}\}/g, groupName)
                      .replace(/\{\{mentionedBy\}\}/g, mentionedBy);
 
     htmlBody = htmlBody.replace(/\{\{workspaceName\}\}/g, workspaceName)
@@ -130,6 +132,7 @@ Deno.serve(async (req) => {
                        .replace(/\{\{itemLink\}\}/g, itemLink)
                        .replace(/\{\{itemName\}\}/g, itemName)
                        .replace(/\{\{boardName\}\}/g, boardName)
+                       .replace(/\{\{groupName\}\}/g, groupName)
                        .replace(/\{\{mentionedBy\}\}/g, mentionedBy)
                        .replace(/\{\{updatePreview\}\}/g, updatePreview);
 

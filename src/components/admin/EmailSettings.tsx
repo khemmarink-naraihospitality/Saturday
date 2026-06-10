@@ -4,6 +4,8 @@ import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff } from 'lucide-reac
 
 const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
+const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{inviterName}}</strong> assigned you to item <strong>{{itemName}}</strong> under <strong>{{groupName}}</strong> in <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -28,8 +30,8 @@ export const EmailSettings = () => {
     });
 
     const [assignItemTemplate, setAssignItemTemplate] = useState({
-        subject: '',
-        bodyHtml: ''
+        subject: "[You're assigned] {{itemName}}",
+        bodyHtml: DEFAULT_ASSIGN_TEMPLATE
     });
 
     const [mentionTemplate, setMentionTemplate] = useState({
@@ -491,7 +493,7 @@ export const EmailSettings = () => {
                     </span>
                 </h2>
                 <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
-                    <strong>Available Variables:</strong> <code style={codeStyle}>{"{{itemName}}"}</code>, <code style={codeStyle}>{"{{boardName}}"}</code>, <code style={codeStyle}>{"{{inviterName}}"}</code>, <code style={codeStyle}>{"{{inviteLink}}"}</code>
+                    <strong>Available Variables:</strong> <code style={codeStyle}>{"{{itemName}}"}</code>, <code style={codeStyle}>{"{{groupName}}"}</code>, <code style={codeStyle}>{"{{boardName}}"}</code>, <code style={codeStyle}>{"{{inviterName}}"}</code>, <code style={codeStyle}>{"{{itemLink}}"}</code>
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
@@ -523,17 +525,19 @@ export const EmailSettings = () => {
                         backgroundColor: '#f8fafc'
                     }}>
                         <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
-                            <span style={{ color: '#64748b' }}>Subject:</span> <strong>{assignItemTemplate.subject.replace(/\{\{itemName\}\}/g, 'Set up 53 Tasks').replace(/\{\{boardName\}\}/g, 'Q3 Roadmap')}</strong>
+                            <span style={{ color: '#64748b' }}>Subject:</span> <strong>{assignItemTemplate.subject.replace(/\{\{itemName\}\}/g, 'Set up 53 Tasks').replace(/\{\{groupName\}\}/g, 'Aum').replace(/\{\{boardName\}\}/g, 'Q3 Roadmap')}</strong>
                         </div>
-                        <div 
+                        <div
                             style={{ padding: '0', backgroundColor: 'white' }}
-                            dangerouslySetInnerHTML={{ 
+                            dangerouslySetInnerHTML={{
                                 __html: assignItemTemplate.bodyHtml
                                     .replace(/\{\{itemName\}\}/g, 'Set up 53 Tasks')
+                                    .replace(/\{\{groupName\}\}/g, 'Aum')
                                     .replace(/\{\{boardName\}\}/g, 'Q3 Roadmap')
                                     .replace(/\{\{inviterName\}\}/g, 'Pattaravadee N.')
                                     .replace(/\{\{inviteLink\}\}/g, '#')
-                            }} 
+                                    .replace(/\{\{itemLink\}\}/g, '#')
+                            }}
                         />
                     </div>
                 </div>

@@ -16,6 +16,8 @@ import { supabase } from './lib/supabase';
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
 
+const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{inviterName}}</strong> assigned you to item <strong>{{itemName}}</strong> under <strong>{{groupName}}</strong> in <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
 const NotificationPage = lazy(() => import('./pages/NotificationPage').then(m => ({ default: m.NotificationPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const BoardPage = lazy(() => import('./pages/BoardPage').then(m => ({ default: m.BoardPage })));
@@ -198,6 +200,19 @@ function MainApp() {
               description: 'Template for @mention notifications'
             }, { onConflict: 'key' });
           }
+
+          // Seed/upgrade the assign-item template (adds group name + direct item link)
+          const { data: existingAssign } = await supabase.from('system_settings').select('value').eq('key', 'assign_item_template').maybeSingle();
+          if (!existingAssign?.value?.bodyHtml?.includes('{{groupName}}')) {
+            await supabase.from('system_settings').upsert({
+              key: 'assign_item_template',
+              value: {
+                subject: "[You're assigned] {{itemName}}",
+                bodyHtml: DEFAULT_ASSIGN_TEMPLATE
+              },
+              description: 'Template for item assignments'
+            }, { onConflict: 'key' });
+          }
         }
 
         console.log('MainApp: calling loadUserData');
@@ -261,9 +276,13 @@ function MainApp() {
     const params = new URLSearchParams(window.location.search);
     const qBoardId = params.get('boardId');
     const qWorkspaceId = params.get('workspaceId');
+    const qItemId = params.get('itemId');
 
     if (qBoardId) {
       useBoardStore.getState().setActiveBoard(qBoardId);
+      if (qItemId) {
+        useBoardStore.getState().setActiveItem(qItemId);
+      }
     } else if (qWorkspaceId) {
       useBoardStore.getState().setActiveWorkspace(qWorkspaceId);
       useBoardStore.getState().navigateTo('home');

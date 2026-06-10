@@ -325,6 +325,15 @@ export const createMemberSlice: StateCreator<
         if (!isRemoving) {
             const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
             const workspaceTitle = get().workspaces.find(w => w.id === board?.workspaceId)?.title || 'NHG Saturday';
+            const groupName = board?.groups.find(g => g.id === item?.groupId)?.title || '';
+
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            const { data: inviterProfile } = await supabase.from('profiles').select('full_name').eq('id', currentUser?.id).single();
+            const inviterName = inviterProfile?.full_name
+                || currentUser?.user_metadata?.full_name
+                || currentUser?.email?.split('@')[0]
+                || 'A Team Member';
+
             if (profile?.email && item?.title && board?.title) {
                 await supabase.functions.invoke('invite-user', {
                     body: {
@@ -332,7 +341,10 @@ export const createMemberSlice: StateCreator<
                         action: 'assign_item',
                         itemName: item.title,
                         boardName: board.title,
+                        groupName,
                         workspaceName: workspaceTitle,
+                        inviterName,
+                        itemLink: `https://saturdaycom.vercel.app/?boardId=${boardId}&itemId=${itemId}`,
                         redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`
                     }
                 });

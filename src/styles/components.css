@@ -219,6 +219,24 @@
     color: hsl(var(--color-brand-hover));
 }
 
+.prose table, .rich-text-content table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid hsl(var(--color-border));
+    margin: 12px 0;
+}
+
+.prose th, .prose td, .rich-text-content th, .rich-text-content td {
+    border: 1px solid hsl(var(--color-border));
+    padding: 8px;
+    min-width: 50px;
+}
+
+.prose th, .rich-text-content th {
+    background-color: hsl(var(--color-bg-subtle));
+    font-weight: 600;
+}
+
 .confirm-btn-primary {
     background-color: hsl(var(--color-brand-primary)) !important;
     color: #ffffff !important;

@@ -487,7 +487,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     onClick={handleSendUpdate}
                                                     style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '6px 0 0 6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '13px' }}
                                                 >
-                                                    Update
+                                                    Save
                                                 </button>
                                                 <button
                                                     style={{ backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.25)', padding: '7px 8px', borderRadius: '0 6px 6px 0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}

@@ -460,10 +460,10 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         handleChange();
     };
 
-    const insertTableColumn = () => {
+    const insertTableColumn = (position: 'left' | 'right') => {
         if (!tableContext) return;
         const { table, cellIndex } = tableContext;
-        const insertIndex = cellIndex + 1;
+        const insertIndex = position === 'right' ? cellIndex + 1 : cellIndex;
 
         Array.from(table.rows).forEach(tr => {
             const isHeader = tr.parentElement?.tagName === 'THEAD';
@@ -894,7 +894,8 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 >
                     {[
                         { title: 'Insert row below', icon: Plus, label: 'Row', action: insertTableRow },
-                        { title: 'Insert column right', icon: Plus, label: 'Col', action: insertTableColumn },
+                        { title: 'Insert column left', icon: Plus, label: '← Col', action: () => insertTableColumn('left') },
+                        { title: 'Insert column right', icon: Plus, label: 'Col →', action: () => insertTableColumn('right') },
                         { title: 'Delete row', icon: Trash2, label: 'Row', action: deleteTableRow },
                         { title: 'Delete column', icon: Trash2, label: 'Col', action: deleteTableColumn },
                     ].map(({ title, icon: Icon, label, action }) => (

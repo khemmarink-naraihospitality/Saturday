@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useBoardStore } from '../../store/useBoardStore';
-import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown, CornerDownRight } from 'lucide-react';
 import type { Item, Column } from '../../types';
 
 const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
@@ -88,6 +88,7 @@ interface KanbanCardProps {
     item: Item;
     subItems: Item[];
     peopleColumn?: Column;
+    statusColumn?: Column;
     activeBoardMembers: any[];
     isExpanded: boolean;
     onToggleExpand: () => void;
@@ -95,7 +96,7 @@ interface KanbanCardProps {
     onItemClick: (itemId: string) => void;
 }
 
-const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpanded, onToggleExpand, onClick, onItemClick }: KanbanCardProps) => {
+const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMembers, isExpanded, onToggleExpand, onClick, onItemClick }: KanbanCardProps) => {
     const {
         attributes,
         listeners,
@@ -120,6 +121,9 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
     const peopleValue = peopleColumn ? item.values?.[peopleColumn.id] : null;
     const userIds: string[] = Array.isArray(peopleValue) ? peopleValue : (peopleValue ? [peopleValue] : []);
 
+    const statusValue = statusColumn ? item.values?.[statusColumn.id] : null;
+    const statusOption = statusColumn?.options?.find(opt => opt.id === statusValue || opt.label === statusValue);
+
     return (
         <div
             ref={setNodeRef}
@@ -138,6 +142,12 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
                         <MoreHorizontal size={14} />
                     </button>
                 </div>
+
+                {statusOption && (
+                    <div className="kanban-status-bar" style={{ backgroundColor: statusOption.color }}>
+                        {statusOption.label}
+                    </div>
+                )}
 
                 {userIds.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
@@ -187,6 +197,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
                                     onItemClick(sub.id);
                                 }}
                             >
+                                <CornerDownRight size={12} className="kanban-subitem-icon" />
                                 <span className="kanban-subitem-title">{sub.title}</span>
                                 {subUserIds.length > 0 && <KanbanAvatars userIds={subUserIds} activeBoardMembers={activeBoardMembers} size={18} />}
                             </div>
@@ -225,6 +236,18 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
                     background-color: hsl(var(--color-bg-hover));
                     color: hsl(var(--color-text-primary));
                 }
+                .kanban-status-bar {
+                    margin-top: 10px;
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: 500;
+                    text-align: center;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
                 .kanban-card-subitems-toggle {
                     pointer-events: auto;
                     display: flex;
@@ -245,14 +268,14 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
                 .kanban-card-subitems-list {
                     pointer-events: auto;
                     margin: 0 -12px -12px -12px;
+                    padding: 4px 0;
                     border-top: 1px solid hsl(var(--color-border));
                     background-color: hsl(var(--color-bg-canvas));
                 }
                 .kanban-subitem-row {
                     display: flex;
                     align-items: center;
-                    justify-content: space-between;
-                    gap: 8px;
+                    gap: 6px;
                     padding: 6px 12px 6px 28px;
                     cursor: pointer;
                     transition: background-color 0.2s;
@@ -260,10 +283,16 @@ const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpand
                 .kanban-subitem-row:hover {
                     background-color: hsl(var(--color-bg-hover));
                 }
-                .kanban-subitem-row + .kanban-subitem-row {
-                    border-top: 1px solid hsl(var(--color-border));
+                .kanban-subitem-row:hover .kanban-subitem-icon {
+                    color: hsl(var(--color-brand-primary));
+                }
+                .kanban-subitem-icon {
+                    flex-shrink: 0;
+                    color: hsl(var(--color-text-tertiary));
+                    transition: color 0.2s;
                 }
                 .kanban-subitem-title {
+                    flex: 1;
                     font-size: 12px;
                     color: hsl(var(--color-text-secondary));
                     white-space: nowrap;
@@ -282,6 +311,7 @@ interface KanbanColumnProps {
     items: Item[];
     subItemsByParent: Map<string, Item[]>;
     peopleColumn?: Column;
+    statusColumn?: Column;
     activeBoardMembers: any[];
     expandedItemIds: string[];
     onToggleExpand: (itemId: string) => void;
@@ -289,7 +319,7 @@ interface KanbanColumnProps {
     onItemClick: (itemId: string) => void;
 }
 
-const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn, activeBoardMembers, expandedItemIds, onToggleExpand, onAddItem, onItemClick }: KanbanColumnProps) => {
+const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn, statusColumn, activeBoardMembers, expandedItemIds, onToggleExpand, onAddItem, onItemClick }: KanbanColumnProps) => {
     const { setNodeRef } = useSortable({
         id,
         data: {
@@ -325,6 +355,7 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                             item={item}
                             subItems={subItemsByParent.get(item.id) || []}
                             peopleColumn={peopleColumn}
+                            statusColumn={statusColumn}
                             activeBoardMembers={activeBoardMembers}
                             isExpanded={expandedItemIds.includes(item.id)}
                             onToggleExpand={() => onToggleExpand(item.id)}
@@ -466,6 +497,11 @@ export const KanbanView = () => {
     // The "Person" column shown as avatars on each card
     const peopleColumn = useMemo(() => {
         return activeBoard?.columns.find(c => c.type === 'people');
+    }, [activeBoard]);
+
+    // The "Status" column shown as a colored bar on each card (skip if it's already the grouping column)
+    const statusColumn = useMemo(() => {
+        return activeBoard?.columns.find(c => c.type === 'status' && c.id !== activeBoard.groupByColumnId);
     }, [activeBoard]);
 
     // Map of parentId -> visible sub-items, for the "Sub-items" expand toggle on each card
@@ -649,6 +685,7 @@ export const KanbanView = () => {
                             items={col.items}
                             subItemsByParent={subItemsByParent}
                             peopleColumn={peopleColumn}
+                            statusColumn={statusColumn}
                             activeBoardMembers={activeBoardMembers}
                             expandedItemIds={expandedItemIds}
                             onToggleExpand={(itemId) => toggleItemExpansion(activeBoard.id, itemId)}

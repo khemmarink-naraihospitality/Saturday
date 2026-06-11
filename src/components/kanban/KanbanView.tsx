@@ -221,6 +221,7 @@ export const KanbanView = () => {
     const boards = useBoardStore(state => state.boards);
     const addItem = useBoardStore(state => state.addItem);
     const updateItemValue = useBoardStore(state => state.updateItemValue);
+    const moveItem = useBoardStore(state => state.moveItem);
     const searchQuery = useBoardStore(state => state.searchQuery);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
 
@@ -274,14 +275,10 @@ export const KanbanView = () => {
         return items;
     }, [activeBoard, searchQuery]);
     
-    // Determine the grouping column
+    // Determine the grouping column (null = group by the board's own Groups, the "Default (Groups)" mode)
     const groupingColumn = useMemo(() => {
-        if (!activeBoard) return null;
-        if (activeBoard.groupByColumnId) {
-            return activeBoard.columns.find(c => c.id === activeBoard.groupByColumnId) || null;
-        }
-        // Default to first status column for Kanban
-        return activeBoard.columns.find(c => c.type === 'status') || null;
+        if (!activeBoard || !activeBoard.groupByColumnId) return null;
+        return activeBoard.columns.find(c => c.id === activeBoard.groupByColumnId) || null;
     }, [activeBoard]);
     
     const sensors = useSensors(
@@ -296,8 +293,20 @@ export const KanbanView = () => {
     );
 
     const columns = useMemo(() => {
-        if (!groupingColumn || !activeBoard) return [];
-        
+        if (!activeBoard) return [];
+
+        // "Default (Groups)" mode - one Kanban column per board Group
+        if (!activeBoard.groupByColumnId) {
+            return activeBoard.groups.map(group => ({
+                id: group.id,
+                label: group.title,
+                color: group.color,
+                items: filteredItems.filter(item => !item.parentId && item.groupId === group.id)
+            }));
+        }
+
+        if (!groupingColumn) return [];
+
         let columnDefs: { id: string; label: string; color: string }[] = [];
         
         if (groupingColumn.options && groupingColumn.options.length > 0) {
@@ -368,11 +377,19 @@ export const KanbanView = () => {
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setDraggingId(null);
-        if (!over || !activeBoard || !groupingColumn) return;
+        if (!over || !activeBoard) return;
 
         const activeId = active.id as string;
         const activeItem = activeBoard.items.find(i => i.id === activeId);
         if (!activeItem) return;
+
+        // "Default (Groups)" mode - move the item between board Groups
+        if (!activeBoard.groupByColumnId) {
+            moveItem(activeId, over.id as string);
+            return;
+        }
+
+        if (!groupingColumn) return;
 
         const overData = over.data.current;
         if (overData?.type === 'column') {
@@ -391,7 +408,11 @@ export const KanbanView = () => {
 
     const draggingItem = draggingId ? activeBoard?.items.find(i => i.id === draggingId) : null;
 
-    if (!groupingColumn || !activeBoard) {
+    if (!activeBoard) {
+        return null;
+    }
+
+    if (activeBoard.groupByColumnId && !groupingColumn) {
         return (
             <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
                 <p>No valid grouping column found for this board. Kanban view requires a Status, Dropdown, or People column.</p>
@@ -417,6 +438,10 @@ export const KanbanView = () => {
                             items={col.items}
                             onItemClick={setActiveItem}
                             onAddItem={() => {
+                                if (!activeBoard.groupByColumnId) {
+                                    addItem("New Item", col.id);
+                                    return;
+                                }
                                 const firstGroup = activeBoard.groups[0];
                                 if (firstGroup) {
                                     addItem("New Item", firstGroup.id);

@@ -422,7 +422,7 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                     min-width: 260px;
                     display: flex;
                     flex-direction: column;
-                    background-color: hsl(var(--color-bg-canvas));
+                    background-color: hsl(var(--color-bg-subtle));
                     border-radius: 8px;
                     height: 100%;
                     max-height: 100%;

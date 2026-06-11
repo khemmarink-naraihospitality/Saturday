@@ -57,6 +57,7 @@ export const groupItems = (
     if (groupByColumnId) {
         const valuesMap: Record<string, Item[]> = {};
         const emptyItems: Item[] = [];
+        const groupByColumn = columns?.find(c => c.id === groupByColumnId);
 
         items.forEach(item => {
             if (item.parentId) return; // Skip sub-items for top-level grouping
@@ -128,7 +129,16 @@ export const groupItems = (
             }
         };
 
-        Object.entries(valuesMap).forEach(([key, gItems]) => addDynamicGroup(key, gItems, `group-${key}`));
+        Object.entries(valuesMap).forEach(([key, gItems]) => {
+            let title = key;
+            let color: string | undefined;
+            const option = groupByColumn?.options?.find((o: { id: string; label: string; color?: string }) => o.id === key);
+            if (option) {
+                title = option.label;
+                color = option.color;
+            }
+            addDynamicGroup(title, gItems, `group-${key}`, color);
+        });
         if (emptyItems.length > 0) addDynamicGroup('Empty', emptyItems, 'group-empty');
 
         return result;

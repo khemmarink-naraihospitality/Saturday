@@ -4,7 +4,8 @@ import {
     List, ListOrdered, Link,
     Minus, Palette, Table2, CheckSquare,
     AlignLeft, AlignCenter, AlignRight,
-    Type, ChevronDown, Plus, Trash2
+    Type, ChevronDown, Plus, Trash2,
+    ArrowUp, ArrowDown
 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 
@@ -52,6 +53,7 @@ const FONTS = [
     { label: 'Courier New', value: '"Courier New", Courier, monospace' },
     { label: 'Trebuchet MS', value: '"Trebuchet MS", sans-serif' },
     { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+    { label: 'Ubuntu', value: 'Ubuntu, sans-serif' },
 ];
 
 export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps) => {
@@ -431,7 +433,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         setTableContext(detectTableContext());
     };
 
-    const insertTableRow = () => {
+    const insertTableRow = (position: 'above' | 'below') => {
         if (!tableContext) return;
         const { table, rowIndex } = tableContext;
         const row = table.rows[Math.min(rowIndex, table.rows.length - 1)];
@@ -449,7 +451,9 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             newRow.appendChild(newCell);
         });
 
-        if (row.parentElement?.tagName === 'THEAD') {
+        if (position === 'above') {
+            row.parentElement?.insertBefore(newRow, row);
+        } else if (row.parentElement?.tagName === 'THEAD') {
             // Header rows always stay on top - new rows go to the start of the body
             const tbody = table.tBodies[0] ?? table.appendChild(document.createElement('tbody'));
             tbody.insertBefore(newRow, tbody.firstChild);
@@ -893,7 +897,8 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                     }}
                 >
                     {[
-                        { title: 'Insert row below', icon: Plus, label: 'Row', action: insertTableRow },
+                        { title: 'Insert row above', icon: ArrowUp, label: 'Row', action: () => insertTableRow('above') },
+                        { title: 'Insert row below', icon: ArrowDown, label: 'Row', action: () => insertTableRow('below') },
                         { title: 'Insert column left', icon: Plus, label: '← Col', action: () => insertTableColumn('left') },
                         { title: 'Insert column right', icon: Plus, label: 'Col →', action: () => insertTableColumn('right') },
                         { title: 'Delete row', icon: Trash2, label: 'Row', action: deleteTableRow },

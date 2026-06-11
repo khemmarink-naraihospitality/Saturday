@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DndContext,
     closestCorners,
@@ -6,6 +7,9 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+    type DragStartEvent,
     type DragEndEvent,
 } from '@dnd-kit/core';
 import {
@@ -355,8 +359,15 @@ export const KanbanView = () => {
         return availableColumns;
     }, [groupingColumn, activeBoard, filteredItems]);
 
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setDraggingId(event.active.id as string);
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setDraggingId(null);
         if (!over || !activeBoard || !groupingColumn) return;
 
         const activeId = active.id as string;
@@ -378,6 +389,8 @@ export const KanbanView = () => {
         }
     };
 
+    const draggingItem = draggingId ? activeBoard?.items.find(i => i.id === draggingId) : null;
+
     if (!groupingColumn || !activeBoard) {
         return (
             <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
@@ -391,6 +404,7 @@ export const KanbanView = () => {
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <div className="kanban-board">
@@ -411,6 +425,35 @@ export const KanbanView = () => {
                         />
                     ))}
                 </div>
+
+                {createPortal(
+                    <DragOverlay dropAnimation={{
+                        sideEffects: defaultDropAnimationSideEffects({
+                            styles: {
+                                active: { opacity: '0.4' },
+                            },
+                        }),
+                    }}>
+                        {draggingItem && (
+                            <div className="kanban-card" style={{ width: '264px', cursor: 'grabbing', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}>
+                                <div className="kanban-card-content">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-text-primary))' }}>
+                                            {draggingItem.title}
+                                        </span>
+                                    </div>
+                                    {draggingItem.updates && draggingItem.updates.length > 0 && (
+                                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                            <MessageSquare size={12} />
+                                            <span>{draggingItem.updates.length}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </DragOverlay>,
+                    document.body
+                )}
             </DndContext>
 
             <style>{`

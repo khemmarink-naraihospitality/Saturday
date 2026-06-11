@@ -674,6 +674,16 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     </div>
                                                                                 );
                                                                             })()}
+                                                                            {col.type === 'files' && (() => {
+                                                                                const fileCount = agg?.count || 0;
+                                                                                if (fileCount === 0) return null;
+                                                                                return (
+                                                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px' }}>
+                                                                                        <span style={{ fontWeight: 600 }}>{fileCount}</span>
+                                                                                        <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>files</span>
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
                                                                         </div>
                                                                     );
                                                                 })}

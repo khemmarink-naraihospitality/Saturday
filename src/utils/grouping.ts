@@ -90,6 +90,9 @@ export const groupItems = (
                         const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
                         const uniqueIds = Array.from(new Set(allIds));
                         aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
+                    } else if (col.type === 'files') {
+                        const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
+                        aggregates[col.id] = { count: totalFiles };
                     } else {
                         aggregates[col.id] = { values: vals, count: vals.length };
                     }
@@ -153,6 +156,9 @@ export const groupItems = (
                     const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
                     const uniqueIds = Array.from(new Set(allIds));
                     aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
+                } else if (col.type === 'files') {
+                    const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
+                    aggregates[col.id] = { count: totalFiles };
                 } else {
                     aggregates[col.id] = { values: vals, count: vals.length };
                 }

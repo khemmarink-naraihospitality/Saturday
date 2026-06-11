@@ -222,6 +222,7 @@ export const KanbanView = () => {
     const addItem = useBoardStore(state => state.addItem);
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const moveItem = useBoardStore(state => state.moveItem);
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const searchQuery = useBoardStore(state => state.searchQuery);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
 
@@ -325,11 +326,19 @@ export const KanbanView = () => {
                     else uniqueValues.add(String(val));
                 }
             });
-            columnDefs = Array.from(uniqueValues).map(val => ({
-                id: val,
-                label: val, // In a real app we might look up user names here
-                color: 'hsl(var(--color-bg-subtle))'
-            }));
+            columnDefs = Array.from(uniqueValues).map(val => {
+                let label = val;
+                if (groupingColumn.type === 'people') {
+                    const member = activeBoardMembers.find(m => m.user_id === val);
+                    const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
+                    label = profileData?.full_name || profileData?.email || val;
+                }
+                return {
+                    id: val,
+                    label,
+                    color: 'hsl(var(--color-bg-subtle))'
+                };
+            });
         }
 
         const itemsByGroup: Record<string, Item[]> = {};

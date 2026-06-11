@@ -20,15 +20,82 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useBoardStore } from '../../store/useBoardStore';
-import { Plus, MoreHorizontal, MessageSquare } from 'lucide-react';
-import type { Item } from '../../types';
+import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
+import type { Item, Column } from '../../types';
+
+const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
+    if (!userIds || userIds.length === 0) return null;
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            {userIds.slice(0, 3).map((userId, idx) => {
+                const member = activeBoardMembers.find(m => m.user_id === userId);
+                const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
+                const profile = profileData || {};
+                const name = profile.full_name || profile.email || 'Unknown';
+                const initial = (name[0] || '?').toUpperCase();
+
+                return (
+                    <div key={userId} title={name} style={{
+                        width: size,
+                        height: size,
+                        borderRadius: '50%',
+                        backgroundColor: profile.avatar_url ? 'transparent' : '#0073ea',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        border: '2px solid white',
+                        marginLeft: idx > 0 ? '-8px' : '0',
+                        zIndex: idx + 1,
+                        overflow: 'hidden',
+                        position: 'relative',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                        {profile.avatar_url ? (
+                            <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : initial}
+                    </div>
+                );
+            })}
+            {userIds.length > 3 && (
+                <div style={{
+                    width: size,
+                    height: size,
+                    borderRadius: '50%',
+                    backgroundColor: '#e5e7eb',
+                    color: '#6b7280',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    border: '2px solid white',
+                    marginLeft: '-8px',
+                    zIndex: 10,
+                    position: 'relative'
+                }}>
+                    +{userIds.length - 3}
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface KanbanCardProps {
     item: Item;
+    subItems: Item[];
+    peopleColumn?: Column;
+    activeBoardMembers: any[];
+    isExpanded: boolean;
+    onToggleExpand: () => void;
     onClick: () => void;
+    onItemClick: (itemId: string) => void;
 }
 
-const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
+const KanbanCard = ({ item, subItems, peopleColumn, activeBoardMembers, isExpanded, onToggleExpand, onClick, onItemClick }: KanbanCardProps) => {
     const {
         attributes,
         listeners,
@@ -50,6 +117,9 @@ const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const peopleValue = peopleColumn ? item.values?.[peopleColumn.id] : null;
+    const userIds: string[] = Array.isArray(peopleValue) ? peopleValue : (peopleValue ? [peopleValue] : []);
+
     return (
         <div
             ref={setNodeRef}
@@ -68,7 +138,13 @@ const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
                         <MoreHorizontal size={14} />
                     </button>
                 </div>
-                
+
+                {userIds.length > 0 && (
+                    <div style={{ marginTop: '10px' }}>
+                        <KanbanAvatars userIds={userIds} activeBoardMembers={activeBoardMembers} />
+                    </div>
+                )}
+
                 <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', gap: '4px' }}>
                         {item.updates && item.updates.length > 0 && (
@@ -80,6 +156,44 @@ const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
                     </div>
                 </div>
             </div>
+
+            {subItems.length > 0 && (
+                <div
+                    className="kanban-card-subitems-toggle"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleExpand();
+                    }}
+                >
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span>{subItems.length} Sub-item{subItems.length > 1 ? 's' : ''}</span>
+                </div>
+            )}
+
+            {isExpanded && subItems.length > 0 && (
+                <div className="kanban-card-subitems-list">
+                    {subItems.map(sub => {
+                        const subPeopleValue = peopleColumn ? sub.values?.[peopleColumn.id] : null;
+                        const subUserIds: string[] = Array.isArray(subPeopleValue) ? subPeopleValue : (subPeopleValue ? [subPeopleValue] : []);
+
+                        return (
+                            <div
+                                key={sub.id}
+                                className="kanban-subitem-row"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onItemClick(sub.id);
+                                }}
+                            >
+                                <span className="kanban-subitem-title">{sub.title}</span>
+                                {subUserIds.length > 0 && <KanbanAvatars userIds={subUserIds} activeBoardMembers={activeBoardMembers} size={18} />}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             <style>{`
                 .kanban-card {
@@ -111,6 +225,51 @@ const KanbanCard = ({ item, onClick }: KanbanCardProps) => {
                     background-color: hsl(var(--color-bg-hover));
                     color: hsl(var(--color-text-primary));
                 }
+                .kanban-card-subitems-toggle {
+                    pointer-events: auto;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin: 8px -12px -12px -12px;
+                    padding: 8px 12px;
+                    border-top: 1px solid hsl(var(--color-border));
+                    color: hsl(var(--color-text-tertiary));
+                    font-size: 12px;
+                    cursor: pointer;
+                    transition: color 0.2s, background-color 0.2s;
+                }
+                .kanban-card-subitems-toggle:hover {
+                    color: hsl(var(--color-brand-primary));
+                    background-color: hsl(var(--color-bg-hover));
+                }
+                .kanban-card-subitems-list {
+                    pointer-events: auto;
+                    margin: 0 -12px -12px -12px;
+                    border-top: 1px solid hsl(var(--color-border));
+                    background-color: hsl(var(--color-bg-canvas));
+                }
+                .kanban-subitem-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    padding: 6px 12px 6px 28px;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                }
+                .kanban-subitem-row:hover {
+                    background-color: hsl(var(--color-bg-hover));
+                }
+                .kanban-subitem-row + .kanban-subitem-row {
+                    border-top: 1px solid hsl(var(--color-border));
+                }
+                .kanban-subitem-title {
+                    font-size: 12px;
+                    color: hsl(var(--color-text-secondary));
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
             `}</style>
         </div>
     );
@@ -121,11 +280,16 @@ interface KanbanColumnProps {
     label: string;
     color: string;
     items: Item[];
+    subItemsByParent: Map<string, Item[]>;
+    peopleColumn?: Column;
+    activeBoardMembers: any[];
+    expandedItemIds: string[];
+    onToggleExpand: (itemId: string) => void;
     onAddItem: () => void;
     onItemClick: (itemId: string) => void;
 }
 
-const KanbanColumn = ({ id, label, color, items, onAddItem, onItemClick }: KanbanColumnProps) => {
+const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn, activeBoardMembers, expandedItemIds, onToggleExpand, onAddItem, onItemClick }: KanbanColumnProps) => {
     const { setNodeRef } = useSortable({
         id,
         data: {
@@ -156,7 +320,17 @@ const KanbanColumn = ({ id, label, color, items, onAddItem, onItemClick }: Kanba
             <div className="kanban-column-content">
                 <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
                     {items.map(item => (
-                        <KanbanCard key={item.id} item={item} onClick={() => onItemClick(item.id)} />
+                        <KanbanCard
+                            key={item.id}
+                            item={item}
+                            subItems={subItemsByParent.get(item.id) || []}
+                            peopleColumn={peopleColumn}
+                            activeBoardMembers={activeBoardMembers}
+                            isExpanded={expandedItemIds.includes(item.id)}
+                            onToggleExpand={() => onToggleExpand(item.id)}
+                            onClick={() => onItemClick(item.id)}
+                            onItemClick={onItemClick}
+                        />
                     ))}
                 </SortableContext>
                 
@@ -226,6 +400,7 @@ export const KanbanView = () => {
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
+    const toggleItemExpansion = useBoardStore(state => state.toggleItemExpansion);
 
     const activeBoard = useMemo(() => boards.find(b => b.id === activeBoardId), [boards, activeBoardId]);
     
@@ -287,7 +462,28 @@ export const KanbanView = () => {
         if (!activeBoard || !activeBoard.groupByColumnId) return null;
         return activeBoard.columns.find(c => c.id === activeBoard.groupByColumnId) || null;
     }, [activeBoard]);
-    
+
+    // The "Person" column shown as avatars on each card
+    const peopleColumn = useMemo(() => {
+        return activeBoard?.columns.find(c => c.type === 'people');
+    }, [activeBoard]);
+
+    // Map of parentId -> visible sub-items, for the "Sub-items" expand toggle on each card
+    const subItemsByParent = useMemo(() => {
+        const map = new Map<string, Item[]>();
+        if (!activeBoard) return map;
+        activeBoard.items.forEach(item => {
+            if (!item.parentId) return;
+            if (!showHiddenItems && item.isHidden) return;
+            const list = map.get(item.parentId) || [];
+            list.push(item);
+            map.set(item.parentId, list);
+        });
+        return map;
+    }, [activeBoard, showHiddenItems]);
+
+    const expandedItemIds = activeBoard?.expandedItemIds || [];
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -451,6 +647,11 @@ export const KanbanView = () => {
                             label={col.label}
                             color={col.color}
                             items={col.items}
+                            subItemsByParent={subItemsByParent}
+                            peopleColumn={peopleColumn}
+                            activeBoardMembers={activeBoardMembers}
+                            expandedItemIds={expandedItemIds}
+                            onToggleExpand={(itemId) => toggleItemExpansion(activeBoard.id, itemId)}
                             onItemClick={setActiveItem}
                             onAddItem={() => {
                                 if (!activeBoard.groupByColumnId) {

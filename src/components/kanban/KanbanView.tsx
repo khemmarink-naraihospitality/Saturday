@@ -418,8 +418,8 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
 
             <style>{`
                 .kanban-column {
-                    width: 280px;
-                    min-width: 280px;
+                    width: 260px;
+                    min-width: 260px;
                     display: flex;
                     flex-direction: column;
                     background-color: hsl(var(--color-bg-canvas));
@@ -755,7 +755,7 @@ export const KanbanView = () => {
                         }),
                     }}>
                         {draggingItem && (
-                            <div className="kanban-card" style={{ width: '264px', cursor: 'grabbing', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}>
+                            <div className="kanban-card" style={{ width: '244px', cursor: 'grabbing', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}>
                                 <div className="kanban-card-content">
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <span style={{ fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-text-primary))' }}>

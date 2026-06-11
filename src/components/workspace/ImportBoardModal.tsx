@@ -80,6 +80,27 @@ const parseDate = (val: any, _isUpdate = false): string | null => {
     return null;
 };
 
+// Parses the "Created At" cell of the Updates sheet, preserving time-of-day.
+// Unlike parseDate (which is date-only, for board column values), this keeps the
+// exact timestamp so re-importing a board exported by backupService.ts doesn't
+// collapse every Update's createdAt to midnight.
+const parseUpdateDateTime = (val: any): Date => {
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+
+    if (typeof val === 'string' && val.includes('T')) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) return d;
+    }
+
+    const dateOnly = parseDate(val, true);
+    if (dateOnly) {
+        const d = new Date(dateOnly);
+        if (!isNaN(d.getTime())) return d;
+    }
+
+    return new Date();
+};
+
 // Helper to extract font color from an Excel cell
 const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | null => {
     const cell = worksheet[cellRef];
@@ -296,8 +317,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         if (!updatesMap[itemId]) updatesMap[itemId] = [];
                         
                         const createdAtRaw = uRow[colIdx.createdAt];
-                        const dateVal = parseDate(createdAtRaw, true);
-                        const dateObj = new Date(dateVal && !isNaN(new Date(dateVal).getTime()) ? dateVal : new Date());
+                        const dateObj = parseUpdateDateTime(createdAtRaw);
 
                         let content = String(uRow[colIdx.content] || '').trim();
                         

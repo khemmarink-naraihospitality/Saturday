@@ -601,7 +601,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f6f8'}
                                                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                                     >
-                                                                                        <span style={{ fontWeight: 600 }}>{displayResult}</span>
+                                                                                        <span>{displayResult}</span>
                                                                                         <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>{label}</span>
                                                                                     </div>
                                                                                 );
@@ -679,7 +679,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 if (fileCount === 0) return null;
                                                                                 return (
                                                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px' }}>
-                                                                                        <span style={{ fontWeight: 600 }}>{fileCount}</span>
+                                                                                        <span>{fileCount}</span>
                                                                                         <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>files</span>
                                                                                     </div>
                                                                                 );

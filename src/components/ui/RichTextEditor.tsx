@@ -589,7 +589,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '2px',
                 padding: '8px 12px',
                 borderBottom: '1px solid hsl(var(--color-border))',
                 backgroundColor: 'hsl(var(--color-bg-subtle))', // Dark mode fix
@@ -604,7 +604,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                                 width: '1px',
                                 height: '20px',
                                 backgroundColor: 'hsl(var(--color-border))',
-                                margin: '0 8px'
+                                margin: '0 4px'
                             }} />
                         );
                     }

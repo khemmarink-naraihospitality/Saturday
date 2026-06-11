@@ -534,7 +534,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 if (!agg || !agg.min) return null;
                                                                                 const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                                                return <div style={{ background: 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
+                                                                                return <div style={{ background: vItem.groupColor || 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
                                                                             })()}
                                                                             {col.type === 'number' && (() => {
                                                                                 const aggregation = col.aggregation || 'sum';

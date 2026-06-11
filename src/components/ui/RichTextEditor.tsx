@@ -4,7 +4,7 @@ import {
     List, ListOrdered, Link,
     Minus, Palette, Table2, CheckSquare,
     AlignLeft, AlignCenter, AlignRight,
-    Type, ChevronDown
+    Type, ChevronDown, Plus, Trash2
 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 
@@ -81,6 +81,10 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     // Font State
     const [isFontUIOpen, setIsFontUIOpen] = useState(false);
 
+    // Table State - tracks the table cell the cursor is currently in,
+    // so a contextual toolbar for adding/removing rows & columns can be shown.
+    const [tableContext, setTableContext] = useState<{ table: HTMLTableElement; rowIndex: number; cellIndex: number; top: number; left: number } | null>(null);
+
     // Helper to get display name for mention chip (prefer full_name)
     const getDisplayName = (user: any) => user.full_name || user.email?.split('@')[0] || 'Unknown';
 
@@ -114,6 +118,19 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isColorUIOpen, isTypeUIOpen, isFontUIOpen]);
+
+    // Hide the table row/column toolbar when clicking outside the table or the toolbar itself
+    useEffect(() => {
+        if (!tableContext) return;
+        const handleClickOutsideTable = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.table-toolbar') && !target.closest('table')) {
+                setTableContext(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutsideTable);
+        return () => document.removeEventListener('mousedown', handleClickOutsideTable);
+    }, [tableContext]);
 
     useEffect(() => {
         // Skip sync if UI is open
@@ -373,6 +390,130 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             <p><br></p>
         `;
         exec('insertHTML', tableHtml);
+    };
+
+    // Looks at the current cursor position and, if it's inside a table cell
+    // belonging to this editor, returns the table plus the row/column index
+    // of that cell so the floating row/column toolbar can be shown.
+    const detectTableContext = () => {
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount || !editorRef.current) return null;
+
+        let node: Node | null = selection.anchorNode;
+        let cell: HTMLTableCellElement | null = null;
+        let table: HTMLTableElement | null = null;
+        while (node && node !== editorRef.current) {
+            if (node instanceof HTMLElement) {
+                if (!cell && (node.tagName === 'TD' || node.tagName === 'TH')) cell = node as HTMLTableCellElement;
+                if (node.tagName === 'TABLE') { table = node as HTMLTableElement; break; }
+            }
+            node = node.parentNode;
+        }
+        if (!table || !cell || !editorRef.current.contains(table) || !editorRef.current.parentElement) return null;
+
+        const row = cell.parentElement as HTMLTableRowElement;
+        const rowIndex = Array.from(table.rows).indexOf(row);
+        const cellIndex = Array.from(row.cells).indexOf(cell);
+
+        const tableRect = table.getBoundingClientRect();
+        const wrapperRect = editorRef.current.parentElement.getBoundingClientRect();
+
+        return {
+            table,
+            rowIndex,
+            cellIndex,
+            top: tableRect.top - wrapperRect.top,
+            left: tableRect.left - wrapperRect.left
+        };
+    };
+
+    const updateTableContext = () => {
+        setTableContext(detectTableContext());
+    };
+
+    const insertTableRow = () => {
+        if (!tableContext) return;
+        const { table, rowIndex } = tableContext;
+        const row = table.rows[Math.min(rowIndex, table.rows.length - 1)];
+        if (!row) return;
+
+        const newRow = document.createElement('tr');
+        Array.from(row.cells).forEach(refCell => {
+            const newCell = document.createElement('td');
+            const style = (refCell.getAttribute('style') || '')
+                .replace(/font-weight:\s*[^;]+;?/i, '')
+                .replace(/text-align:\s*[^;]+;?/i, '')
+                .trim();
+            newCell.setAttribute('style', style || 'border: 1px solid hsl(var(--color-border)); padding: 8px;');
+            newCell.innerHTML = '<br>';
+            newRow.appendChild(newCell);
+        });
+
+        if (row.parentElement?.tagName === 'THEAD') {
+            // Header rows always stay on top - new rows go to the start of the body
+            const tbody = table.tBodies[0] ?? table.appendChild(document.createElement('tbody'));
+            tbody.insertBefore(newRow, tbody.firstChild);
+        } else {
+            row.parentElement?.insertBefore(newRow, row.nextSibling);
+        }
+
+        handleChange();
+    };
+
+    const insertTableColumn = () => {
+        if (!tableContext) return;
+        const { table, cellIndex } = tableContext;
+        const insertIndex = cellIndex + 1;
+
+        Array.from(table.rows).forEach(tr => {
+            const isHeader = tr.parentElement?.tagName === 'THEAD';
+            const refCell = tr.cells[Math.min(cellIndex, tr.cells.length - 1)];
+            const newCell = document.createElement(isHeader ? 'th' : 'td');
+            newCell.setAttribute('style', refCell?.getAttribute('style') || 'border: 1px solid hsl(var(--color-border)); padding: 8px;');
+            newCell.innerHTML = '<br>';
+
+            if (insertIndex >= tr.cells.length) {
+                tr.appendChild(newCell);
+            } else {
+                tr.insertBefore(newCell, tr.cells[insertIndex]);
+            }
+        });
+
+        handleChange();
+    };
+
+    const deleteTableRow = () => {
+        if (!tableContext) return;
+        const { table, rowIndex } = tableContext;
+        const row = table.rows[Math.min(rowIndex, table.rows.length - 1)];
+        if (!row) return;
+
+        if (table.rows.length <= 1) {
+            table.parentElement?.removeChild(table);
+            setTableContext(null);
+        } else {
+            row.remove();
+        }
+
+        handleChange();
+    };
+
+    const deleteTableColumn = () => {
+        if (!tableContext) return;
+        const { table, cellIndex } = tableContext;
+        const firstRow = table.rows[0];
+        if (!firstRow) return;
+
+        if (firstRow.cells.length <= 1) {
+            table.parentElement?.removeChild(table);
+            setTableContext(null);
+        } else {
+            Array.from(table.rows).forEach(tr => {
+                tr.cells[Math.min(cellIndex, tr.cells.length - 1)]?.remove();
+            });
+        }
+
+        handleChange();
     };
 
     const insertChecklist = () => {
@@ -713,7 +854,9 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                         closeLinkUI();
                         setIsColorUIOpen(false);
                     }
+                    updateTableContext();
                 }}
+                onMouseUp={updateTableContext}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => {
                     setIsFocused(false);
@@ -730,6 +873,58 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 }}
                 className="rich-text-content"
             />
+
+            {/* Table Row/Column Toolbar */}
+            {tableContext && (
+                <div
+                    className="table-toolbar"
+                    style={{
+                        position: 'absolute',
+                        top: tableContext.top - 36,
+                        left: tableContext.left,
+                        display: 'flex',
+                        gap: '2px',
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '6px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        padding: '4px',
+                        zIndex: 10003
+                    }}
+                >
+                    {[
+                        { title: 'Insert row below', icon: Plus, label: 'Row', action: insertTableRow },
+                        { title: 'Insert column right', icon: Plus, label: 'Col', action: insertTableColumn },
+                        { title: 'Delete row', icon: Trash2, label: 'Row', action: deleteTableRow },
+                        { title: 'Delete column', icon: Trash2, label: 'Col', action: deleteTableColumn },
+                    ].map(({ title, icon: Icon, label, action }) => (
+                        <button
+                            key={title}
+                            title={title}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={(e) => { e.preventDefault(); action(); }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '4px 8px',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                color: 'hsl(var(--color-text-secondary))',
+                                fontSize: '11px',
+                                fontWeight: 600
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <Icon size={12} strokeWidth={2.5} />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Footer slot */}
             {footer && (

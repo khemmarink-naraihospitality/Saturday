@@ -224,6 +224,7 @@ export const KanbanView = () => {
     const moveItem = useBoardStore(state => state.moveItem);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const searchQuery = useBoardStore(state => state.searchQuery);
+    const showHiddenItems = useBoardStore(state => state.showHiddenItems);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
 
     const activeBoard = useMemo(() => boards.find(b => b.id === activeBoardId), [boards, activeBoardId]);
@@ -236,6 +237,11 @@ export const KanbanView = () => {
         // Search
         if (searchQuery) {
             items = items.filter(item => (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+
+        // Hidden Items
+        if (!showHiddenItems) {
+            items = items.filter(item => !item.isHidden);
         }
 
         // Column Filters and Group Filter
@@ -274,7 +280,7 @@ export const KanbanView = () => {
         }
 
         return items;
-    }, [activeBoard, searchQuery]);
+    }, [activeBoard, searchQuery, showHiddenItems]);
     
     // Determine the grouping column (null = group by the board's own Groups, the "Default (Groups)" mode)
     const groupingColumn = useMemo(() => {

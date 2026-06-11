@@ -353,7 +353,7 @@ export const createBoardSlice: StateCreator<
                 { data: items }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).order('order'),
-                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code').eq('board_id', boardId).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order')
             ]);
 
@@ -405,7 +405,9 @@ export const createBoardSlice: StateCreator<
                         width: c.width,
                         order: c.order,
                         options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
-                        aggregation: c.aggregation
+                        aggregation: c.aggregation,
+                        numberFormat: c.number_format,
+                        currencyCode: c.currency_code
                     })),
                     groups: bGroups.map(g => {
                         const groupItems = (parsedItemsMap[g.id] || [])

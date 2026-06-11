@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect, memo } from 'react';
 import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
+import { formatNumberValue } from '../../../utils/format';
 import { Hash, Type, Link2 } from 'lucide-react';
 
 interface TextCellProps {
@@ -146,7 +147,9 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                 e.currentTarget.style.backgroundColor = 'transparent';
             }}
         >
-            {value || (
+            {(value !== undefined && value !== null && value !== '') ? (
+                column.type === 'number' ? formatNumberValue(value, column) : value
+            ) : (
                 <div style={placeholderStyle}>
                     {column.type === 'number' && <Hash size={16} />}
                     {column.type === 'text' && <Type size={16} />}

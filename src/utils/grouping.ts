@@ -82,6 +82,10 @@ export const groupItems = (
                     } else if (col.type === 'date') {
                         const dateValues = vals.filter(Boolean).sort();
                         aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
+                    } else if (col.type === 'timeline') {
+                        const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
+                        const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
+                        aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
                     } else {
                         aggregates[col.id] = { values: vals, count: vals.length };
                     }
@@ -137,6 +141,10 @@ export const groupItems = (
                 } else if (col.type === 'date') {
                     const dateValues = vals.filter(Boolean).sort();
                     aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
+                } else if (col.type === 'timeline') {
+                    const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
+                    const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
+                    aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
                 } else {
                     aggregates[col.id] = { values: vals, count: vals.length };
                 }

@@ -17,6 +17,7 @@ export interface ColumnSlice {
     updateColumnOption: (columnId: string, optionId: string, updates: Partial<{ label: string; color: string }>) => void;
     deleteColumnOption: (columnId: string, optionId: string) => void;
     setColumnAggregation: (columnId: string, type: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'none') => void;
+    setColumnNumberFormat: (columnId: string, format: 'number' | 'percent' | 'currency', currencyCode?: string) => Promise<void>;
     // Board View Settings
     updateBoardItemColumnTitle: (newTitle: string) => void;
     updateBoardItemColumnWidth: (width: number) => void;
@@ -184,6 +185,20 @@ export const createColumnSlice: StateCreator<
     setColumnAggregation: (columnId, type) => {
         const { activeBoardId } = get();
         set(state => ({ boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, aggregation: type } : c) } : b) }));
+    },
+
+    setColumnNumberFormat: async (columnId, format, currencyCode) => {
+        const { activeBoardId } = get();
+        if (!activeBoardId) return;
+        set(state => ({
+            boards: state.boards.map(b => b.id === activeBoardId ? {
+                ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, numberFormat: format, currencyCode: format === 'currency' ? currencyCode : undefined } : c)
+            } : b)
+        }));
+        await supabase.from('columns').update({
+            number_format: format,
+            currency_code: format === 'currency' ? (currencyCode ?? null) : null
+        }).eq('id', columnId);
     },
 
     addColumnOption: async (columnId, label, color) => {

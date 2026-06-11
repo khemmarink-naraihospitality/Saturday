@@ -7,7 +7,8 @@ import {
     ArrowRightFromLine,
     PenLine,
     Trash2,
-    Check
+    Check,
+    Hash
 } from 'lucide-react';
 import type { ColumnType } from '../../types';
 
@@ -23,6 +24,7 @@ interface ColumnMenuProps {
     onAddRight: () => void;
     onRename: () => void;
     onDelete: () => void;
+    onNumberFormat?: () => void;
 }
 
 import { usePermission } from '../../hooks/usePermission';
@@ -38,7 +40,8 @@ export const ColumnMenu = ({
     onDuplicate,
     onAddRight,
     onRename,
-    onDelete
+    onDelete,
+    onNumberFormat
 }: ColumnMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
@@ -134,6 +137,13 @@ export const ColumnMenu = ({
                     }} />
 
                     <div className="menu-group">
+                        {columnType === 'number' && onNumberFormat && (
+                            <MenuItem
+                                icon={<Hash size={16} />}
+                                label="Number Format"
+                                onClick={() => { onNumberFormat(); onClose(); }}
+                            />
+                        )}
                         <MenuItem
                             icon={<Copy size={16} />}
                             label="Duplicate column"

@@ -23,6 +23,8 @@ export interface Column {
     width?: number; // Custom width in px
     order: number;
     aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'none';
+    numberFormat?: 'number' | 'percent' | 'currency'; // For Number columns - how values are displayed
+    currencyCode?: string; // ISO currency code (e.g. 'USD', 'THB') when numberFormat is 'currency'
 }
 
 // ItemValue stores dynamic column data

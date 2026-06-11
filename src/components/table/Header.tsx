@@ -10,6 +10,7 @@ import { usePermission } from '../../hooks/usePermission';
 import { AddColumnMenu } from './AddColumnMenu';
 import { ColumnMenu } from './ColumnMenu';
 import { FilterMenu } from './FilterMenu';
+import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
 // Sortable Header Cell Component
@@ -135,6 +136,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
     const setColumnSort = useBoardStore(state => state.setColumnSort);
     const setColumnFilter = useBoardStore(state => state.setColumnFilter);
+    const setColumnNumberFormat = useBoardStore(state => state.setColumnNumberFormat);
 
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeSort = activeBoard?.sort;
@@ -146,6 +148,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
     const [activeMenuColId, setActiveMenuColId] = React.useState<string | null>(null);
     const [activeFilterColId, setActiveFilterColId] = React.useState<string | null>(null);
+    const [activeNumberFormatColId, setActiveNumberFormatColId] = React.useState<string | null>(null);
     const [menuPos, setMenuPos] = React.useState<{ top: number, left: number } | null>(null);
     const [confirmDeleteColId, setConfirmDeleteColId] = React.useState<string | null>(null);
     const [showAddMenu, setShowAddMenu] = React.useState(false);
@@ -278,6 +281,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
     const activeMenuColumn = activeMenuColId ? columns.find(c => c.id === activeMenuColId) : null;
     const activeFilterColumn = activeFilterColId ? columns.find(c => c.id === activeFilterColId) : null;
+    const activeNumberFormatColumn = activeNumberFormatColId ? columns.find(c => c.id === activeNumberFormatColId) : null;
 
     const filterOptions = useMemo(() => {
         if (!activeFilterColumn) return [];
@@ -448,6 +452,20 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                         }}
                         onRename={() => startEditing(activeMenuColumn)}
                         onDelete={() => setConfirmDeleteColId(activeMenuColId!)}
+                        onNumberFormat={() => {
+                            setActiveNumberFormatColId(activeMenuColId);
+                            setActiveMenuColId(null);
+                        }}
+                    />
+                )}
+
+                {activeNumberFormatColId && menuPos && activeNumberFormatColumn && (
+                    <NumberFormatMenu
+                        isOpen={true}
+                        onClose={() => setActiveNumberFormatColId(null)}
+                        position={menuPos}
+                        column={activeNumberFormatColumn}
+                        onSetFormat={(format, currencyCode) => setColumnNumberFormat(activeNumberFormatColId, format, currencyCode)}
                     />
                 )}
 

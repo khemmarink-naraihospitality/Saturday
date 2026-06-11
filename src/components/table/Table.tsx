@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { Row } from './Row';
 import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
+import { formatNumberValue } from '../../utils/format';
 import {
     DndContext,
     closestCenter,
@@ -179,8 +180,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
             }
         }
 
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || []);
-    }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, searchQuery, board?.sort, board?.filters, showHiddenItems]);
+        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], board.columns);
+    }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, board?.columns, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({
         count: virtualItems.length,
@@ -528,7 +529,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     })()}
                                                                                 </div>
                                                                             )}
-                                                                            {col.type === 'date' && (() => {
+                                                                            {(col.type === 'date' || col.type === 'timeline') && (() => {
                                                                                 if (!agg || !agg.min) return null;
                                                                                 const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -580,6 +581,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     'none': 'sum'
                                                                                 } as const;
 
+                                                                                const displayResult = (typeof result === 'number' && aggregation !== 'count')
+                                                                                    ? formatNumberValue(result, col)
+                                                                                    : result;
+
                                                                                 return (
                                                                                     <div
                                                                                         onClick={() => useBoardStore.getState().setColumnAggregation(col.id, nextAggregation[aggregation] as any)}
@@ -595,7 +600,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f6f8'}
                                                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                                     >
-                                                                                        <span style={{ fontWeight: 600 }}>{result}</span>
+                                                                                        <span style={{ fontWeight: 600 }}>{displayResult}</span>
                                                                                         <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>{label}</span>
                                                                                     </div>
                                                                                 );

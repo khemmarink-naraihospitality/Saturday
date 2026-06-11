@@ -149,35 +149,42 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     </div>
                 )}
 
-                {userIds.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                        <KanbanAvatars userIds={userIds} activeBoardMembers={activeBoardMembers} />
+                {peopleColumn && (
+                    <div className="kanban-field-row">
+                        <span className="kanban-field-label">{peopleColumn.title}</span>
+                        {userIds.length > 0 ? (
+                            <KanbanAvatars userIds={userIds} activeBoardMembers={activeBoardMembers} />
+                        ) : (
+                            <span className="kanban-field-empty">+</span>
+                        )}
                     </div>
                 )}
 
-                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                        {item.updates && item.updates.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                <MessageSquare size={12} />
-                                <span>{item.updates.length}</span>
-                            </div>
-                        )}
+                {item.updates && item.updates.length > 0 && (
+                    <div className="kanban-field-row">
+                        <span className="kanban-field-label">Updates</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
+                            <MessageSquare size={12} />
+                            <span>{item.updates.length}</span>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {subItems.length > 0 && (
                 <div
-                    className="kanban-card-subitems-toggle"
+                    className="kanban-field-row kanban-field-row-clickable"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggleExpand();
                     }}
                 >
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span>{subItems.length} Sub-item{subItems.length > 1 ? 's' : ''}</span>
+                    <span className="kanban-field-label">Sub-items</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <span className="kanban-subitem-count-badge">{subItems.length}</span>
+                    </div>
                 </div>
             )}
 
@@ -213,12 +220,12 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     border-radius: 6px;
                     padding: 12px;
                     cursor: pointer;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
                     margin-bottom: 8px;
                     transition: box-shadow 0.2s, border-color 0.2s;
                 }
                 .kanban-card:hover {
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
                     border-color: hsl(var(--color-border-strong));
                 }
                 .kanban-card-content {
@@ -248,22 +255,57 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
-                .kanban-card-subitems-toggle {
-                    pointer-events: auto;
+                .kanban-field-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 8px;
+                    margin-top: 8px;
+                    font-size: 12px;
+                    color: hsl(var(--color-text-secondary));
+                }
+                .kanban-field-label {
+                    color: hsl(var(--color-text-tertiary));
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .kanban-field-empty {
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    border: 1px dashed hsl(var(--color-border-strong));
+                    color: hsl(var(--color-text-tertiary));
                     display: flex;
                     align-items: center;
-                    gap: 4px;
+                    justify-content: center;
+                    font-size: 14px;
+                    flex-shrink: 0;
+                }
+                .kanban-subitem-count-badge {
+                    min-width: 20px;
+                    padding: 1px 6px;
+                    border-radius: 10px;
+                    background-color: hsl(var(--color-bg-subtle));
+                    color: hsl(var(--color-text-secondary));
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-align: center;
+                }
+                .kanban-field-row-clickable {
+                    pointer-events: auto;
                     margin: 8px -12px -12px -12px;
                     padding: 8px 12px;
                     border-top: 1px solid hsl(var(--color-border));
-                    color: hsl(var(--color-text-tertiary));
-                    font-size: 12px;
                     cursor: pointer;
                     transition: color 0.2s, background-color 0.2s;
                 }
-                .kanban-card-subitems-toggle:hover {
+                .kanban-field-row-clickable:hover {
                     color: hsl(var(--color-brand-primary));
                     background-color: hsl(var(--color-bg-hover));
+                }
+                .kanban-field-row-clickable:hover .kanban-field-label {
+                    color: hsl(var(--color-brand-primary));
                 }
                 .kanban-card-subitems-list {
                     pointer-events: auto;

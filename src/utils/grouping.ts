@@ -86,6 +86,10 @@ export const groupItems = (
                         const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
                         const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
                         aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
+                    } else if (col.type === 'people') {
+                        const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
+                        const uniqueIds = Array.from(new Set(allIds));
+                        aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
                     } else {
                         aggregates[col.id] = { values: vals, count: vals.length };
                     }
@@ -145,6 +149,10 @@ export const groupItems = (
                     const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
                     const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
                     aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
+                } else if (col.type === 'people') {
+                    const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
+                    const uniqueIds = Array.from(new Set(allIds));
+                    aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
                 } else {
                     aggregates[col.id] = { values: vals, count: vals.length };
                 }

@@ -82,6 +82,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const itemColumnWidth = board?.itemColumnWidth || 350;
 
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -602,6 +603,74 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     >
                                                                                         <span style={{ fontWeight: 600 }}>{displayResult}</span>
                                                                                         <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>{label}</span>
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
+                                                                            {col.type === 'people' && (() => {
+                                                                                const uniqueIds: string[] = agg?.uniqueIds || [];
+                                                                                if (uniqueIds.length === 0) return null;
+                                                                                const maxVisible = 4;
+                                                                                return (
+                                                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                                        {uniqueIds.slice(0, maxVisible).map((userId, idx) => {
+                                                                                            const member = activeBoardMembers.find(m => m.user_id === userId);
+                                                                                            const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
+                                                                                            const profile = profileData || {};
+                                                                                            const name = profile.full_name || profile.email || 'Unknown';
+                                                                                            const initial = name[0]?.toUpperCase() || '?';
+
+                                                                                            return (
+                                                                                                <div key={userId} title={name} style={{
+                                                                                                    width: '24px',
+                                                                                                    height: '24px',
+                                                                                                    borderRadius: '50%',
+                                                                                                    backgroundColor: profile?.avatar_url ? 'transparent' : '#0073ea',
+                                                                                                    color: 'white',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    justifyContent: 'center',
+                                                                                                    fontSize: '10px',
+                                                                                                    fontWeight: 600,
+                                                                                                    border: '2px solid white',
+                                                                                                    marginLeft: idx > 0 ? '-10px' : '0',
+                                                                                                    zIndex: idx + 1,
+                                                                                                    overflow: 'hidden',
+                                                                                                    position: 'relative',
+                                                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                                                                                }}>
+                                                                                                    {profile?.avatar_url ? (
+                                                                                                        <img
+                                                                                                            src={profile.avatar_url}
+                                                                                                            alt=""
+                                                                                                            referrerPolicy="no-referrer"
+                                                                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                                                        />
+                                                                                                    ) : (
+                                                                                                        initial
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                        {uniqueIds.length > maxVisible && (
+                                                                                            <div style={{
+                                                                                                width: '24px',
+                                                                                                height: '24px',
+                                                                                                borderRadius: '50%',
+                                                                                                backgroundColor: '#e5e7eb',
+                                                                                                color: '#6b7280',
+                                                                                                display: 'flex',
+                                                                                                alignItems: 'center',
+                                                                                                justifyContent: 'center',
+                                                                                                fontSize: '10px',
+                                                                                                fontWeight: 600,
+                                                                                                border: '2px solid white',
+                                                                                                marginLeft: '-10px',
+                                                                                                zIndex: maxVisible + 1,
+                                                                                                position: 'relative'
+                                                                                            }}>
+                                                                                                +{uniqueIds.length - maxVisible}
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
                                                                                 );
                                                                             })()}

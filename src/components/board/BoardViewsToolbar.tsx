@@ -8,6 +8,7 @@ export const BoardViewsToolbar = () => {
     const addGroup = useBoardStore(state => state.addGroup);
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const firstGroupId = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId)?.groups[0]?.id);
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     
     const [showDropdown, setShowDropdown] = useState(false);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -31,6 +32,29 @@ export const BoardViewsToolbar = () => {
             addGroup("New Group");
             setShowDropdown(false);
         }
+    };
+
+    const toggleFilter = (columnId: string, val: string) => {
+        if (!activeBoardId) return;
+        const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
+        if (!board) return;
+        const currentFilters = [...(board.filters || [])];
+        const existingFilterIdx = currentFilters.findIndex(f => f.columnId === columnId);
+
+        if (existingFilterIdx !== -1) {
+            const values = [...currentFilters[existingFilterIdx].values];
+            if (values.includes(val)) {
+                currentFilters[existingFilterIdx].values = values.filter(v => v !== val);
+                if (currentFilters[existingFilterIdx].values.length === 0) {
+                    currentFilters.splice(existingFilterIdx, 1);
+                }
+            } else {
+                currentFilters[existingFilterIdx].values.push(val);
+            }
+        } else {
+            currentFilters.push({ columnId, values: [val] });
+        }
+        useBoardStore.getState().setBoardFilters(activeBoardId, currentFilters);
     };
 
     return (
@@ -193,28 +217,7 @@ export const BoardViewsToolbar = () => {
                                             return (
                                                 <button
                                                     key={group.id}
-                                                    onClick={() => {
-                                                        const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
-                                                        if (!board) return;
-                                                        const currentFilters = [...(board.filters || [])];
-                                                        const existingFilterIdx = currentFilters.findIndex(f => f.columnId === '__group__');
-                                                        const val = group.id;
-
-                                                        if (existingFilterIdx !== -1) {
-                                                            const values = [...currentFilters[existingFilterIdx].values];
-                                                            if (values.includes(val)) {
-                                                                currentFilters[existingFilterIdx].values = values.filter(v => v !== val);
-                                                                if (currentFilters[existingFilterIdx].values.length === 0) {
-                                                                    currentFilters.splice(existingFilterIdx, 1);
-                                                                }
-                                                            } else {
-                                                                currentFilters[existingFilterIdx].values.push(val);
-                                                            }
-                                                        } else {
-                                                            currentFilters.push({ columnId: '__group__', values: [val] });
-                                                        }
-                                                        useBoardStore.getState().setBoardFilters(activeBoardId, currentFilters);
-                                                    }}
+                                                    onClick={() => toggleFilter('__group__', group.id)}
                                                     style={{
                                                         padding: '2px 8px',
                                                         borderRadius: '12px',
@@ -233,40 +236,49 @@ export const BoardViewsToolbar = () => {
                                     </div>
                                 </div>
                                 {/* Column Filters */}
-                                {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.map(col => (
+                                {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
                                     <div key={col.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 500 }}>{col.title}</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                            {(col.options || []).map(opt => {
+                                            {col.type === 'people' ? (
+                                                activeBoardMembers.map(member => {
+                                                    const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
+                                                    const currentFilters = board?.filters || [];
+                                                    const val = member.user_id;
+                                                    const isActive = currentFilters.some(f => f.columnId === col.id && f.values.includes(val));
+                                                    const profileData = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                                                    const profile = profileData || {};
+                                                    const name = profile.full_name || profile.email || 'Unknown';
+
+                                                    return (
+                                                        <button
+                                                            key={val}
+                                                            onClick={() => toggleFilter(col.id, val)}
+                                                            style={{
+                                                                padding: '2px 8px',
+                                                                borderRadius: '12px',
+                                                                fontSize: '11px',
+                                                                border: 'none',
+                                                                backgroundColor: isActive ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-bg-subtle))',
+                                                                color: isActive ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.1s'
+                                                            }}
+                                                        >
+                                                            {name}
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (col.options || []).map(opt => {
                                                 const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
                                                 const currentFilters = board?.filters || [];
-                                                const isActive = currentFilters.some(f => f.columnId === col.id && f.values.includes(opt.id || opt.label));
-                                                
+                                                const val = opt.id || opt.label;
+                                                const isActive = currentFilters.some(f => f.columnId === col.id && f.values.includes(val));
+
                                                 return (
                                                     <button
                                                         key={opt.id}
-                                                        onClick={() => {
-                                                            const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
-                                                            if (!board) return;
-                                                            const currentFilters = [...(board.filters || [])];
-                                                            const existingFilterIdx = currentFilters.findIndex(f => f.columnId === col.id);
-                                                            const val = opt.id || opt.label;
-
-                                                            if (existingFilterIdx !== -1) {
-                                                                const values = [...currentFilters[existingFilterIdx].values];
-                                                                if (values.includes(val)) {
-                                                                    currentFilters[existingFilterIdx].values = values.filter(v => v !== val);
-                                                                    if (currentFilters[existingFilterIdx].values.length === 0) {
-                                                                        currentFilters.splice(existingFilterIdx, 1);
-                                                                    }
-                                                                } else {
-                                                                    currentFilters[existingFilterIdx].values.push(val);
-                                                                }
-                                                            } else {
-                                                                currentFilters.push({ columnId: col.id, values: [val] });
-                                                            }
-                                                            useBoardStore.getState().setBoardFilters(activeBoardId, currentFilters);
-                                                        }}
+                                                        onClick={() => toggleFilter(col.id, val)}
                                                         style={{
                                                             padding: '2px 8px',
                                                             borderRadius: '12px',

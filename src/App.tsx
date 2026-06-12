@@ -6,6 +6,7 @@ import { useBoardStore } from './store/useBoardStore'
 import { useUserStore } from './store/useUserStore';
 
 
+import { LoadingScreen } from './components/common/LoadingScreen';
 import { SidePanel } from './components/ui/SidePanel';
 import { ContactSupportButton } from './components/ui/ContactSupportButton';
 import { TaskDetail } from './components/task/TaskDetail';
@@ -27,18 +28,7 @@ const WorkspaceDashboardPage = lazy(() => import('./pages/WorkspaceDashboardPage
 
 // Loading fallback component
 function PageLoader() {
-  return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#64748b',
-      fontSize: '14px'
-    }}>
-      Loading...
-    </div>
-  );
+  return <LoadingScreen />;
 }
 
 function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
@@ -389,11 +379,7 @@ function MainApp() {
   }, [activeWorkspaceId]);
 
   if (isLoading) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p>Loading your workspace...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading your workspace..." />;
   }
 
   return (
@@ -464,11 +450,7 @@ function AppContent() {
   const currentUser = useUserStore(state => state.currentUser);
 
   if (loading) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        Loading...
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!session) {

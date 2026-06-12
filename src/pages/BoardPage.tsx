@@ -7,6 +7,7 @@ import { useBoardStore } from '../store/useBoardStore';
 import { TimelineView } from '../components/table/TimelineView';
 import { KanbanView } from '../components/kanban/KanbanView';
 import { CalendarView } from '../components/calendar/CalendarView';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 
 export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -23,21 +24,7 @@ export const BoardPage = () => {
     
     // Safety check: Prevent white screens if the board is deleted or deeply linked incorrectly
     if (activeBoard && !activeBoard.isDataLoaded) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
-                <img
-                    src="https://guideline.lubd.com/wp-content/uploads/2026/02/image-24-e1774017935237.png"
-                    alt="Loading"
-                    className="logo-spin"
-                    style={{ width: '48px', height: '48px', objectFit: 'contain' }}
-                />
-                <span style={{ color: 'hsl(var(--color-text-secondary))', fontSize: '14px' }}>Loading board content...</span>
-                <style>{`
-                    @keyframes logo-spin { to { transform: rotate(360deg); } }
-                    .logo-spin { animation: logo-spin 1.2s linear infinite; }
-                `}</style>
-            </div>
-        );
+        return <LoadingScreen message="Loading board content..." />;
     }
 
     // Safety fallback for malformed board data

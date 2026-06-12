@@ -25,8 +25,17 @@ export const BoardPage = () => {
     if (activeBoard && !activeBoard.isDataLoaded) {
         return (
             <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
-                <div className="animate-spin" style={{ width: '32px', height: '32px', border: '3px solid hsl(var(--color-brand-primary))', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                <img
+                    src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
+                    alt="Loading"
+                    className="logo-pulse"
+                    style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+                />
                 <span style={{ color: 'hsl(var(--color-text-secondary))', fontSize: '14px' }}>Loading board content...</span>
+                <style>{`
+                    @keyframes logo-pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 1; } }
+                    .logo-pulse { animation: logo-pulse 1.2s ease-in-out infinite; }
+                `}</style>
             </div>
         );
     }

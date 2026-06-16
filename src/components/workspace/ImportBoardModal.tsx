@@ -762,26 +762,29 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
         if (previews.length === 0) return;
         setIsImporting(true);
         let totalItems = 0;
-        let boardCount = 0;
 
         try {
-            for (const preview of previews) {
-                if (!selectedSheetIds.includes(preview.id)) continue;
-                
-                await importExcelBoard(preview.title, { 
-                    description: `Imported from ${preview.fileName}`,
-                    groups: preview.groups, 
-                    columns: preview.columns,
-                    updatesMap: preview.updatesMap
+            const selectedPreviews = previews.filter(p => selectedSheetIds.includes(p.id));
+
+            // Merge groups and columns from all selected sheets
+            const mergedGroups: any[] = [];
+            const mergedColumns: any[] = [];
+
+            selectedPreviews.forEach(preview => {
+                mergedGroups.push(...preview.groups);
+                preview.columns.forEach((col: any) => {
+                    if (!mergedColumns.find((c: any) => c.title === col.title)) {
+                        mergedColumns.push(col);
+                    }
                 });
-
-                boardCount++;
                 preview.groups.forEach((g: any) => totalItems += g.items.length);
-            }
+            });
 
-            setImportResults({ boards: boardCount, items: totalItems });
+            await importExcelBoard({ groups: mergedGroups, columns: mergedColumns });
+
+            setImportResults({ boards: 1, items: totalItems });
             setIsSuccess(true);
-            showToast('Multi-file import completed', 'success');
+            showToast('Import completed successfully', 'success');
         } catch (err: any) {
             console.error(err);
             setImportError(`Import failed: ${err.message || 'Unknown error. Please check the file format and try again.'}`);

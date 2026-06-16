@@ -835,7 +835,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     {can('group_ungroup') && (
                         <button
                             onClick={() => {
-                                useBoardStore.getState().addGroup("New Group");
+                                useBoardStore.getState().addGroup("Group Title");
                             }}
                             style={{
                                 display: 'flex',

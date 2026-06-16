@@ -46,12 +46,9 @@ export interface BoardSlice {
 
     // Import Actions
     importExcelBoard: (
-        title: string, 
         data: {
-            description?: string;
             groups: { title: string; color: string; items: any[] }[];
             columns: { title: string; type: ColumnType; options?: any[] }[];
-            updatesMap?: Record<string, any[]>;
         }
     ) => Promise<void>;
 }
@@ -461,8 +458,7 @@ export const createBoardSlice: StateCreator<
 
         const boardId = uuidv4();
         const defaultGroups = [
-            { id: uuidv4(), title: 'Group 1', color: '#579bfc', order: 0 },
-            { id: uuidv4(), title: 'Group 2', color: '#784bd1', order: 1 }
+            { id: uuidv4(), title: 'Group Title', color: '#579bfc', order: 0 }
         ];
         const defaultColumns: Column[] = [
             {
@@ -753,41 +749,34 @@ export const createBoardSlice: StateCreator<
         }
     },
 
-    importExcelBoard: async (title, data) => {
-        const { activeWorkspaceId } = get();
-        if (!activeWorkspaceId) throw new Error('No active workspace');
+    importExcelBoard: async (data) => {
+        const { activeBoardId } = get();
+        if (!activeBoardId) throw new Error('No active board selected');
 
-        // --- OVERWRITE LOGIC ---
-        // Check if boards with same title exist in this workspace
-        const { data: existingBoards } = await supabase
-            .from('boards')
-            .select('id')
-            .eq('workspace_id', activeWorkspaceId)
-            .eq('title', title);
+        // 1. Delete all existing groups (cascades to items via FK)
+        console.log('[Import] Deleting existing groups from board:', activeBoardId);
+        const { error: delGroupErr } = await supabase.from('groups').delete().eq('board_id', activeBoardId);
+        if (delGroupErr) throw new Error(`Failed to delete groups: ${delGroupErr.message}`);
 
-        if (existingBoards && existingBoards.length > 0) {
-            console.log(`[Import] Found ${existingBoards.length} existing board(s), overwriting...`);
-            // Delete all existing boards with this title
-            const idsToDelete = existingBoards.map(b => b.id);
-            const { error: delErr } = await supabase.from('boards').delete().in('id', idsToDelete);
-            if (delErr) console.error('[Import] Error deleting old boards for overwrite:', delErr);
-        }
-        // -----------------------
+        // 2. Delete all existing columns
+        const { error: delColErr } = await supabase.from('columns').delete().eq('board_id', activeBoardId);
+        if (delColErr) throw new Error(`Failed to delete columns: ${delColErr.message}`);
 
-        const boardId = uuidv4();
-        
-        // 1. Prepare Columns
+        // 3. Prepare and insert new columns
         const dbColumns = data.columns.map((c, idx) => ({
             id: uuidv4(),
-            board_id: boardId,
+            board_id: activeBoardId,
             title: c.title,
             type: c.type,
             order: idx,
             width: c.type === 'status' ? 140 : 200,
             options: c.options || []
         }));
+        console.log('[Import] Inserting columns:', dbColumns.length);
+        const { error: cErr } = await supabase.from('columns').insert(dbColumns);
+        if (cErr) throw new Error(`Columns creation failed: ${cErr.message}`);
 
-        // 2. Prepare Groups and Items
+        // 4. Prepare groups and items
         const dbGroups: any[] = [];
         const dbItems: any[] = [];
 
@@ -795,7 +784,7 @@ export const createBoardSlice: StateCreator<
             const groupId = uuidv4();
             dbGroups.push({
                 id: groupId,
-                board_id: boardId,
+                board_id: activeBoardId,
                 title: group.title,
                 color: group.color,
                 order: gIdx
@@ -803,15 +792,12 @@ export const createBoardSlice: StateCreator<
 
             group.items.forEach((item, iIdx) => {
                 const itemId = uuidv4();
-                
-                // Map item values to column IDs
                 const itemValues: Record<string, any> = {};
                 Object.entries(item.values).forEach(([colTitle, val]) => {
                     const col = dbColumns.find(c => c.title === colTitle);
                     if (col) {
-                        // Special handling for Status mapping
                         if (col.type === 'status' && col.options) {
-                            const matchedOption = (col.options as any[]).find(opt => 
+                            const matchedOption = (col.options as any[]).find(opt =>
                                 opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
                             );
                             itemValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
@@ -820,23 +806,18 @@ export const createBoardSlice: StateCreator<
                         }
                     }
                 });
-                
-                // --- UPDATES MAPPING ---
-                const itemUpdates = item.updates || [];
-                // -----------------------
 
                 dbItems.push({
                     id: itemId,
-                    board_id: boardId,
+                    board_id: activeBoardId,
                     group_id: groupId,
                     title: item.title,
                     values: itemValues,
-                    updates: itemUpdates,
+                    updates: item.updates || [],
                     order: iIdx,
                     parent_id: null
                 });
 
-                // Handle Subitems
                 if (item.subitems && Array.isArray(item.subitems)) {
                     item.subitems.forEach((sub: any, sIdx: number) => {
                         const subValues: Record<string, any> = {};
@@ -844,12 +825,11 @@ export const createBoardSlice: StateCreator<
                             const col = dbColumns.find(c => c.title === colTitle);
                             if (col) {
                                 if (col.type === 'status' && col.options) {
-                                    // Hybrid Handling: Columns that are status in main board but something else in subitems
                                     const hybridColumns = ['SOR Complete', 'RFI Sent'];
                                     if (hybridColumns.includes(col.title)) {
                                         subValues[col.id] = val || null;
                                     } else {
-                                        const matchedOption = (col.options as any[]).find(opt => 
+                                        const matchedOption = (col.options as any[]).find(opt =>
                                             opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
                                         );
                                         subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
@@ -859,10 +839,9 @@ export const createBoardSlice: StateCreator<
                                 }
                             }
                         });
-
                         dbItems.push({
                             id: uuidv4(),
-                            board_id: boardId,
+                            board_id: activeBoardId,
                             group_id: groupId,
                             title: sub.title,
                             values: subValues,
@@ -874,55 +853,18 @@ export const createBoardSlice: StateCreator<
             });
         });
 
-        // 3. Database Insertion (Sequence for FK constraints)
-        console.log('[Import] Inserting board:', { boardId, activeWorkspaceId, title });
-        const { error: bErr } = await supabase.from('boards').insert({
-            id: boardId,
-            workspace_id: activeWorkspaceId,
-            title: title || 'Imported Board',
-            description: data.description || null,
-            order: get().boards.length
-        });
-        if (bErr) {
-            console.error('[Import] Board insert error:', bErr);
-            throw new Error(`Board creation failed: ${bErr.message}`);
-        }
-
-        console.log('[Import] Inserting columns:', dbColumns.length);
-        const { error: cErr } = await supabase.from('columns').insert(dbColumns);
-        if (cErr) {
-            console.error('[Import] Column insert error:', cErr);
-            throw new Error(`Columns creation failed: ${cErr.message}`);
-        }
-
+        // 5. Insert groups then items
         console.log('[Import] Inserting groups:', dbGroups.length);
         const { error: gErr } = await supabase.from('groups').insert(dbGroups);
-        if (gErr) {
-            console.error('[Import] Group insert error:', gErr);
-            throw new Error(`Groups creation failed: ${gErr.message}`);
-        }
-        
+        if (gErr) throw new Error(`Groups creation failed: ${gErr.message}`);
+
         if (dbItems.length > 0) {
             console.log('[Import] Inserting items:', dbItems.length);
             const { error: iErr } = await supabase.from('items').insert(dbItems);
-            if (iErr) {
-                console.error('[Import] Items insert error:', iErr);
-                throw new Error(`Items creation failed: ${iErr.message}`);
-            }
+            if (iErr) throw new Error(`Items creation failed: ${iErr.message}`);
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            await supabase.from('board_members').insert({
-                board_id: boardId,
-                user_id: user.id,
-                role: 'owner'
-            });
-        }
-
-        // 4. Update UI
-        await get().loadUserData(true);
-        // We set active board but DON'T navigate yet to allow Modal to show success state
-        get().setActiveBoard(boardId);
+        // 6. Reload the active board's data
+        await get().loadBoardData(activeBoardId);
     }
 });

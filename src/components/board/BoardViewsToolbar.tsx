@@ -29,7 +29,7 @@ export const BoardViewsToolbar = () => {
 
     const handleAddGroup = () => {
         if (activeBoardId) {
-            addGroup("New Group");
+            addGroup("Group Title");
             setShowDropdown(false);
         }
     };

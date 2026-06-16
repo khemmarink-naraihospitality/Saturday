@@ -517,10 +517,15 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         // 2. Skip Header Row (must be done before group detection)
                         if (headerRowIdx !== -1 && rIdx === headerRowIdx) return;
 
+                        // Pre-compute group name candidate: handle col A empty OR col A = numeric ID
+                        const isFirstNumericId = itemIdIdx === 0 && /^\d+$/.test(String(firstVal || ''));
+                        // Group name lives in col A normally, or col B when col A is empty/numeric-ID
+                        const groupNameCandidate = (!firstVal || isFirstNumericId) && secondVal ? secondVal : (firstVal || '');
+
                         // 3. Handle 'Subitems' or 'Name' header rows
                         // 🧠 Skip any row that looks like a header (starting with Name, Item, or Subitems)
                         const isHeaderRow = firstVal === 'Subitems' || firstVal === 'Name' || firstVal === 'Item' || firstVal === 'หัวข้อ';
-                        
+
                         if (isHeaderRow) {
                             if (firstVal === 'Subitems') {
                                 isInsideSubitems = true;
@@ -576,22 +581,27 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                         // 4. Colored text group detection (Exclude common header words)
                         const commonHeaders = ['name', 'item', 'subitems', 'status', 'champion', 'timeline'];
-                        if (coloredGroupRows.has(rIdx) && firstVal && !commonHeaders.includes(firstVal.toLowerCase())) {
+                        if (coloredGroupRows.has(rIdx) && groupNameCandidate && !commonHeaders.includes(groupNameCandidate.toLowerCase())) {
                             const groupColor = coloredGroupRows.get(rIdx) || '#579bfc';
-                            currentGroup = { title: firstVal, color: groupColor, items: [] };
+                            currentGroup = { title: groupNameCandidate, color: groupColor, items: [] };
                             groups.push(currentGroup);
                             currentMainItem = null;
                             isInsideSubitems = false;
                             return;
                         }
-                        
+
                         // 5. Fallback: text-pattern group detection
                         // Allow index 1 if we've determined there's no description
                         const isPotentialGroupRow = hasNoDescription ? rIdx >= 1 : rIdx > 1;
-                        if (firstVal && (firstVal.startsWith('Priority') || (isPotentialGroupRow && row.filter((v: any) => v !== undefined && v !== '').length === 1))) {
+                        const nonEmptyVals = row.filter((v: any) => v !== undefined && v !== '');
+                        // Group row: exactly 1 value anywhere, OR col A = numeric ID + col B = name (Monday.com format)
+                        const isGroupLikeRow = nonEmptyVals.length === 1 ||
+                            (nonEmptyVals.length === 2 && isFirstNumericId && !!secondVal);
+                        if (groupNameCandidate && !commonHeaders.includes(groupNameCandidate.toLowerCase()) &&
+                            (groupNameCandidate.startsWith('Priority') || (isPotentialGroupRow && isGroupLikeRow))) {
                             let groupColor = palette[groupCount % palette.length];
-                            
-                            const lowVal = firstVal.toLowerCase();
+
+                            const lowVal = groupNameCandidate.toLowerCase();
                             
                             // 🌈 Smart Keyword-to-Color Mapping (Narai Standard)
                             if (lowVal.match(/priority\s*1|urgent|critical|hot|emergency|failed|error|asap|high|risk|issue/)) {
@@ -612,7 +622,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 groupColor = '#333333'; // Black
                             }
                             
-                            currentGroup = { title: firstVal, color: groupColor, items: [] };
+                            currentGroup = { title: groupNameCandidate, color: groupColor, items: [] };
                             groups.push(currentGroup);
                             groupCount++;
                             currentMainItem = null;

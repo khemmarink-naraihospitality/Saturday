@@ -180,10 +180,15 @@ const richifyUpdateContent = (raw: string): string => {
     // Already HTML — leave as-is
     if (/<[a-z][^>]*>/i.test(raw)) return raw;
 
-    const lines = raw.replace(/\r\n/g, '\n').split('\n');
+    // Handle \r\n (Windows), \r (old Mac), \n (Unix)
+    const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
     const parts: string[] = [];
-    let listItems: string[] = [];
-    let orderedItems: string[] = [];
+
+    interface ListEntry { text: string; gapBefore?: boolean; }
+    let listItems: ListEntry[] = [];
+    let orderedItems: ListEntry[] = [];
+    // True when a blank line was seen while inside a list — deferred until we know if next line is also a list item
+    let gapPending = false;
 
     const inlineFormat = (text: string): string =>
         text
@@ -198,27 +203,47 @@ const richifyUpdateContent = (raw: string): string => {
 
     const flushLists = () => {
         if (listItems.length) {
-            parts.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`);
+            parts.push(`<ul>${listItems.map(li =>
+                `<li style="${li.gapBefore ? 'margin-top:10px;' : ''}">${li.text}</li>`
+            ).join('')}</ul>`);
             listItems = [];
         }
         if (orderedItems.length) {
-            parts.push(`<ol>${orderedItems.map(li => `<li>${li}</li>`).join('')}</ol>`);
+            parts.push(`<ol>${orderedItems.map(li =>
+                `<li style="${li.gapBefore ? 'margin-top:10px;' : ''}">${li.text}</li>`
+            ).join('')}</ol>`);
             orderedItems = [];
         }
+        gapPending = false;
     };
 
     for (const line of lines) {
         const trimmed = line.trim();
-        // Unordered list: - item  or  * item  or  • item  (space optional)
-        if (/^[-*•]\s*\S/.test(trimmed)) {
-            if (orderedItems.length) { parts.push(`<ol>${orderedItems.map(li => `<li>${li}</li>`).join('')}</ol>`); orderedItems = []; }
-            listItems.push(inlineFormat(trimmed.replace(/^[-*•]\s*/, '')));
-        // Ordered list: 1. item  or  1) item
-        } else if (/^\d+[.)]\s+/.test(trimmed)) {
-            if (listItems.length) { parts.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`); listItems = []; }
-            orderedItems.push(inlineFormat(trimmed.replace(/^\d+[.)]\s+/, '')));
+        const isUnordered = /^[-*•]\s*\S/.test(trimmed);
+        const isOrdered   = /^\d+[.)]\s+/.test(trimmed);
+
+        if (isUnordered) {
+            // Switch from ordered → unordered
+            if (orderedItems.length) { flushLists(); }
+            listItems.push({ text: inlineFormat(trimmed.replace(/^[-*•]\s*/, '')), gapBefore: gapPending });
+            gapPending = false;
+        } else if (isOrdered) {
+            // Switch from unordered → ordered
+            if (listItems.length) { flushLists(); }
+            orderedItems.push({ text: inlineFormat(trimmed.replace(/^\d+[.)]\s+/, '')), gapBefore: gapPending });
+            gapPending = false;
+        } else if (trimmed === '' && (orderedItems.length || listItems.length)) {
+            // Blank line INSIDE a list — defer; next item will get gapBefore spacing
+            gapPending = true;
         } else {
-            flushLists();
+            // Non-list content (or blank line outside a list)
+            if (gapPending) {
+                // Blank was after the list, before this non-list content → flush list then <br>
+                flushLists();
+                parts.push('<br>');
+            } else {
+                flushLists();
+            }
             if (trimmed === '') {
                 parts.push('<br>');
             } else {

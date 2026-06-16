@@ -210,7 +210,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             'dropdown': 'Dropdown'
         };
         const newTitle = typeMap[type] || "New Column";
-        addColumn(newTitle, type === 'people' ? 'text' : type, insertColIndex !== null ? insertColIndex : undefined);
+        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined);
         setShowAddMenu(false);
         setInsertColIndex(null);
         setAddMenuPos(null);

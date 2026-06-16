@@ -173,6 +173,63 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
     return `#${hex}`;
 };
 
+// Converts plain-text Update content (from Monday.com Excel export) to HTML.
+// Preserves newlines, converts basic markdown syntax, and leaves existing HTML untouched.
+const richifyUpdateContent = (raw: string): string => {
+    if (!raw) return '';
+    // Already HTML — leave as-is
+    if (/<[a-z][^>]*>/i.test(raw)) return raw;
+
+    const lines = raw.replace(/\r\n/g, '\n').split('\n');
+    const parts: string[] = [];
+    let listItems: string[] = [];
+    let orderedItems: string[] = [];
+
+    const inlineFormat = (text: string): string =>
+        text
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            // Image URLs → <img>
+            .replace(/(https?:\/\/[^\s<]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s<]*)?)/gi,
+                '<img src="$1" style="max-width:100%;border-radius:6px;margin-top:8px;border:1px solid #eee;" />')
+            // Remaining URLs → <a>
+            .replace(/(https?:\/\/[^\s<"]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#0073ea;text-decoration:underline;">$1</a>');
+
+    const flushLists = () => {
+        if (listItems.length) {
+            parts.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`);
+            listItems = [];
+        }
+        if (orderedItems.length) {
+            parts.push(`<ol>${orderedItems.map(li => `<li>${li}</li>`).join('')}</ol>`);
+            orderedItems = [];
+        }
+    };
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        // Unordered list: - item  or  * item  or  • item  (space optional)
+        if (/^[-*•]\s*\S/.test(trimmed)) {
+            if (orderedItems.length) { parts.push(`<ol>${orderedItems.map(li => `<li>${li}</li>`).join('')}</ol>`); orderedItems = []; }
+            listItems.push(inlineFormat(trimmed.replace(/^[-*•]\s*/, '')));
+        // Ordered list: 1. item  or  1) item
+        } else if (/^\d+[.)]\s+/.test(trimmed)) {
+            if (listItems.length) { parts.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`); listItems = []; }
+            orderedItems.push(inlineFormat(trimmed.replace(/^\d+[.)]\s+/, '')));
+        } else {
+            flushLists();
+            if (trimmed === '') {
+                parts.push('<br>');
+            } else {
+                parts.push(`<p style="margin:0 0 4px 0">${inlineFormat(trimmed)}</p>`);
+            }
+        }
+    }
+    flushLists();
+    return parts.join('');
+};
+
 const parseFiles = (val: any) => {
     if (!val) return [];
     const s = String(val).trim();
@@ -192,7 +249,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
     const [isParsing, setIsParsing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [importResults, setImportResults] = useState<{ boards: number; items: number } | null>(null);
+    const [importResults, setImportResults] = useState<{ boards: number; items: number; updates: number } | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
     const [parseWarnings, setParseWarnings] = useState<string[]>([]);
     const [previews, setPreviews] = useState<any[]>([]);
@@ -319,11 +376,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const createdAtRaw = uRow[colIdx.createdAt];
                         const dateObj = parseUpdateDateTime(createdAtRaw);
 
-                        let content = String(uRow[colIdx.content] || '').trim();
-                        
-                        
-                        const imgRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/gi;
-                        content = content.replace(imgRegex, (url) => `<img src="${url}" style="max-width: 100%; border-radius: 0px; margin-top: 10px; border: 1px solid #eee;" />`);
+                        const content = richifyUpdateContent(String(uRow[colIdx.content] || '').trim());
 
                         updatesMap[itemId].push({
                             id: Math.random().toString(36).substring(7),
@@ -762,6 +815,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
         if (previews.length === 0) return;
         setIsImporting(true);
         let totalItems = 0;
+        let totalUpdates = 0;
 
         try {
             const selectedPreviews = previews.filter(p => selectedSheetIds.includes(p.id));
@@ -777,12 +831,15 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         mergedColumns.push(col);
                     }
                 });
-                preview.groups.forEach((g: any) => totalItems += g.items.length);
+                preview.groups.forEach((g: any) => {
+                    totalItems += g.items.length;
+                    g.items.forEach((item: any) => { totalUpdates += (item.updates?.length || 0); });
+                });
             });
 
             await importExcelBoard({ groups: mergedGroups, columns: mergedColumns });
 
-            setImportResults({ boards: 1, items: totalItems });
+            setImportResults({ boards: 1, items: totalItems, updates: totalUpdates });
             setIsSuccess(true);
             showToast('Import completed successfully', 'success');
         } catch (err: any) {
@@ -827,11 +884,11 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             Import Successful!
                         </h3>
                         <p style={{ color: '#6b7280', fontSize: '15px', margin: 0, lineHeight: '1.5' }}>
-                            Successfully imported <strong style={{ color: '#111827' }}>{importResults?.boards} board{(importResults?.boards || 0) > 1 ? 's' : ''}</strong> with <strong style={{ color: '#111827' }}>{importResults?.items} item{(importResults?.items || 0) > 1 ? 's' : ''}</strong> across all files.
+                            Successfully imported <strong style={{ color: '#111827' }}>{importResults?.boards} board{(importResults?.boards || 0) > 1 ? 's' : ''}</strong> with <strong style={{ color: '#111827' }}>{importResults?.items} item{(importResults?.items || 0) > 1 ? 's' : ''}</strong> and <strong style={{ color: '#111827' }}>{importResults?.updates} update{(importResults?.updates || 0) !== 1 ? 's' : ''}</strong>.
                         </p>
                     </div>
                     <div style={{
-                        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px',
+                        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px',
                         width: '100%', padding: '16px', backgroundColor: '#f0fdf4',
                         border: '1px solid #bbf7d0', borderRadius: '0px'
                     }}>
@@ -842,6 +899,10 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         <div>
                             <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.items}</div>
                             <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Items</div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.updates}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Updates</div>
                         </div>
                     </div>
                     <button

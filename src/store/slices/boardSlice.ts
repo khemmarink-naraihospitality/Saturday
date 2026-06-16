@@ -47,6 +47,7 @@ export interface BoardSlice {
     // Import Actions
     importExcelBoard: (
         data: {
+            title: string;
             groups: { title: string; color: string; items: any[] }[];
             columns: { title: string; type: ColumnType; options?: any[] }[];
         }
@@ -750,29 +751,35 @@ export const createBoardSlice: StateCreator<
     },
 
     importExcelBoard: async (data) => {
-        const { activeBoardId } = get();
-        if (!activeBoardId) throw new Error('No active board selected');
+        const { activeWorkspaceId, boards } = get();
+        if (!activeWorkspaceId) throw new Error('No active workspace');
 
-        // 1. Delete all existing groups (cascades to items via FK)
-        console.log('[Import] Deleting existing groups from board:', activeBoardId);
-        const { error: delGroupErr } = await supabase.from('groups').delete().eq('board_id', activeBoardId);
-        if (delGroupErr) throw new Error(`Failed to delete groups: ${delGroupErr.message}`);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-        // 2. Delete all existing columns
-        const { error: delColErr } = await supabase.from('columns').delete().eq('board_id', activeBoardId);
-        if (delColErr) throw new Error(`Failed to delete columns: ${delColErr.message}`);
+        // 1. Create a new board
+        const boardId = uuidv4();
+        const { error: boardErr } = await supabase.from('boards').insert({
+            id: boardId,
+            workspace_id: activeWorkspaceId,
+            title: data.title,
+            order: boards.length
+        });
+        if (boardErr) throw new Error(`Board creation failed: ${boardErr.message}`);
 
-        // 3. Prepare and insert new columns
+        // 2. Add current user as owner
+        await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
+
+        // 3. Insert columns
         const dbColumns = data.columns.map((c, idx) => ({
             id: uuidv4(),
-            board_id: activeBoardId,
+            board_id: boardId,
             title: c.title,
             type: c.type,
             order: idx,
             width: c.type === 'status' ? 140 : 200,
             options: c.options || []
         }));
-        console.log('[Import] Inserting columns:', dbColumns.length);
         const { error: cErr } = await supabase.from('columns').insert(dbColumns);
         if (cErr) throw new Error(`Columns creation failed: ${cErr.message}`);
 
@@ -784,7 +791,7 @@ export const createBoardSlice: StateCreator<
             const groupId = uuidv4();
             dbGroups.push({
                 id: groupId,
-                board_id: activeBoardId,
+                board_id: boardId,
                 title: group.title,
                 color: group.color,
                 order: gIdx
@@ -809,7 +816,7 @@ export const createBoardSlice: StateCreator<
 
                 dbItems.push({
                     id: itemId,
-                    board_id: activeBoardId,
+                    board_id: boardId,
                     group_id: groupId,
                     title: item.title,
                     values: itemValues,
@@ -841,7 +848,7 @@ export const createBoardSlice: StateCreator<
                         });
                         dbItems.push({
                             id: uuidv4(),
-                            board_id: activeBoardId,
+                            board_id: boardId,
                             group_id: groupId,
                             title: sub.title,
                             values: subValues,
@@ -854,17 +861,17 @@ export const createBoardSlice: StateCreator<
         });
 
         // 5. Insert groups then items
-        console.log('[Import] Inserting groups:', dbGroups.length);
-        const { error: gErr } = await supabase.from('groups').insert(dbGroups);
-        if (gErr) throw new Error(`Groups creation failed: ${gErr.message}`);
-
+        if (dbGroups.length > 0) {
+            const { error: gErr } = await supabase.from('groups').insert(dbGroups);
+            if (gErr) throw new Error(`Groups creation failed: ${gErr.message}`);
+        }
         if (dbItems.length > 0) {
-            console.log('[Import] Inserting items:', dbItems.length);
             const { error: iErr } = await supabase.from('items').insert(dbItems);
             if (iErr) throw new Error(`Items creation failed: ${iErr.message}`);
         }
 
-        // 6. Reload the active board's data
-        await get().loadBoardData(activeBoardId);
+        // 6. Reload board list and navigate to the new board
+        await get().loadUserData(true);
+        await get().setActiveBoard(boardId);
     }
 });

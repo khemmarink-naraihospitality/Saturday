@@ -816,30 +816,26 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
         setIsImporting(true);
         let totalItems = 0;
         let totalUpdates = 0;
+        let boardCount = 0;
 
         try {
             const selectedPreviews = previews.filter(p => selectedSheetIds.includes(p.id));
 
-            // Merge groups and columns from all selected sheets
-            const mergedGroups: any[] = [];
-            const mergedColumns: any[] = [];
-
-            selectedPreviews.forEach(preview => {
-                mergedGroups.push(...preview.groups);
-                preview.columns.forEach((col: any) => {
-                    if (!mergedColumns.find((c: any) => c.title === col.title)) {
-                        mergedColumns.push(col);
-                    }
+            // Each selected sheet creates its own new board
+            for (const preview of selectedPreviews) {
+                await importExcelBoard({
+                    title: preview.title,
+                    groups: preview.groups,
+                    columns: preview.columns
                 });
+                boardCount++;
                 preview.groups.forEach((g: any) => {
                     totalItems += g.items.length;
                     g.items.forEach((item: any) => { totalUpdates += (item.updates?.length || 0); });
                 });
-            });
+            }
 
-            await importExcelBoard({ groups: mergedGroups, columns: mergedColumns });
-
-            setImportResults({ boards: 1, items: totalItems, updates: totalUpdates });
+            setImportResults({ boards: boardCount, items: totalItems, updates: totalUpdates });
             setIsSuccess(true);
             showToast('Import completed successfully', 'success');
         } catch (err: any) {

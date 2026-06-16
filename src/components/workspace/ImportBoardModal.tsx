@@ -479,8 +479,6 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 colType = 'status';
                             } else if (text.includes('file') || text.includes('quote')) {
                                 colType = 'files';
-                            } else if (text.includes('responsible') || text.includes('user ID')) {
-                                colType = 'people';
                             } else if (text.includes('cost') || text.includes('budget') || text.includes('number') || text.includes('amount')) {
                                 colType = 'number';
                             } else if (text === 'date' || text.includes(' date')) {
@@ -564,7 +562,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         let cType = 'text';
                                         if (shLower.includes('status') || shLower.includes('complete')) cType = 'status';
                                         else if (shLower.includes('file')) cType = 'files';
-                                        else if (shLower.includes('person') || shLower.includes('owner') || shLower.includes('responsible')) cType = 'people';
+                                        // person/owner/responsible from Monday → text (stores names, not Saturday user IDs)
                                         else if (shLower.includes('cost') || shLower.includes('budget') || shLower.includes('number')) cType = 'number';
                                         else if (shLower === 'date') cType = 'date';
                                         

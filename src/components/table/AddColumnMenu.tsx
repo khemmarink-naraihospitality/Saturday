@@ -25,7 +25,7 @@ export const AddColumnMenu = ({ onSelect, onClose, position }: AddColumnMenuProp
     const items = [
         { id: 'status', label: 'Status', icon: PieChart, color: '#00c875' },
         { id: 'text', label: 'Text', icon: Type, color: '#ffcb00' },
-        { id: 'people', label: 'People', icon: Users, color: '#579bfc' },
+        { id: 'people', label: 'Person', icon: Users, color: '#579bfc' },
         { id: 'timeline', label: 'Timeline', icon: CalendarRange, color: '#FF158a' },
         { id: 'dropdown', label: 'Dropdown', icon: ArrowDownCircle, color: '#00c875' },
         { id: 'date', label: 'Date', icon: Calendar, color: '#a25ddc' },

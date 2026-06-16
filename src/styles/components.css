@@ -1,5 +1,94 @@
 @import './variables.css';
 
+/* ── Rich text display (Update/Comment content rendered from HTML) ── */
+.narai-update-content b,
+.narai-update-content strong {
+    font-weight: 700;
+}
+.narai-update-content i,
+.narai-update-content em {
+    font-style: italic;
+}
+.narai-update-content u {
+    text-decoration: underline;
+}
+.narai-update-content s,
+.narai-update-content strike {
+    text-decoration: line-through;
+}
+.narai-update-content ul {
+    list-style-type: disc;
+    padding-left: 24px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+.narai-update-content ol {
+    list-style-type: decimal;
+    padding-left: 24px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+.narai-update-content li {
+    margin-bottom: 3px;
+}
+.narai-update-content h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 10px 0 6px;
+}
+.narai-update-content h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 8px 0 5px;
+}
+.narai-update-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 6px 0 4px;
+}
+.narai-update-content a {
+    color: hsl(var(--color-brand-primary));
+    text-decoration: underline;
+}
+.narai-update-content a:hover {
+    opacity: 0.8;
+}
+.narai-update-content table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid hsl(var(--color-border));
+    margin: 10px 0;
+}
+.narai-update-content th,
+.narai-update-content td {
+    border: 1px solid hsl(var(--color-border));
+    padding: 6px 10px;
+    min-width: 40px;
+}
+.narai-update-content th {
+    background-color: hsl(var(--color-bg-subtle));
+    font-weight: 600;
+}
+.narai-update-content img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin: 4px 0;
+}
+.narai-update-content p {
+    margin: 0 0 4px 0;
+}
+.narai-update-content hr {
+    border: none;
+    border-top: 1px solid hsl(var(--color-border));
+    margin: 10px 0;
+}
+.narai-update-content .editor-checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
 /* Sidebar */
 .sidebar {
     background-color: hsl(var(--color-bg-surface));

@@ -7,6 +7,7 @@ import { useBoardStore } from '../store/useBoardStore';
 import { TimelineView } from '../components/table/TimelineView';
 import { KanbanView } from '../components/kanban/KanbanView';
 import { CalendarView } from '../components/calendar/CalendarView';
+import { AISummaryView } from '../components/board/AISummaryView';
 import { LoadingScreen } from '../components/common/LoadingScreen';
 
 export const BoardPage = () => {
@@ -77,6 +78,8 @@ export const BoardPage = () => {
                         <KanbanView />
                     ) : activeViewId === 'calendar' ? (
                         <CalendarView />
+                    ) : activeViewId === 'ai_summary' ? (
+                        <AISummaryView />
                     ) : (
                         <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
                             <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>{activeViewId.charAt(0).toUpperCase() + activeViewId.slice(1)} View</h2>

@@ -5,6 +5,7 @@ const views = [
     { id: 'timeline', label: 'Timeline' },
     { id: 'kanban', label: 'Kanban' },
     { id: 'calendar', label: 'Calendar' },
+    { id: 'ai_summary', label: '✦ AI Summary' },
 ];
 
 export const BoardViewsTabs = () => {

@@ -96,7 +96,7 @@ export const AISummaryView = () => {
         setErrorMsg('');
         try {
             const payload = buildPayload(activeBoard as any, period);
-            const { data, error } = await supabase.functions.invoke('super-task', { body: payload });
+            const { data, error } = await supabase.functions.invoke('ai-summary', { body: payload });
             if (error) throw new Error(error.message);
             if (data?.error) throw new Error(data.error);
             setSummary(data?.summary ?? '');

@@ -133,23 +133,13 @@ export const AISummaryView = () => {
                 gap: '24px',
             }}>
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                        width: '40px', height: '40px', borderRadius: '10px',
-                        background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0,
-                    }}>
-                        <Sparkles size={20} color="white" />
-                    </div>
-                    <div>
-                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', margin: 0 }}>
-                            AI Summary
-                        </h2>
-                        <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                            Summarize board activity · {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} in selected period
-                        </p>
-                    </div>
+                <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', margin: '0 0 4px' }}>
+                        AI Summary
+                    </h2>
+                    <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
+                        Summarize board activity · {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} in selected period
+                    </p>
                 </div>
 
                 {/* Period selector */}

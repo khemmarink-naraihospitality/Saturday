@@ -29,6 +29,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
     const [editUpdateContent, setEditUpdateContent] = useState<string>('');
 
+    // Reply State
+    const [replyingToId, setReplyingToId] = useState<string | null>(null);
+    const [replyDraft, setReplyDraft] = useState('');
+
     // File Tab State
     const [fileUrl, setFileUrl] = useState('');
     const [fileName, setFileName] = useState('');
@@ -257,6 +261,13 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleDeleteClick = (updateId: string) => {
         setDeleteConfirmId(updateId);
+    };
+
+    const handleSendReply = (parentId: string) => {
+        if (!replyDraft.trim()) return;
+        addUpdate(itemId, replyDraft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, [], parentId);
+        setReplyDraft('');
+        setReplyingToId(null);
     };
 
 
@@ -516,8 +527,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                     const validUpdates = activeItem.updates.filter(u => typeof u === 'object' && u?.id);
                                     
                                     // Separate top-level updates and replies
-                                    const topLevel = validUpdates.filter(u => !u.parentId || !validUpdates.find(p => p.postId === u.parentId));
-                                    const replies = validUpdates.filter(u => u.parentId && validUpdates.find(p => p.postId === u.parentId));
+                                    // Use update.id as fallback when postId is absent (for new replies created in-app)
+                                    const hasParent = (u: any) => u.parentId && validUpdates.some((p: any) => p.postId === u.parentId || p.id === u.parentId);
+                                    const topLevel = validUpdates.filter((u: any) => !hasParent(u));
+                                    const replies = validUpdates.filter((u: any) => hasParent(u));
 
                                     const renderUpdate = (update: any, depth = 0) => (
                                         <div key={update.id} style={{
@@ -759,8 +772,87 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 </>
                                             )}
                                             
+                                            {/* Like / Reply action bar — top-level only */}
+                                            {depth === 0 && editingUpdateId !== update.id && (
+                                                <>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '2px',
+                                                        marginTop: '12px',
+                                                        paddingTop: '10px',
+                                                        borderTop: '1px solid hsl(var(--color-border))'
+                                                    }}>
+                                                        <button
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        >
+                                                            👍 Like
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setReplyingToId(replyingToId === update.id ? null : update.id); setReplyDraft(''); }}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: replyingToId === update.id ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
+                                                            onMouseEnter={(e) => { if (replyingToId !== update.id) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
+                                                            onMouseLeave={(e) => { if (replyingToId !== update.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                        >
+                                                            ↩ Reply
+                                                        </button>
+                                                    </div>
+
+                                                    {replyingToId === update.id && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                                                            <div style={{
+                                                                width: '32px', height: '32px', borderRadius: '0px',
+                                                                backgroundColor: currentUser.name?.toLowerCase().includes('lubd') ? '#1a1728' : '#00c875',
+                                                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                fontSize: '13px', fontWeight: 700, flexShrink: 0, fontFamily: 'serif'
+                                                            }}>
+                                                                {currentUser.name?.charAt(0) || '?'}
+                                                            </div>
+                                                            <div style={{ flex: 1, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={replyDraft}
+                                                                    onChange={(e) => setReplyDraft(e.target.value)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(update.id); }
+                                                                        if (e.key === 'Escape') { setReplyingToId(null); setReplyDraft(''); }
+                                                                    }}
+                                                                    placeholder="Write a reply and mention others with @"
+                                                                    autoFocus
+                                                                    style={{
+                                                                        flex: 1, padding: '8px 14px',
+                                                                        border: '1px solid hsl(var(--color-border))',
+                                                                        borderRadius: '20px',
+                                                                        fontSize: '13px', outline: 'none',
+                                                                        backgroundColor: 'hsl(var(--color-bg-canvas))',
+                                                                        color: 'hsl(var(--color-text-primary))'
+                                                                    }}
+                                                                    onFocus={(e) => e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary))'}
+                                                                    onBlur={(e) => e.currentTarget.style.borderColor = 'hsl(var(--color-border))'}
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleSendReply(update.id)}
+                                                                    disabled={!replyDraft.trim()}
+                                                                    style={{
+                                                                        padding: '7px 16px', borderRadius: '6px',
+                                                                        backgroundColor: replyDraft.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-bg-subtle))',
+                                                                        color: replyDraft.trim() ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                                        border: 'none', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
+                                                                        fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap'
+                                                                    }}
+                                                                >
+                                                                    Send
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+
                                             {/* Render Replies for this update */}
-                                            {replies.filter(r => r.parentId === update.postId).map(reply => renderUpdate(reply, depth + 1))}
+                                            {replies.filter(r => r.parentId === update.postId || r.parentId === update.id).map(reply => renderUpdate(reply, depth + 1))}
                                         </div>
                                     );
 

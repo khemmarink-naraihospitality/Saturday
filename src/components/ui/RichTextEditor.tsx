@@ -373,6 +373,13 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     };
 
     const applyFontSize = (sizeInPt: number) => {
+        // Restore selection that was saved when the dropdown was opened
+        const selection = window.getSelection();
+        if (savedSelection && selection) {
+            selection.removeAllRanges();
+            selection.addRange(savedSelection);
+        }
+
         const MARKER = '--fsize--';
         document.execCommand('fontName', false, MARKER);
         if (editorRef.current) {
@@ -385,6 +392,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             onChange(editorRef.current.innerHTML);
         }
         setIsFontSizeUIOpen(false);
+        setSavedSelection(null);
         editorRef.current?.focus();
     };
 
@@ -565,7 +573,13 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
         } },
         { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsFontSizeUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
-        { id: 'fontSize', text: '8', label: 'Font Size', action: () => { setIsFontSizeUIOpen(!isFontSizeUIOpen); setIsFontUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'fontSize', text: '8', label: 'Font Size', action: () => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                setSavedSelection(selection.getRangeAt(0).cloneRange());
+            }
+            setIsFontSizeUIOpen(!isFontSizeUIOpen); setIsFontUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
+        } },
         { type: 'separator' },
         { id: 'bold', icon: Bold, label: 'Bold', action: () => exec('bold') },
         { id: 'italic', icon: Italic, label: 'Italic', action: () => exec('italic') },
@@ -777,6 +791,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                                     {FONT_SIZES.map(size => (
                                         <button
                                             key={size}
+                                            onMouseDown={(e) => e.preventDefault()}
                                             onClick={(e) => { e.preventDefault(); applyFontSize(size); }}
                                             style={{
                                                 padding: '5px 12px',

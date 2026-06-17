@@ -18,6 +18,7 @@ interface SummaryGroup {
 
 interface RequestBody {
   boardTitle: string;
+  period: string;
   columns: { title: string; type: string }[];
   groups: SummaryGroup[];
 }
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
       throw new Error('GOOGLE_AI_KEY secret is not configured');
     }
 
-    const { boardTitle, columns, groups } = await req.json() as RequestBody;
+    const { boardTitle, period, columns, groups } = await req.json() as RequestBody;
 
     // Build a readable text block of board activity for the prompt
     const lines: string[] = [];
@@ -54,19 +55,20 @@ Deno.serve(async (req) => {
     const activityText = lines.join('\n');
     const columnNames = columns.map(c => c.title).join(', ');
 
-    const prompt = `คุณคือผู้ช่วย Project Manager ที่เชี่ยวชาญ
+    const periodText = period || '1 Month';
+    const prompt = `You are an expert Project Manager assistant.
 
-กรุณาสรุปกิจกรรมของบอร์ด "${boardTitle}" ในช่วง 30 วันที่ผ่านมา เป็นย่อหน้าเดียวในภาษาไทย ครอบคลุม:
-- สิ่งที่สำเร็จแล้วหรืองานที่คืบหน้า
-- งานที่กำลังดำเนินการอยู่
-- ประเด็นสำคัญหรือ Updates ที่น่าสนใจ
+Summarize the activity of the board "${boardTitle}" over the past ${periodText} in a single concise paragraph in English. Cover:
+- What has been completed or progressed
+- Work currently in progress
+- Any notable updates or issues worth highlighting
 
-คอลัมน์ในบอร์ด: ${columnNames}
+Board columns: ${columnNames}
 
-ข้อมูลกิจกรรม:
-${activityText || 'ไม่มีกิจกรรมในช่วง 30 วันที่ผ่านมา'}
+Activity data:
+${activityText || `No activity recorded in the past ${periodText}.`}
 
-เขียนสรุปเป็นย่อหน้าเดียว กระชับ ชัดเจน เหมาะสำหรับรายงานให้ผู้บริหาร`;
+Write the summary as one clear paragraph suitable for an executive report. Be concise and factual.`;
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,

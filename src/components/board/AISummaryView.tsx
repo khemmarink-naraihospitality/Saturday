@@ -4,7 +4,18 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { supabase } from '../../lib/supabase';
 import type { Column, Item } from '../../types';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+type Period = '1w' | '1m' | '1y' | 'all';
+
+const PERIODS: { id: Period; label: string; ms: number | null }[] = [
+    { id: '1w',  label: '1 Week',  ms: 7 * 24 * 60 * 60 * 1000 },
+    { id: '1m',  label: '1 Month', ms: 30 * 24 * 60 * 60 * 1000 },
+    { id: '1y',  label: '1 Year',  ms: 365 * 24 * 60 * 60 * 1000 },
+    { id: 'all', label: 'All Time', ms: null },
+];
+
+function periodLabel(id: Period) {
+    return PERIODS.find(p => p.id === id)?.label ?? '1 Month';
+}
 
 function resolveStatusLabel(item: Item, columns: Column[]): string {
     for (const col of columns) {
@@ -17,33 +28,41 @@ function resolveStatusLabel(item: Item, columns: Column[]): string {
     return '';
 }
 
-function buildPayload(activeBoard: NonNullable<ReturnType<typeof useBoardStore.getState>['boards'][number]>) {
-    const cutoff = Date.now() - THIRTY_DAYS_MS;
+function getCutoff(period: Period): number | null {
+    const p = PERIODS.find(x => x.id === period);
+    return p?.ms != null ? Date.now() - p.ms : null;
+}
+
+function buildPayload(
+    activeBoard: NonNullable<ReturnType<typeof useBoardStore.getState>['boards'][number]>,
+    period: Period
+) {
+    const cutoff = getCutoff(period);
 
     const groups = activeBoard.groups.map(group => {
-        const recentItems = group.items.filter(item => {
+        const filteredItems = group.items.filter(item => {
+            if (cutoff === null) return true;
             const createdRecently = item.createdAt && new Date(item.createdAt).getTime() >= cutoff;
-            const hasRecentUpdate = item.updates?.some(
-                u => new Date(u.createdAt).getTime() >= cutoff
-            );
+            const hasRecentUpdate = item.updates?.some(u => new Date(u.createdAt).getTime() >= cutoff);
             return createdRecently || hasRecentUpdate;
         });
 
         return {
             title: group.title,
-            items: recentItems.map(item => ({
+            items: filteredItems.map(item => ({
                 title: item.title,
                 statusLabel: resolveStatusLabel(item, activeBoard.columns),
                 updates: (item.updates ?? [])
-                    .filter(u => new Date(u.createdAt).getTime() >= cutoff)
+                    .filter(u => cutoff === null || new Date(u.createdAt).getTime() >= cutoff)
                     .map(u => u.content)
-                    .slice(0, 5), // cap per item to avoid huge payloads
+                    .slice(0, 5),
             })),
         };
     }).filter(g => g.items.length > 0);
 
     return {
         boardTitle: activeBoard.title,
+        period: periodLabel(period),
         columns: activeBoard.columns.map(c => ({ title: c.title, type: c.type })),
         groups,
     };
@@ -53,38 +72,48 @@ export const AISummaryView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
 
+    const [period, setPeriod] = useState<Period>('1m');
     const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [summary, setSummary] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
+    const [summaryPeriod, setSummaryPeriod] = useState<Period>('1m');
 
     if (!activeBoard) return null;
+
+    const cutoff = getCutoff(period);
+    const activeItemCount = activeBoard.groups.reduce((sum, g) =>
+        sum + g.items.filter(i => {
+            if (cutoff === null) return true;
+            return (i.createdAt && new Date(i.createdAt).getTime() >= cutoff) ||
+                i.updates?.some(u => new Date(u.createdAt).getTime() >= cutoff);
+        }).length, 0
+    );
 
     const handleGenerate = async () => {
         setStatus('loading');
         setSummary('');
         setErrorMsg('');
         try {
-            const payload = buildPayload(activeBoard as any);
+            const payload = buildPayload(activeBoard as any, period);
             const { data, error } = await supabase.functions.invoke('ai-summary', { body: payload });
             if (error) throw new Error(error.message);
             if (data?.error) throw new Error(data.error);
             setSummary(data?.summary ?? '');
             setGeneratedAt(new Date());
+            setSummaryPeriod(period);
             setStatus('done');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ');
+            setErrorMsg(err instanceof Error ? err.message : 'An unknown error occurred.');
             setStatus('error');
         }
     };
 
-    const totalRecentItems = activeBoard.groups.reduce((sum, g) => {
-        const cutoff = Date.now() - THIRTY_DAYS_MS;
-        return sum + g.items.filter(i =>
-            (i.createdAt && new Date(i.createdAt).getTime() >= cutoff) ||
-            i.updates?.some(u => new Date(u.createdAt).getTime() >= cutoff)
-        ).length;
-    }, 0);
+    // Reset to idle when period changes after a result
+    const handlePeriodChange = (p: Period) => {
+        setPeriod(p);
+        if (status === 'done') setStatus('idle');
+    };
 
     return (
         <div style={{
@@ -109,6 +138,7 @@ export const AISummaryView = () => {
                         width: '40px', height: '40px', borderRadius: '10px',
                         background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
                     }}>
                         <Sparkles size={20} color="white" />
                     </div>
@@ -117,9 +147,44 @@ export const AISummaryView = () => {
                             AI Summary
                         </h2>
                         <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                            สรุปกิจกรรมบอร์ดย้อนหลัง 30 วัน · {totalRecentItems} items ที่มีการเคลื่อนไหว
+                            Summarize board activity · {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} in selected period
                         </p>
                     </div>
+                </div>
+
+                {/* Period selector */}
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    padding: '4px',
+                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                    border: '1px solid hsl(var(--color-border))',
+                    borderRadius: '10px',
+                    width: 'fit-content',
+                }}>
+                    {PERIODS.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => handlePeriodChange(p.id)}
+                            style={{
+                                padding: '6px 18px',
+                                borderRadius: '7px',
+                                fontSize: '13px',
+                                fontWeight: period === p.id ? 600 : 400,
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                backgroundColor: period === p.id
+                                    ? 'hsl(var(--color-brand-primary))'
+                                    : 'transparent',
+                                color: period === p.id
+                                    ? 'white'
+                                    : 'hsl(var(--color-text-secondary))',
+                            }}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Action area */}
@@ -143,18 +208,19 @@ export const AISummaryView = () => {
                                 backgroundColor: 'rgba(239,68,68,0.08)',
                                 border: '1px solid rgba(239,68,68,0.2)',
                                 width: '100%',
+                                boxSizing: 'border-box',
                             }}>
                                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                                <span>{errorMsg}</span>
+                                <span style={{ textAlign: 'left' }}>{errorMsg}</span>
                             </div>
                         )}
                         <Sparkles size={32} color="#a855f7" />
                         <div>
                             <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: '0 0 6px' }}>
-                                สร้าง AI Summary สำหรับบอร์ด "{activeBoard.title}"
+                                Generate AI Summary for "{activeBoard.title}"
                             </p>
                             <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                                Gemini AI จะวิเคราะห์ items และ updates ย้อนหลัง 30 วัน
+                                Gemini AI will analyze items and updates from the past {periodLabel(period).toLowerCase()}
                             </p>
                         </div>
                         <button
@@ -168,7 +234,7 @@ export const AISummaryView = () => {
                             }}
                         >
                             <Sparkles size={16} />
-                            {status === 'error' ? 'ลองใหม่อีกครั้ง' : 'Generate AI Summary'}
+                            {status === 'error' ? 'Try Again' : 'Generate Summary'}
                         </button>
                     </div>
                 ) : status === 'loading' ? (
@@ -191,7 +257,7 @@ export const AISummaryView = () => {
                             animation: 'spin 0.8s linear infinite',
                         }} />
                         <p style={{ fontSize: '14px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                            กำลังวิเคราะห์ข้อมูลบอร์ด...
+                            Analyzing board activity...
                         </p>
                         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                     </div>
@@ -211,7 +277,7 @@ export const AISummaryView = () => {
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
                                 <Clock size={14} />
-                                สร้างเมื่อ {generatedAt?.toLocaleString('th-TH')}
+                                {periodLabel(summaryPeriod)} summary · Generated {generatedAt?.toLocaleString('en-GB')}
                             </div>
                             <button
                                 onClick={handleGenerate}
@@ -240,9 +306,9 @@ export const AISummaryView = () => {
                     </div>
                 )}
 
-                {/* Info note */}
+                {/* Footer note */}
                 <p style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', textAlign: 'center', margin: 0 }}>
-                    ขับเคลื่อนโดย Google Gemini 1.5 Flash · ข้อมูลส่งผ่าน Supabase Edge Function
+                    Powered by Google Gemini 1.5 Flash · Processed via Supabase Edge Function
                 </p>
             </div>
         </div>

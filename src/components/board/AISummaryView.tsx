@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, RefreshCw, AlertCircle, Clock } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { supabase } from '../../lib/supabase';
 import type { Column, Item } from '../../types';
@@ -97,7 +97,17 @@ export const AISummaryView = () => {
         try {
             const payload = buildPayload(activeBoard as any, period);
             const { data, error } = await supabase.functions.invoke('ai-summary', { body: payload });
-            if (error) throw new Error(error.message);
+            if (error) {
+                let detail = error.message;
+                try {
+                    const ctx = (error as any).context;
+                    if (ctx) {
+                        const body = await (ctx as Response).json();
+                        detail = body?.error ?? body?.message ?? JSON.stringify(body);
+                    }
+                } catch { /* ignore parse failure */ }
+                throw new Error(detail);
+            }
             if (data?.error) throw new Error(data.error);
             setSummary(data?.summary ?? '');
             setGeneratedAt(new Date());
@@ -109,7 +119,6 @@ export const AISummaryView = () => {
         }
     };
 
-    // Reset to idle when period changes after a result
     const handlePeriodChange = (p: Period) => {
         setPeriod(p);
         if (status === 'done') setStatus('idle');
@@ -122,184 +131,330 @@ export const AISummaryView = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            padding: '40px 24px',
+            padding: '20px 24px 48px',
             backgroundColor: 'hsl(var(--color-bg-canvas))',
         }}>
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .ai-gen-btn { transition: transform 0.15s ease, box-shadow 0.15s ease !important; }
+                .ai-gen-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(107,76,195,0.42) !important; }
+                .ai-gen-btn:active { transform: translateY(0) !important; }
+                .ai-period-btn:hover { opacity: 0.8; }
+                .ai-regen-btn:hover { border-color: hsl(var(--color-border)) !important; background-color: hsl(var(--color-bg-surface)) !important; }
+            `}</style>
+
             <div style={{
                 width: '100%',
-                maxWidth: '720px',
+                maxWidth: '820px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '24px',
+                gap: '16px',
             }}>
-                {/* Header */}
-                <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'hsl(var(--color-text-primary))', margin: '0 0 4px' }}>
-                        AI Summary
-                    </h2>
-                    <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                        Summarize board activity · {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} in selected period
-                    </p>
-                </div>
-
-                {/* Period selector */}
+                {/* Premium header row: title+subtitle left, period selector right */}
                 <div style={{
                     display: 'flex',
-                    gap: '8px',
-                    padding: '4px',
-                    backgroundColor: 'hsl(var(--color-bg-surface))',
-                    border: '1px solid hsl(var(--color-border))',
-                    borderRadius: '10px',
-                    width: 'fit-content',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '24px',
                 }}>
-                    {PERIODS.map(p => (
-                        <button
-                            key={p.id}
-                            onClick={() => handlePeriodChange(p.id)}
-                            style={{
-                                padding: '6px 18px',
-                                borderRadius: '7px',
-                                fontSize: '13px',
-                                fontWeight: period === p.id ? 600 : 400,
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease',
-                                backgroundColor: period === p.id
-                                    ? 'hsl(var(--color-brand-primary))'
-                                    : 'transparent',
-                                color: period === p.id
-                                    ? 'white'
-                                    : 'hsl(var(--color-text-secondary))',
-                            }}
-                        >
-                            {p.label}
-                        </button>
-                    ))}
+                    {/* Title + subtitle stacked */}
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                            <div style={{
+                                width: '34px', height: '34px',
+                                borderRadius: '9px',
+                                background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0,
+                                boxShadow: '0 2px 8px rgba(107,76,195,0.3)',
+                            }}>
+                                <Sparkles size={16} color="white" />
+                            </div>
+                            <h2 style={{
+                                fontSize: '22px',
+                                fontWeight: 700,
+                                color: 'hsl(var(--color-text-primary))',
+                                margin: 0,
+                                letterSpacing: '-0.3px',
+                            }}>
+                                AI Summary
+                            </h2>
+                        </div>
+                        <p style={{
+                            fontSize: '13.5px',
+                            color: 'hsl(var(--color-text-secondary))',
+                            margin: '0 0 0 44px',
+                            lineHeight: 1.5,
+                        }}>
+                            Summarize board activity
+                            <span style={{ margin: '0 5px', color: 'hsl(var(--color-text-tertiary))' }}>·</span>
+                            <span style={{ fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>
+                                {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
+                            </span>
+                            {' '}in the selected period
+                        </p>
+                    </div>
+
+                    {/* Period selector pill */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '3px',
+                        padding: '4px',
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '10px',
+                        flexShrink: 0,
+                    }}>
+                        {PERIODS.map(p => (
+                            <button
+                                key={p.id}
+                                className="ai-period-btn"
+                                onClick={() => handlePeriodChange(p.id)}
+                                style={{
+                                    padding: '6px 15px',
+                                    borderRadius: '7px',
+                                    fontSize: '13px',
+                                    fontWeight: period === p.id ? 600 : 400,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    backgroundColor: period === p.id ? 'hsl(var(--color-brand-primary))' : 'transparent',
+                                    color: period === p.id ? 'white' : 'hsl(var(--color-text-secondary))',
+                                }}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Action area */}
+                {/* Main card */}
                 {status === 'idle' || status === 'error' ? (
                     <div style={{
                         border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '12px',
-                        padding: '32px',
+                        borderRadius: '16px',
+                        padding: '72px 56px',
                         textAlign: 'center',
                         backgroundColor: 'hsl(var(--color-bg-surface))',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '16px',
+                        gap: '22px',
+                        boxShadow: '0 2px 20px rgba(0,0,0,0.04)',
+                        position: 'relative',
+                        overflow: 'hidden',
                     }}>
+                        {/* Decorative blobs */}
+                        <div style={{
+                            position: 'absolute', top: '-70px', right: '-70px',
+                            width: '240px', height: '240px', borderRadius: '50%',
+                            background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%)',
+                            pointerEvents: 'none',
+                        }} />
+                        <div style={{
+                            position: 'absolute', bottom: '-50px', left: '-50px',
+                            width: '200px', height: '200px', borderRadius: '50%',
+                            background: 'radial-gradient(circle, rgba(107,76,195,0.07) 0%, transparent 70%)',
+                            pointerEvents: 'none',
+                        }} />
+
                         {status === 'error' && (
                             <div style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
+                                display: 'flex', alignItems: 'center', gap: '10px',
                                 color: '#ef4444', fontSize: '13px',
-                                padding: '10px 16px', borderRadius: '8px',
-                                backgroundColor: 'rgba(239,68,68,0.08)',
-                                border: '1px solid rgba(239,68,68,0.2)',
-                                width: '100%',
+                                padding: '12px 18px', borderRadius: '10px',
+                                backgroundColor: 'rgba(239,68,68,0.07)',
+                                border: '1px solid rgba(239,68,68,0.18)',
+                                width: '100%', maxWidth: '500px',
                                 boxSizing: 'border-box',
+                                textAlign: 'left',
+                                zIndex: 1,
                             }}>
                                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                                <span style={{ textAlign: 'left' }}>{errorMsg}</span>
+                                <span>{errorMsg}</span>
                             </div>
                         )}
-                        <Sparkles size={32} color="#a855f7" />
-                        <div>
-                            <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: '0 0 6px' }}>
-                                Generate AI Summary for "{activeBoard.title}"
+
+                        {/* Icon */}
+                        <div style={{
+                            width: '68px', height: '68px',
+                            borderRadius: '18px',
+                            background: 'linear-gradient(135deg, rgba(107,76,195,0.1), rgba(168,85,247,0.16))',
+                            border: '1px solid rgba(168,85,247,0.22)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 1,
+                        }}>
+                            <Sparkles size={30} color="#a855f7" />
+                        </div>
+
+                        <div style={{ maxWidth: '440px', zIndex: 1 }}>
+                            <p style={{
+                                fontSize: '18px', fontWeight: 700,
+                                color: 'hsl(var(--color-text-primary))',
+                                margin: '0 0 10px', letterSpacing: '-0.2px',
+                            }}>
+                                Generate AI Summary
                             </p>
-                            <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                                Gemini AI will analyze items and updates from the past {periodLabel(period).toLowerCase()}
+                            <p style={{
+                                fontSize: '14px', color: 'hsl(var(--color-text-secondary))',
+                                margin: 0, lineHeight: 1.65,
+                            }}>
+                                Gemini AI will analyze{' '}
+                                <strong style={{ color: 'hsl(var(--color-text-primary))' }}>
+                                    {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
+                                </strong>
+                                {' '}and their updates from the past{' '}
+                                <strong style={{ color: 'hsl(var(--color-text-primary))' }}>
+                                    {periodLabel(period).toLowerCase()}
+                                </strong>
+                                {' '}in{' '}
+                                <em>"{activeBoard.title}"</em>
                             </p>
                         </div>
+
                         <button
+                            className="ai-gen-btn"
                             onClick={handleGenerate}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '8px',
-                                padding: '10px 24px', borderRadius: '8px',
+                                padding: '13px 36px', borderRadius: '10px',
                                 background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
                                 color: 'white', fontSize: '14px', fontWeight: 600,
                                 border: 'none', cursor: 'pointer',
+                                boxShadow: '0 4px 16px rgba(107,76,195,0.35)',
+                                letterSpacing: '0.1px',
+                                zIndex: 1,
                             }}
                         >
-                            <Sparkles size={16} />
+                            <Zap size={15} />
                             {status === 'error' ? 'Try Again' : 'Generate Summary'}
                         </button>
                     </div>
+
                 ) : status === 'loading' ? (
                     <div style={{
                         border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '12px',
-                        padding: '48px 32px',
+                        borderRadius: '16px',
+                        padding: '88px 56px',
                         textAlign: 'center',
                         backgroundColor: 'hsl(var(--color-bg-surface))',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '16px',
+                        gap: '20px',
+                        boxShadow: '0 2px 20px rgba(0,0,0,0.04)',
                     }}>
-                        <div style={{
-                            width: '40px', height: '40px',
-                            border: '3px solid #e9d5ff',
-                            borderTopColor: '#a855f7',
-                            borderRadius: '50%',
-                            animation: 'spin 0.8s linear infinite',
-                        }} />
-                        <p style={{ fontSize: '14px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                            Analyzing board activity...
-                        </p>
-                        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                        <div style={{ position: 'relative', width: '54px', height: '54px' }}>
+                            <div style={{
+                                width: '54px', height: '54px',
+                                border: '3px solid rgba(168,85,247,0.15)',
+                                borderTopColor: '#a855f7',
+                                borderRadius: '50%',
+                                animation: 'spin 0.85s linear infinite',
+                            }} />
+                            <div style={{
+                                position: 'absolute', top: '50%', left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                            }}>
+                                <Sparkles size={18} color="#a855f7" />
+                            </div>
+                        </div>
+                        <div>
+                            <p style={{
+                                fontSize: '15px', fontWeight: 600,
+                                color: 'hsl(var(--color-text-primary))',
+                                margin: '0 0 5px',
+                            }}>
+                                Analyzing board activity...
+                            </p>
+                            <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
+                                Gemini is reading {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} and their updates
+                            </p>
+                        </div>
                     </div>
+
                 ) : (
-                    /* Result */
+                    /* Result card */
                     <div style={{
                         border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '12px',
+                        borderRadius: '16px',
                         overflow: 'hidden',
                         backgroundColor: 'hsl(var(--color-bg-surface))',
+                        boxShadow: '0 2px 20px rgba(0,0,0,0.05)',
                     }}>
+                        {/* Result header */}
                         <div style={{
-                            padding: '14px 20px',
+                            padding: '18px 32px',
                             borderBottom: '1px solid hsl(var(--color-border))',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            backgroundColor: 'hsla(var(--color-brand-primary), 0.05)',
+                            background: 'linear-gradient(to right, rgba(107,76,195,0.06), transparent)',
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
-                                <Clock size={14} />
-                                {periodLabel(summaryPeriod)} summary · Generated {generatedAt?.toLocaleString('en-GB')}
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                fontSize: '13px', color: 'hsl(var(--color-text-secondary))',
+                            }}>
+                                <Clock size={14} color="#a855f7" />
+                                <span style={{ fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>
+                                    {periodLabel(summaryPeriod)}
+                                </span>
+                                <span style={{ color: 'hsl(var(--color-text-tertiary))' }}>·</span>
+                                <span>Generated {generatedAt?.toLocaleString('en-GB')}</span>
                             </div>
                             <button
+                                className="ai-regen-btn"
                                 onClick={handleGenerate}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '6px 14px', borderRadius: '6px',
+                                    padding: '7px 16px', borderRadius: '8px',
                                     border: '1px solid hsl(var(--color-border))',
                                     backgroundColor: 'hsl(var(--color-bg-canvas))',
                                     color: 'hsl(var(--color-text-secondary))',
-                                    fontSize: '13px', cursor: 'pointer',
+                                    fontSize: '13px', fontWeight: 500,
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.15s ease',
                                 }}
                             >
                                 <RefreshCw size={13} />
                                 Regenerate
                             </button>
                         </div>
+
+                        {/* Summary body */}
                         <div style={{
-                            padding: '24px',
+                            padding: '40px 44px',
                             fontSize: '15px',
-                            lineHeight: '1.8',
+                            lineHeight: 1.9,
                             color: 'hsl(var(--color-text-primary))',
                             whiteSpace: 'pre-wrap',
+                            letterSpacing: '0.1px',
                         }}>
                             {summary}
+                        </div>
+
+                        {/* Inner footer */}
+                        <div style={{
+                            padding: '14px 44px',
+                            borderTop: '1px solid hsl(var(--color-border))',
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            backgroundColor: 'hsl(var(--color-bg-canvas))',
+                        }}>
+                            <Sparkles size={11} color="#a855f7" />
+                            <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                Powered by Google Gemini 1.5 Flash
+                            </span>
                         </div>
                     </div>
                 )}
 
-                {/* Footer note */}
-                <p style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', textAlign: 'center', margin: 0 }}>
-                    Powered by Google Gemini 1.5 Flash · Processed via Supabase Edge Function
-                </p>
+                {/* Footer — only on idle/error states */}
+                {(status === 'idle' || status === 'error') && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <Sparkles size={11} color="#a855f7" />
+                        <p style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', margin: 0 }}>
+                            Powered by Google Gemini 1.5 Flash
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

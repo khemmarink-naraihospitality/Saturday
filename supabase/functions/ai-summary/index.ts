@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,10 +18,46 @@ interface SummaryGroup {
 }
 
 interface RequestBody {
-  boardTitle: string;
-  period: string;
-  columns: { title: string; type: string }[];
-  groups: SummaryGroup[];
+  testOnly?: boolean;
+  boardTitle?: string;
+  period?: string;
+  columns?: { title: string; type: string }[];
+  groups?: SummaryGroup[];
+}
+
+async function getApiKey(): Promise<string> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (supabaseUrl && serviceKey) {
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data } = await admin
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'google_ai_key')
+      .single();
+    if (data?.value) return data.value as string;
+  }
+  return Deno.env.get('GOOGLE_AI_KEY') ?? '';
+}
+
+async function callGemini(apiKey: string, prompt: string, maxTokens = 1024): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
+      }),
+    }
+  );
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+  }
+  const json = await res.json();
+  return json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
 Deno.serve(async (req) => {
@@ -29,12 +66,23 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('GOOGLE_AI_KEY');
+    const apiKey = await getApiKey();
     if (!apiKey) {
-      throw new Error('GOOGLE_AI_KEY secret is not configured');
+      throw new Error('No API key configured. Please set a Google AI API key in Admin → AI Settings.');
     }
 
-    const { boardTitle, period, columns, groups } = await req.json() as RequestBody;
+    const body = await req.json() as RequestBody;
+
+    // Test connection mode — send minimal prompt to verify key
+    if (body.testOnly) {
+      await callGemini(apiKey, 'Reply with one word: OK', 10);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Normal summary mode
+    const { boardTitle = '', period = '1 Month', columns = [], groups = [] } = body;
 
     const lines: string[] = [];
     for (const group of groups) {
@@ -53,10 +101,9 @@ Deno.serve(async (req) => {
     const activityText = lines.join('\n');
     const columnNames = columns.map(c => c.title).join(', ');
 
-    const periodText = period || '1 Month';
     const prompt = `You are an expert Project Manager assistant.
 
-Summarize the activity of the board "${boardTitle}" over the past ${periodText} in a single concise paragraph in English. Cover:
+Summarize the activity of the board "${boardTitle}" over the past ${period} in a single concise paragraph in English. Cover:
 - What has been completed or progressed
 - Work currently in progress
 - Any notable updates or issues worth highlighting
@@ -64,30 +111,11 @@ Summarize the activity of the board "${boardTitle}" over the past ${periodText} 
 Board columns: ${columnNames}
 
 Activity data:
-${activityText || `No activity recorded in the past ${periodText}.`}
+${activityText || `No activity recorded in the past ${period}.`}
 
 Write the summary as one clear paragraph suitable for an executive report. Be concise and factual.`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      throw new Error(`Gemini API error ${geminiRes.status}: ${errText}`);
-    }
-
-    const geminiData = await geminiRes.json();
-    const summary: string =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Could not generate summary.';
+    const summary = await callGemini(apiKey, prompt) || 'Could not generate summary.';
 
     return new Response(JSON.stringify({ summary }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -95,7 +123,7 @@ Write the summary as one clear paragraph suitable for an executive report. Be co
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

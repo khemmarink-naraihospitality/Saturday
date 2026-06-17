@@ -56,6 +56,8 @@ const FONTS = [
     { label: 'Ubuntu', value: 'Ubuntu, sans-serif' },
 ];
 
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
+
 export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
@@ -83,6 +85,9 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     // Font State
     const [isFontUIOpen, setIsFontUIOpen] = useState(false);
 
+    // Font Size State
+    const [isFontSizeUIOpen, setIsFontSizeUIOpen] = useState(false);
+
     // Table State - tracks the table cell the cursor is currently in,
     // so a contextual toolbar for adding/removing rows & columns can be shown.
     const [tableContext, setTableContext] = useState<{ table: HTMLTableElement; rowIndex: number; cellIndex: number; top: number; left: number } | null>(null);
@@ -106,7 +111,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            if (isColorUIOpen || isTypeUIOpen || isFontUIOpen) {
+            if (isColorUIOpen || isTypeUIOpen || isFontUIOpen || isFontSizeUIOpen) {
                 // If the click is not inside a popover or a toolbar button
                 const isInsidePopover = target.closest('.editor-popover');
                 const isToolbarButton = target.closest('button[title]');
@@ -114,12 +119,13 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                     setIsColorUIOpen(false);
                     setIsTypeUIOpen(false);
                     setIsFontUIOpen(false);
+                    setIsFontSizeUIOpen(false);
                 }
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isColorUIOpen, isTypeUIOpen, isFontUIOpen]);
+    }, [isColorUIOpen, isTypeUIOpen, isFontUIOpen, isFontSizeUIOpen]);
 
     // Hide the table row/column toolbar when clicking outside the table or the toolbar itself
     useEffect(() => {
@@ -136,7 +142,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
 
     useEffect(() => {
         // Skip sync if UI is open
-        if (isLinkUIOpen || isColorUIOpen || isFontUIOpen) return;
+        if (isLinkUIOpen || isColorUIOpen || isFontUIOpen || isFontSizeUIOpen) return;
 
         // Skip sync if we just performed an internal update (to avoid race with stale props)
         if (isInternalUpdate.current) {
@@ -366,6 +372,22 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         editorRef.current?.focus();
     };
 
+    const applyFontSize = (sizeInPt: number) => {
+        const MARKER = '--fsize--';
+        document.execCommand('fontName', false, MARKER);
+        if (editorRef.current) {
+            editorRef.current.querySelectorAll(`font[face="${MARKER}"]`).forEach(el => {
+                const span = document.createElement('span');
+                span.style.fontSize = `${sizeInPt}pt`;
+                while (el.firstChild) span.appendChild(el.firstChild);
+                el.parentNode?.replaceChild(span, el);
+            });
+            onChange(editorRef.current.innerHTML);
+        }
+        setIsFontSizeUIOpen(false);
+        editorRef.current?.focus();
+    };
+
     const insertTable = () => {
         const tableHtml = `
             <table style="border-collapse: collapse; width: 100%; border: 1px solid hsl(var(--color-border)); margin: 12px 0;">
@@ -542,7 +564,8 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             }
             setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
         } },
-        { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsFontSizeUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
+        { id: 'fontSize', text: '8', label: 'Font Size', action: () => { setIsFontSizeUIOpen(!isFontSizeUIOpen); setIsFontUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
         { type: 'separator' },
         { id: 'bold', icon: Bold, label: 'Bold', action: () => exec('bold') },
         { id: 'italic', icon: Italic, label: 'Italic', action: () => exec('italic') },
@@ -610,9 +633,9 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                     }
 
                     const Icon = tool.icon as any;
-                    const isDropdown = tool.id === 'type' || tool.id === 'color' || tool.id === 'font';
-                    const isActive = (tool.id === 'color' && isColorUIOpen) || (tool.id === 'type' && isTypeUIOpen) || (tool.id === 'font' && isFontUIOpen);
-                    const isWide = tool.id === 'type' || tool.id === 'font';
+                    const isDropdown = tool.id === 'type' || tool.id === 'color' || tool.id === 'font' || tool.id === 'fontSize';
+                    const isActive = (tool.id === 'color' && isColorUIOpen) || (tool.id === 'type' && isTypeUIOpen) || (tool.id === 'font' && isFontUIOpen) || (tool.id === 'fontSize' && isFontSizeUIOpen);
+                    const isWide = tool.id === 'type' || tool.id === 'font' || tool.id === 'fontSize';
                     return (
                         <div key={tool.id} style={{ position: 'relative' }}>
                             <button
@@ -727,6 +750,49 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                         >
                                             {font.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Font Size Picker Popover */}
+                            {tool.id === 'fontSize' && isFontSizeUIOpen && (
+                                <div className="editor-popover" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                                    border: '1px solid hsl(var(--color-border))',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    zIndex: 10002,
+                                    padding: '4px',
+                                    width: '72px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    maxHeight: '260px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {FONT_SIZES.map(size => (
+                                        <button
+                                            key={size}
+                                            onClick={(e) => { e.preventDefault(); applyFontSize(size); }}
+                                            style={{
+                                                padding: '5px 12px',
+                                                textAlign: 'left',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'hsl(var(--color-text-primary))',
+                                                borderRadius: '4px',
+                                                fontSize: '13px',
+                                                fontWeight: size === 8 ? 700 : 400
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {size}
                                         </button>
                                     ))}
                                 </div>

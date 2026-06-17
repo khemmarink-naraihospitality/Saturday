@@ -36,16 +36,14 @@ Deno.serve(async (req) => {
 
     const { boardTitle, period, columns, groups } = await req.json() as RequestBody;
 
-    // Build a readable text block of board activity for the prompt
     const lines: string[] = [];
     for (const group of groups) {
       if (group.items.length === 0) continue;
-      lines.push(`[กลุ่ม: ${group.title}]`);
+      lines.push(`[Group: ${group.title}]`);
       for (const item of group.items) {
-        const statusPart = item.statusLabel ? ` | สถานะ: ${item.statusLabel}` : '';
+        const statusPart = item.statusLabel ? ` | Status: ${item.statusLabel}` : '';
         lines.push(`  • ${item.title}${statusPart}`);
         for (const upd of item.updates) {
-          // Strip HTML tags for cleaner text
           const text = upd.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
           if (text) lines.push(`    → ${text}`);
         }
@@ -89,7 +87,7 @@ Write the summary as one clear paragraph suitable for an executive report. Be co
 
     const geminiData = await geminiRes.json();
     const summary: string =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'ไม่สามารถสร้างสรุปได้';
+      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Could not generate summary.';
 
     return new Response(JSON.stringify({ summary }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

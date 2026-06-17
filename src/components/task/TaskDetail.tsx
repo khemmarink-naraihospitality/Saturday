@@ -32,6 +32,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     // Reply State
     const [replyingToId, setReplyingToId] = useState<string | null>(null);
     const [replyDraft, setReplyDraft] = useState('');
+    const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
     // File Tab State
     const [fileUrl, setFileUrl] = useState('');
@@ -775,21 +776,55 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             {/* Like / Reply action bar — top-level only */}
                                             {depth === 0 && editingUpdateId !== update.id && (
                                                 <>
+                                                    {/* Like count badge — only visible when liked */}
+                                                    {likedIds.has(update.id) && (
+                                                        <div style={{ marginTop: '10px' }}>
+                                                            <span style={{
+                                                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                                backgroundColor: '#FFF8DC',
+                                                                border: '1px solid #F0C040',
+                                                                borderRadius: '20px',
+                                                                padding: '2px 10px',
+                                                                fontSize: '13px', fontWeight: 600,
+                                                                color: '#5A4A00',
+                                                                cursor: 'pointer', userSelect: 'none'
+                                                            }}
+                                                                onClick={() => setLikedIds(prev => { const n = new Set(prev); n.delete(update.id); return n; })}
+                                                            >
+                                                                👍 1
+                                                            </span>
+                                                        </div>
+                                                    )}
+
                                                     <div style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         gap: '2px',
-                                                        marginTop: '12px',
-                                                        paddingTop: '10px',
+                                                        marginTop: likedIds.has(update.id) ? '8px' : '12px',
+                                                        paddingTop: '8px',
                                                         borderTop: '1px solid hsl(var(--color-border))'
                                                     }}>
+                                                        {/* Like button */}
                                                         <button
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                            onClick={() => setLikedIds(prev => {
+                                                                const n = new Set(prev);
+                                                                if (n.has(update.id)) { n.delete(update.id); } else { n.add(update.id); }
+                                                                return n;
+                                                            })}
+                                                            style={{
+                                                                display: 'flex', alignItems: 'center', gap: '5px',
+                                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                                color: likedIds.has(update.id) ? '#D4A000' : 'hsl(var(--color-text-secondary))',
+                                                                fontSize: likedIds.has(update.id) ? '18px' : '13px',
+                                                                padding: '4px 10px', borderRadius: '4px', fontWeight: 500,
+                                                                lineHeight: 1
+                                                            }}
+                                                            onMouseEnter={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
+                                                            onMouseLeave={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'transparent'; }}
                                                         >
-                                                            👍 Like
+                                                            {likedIds.has(update.id) ? '👍' : <><span>👍</span><span>Like</span></>}
                                                         </button>
+
                                                         <button
                                                             onClick={() => { setReplyingToId(replyingToId === update.id ? null : update.id); setReplyDraft(''); }}
                                                             style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: replyingToId === update.id ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}

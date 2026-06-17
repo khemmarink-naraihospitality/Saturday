@@ -951,7 +951,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 style={{
                     minHeight: '120px',
                     padding: '16px',
-                    fontSize: '14px',
+                    fontSize: '11px',
                     outline: 'none',
                     lineHeight: '1.5',
                     color: 'hsl(var(--color-text-primary))' // Dark mode fix

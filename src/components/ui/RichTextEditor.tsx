@@ -372,7 +372,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         editorRef.current?.focus();
     };
 
-    const applyFontSize = (sizeInPt: number) => {
+    const applyFontSize = (sizePx: number) => {
         // Restore selection that was saved when the dropdown was opened
         const selection = window.getSelection();
         if (savedSelection && selection) {
@@ -385,7 +385,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         if (editorRef.current) {
             editorRef.current.querySelectorAll(`font[face="${MARKER}"]`).forEach(el => {
                 const span = document.createElement('span');
-                span.style.fontSize = `${sizeInPt}pt`;
+                span.style.fontSize = `${sizePx}px`;
                 while (el.firstChild) span.appendChild(el.firstChild);
                 el.parentNode?.replaceChild(span, el);
             });
@@ -573,7 +573,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
         } },
         { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsFontSizeUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
-        { id: 'fontSize', text: '8', label: 'Font Size', action: () => {
+        { id: 'fontSize', text: '11', label: 'Font Size', action: () => {
             const selection = window.getSelection();
             if (selection && selection.rangeCount > 0) {
                 setSavedSelection(selection.getRangeAt(0).cloneRange());
@@ -802,7 +802,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                                                 color: 'hsl(var(--color-text-primary))',
                                                 borderRadius: '4px',
                                                 fontSize: '13px',
-                                                fontWeight: size === 8 ? 700 : 400
+                                                fontWeight: size === 11 ? 700 : 400
                                             }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}

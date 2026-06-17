@@ -133,6 +133,15 @@ export const createBoardSlice: StateCreator<
         } else {
             set({ isSyncing: true, error: null, isInitializing: true });
         }
+
+        // Safety timeout: force-release loading screen after 15s to prevent infinite spinner
+        const timeoutId = setTimeout(() => {
+            if (get().isLoading) {
+                console.warn('[Store] loadUserData timeout — releasing loading state');
+                set({ isLoading: false, isInitializing: false, isSyncing: false });
+            }
+        }, 15000);
+
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
@@ -291,6 +300,7 @@ export const createBoardSlice: StateCreator<
             console.error(e);
             set({ error: (e as Error).message, isLoading: false, isSyncing: false, isInitializing: false });
         } finally {
+            clearTimeout(timeoutId);
             set({ isSyncing: false, isInitializing: false });
         }
     },

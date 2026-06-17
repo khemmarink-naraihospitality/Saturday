@@ -209,7 +209,10 @@ function MainApp() {
         loadUserData();
       };
 
-      initUser();
+      initUser().catch((err) => {
+        console.error('[App] initUser failed, releasing loading state:', err);
+        useBoardStore.setState({ isLoading: false, isInitializing: false } as any);
+      });
     } else if (!session) {
       // Handle logout - clear all state
       console.log('MainApp: session cleared (logged out)');

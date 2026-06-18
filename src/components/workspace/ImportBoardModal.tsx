@@ -658,8 +658,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         if (!firstVal && !secondVal) return;
 
                         if (!currentGroup) {
-                            currentGroup = { title: 'Imported Group', color: '#579bfc', items: [] };
+                            currentGroup = { title: sheetName, color: palette[groupCount % palette.length], items: [] };
                             groups.push(currentGroup);
+                            groupCount++;
                         }
 
                         const itemValues: Record<string, any> = {};

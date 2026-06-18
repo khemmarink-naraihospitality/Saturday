@@ -447,9 +447,19 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         return s === 'status' || s === 'champion' || s === 'owner' || s === 'person' || s === 'subitems';
                     }));
 
+                    // 🔗 Monday.com export marker: column C on the first-group row always reads
+                    // "Try it free →". This is more reliable than font-color detection (which can
+                    // silently fail), so use it to pin down the exact row that holds the first group name.
+                    const normalizeMark = (s: any) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+                    const tryFreeRowIdx = rows.findIndex((r, idx) =>
+                        idx < 5 && Array.isArray(r) && normalizeMark(r[2]).includes('tryitfree')
+                    );
+
                     const row1Values = rows[1]?.filter((v: any) => v !== undefined && v !== '');
-                    const hasNoDescription = coloredGroupRows.has(1) || 
-                                           (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40);
+                    const hasNoDescription = tryFreeRowIdx !== -1
+                        ? tryFreeRowIdx <= 1
+                        : (coloredGroupRows.has(1) ||
+                           (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40));
 
                     const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
 
@@ -546,6 +556,17 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         const isFirstNumericId = itemIdIdx === 0 && /^\d+$/.test(String(firstVal || ''));
                         // Group name lives in col A normally, or col B when col A is empty/numeric-ID
                         const groupNameCandidate = (!firstVal || isFirstNumericId) && secondVal ? secondVal : (firstVal || '');
+
+                        // 2.5 "Try it free" marker row = definitive first-group row (overrides color/fallback detection)
+                        if (tryFreeRowIdx !== -1 && rIdx === tryFreeRowIdx) {
+                            const groupColor = coloredGroupRows.get(rIdx) || palette[groupCount % palette.length];
+                            currentGroup = { title: groupNameCandidate || 'Group 1', color: groupColor, items: [] };
+                            groups.push(currentGroup);
+                            groupCount++;
+                            currentMainItem = null;
+                            isInsideSubitems = false;
+                            return;
+                        }
 
                         // 3. Handle 'Subitems' or 'Name' header rows
                         // 🧠 Skip any row that looks like a header (starting with Name, Item, or Subitems)

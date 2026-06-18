@@ -48,6 +48,7 @@ export interface BoardSlice {
     importExcelBoard: (
         data: {
             title: string;
+            description?: string;
             groups: { title: string; color: string; items: any[] }[];
             columns: { title: string; type: ColumnType; options?: any[] }[];
         }
@@ -773,6 +774,7 @@ export const createBoardSlice: StateCreator<
             id: boardId,
             workspace_id: activeWorkspaceId,
             title: data.title,
+            description: data.description || null,
             order: boards.length
         });
         if (boardErr) throw new Error(`Board creation failed: ${boardErr.message}`);

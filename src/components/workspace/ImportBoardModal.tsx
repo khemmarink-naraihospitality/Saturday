@@ -461,6 +461,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         : (coloredGroupRows.has(1) ||
                            (row1Values?.length === 1 && headerRowIdx === 2 && String(row1Values[0]).length < 40));
 
+                    // Row 1 (between the title and the first group) holds the board description, when present
+                    const boardDescription = !hasNoDescription ? String(rows[1]?.[0] || '').trim() : '';
+
                     const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
 
                     let dynamicColumns: any[] = [];
@@ -844,13 +847,14 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }
 
-                    filePreviews.push({ 
+                    filePreviews.push({
                         id: `${file.name}-${sheetName}`,
                         fileName: file.name,
-                        title: sheetName, 
-                        groups, 
-                        columns, 
-                        updatesMap 
+                        title: sheetName,
+                        description: boardDescription,
+                        groups,
+                        columns,
+                        updatesMap
                     });
                 });
 
@@ -880,6 +884,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
             for (const preview of selectedPreviews) {
                 await importExcelBoard({
                     title: preview.title,
+                    description: preview.description,
                     groups: preview.groups,
                     columns: preview.columns
                 });

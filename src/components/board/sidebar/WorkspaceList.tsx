@@ -18,6 +18,7 @@ import {
 
 import { useBoardStore } from '../../../store/useBoardStore';
 import { useUserStore } from '../../../store/useUserStore';
+import { showToast } from '../../../utils/toast';
 import { ConfirmModal } from '../../ui/ConfirmModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
 import { ShareBoardModal } from '../../workspace/ShareBoardModal';
@@ -405,7 +406,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                             onSubmit={(e) => {
                                                 e.preventDefault();
                                                 if (newSubWorkspaceTitle.trim()) {
-                                                    addSubWorkspace(ws.id, newSubWorkspaceTitle);
+                                                    addSubWorkspace(ws.id, newSubWorkspaceTitle).catch((err) => {
+                                                        showToast(err?.message || 'Failed to create sub workspace', 'error');
+                                                    });
                                                     setNewSubWorkspaceTitle('');
                                                     setCreatingSubWorkspaceInId(null);
                                                 }
@@ -422,7 +425,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                                 onChange={(e) => setNewSubWorkspaceTitle(e.target.value)}
                                                 onBlur={() => {
                                                     if (newSubWorkspaceTitle.trim()) {
-                                                        addSubWorkspace(ws.id, newSubWorkspaceTitle);
+                                                        addSubWorkspace(ws.id, newSubWorkspaceTitle).catch((err) => {
+                                                            showToast(err?.message || 'Failed to create sub workspace', 'error');
+                                                        });
                                                         setNewSubWorkspaceTitle('');
                                                     }
                                                     setCreatingSubWorkspaceInId(null);

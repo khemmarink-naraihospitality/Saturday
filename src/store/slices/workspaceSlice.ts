@@ -442,7 +442,31 @@ export const createWorkspaceSlice: StateCreator<
             .eq('workspace_id', workspaceId);
 
         if (error) throw error;
-        return data || [];
+        const members = data || [];
+
+        // Ownership is tracked via workspaces.owner_id and doesn't always have a matching
+        // workspace_members row (e.g. workspaces created before that linkage existed, or a
+        // transfer target who was never separately invited) — synthesize one so the owner
+        // is never silently missing from the members list.
+        const ownerId = get().workspaces.find(w => w.id === workspaceId)?.owner_id;
+        if (ownerId && !members.some((m: any) => m.user_id === ownerId)) {
+            const { data: ownerProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', ownerId)
+                .single();
+            if (ownerProfile) {
+                members.unshift({
+                    id: `owner-${ownerId}`,
+                    user_id: ownerId,
+                    workspace_id: workspaceId,
+                    role: 'owner',
+                    profiles: ownerProfile
+                });
+            }
+        }
+
+        return members;
     },
 
     transferWorkspaceOwnership: async (workspaceId, newOwnerUserId) => {

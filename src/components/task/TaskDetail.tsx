@@ -629,7 +629,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                     src={avatarUrl}
                                                                     alt=""
                                                                     referrerPolicy="no-referrer"
-                                                                    style={{ width: size, height: size, borderRadius: '0px', objectFit: 'cover', flexShrink: 0 }}
+                                                                    style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                                                                 />
                                                             );
                                                         }
@@ -637,7 +637,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                             <div style={{
                                                                 width: size,
                                                                 height: size,
-                                                                borderRadius: '0px', // Narai Sharp Corners
+                                                                borderRadius: '50%',
                                                                 backgroundColor: update.author.toLowerCase().includes('lubd') ? '#1a1728' : (update.contentType === 'Reply' ? '#2563eb' : '#00c875'),
                                                                 color: 'white',
                                                                 display: 'flex',
@@ -928,7 +928,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     {replyingToId === update.id && (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
                                                             <div style={{
-                                                                width: '32px', height: '32px', borderRadius: '0px',
+                                                                width: '32px', height: '32px', borderRadius: '50%',
                                                                 backgroundColor: currentUser.name?.toLowerCase().includes('lubd') ? '#1a1728' : '#00c875',
                                                                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                 fontSize: '13px', fontWeight: 700, flexShrink: 0, fontFamily: 'serif'

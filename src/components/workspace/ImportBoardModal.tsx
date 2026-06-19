@@ -181,19 +181,24 @@ const getCellFontColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | 
     return `#${hex}`;
 };
 
-// Helper to extract background color from an Excel cell (Fill color)
+// Helper to extract background color from an Excel cell (Fill color).
+// SheetJS can represent a cell's fill either nested (cell.s.fill.fgColor) or, depending on
+// the file/parsing path, flattened directly on cell.s (cell.s.fgColor) — check both shapes,
+// mirroring how getCellFontColor already does for font color.
 const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | null => {
     const cell = worksheet[cellRef];
-    if (!cell || !cell.s || !cell.s.fill) return null;
+    if (!cell || !cell.s) return null;
     const s = cell.s as any;
-    
-    // 1. Check for explicit RGB color in fgColor (Foreground of the pattern, i.e., the background color we see)
-    let rgb = s?.fill?.fgColor?.rgb || s?.fill?.bgColor?.rgb;
-    
+
+    // 1. Check for explicit RGB color (nested under .fill, or flattened directly on the style)
+    const fgColorObj = s?.fill?.fgColor || s?.fgColor;
+    const bgColorObj = s?.fill?.bgColor || s?.bgColor;
+    let rgb = fgColorObj?.rgb || bgColorObj?.rgb;
+
     // 2. Fallback to common Theme colors if RGB is missing
-    if (!rgb && s?.fill?.fgColor?.theme !== undefined) {
-        const theme = s.fill.fgColor.theme;
-        
+    if (!rgb && fgColorObj?.theme !== undefined) {
+        const theme = fgColorObj.theme;
+
         // Common monday.com theme colors
         if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Blue
         if (theme === 6) rgb = 'e2445c'; // Red
@@ -202,8 +207,17 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
         if (theme === 9) rgb = 'a25ddc'; // Purple
     }
 
+    // 3. Fallback to Indexed colors
+    if (!rgb && fgColorObj?.indexed !== undefined) {
+        const indexMap: Record<number, string> = {
+            2: 'e2445c', 3: '00c875', 4: '579bfc', 5: 'ff9800',
+            6: 'a25ddc', 8: 'e2445c', 10: 'e2445c', 11: '00c875', 12: '579bfc'
+        };
+        if (indexMap[fgColorObj.indexed]) rgb = indexMap[fgColorObj.indexed];
+    }
+
     if (!rgb) return null;
-    
+
     // Strip alpha prefix if present (AARRGGBB → RRGGBB)
     const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
     if (hex.toLowerCase() === 'ffffff' || hex.toLowerCase() === '000000') return null;

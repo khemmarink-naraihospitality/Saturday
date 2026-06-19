@@ -776,6 +776,11 @@ export const createBoardSlice: StateCreator<
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
+        // Collapses whitespace (incl. non-breaking spaces) so a status label survives
+        // matching even if the source Excel cell has stray/odd whitespace around it.
+        const normalizeLabel = (s: any): string =>
+            String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+
         // 1. Create a new board
         const boardId = uuidv4();
         const { error: boardErr } = await supabase.from('boards').insert({
@@ -825,7 +830,7 @@ export const createBoardSlice: StateCreator<
                     if (col) {
                         if (col.type === 'status' && col.options) {
                             const matchedOption = (col.options as any[]).find(opt =>
-                                opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
+                                normalizeLabel(opt.label) === normalizeLabel(val)
                             );
                             itemValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
                         } else {
@@ -857,7 +862,7 @@ export const createBoardSlice: StateCreator<
                                         subValues[col.id] = val || null;
                                     } else {
                                         const matchedOption = (col.options as any[]).find(opt =>
-                                            opt.label?.trim().toLowerCase() === (val as string)?.trim().toLowerCase()
+                                            normalizeLabel(opt.label) === normalizeLabel(val)
                                         );
                                         subValues[col.id] = matchedOption ? matchedOption.id : 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4';
                                     }

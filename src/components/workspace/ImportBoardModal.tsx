@@ -210,6 +210,53 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
     return `#${hex}`;
 };
 
+// Escapes HTML-significant characters so raw cell text can be safely inserted into HTML.
+const escapeHtml = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Extracts a hex color from a rich-text run's style object (cell.r[i].s — a per-character
+// run style, shaped differently from a whole-cell style's cell.s.font.color).
+const getRunColor = (s: any): string | null => {
+    if (!s) return null;
+    let rgb = s.color?.rgb;
+    if (!rgb && s.color?.theme !== undefined) {
+        const theme = s.color.theme;
+        if (theme === 4 || theme === 5 || theme === 1) rgb = '579bfc'; // Blue
+        if (theme === 6) rgb = 'e2445c'; // Red
+        if (theme === 7) rgb = 'fdab3d'; // Orange
+        if (theme === 8) rgb = '00c875'; // Green
+    }
+    if (!rgb && s.color?.indexed !== undefined) {
+        const indexMap: Record<number, string> = {
+            2: 'e2445c', 3: '00c875', 4: '579bfc', 5: 'ff9800',
+            6: 'a25ddc', 8: 'e2445c', 10: 'e2445c', 11: '00c875', 12: '579bfc'
+        };
+        if (indexMap[s.color.indexed]) rgb = indexMap[s.color.indexed];
+    }
+    if (!rgb) return null;
+    const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
+    if (hex.toLowerCase() === '000000') return null; // Black is the default text color anyway
+    return `#${hex}`;
+};
+
+// Rebuilds a cell's per-run colors and hyperlink (if any) as HTML, so an imported Update
+// keeps the exact coloring/links it had in the source Excel file instead of losing them
+// when the cell is flattened to plain text.
+const cellRichContentToHtml = (cell: any): string | null => {
+    if (!cell || !Array.isArray(cell.r) || cell.r.length === 0) return null;
+
+    const runsHtml = cell.r.map((run: any) => {
+        const text = escapeHtml(String(run.t ?? '')).replace(/\n/g, '<br>');
+        const color = getRunColor(run.s);
+        return color ? `<span style="color:${color}">${text}</span>` : text;
+    }).join('');
+
+    const href = cell.l?.Target;
+    return href
+        ? `<a href="${String(href).replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer">${runsHtml}</a>`
+        : runsHtml;
+};
+
 // Converts plain-text Update content (from Monday.com Excel export) to HTML.
 // Preserves newlines, converts basic markdown syntax, and leaves existing HTML untouched.
 const richifyUpdateContent = (raw: string): string => {
@@ -403,6 +450,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     // raw:false → dates come back as their displayed text (incl. time-of-day),
                     // so parseUpdateDateTime can preserve the exact timestamp instead of a serial.
                     const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1, raw: false });
+                    // sheet_to_json's row index is 0-based from the sheet's used range, which may not
+                    // start at row 0 — offset by the range's start row when addressing raw cells directly.
+                    const uRangeStartRow = XLSX.utils.decode_range(workbook.Sheets[updatesSheet]['!ref'] || 'A1').s.r;
                     
                     // 🔍 Robust Header Detection for Updates Sheet
                     let uHeaderRowIdx = uRows.findIndex(r => Array.isArray(r) && r.some(c => {
@@ -453,7 +503,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         // forward by 7 hours after parsing.
                         const dateObj = new Date(parseUpdateDateTime(createdAtRaw).getTime() + 7 * 60 * 60 * 1000);
 
-                        const content = richifyUpdateContent(String(uRow[colIdx.content] || '').trim());
+                        // Prefer the cell's actual rich-text runs (per-character color + hyperlink)
+                        // when present, since sheet_to_json flattens them to a colorless plain string.
+                        const contentCellRef = XLSX.utils.encode_cell({ r: uRangeStartRow + uIdx, c: colIdx.content });
+                        const contentCell = workbook.Sheets[updatesSheet][contentCellRef];
+                        const richContent = cellRichContentToHtml(contentCell);
+                        const content = richContent ?? richifyUpdateContent(String(uRow[colIdx.content] || '').trim());
 
                         const contentTypeRaw = contentTypeIndices
                             .map(idx => String(uRow[idx] || '').trim())

@@ -95,6 +95,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const emojiButtonRef = useRef<HTMLButtonElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const gifButtonRef = useRef<HTMLButtonElement>(null);
+    const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Edit mode action bar state
     const [showEditEmojiPanel, setShowEditEmojiPanel] = useState(false);
@@ -108,6 +109,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const editEmojiButtonRef = useRef<HTMLButtonElement>(null);
     const editEmojiPickerRef = useRef<HTMLDivElement>(null);
     const editGifButtonRef = useRef<HTMLButtonElement>(null);
+
+    // Auto-grow the item title textarea up to 2 lines as content changes
+    useEffect(() => {
+        const el = titleTextareaRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${Math.min(el.scrollHeight, 64)}px`;
+    }, [activeItem?.title]);
 
     useEffect(() => {
         if (!showEmojiPanel) return;
@@ -343,24 +352,33 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                             gap: '8px'
                         }}>
 
-                            <input
+                            <textarea
+                                ref={titleTextareaRef}
                                 value={activeItem.title}
                                 onChange={(e) => updateItemTitle(itemId, e.target.value, false)}
                                 onBlur={(e) => updateItemTitle(itemId, e.target.value, true)} // Log only on blur
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
+                                        e.preventDefault(); // Title is single-field; Enter commits instead of inserting a newline
                                         updateItemTitle(itemId, activeItem.title, true); // Log on Enter
                                         e.currentTarget.blur();
                                     }
                                 }}
+                                rows={1}
                                 style={{
                                     border: 'none',
                                     background: 'transparent',
+                                    fontFamily: 'inherit',
                                     fontSize: 'inherit',
                                     fontWeight: 'inherit',
+                                    lineHeight: '1.3',
                                     width: '100%',
                                     outline: 'none',
-                                    color: 'inherit'
+                                    color: 'inherit',
+                                    resize: 'none',
+                                    overflow: 'hidden',
+                                    maxHeight: '64px',
+                                    display: 'block'
                                 }}
                             />
                         </h2>

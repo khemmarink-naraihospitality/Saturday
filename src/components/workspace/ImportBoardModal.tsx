@@ -603,6 +603,10 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             let colType = 'text';
                             if (text.includes('status') || text.includes('complete') || text.includes('approved') || text.includes('sent')) {
                                 colType = 'status';
+                            } else if (text === 'dropdown' || text.includes('dropdown')) {
+                                colType = 'dropdown';
+                            } else if (text === 'checkbox' || text.includes('checkbox')) {
+                                colType = 'checkbox';
                             } else if (text.includes('file') || text.includes('quote')) {
                                 colType = 'files';
                             } else if (text.includes('cost') || text.includes('budget') || text.includes('number') || text.includes('amount')) {
@@ -610,7 +614,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             } else if (text === 'date' || text.includes(' date')) {
                                 colType = 'date';
                             } else if (text.includes('timeline')) {
-                                colType = 'timeline'; 
+                                colType = 'timeline';
                             }
 
                             const colDef: any = { title: headerText, type: colType, originalIndex: idx, subIndex: idx, options: [] };
@@ -703,6 +707,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         // Create NEW column for subitems
                                         let cType = 'text';
                                         if (shLower.includes('status') || shLower.includes('complete')) cType = 'status';
+                                        else if (shLower.includes('dropdown')) cType = 'dropdown';
+                                        else if (shLower.includes('checkbox')) cType = 'checkbox';
                                         else if (shLower.includes('file')) cType = 'files';
                                         // person/owner/responsible from Monday → text (stores names, not Saturday user IDs)
                                         else if (shLower.includes('cost') || shLower.includes('budget') || shLower.includes('number')) cType = 'number';
@@ -851,6 +857,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                     // Hybrid mapping trick
                                     const possibleDate = parseDate(rawVal);
                                     itemValues[c.title] = possibleDate || rawVal || '';
+                                } else if (c.type === 'dropdown') {
+                                    // Multi-select: split comma-separated labels into an array
+                                    itemValues[c.title] = String(rawVal || '')
+                                        .split(',').map(v => v.trim()).filter(Boolean);
+                                } else if (c.type === 'checkbox') {
+                                    const v = String(rawVal || '').trim().toLowerCase();
+                                    itemValues[c.title] = ['v', 'x', 'yes', 'true', '1', 'checked', '✓', '✔'].includes(v);
                                 } else {
                                     itemValues[c.title] = rawVal?.toString() || '';
                                 }
@@ -926,6 +939,26 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 id: label === 'Default' ? 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4' : Math.random().toString(36).substring(7),
                                 label,
                                 color
+                            }));
+                        } else if (c.type === 'dropdown') {
+                            // Dropdown cells can hold multiple comma-separated labels (Monday multi-select export)
+                            const dropdownPalette = ['#579bfc', '#a25ddc', '#00c875', '#fdab3d', '#e2445c', '#66ccff', '#9d50dd', '#037f4c'];
+                            const labels = new Set<string>();
+
+                            rows.forEach(row => {
+                                const dIdx = c.originalIndex !== -1 ? c.originalIndex : c.subIndex;
+                                if (dIdx === -1 || dIdx === undefined) return;
+
+                                const val = String(row[dIdx] || '').trim();
+                                if (!val || val.toLowerCase() === 'subitems' || val.toLowerCase() === 'name' || val.toLowerCase() === 'item') return;
+
+                                val.split(',').map(v => v.trim()).filter(Boolean).forEach(v => labels.add(v));
+                            });
+
+                            c.options = Array.from(labels).map((label, idx) => ({
+                                id: Math.random().toString(36).substring(7),
+                                label,
+                                color: dropdownPalette[idx % dropdownPalette.length]
                             }));
                         }
                     });

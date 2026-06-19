@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown } from 'lucide-react';
+import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
@@ -83,9 +83,22 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
     const [editUpdateContent, setEditUpdateContent] = useState<string>('');
 
-    // Reply State
-    const [replyingToId, setReplyingToId] = useState<string | null>(null);
-    const [replyDraft, setReplyDraft] = useState<string>('');
+    // Reply State — every top-level update shows its own always-visible reply box
+    // (Monday.com style), so drafts/files/popovers are keyed by the parent update's id
+    // rather than a single shared field.
+    const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+    const [replyFiles, setReplyFiles] = useState<Record<string, FileLink[]>>({});
+    const [replyActiveUrlId, setReplyActiveUrlId] = useState<string | null>(null);
+    const [replyAttachUrl, setReplyAttachUrl] = useState('');
+    const [replyAttachError, setReplyAttachError] = useState<string | null>(null);
+    const [replyActiveGifId, setReplyActiveGifId] = useState<string | null>(null);
+    const [replyGifPickerPos, setReplyGifPickerPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
+    const [replyActiveEmojiId, setReplyActiveEmojiId] = useState<string | null>(null);
+    const [replyEmojiPickerPos, setReplyEmojiPickerPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
+    const [replyEmojiSearch, setReplyEmojiSearch] = useState('');
+    const replyEmojiButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const replyGifButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const replyEmojiPickerRef = useRef<HTMLDivElement>(null);
     const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
     // File Tab State
@@ -140,6 +153,19 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [showEmojiPanel]);
+
+    useEffect(() => {
+        if (!replyActiveEmojiId) return;
+        const handler = (e: MouseEvent) => {
+            const btn = replyEmojiButtonRefs.current[replyActiveEmojiId];
+            if (replyEmojiPickerRef.current && !replyEmojiPickerRef.current.contains(e.target as Node) &&
+                btn && !btn.contains(e.target as Node)) {
+                setReplyActiveEmojiId(null);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [replyActiveEmojiId]);
 
     useEffect(() => {
         if (!showEditEmojiPanel) return;

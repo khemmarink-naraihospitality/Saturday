@@ -60,12 +60,23 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const editUpdate = useBoardStore(state => state.editUpdate);
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
+    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
 
     // Global Draft State (Persistence)
     const draftText = useBoardStore(state => state.drafts[itemId] || '');
     const setDraft = useBoardStore(state => state.setDraft);
 
     const { currentUser } = useUserStore();
+
+    // Resolve a post author's real profile picture: board members first, falling back
+    // to the signed-in user's own avatar when the post is theirs (e.g. just-created updates).
+    const getAuthorAvatarUrl = (userId?: string): string | null => {
+        if (!userId) return null;
+        const member = activeBoardMembers.find((m: any) => m.user_id === userId);
+        if (member?.profiles?.avatar_url) return member.profiles.avatar_url;
+        if (userId === currentUser.id && currentUser.avatar?.startsWith('http')) return currentUser.avatar;
+        return null;
+    };
 
     const [activeTab, setActiveTab] = useState<'updates' | 'files'>('updates');
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -607,22 +618,38 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                         }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div style={{
-                                                        width: depth === 0 ? '40px' : '32px',
-                                                        height: depth === 0 ? '40px' : '32px',
-                                                        borderRadius: '0px', // Narai Sharp Corners
-                                                        backgroundColor: update.author.toLowerCase().includes('lubd') ? '#1a1728' : (update.contentType === 'Reply' ? '#2563eb' : '#00c875'),
-                                                        color: 'white',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: depth === 0 ? '16px' : '12px',
-                                                        fontWeight: 700,
-                                                        flexShrink: 0,
-                                                        fontFamily: 'serif'
-                                                    }}>
-                                                        {update.author.charAt(0)}
-                                                    </div>
+                                                    {(() => {
+                                                        const avatarUrl = getAuthorAvatarUrl(update.userId);
+                                                        const size = depth === 0 ? '40px' : '32px';
+                                                        if (avatarUrl) {
+                                                            return (
+                                                                <img
+                                                                    src={avatarUrl}
+                                                                    alt=""
+                                                                    referrerPolicy="no-referrer"
+                                                                    style={{ width: size, height: size, borderRadius: '0px', objectFit: 'cover', flexShrink: 0 }}
+                                                                />
+                                                            );
+                                                        }
+                                                        return (
+                                                            <div style={{
+                                                                width: size,
+                                                                height: size,
+                                                                borderRadius: '0px', // Narai Sharp Corners
+                                                                backgroundColor: update.author.toLowerCase().includes('lubd') ? '#1a1728' : (update.contentType === 'Reply' ? '#2563eb' : '#00c875'),
+                                                                color: 'white',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: depth === 0 ? '16px' : '12px',
+                                                                fontWeight: 700,
+                                                                flexShrink: 0,
+                                                                fontFamily: 'serif'
+                                                            }}>
+                                                                {update.author.charAt(0)}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                     <div>
                                                         <div style={{ fontWeight: 700, fontSize: depth === 0 ? '15px' : '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#1a1728' }}>
                                                             {update.author}

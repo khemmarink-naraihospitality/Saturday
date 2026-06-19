@@ -311,6 +311,14 @@ export const createBoardSlice: StateCreator<
         localStorage.setItem('lastActiveBoardId', id || '');
 
         if (id) {
+            // Keep activeWorkspaceId in sync with whichever board is open, so actions that
+            // target "the current workspace" (e.g. Import) land in the right place even when
+            // the board was opened without first explicitly switching workspaces.
+            const board = get().boards.find(b => b.id === id);
+            if (board?.workspaceId && board.workspaceId !== get().activeWorkspaceId) {
+                set({ activeWorkspaceId: board.workspaceId });
+            }
+
             // FIRE AND FORGET: URL push removed here because App.tsx handles it with correct slugs
             // window.history.pushState(null, '', `/board/${id}`);
 

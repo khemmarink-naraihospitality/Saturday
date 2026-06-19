@@ -409,7 +409,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     }));
                     if (uHeaderRowIdx === -1) uHeaderRowIdx = 0; // Fallback to first row
 
-                    const uHeader = (uRows[uHeaderRowIdx] || []).map((h: any) => String(h || '').toLowerCase().trim());
+                    const uHeader: string[] = (uRows[uHeaderRowIdx] || []).map((h: any) => String(h || '').toLowerCase().trim());
                     
                     const colIdx = {
                         itemId: uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) !== -1

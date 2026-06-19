@@ -90,6 +90,7 @@ export interface Workspace {
     order: number;
     owner_id: string;
     ownerName?: string; // Transient property for UI
+    parentId?: string | null; // For sub-workspaces
 }
 
 

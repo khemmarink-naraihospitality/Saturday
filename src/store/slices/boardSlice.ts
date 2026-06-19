@@ -158,7 +158,7 @@ export const createBoardSlice: StateCreator<
                 { data: sharedWorkspacesData },
                 { data: userFavoritesData }
             ] = await Promise.all([
-                supabase.from('workspaces').select('id, title, order, owner_id').order('order'),
+                supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
@@ -276,7 +276,8 @@ export const createBoardSlice: StateCreator<
                     title: w.title,
                     order: w.order,
                     owner_id: w.owner_id,
-                    ownerName: ownerProfilesMap[w.owner_id] // Add ownerName
+                    ownerName: ownerProfilesMap[w.owner_id] || 'Unknown User',
+                    parentId: w.parent_id
                 })),
                 boards: fullBoards,
                 sharedBoardIds: sharedBoardsData?.map((r: any) => r.board_id) || [],

@@ -11,6 +11,7 @@ export interface WorkspaceSlice {
 
     // Actions
     addWorkspace: (title: string) => Promise<void>;
+    addSubWorkspace: (parentId: string, title: string) => Promise<void>;
     deleteWorkspace: (id: string) => Promise<void>;
     updateWorkspace: (id: string, title: string) => Promise<void>;
     setActiveWorkspace: (id: string) => void;
@@ -161,6 +162,134 @@ export const createWorkspaceSlice: StateCreator<
         } catch (err) {
             console.error('[AddWorkspace] Full Error context:', err);
             // Re-load to undo optimistic state if needed
+            await get().loadUserData(true);
+            throw err;
+        }
+    },
+
+    addSubWorkspace: async (parentId, title) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('[AddSubWorkspace] No authenticated user found');
+                return;
+            }
+            
+            const newWsId = uuidv4();
+            const { workspaces } = get();
+            const order = workspaces.filter(w => w.parentId === parentId).length;
+
+            const newWorkspace: Workspace = { id: newWsId, title, order, owner_id: user.id, parentId };
+            
+            // Optimistic update
+            set(state => ({
+                workspaces: [...state.workspaces, newWorkspace],
+                activeWorkspaceId: newWsId
+            }));
+
+            // 1. Create Workspace
+            const { error: wsError } = await supabase.from('workspaces').insert({ id: newWsId, title, owner_id: user.id, order, parent_id: parentId });
+            if (wsError) {
+                console.error('[AddSubWorkspace] Failed to create workspace row:', wsError);
+                throw wsError;
+            }
+
+            // Create Default Template for new Workspace
+            const boardId = uuidv4();
+            const groupId = uuidv4();
+            const itemId = uuidv4();
+
+            const defaultColumns: Column[] = [
+                {
+                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
+                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
+                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
+                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Stuck', color: '#e2445c' },
+                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
+                    ]
+                },
+                { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
+                { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
+                { id: uuidv4(), title: 'Timeline', type: 'timeline' as ColumnType, order: 3, width: 160 },
+                { id: uuidv4(), title: 'Date', type: 'date' as ColumnType, order: 4, width: 140 },
+                { id: uuidv4(), title: 'Text', type: 'text' as ColumnType, order: 5, width: 200 },
+            ];
+
+            const defaultGroups = [
+                { id: groupId, title: 'Getting Started', color: '#579bfc', order: 0 }
+            ];
+
+            const statusCol = defaultColumns[0];
+            const dateCol = defaultColumns[4];
+            const defaultValues = {
+                [statusCol.id]: statusCol.options?.[1].id, // 'Done'
+                [dateCol.id]: new Date().toISOString().split('T')[0]
+            };
+
+            const newItem: Item = {
+                id: itemId,
+                title: 'My First Task',
+                boardId: boardId,
+                groupId: groupId,
+                values: defaultValues,
+                order: 0,
+                updates: []
+            };
+
+            const newBoard: Board = {
+                id: boardId,
+                workspaceId: newWsId,
+                title: 'Starting Board',
+                columns: defaultColumns,
+                groups: defaultGroups.map(g => ({ ...g, items: [newItem] })),
+                items: [newItem],
+                itemColumnTitle: 'Item',
+                itemColumnWidth: 350,
+                isDataLoaded: true
+            };
+
+            set(state => ({
+                boards: [...state.boards, newBoard],
+                activeBoardId: boardId
+            }));
+
+            // 2. Create Board
+            const { error: brdError } = await supabase.from('boards').insert({ id: boardId, workspace_id: newWsId, title: 'Starting Board', order: 0 });
+            if (brdError) {
+                console.error('[AddSubWorkspace] Failed to create default board:', brdError);
+                throw brdError;
+            }
+
+            // 3. Create Groups
+            const { error: grpError } = await supabase.from('groups').insert(defaultGroups.map(g => ({ id: g.id, board_id: boardId, title: g.title, color: g.color, order: g.order })));
+            if (grpError) console.error('[AddSubWorkspace] Group insertion error (non-fatal for UI):', grpError);
+
+            // 4. Create Columns
+            const { error: colError } = await supabase.from('columns').insert(defaultColumns.map(c => ({ id: c.id, board_id: boardId, title: c.title, type: c.type, order: c.order, width: c.width, options: c.options || [] })));
+            if (colError) console.error('[AddSubWorkspace] Column insertion error (non-fatal for UI):', colError);
+
+            // 5. Create Item
+            const { error: itemError } = await supabase.from('items').insert({
+                id: itemId,
+                board_id: boardId,
+                group_id: groupId,
+                title: 'My First Task',
+                values: defaultValues,
+                order: 0
+            });
+            if (itemError) console.error('[AddSubWorkspace] Item insertion error (non-fatal for UI):', itemError);
+
+            // 6. Create Board Member
+            const { error: memError } = await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
+            if (memError) console.error('[AddSubWorkspace] Board member creation error:', memError);
+
+            set(state => ({
+                userWorkspaceRoles: { ...state.userWorkspaceRoles, [newWsId]: 'owner' },
+                userBoardRoles: { ...state.userBoardRoles, [boardId]: 'owner' }
+            }));
+            
+        } catch (err) {
+            console.error('[AddSubWorkspace] Full Error context:', err);
             await get().loadUserData(true);
             throw err;
         }

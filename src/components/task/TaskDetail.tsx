@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
+import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown } from 'lucide-react';
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
@@ -83,9 +83,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
     const [editUpdateContent, setEditUpdateContent] = useState<string>('');
 
-    // Reply State — the reply box for every update is always visible (Monday.com style),
-    // so each update needs its own draft text rather than one shared field.
-    const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+    // Reply State
+    const [replyingToId, setReplyingToId] = useState<string | null>(null);
+    const [replyDraft, setReplyDraft] = useState<string>('');
     const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
     // File Tab State
@@ -962,10 +962,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white' }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', color: '#666' }}>
                                                                         <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '16px', color: '#666' }} title="Mention">@</span>
-                                                                        <Paperclip size={18} style={{ cursor: 'pointer', color: '#666' }} title="Attach File" />
+                                                                        <span title="Attach File" style={{ display: 'flex' }}><Paperclip size={18} style={{ cursor: 'pointer', color: '#666' }} /></span>
                                                                         <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '12px', letterSpacing: '0.03em', color: '#666' }} title="GIF">GIF</span>
                                                                         <span style={{ cursor: 'pointer', fontSize: '18px', color: '#666' }} title="Emoji">😊</span>
-                                                                        <Edit2 size={16} style={{ cursor: 'pointer', color: '#666' }} title="Rich Text" />
+                                                                        <span title="Rich Text" style={{ display: 'flex' }}><Edit2 size={16} style={{ cursor: 'pointer', color: '#666' }} /></span>
                                                                     </div>
                                                                     <div style={{ display: 'flex' }}>
                                                                         <button

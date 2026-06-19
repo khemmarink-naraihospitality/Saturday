@@ -214,8 +214,13 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
 // Preserves newlines, converts basic markdown syntax, and leaves existing HTML untouched.
 const richifyUpdateContent = (raw: string): string => {
     if (!raw) return '';
-    // Already HTML — leave as-is
-    if (/<[a-z][^>]*>/i.test(raw)) return raw;
+    // Already HTML — leave as-is, but strip any embedded <a> tags first. Monday.com
+    // sometimes embeds a permalink/mention as a hyperlink on the update's first line;
+    // left intact it would inherit blue/underlined link styling while the rest of the
+    // comment renders as plain black text, making the two look inconsistent.
+    if (/<[a-z][^>]*>/i.test(raw)) {
+        return raw.replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, '$1');
+    }
 
     // Handle \r\n (Windows), \r (old Mac), \n (Unix)
     const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');

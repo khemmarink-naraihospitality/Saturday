@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown } from 'lucide-react';
+import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
@@ -83,9 +83,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
     const [editUpdateContent, setEditUpdateContent] = useState<string>('');
 
-    // Reply State
-    const [replyingToId, setReplyingToId] = useState<string | null>(null);
-    const [replyDraft, setReplyDraft] = useState('');
+    // Reply State — the reply box for every update is always visible (Monday.com style),
+    // so each update needs its own draft text rather than one shared field.
+    const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
     const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
     // File Tab State
@@ -935,41 +935,62 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                             }}>
                                                                 {currentUser.name?.charAt(0) || '?'}
                                                             </div>
-                                                            <div style={{ flex: 1, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                                <input
-                                                                    type="text"
+                                                            <div style={{ 
+                                                                flex: 1, 
+                                                                border: '1px solid #0073ea', 
+                                                                borderRadius: '8px', 
+                                                                backgroundColor: 'white', 
+                                                                display: 'flex', 
+                                                                flexDirection: 'column', 
+                                                                overflow: 'hidden' 
+                                                            }}>
+                                                                <textarea
                                                                     value={replyDraft}
                                                                     onChange={(e) => setReplyDraft(e.target.value)}
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(update.id); }
                                                                         if (e.key === 'Escape') { setReplyingToId(null); setReplyDraft(''); }
                                                                     }}
-                                                                    placeholder="Write a reply and mention others with @"
+                                                                    placeholder="Write a reply..."
                                                                     autoFocus
                                                                     style={{
-                                                                        flex: 1, padding: '8px 14px',
-                                                                        border: '1px solid hsl(var(--color-border))',
-                                                                        borderRadius: '20px',
-                                                                        fontSize: '13px', outline: 'none',
-                                                                        backgroundColor: 'hsl(var(--color-bg-canvas))',
-                                                                        color: 'hsl(var(--color-text-primary))'
+                                                                        width: '100%', minHeight: '60px', padding: '12px',
+                                                                        border: 'none', resize: 'none', fontSize: '14px', outline: 'none',
+                                                                        backgroundColor: 'transparent', color: '#1f1f1f', fontFamily: 'inherit'
                                                                     }}
-                                                                    onFocus={(e) => e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary))'}
-                                                                    onBlur={(e) => e.currentTarget.style.borderColor = 'hsl(var(--color-border))'}
                                                                 />
-                                                                <button
-                                                                    onClick={() => handleSendReply(update.id)}
-                                                                    disabled={!replyDraft.trim()}
-                                                                    style={{
-                                                                        padding: '7px 16px', borderRadius: '6px',
-                                                                        backgroundColor: replyDraft.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-bg-subtle))',
-                                                                        color: replyDraft.trim() ? 'white' : 'hsl(var(--color-text-secondary))',
-                                                                        border: 'none', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
-                                                                        fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap'
-                                                                    }}
-                                                                >
-                                                                    Send
-                                                                </button>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', color: '#666' }}>
+                                                                        <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '16px', color: '#666' }} title="Mention">@</span>
+                                                                        <Paperclip size={18} style={{ cursor: 'pointer', color: '#666' }} title="Attach File" />
+                                                                        <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '12px', letterSpacing: '0.03em', color: '#666' }} title="GIF">GIF</span>
+                                                                        <span style={{ cursor: 'pointer', fontSize: '18px', color: '#666' }} title="Emoji">😊</span>
+                                                                        <Edit2 size={16} style={{ cursor: 'pointer', color: '#666' }} title="Rich Text" />
+                                                                    </div>
+                                                                    <div style={{ display: 'flex' }}>
+                                                                        <button
+                                                                            onClick={() => handleSendReply(update.id)}
+                                                                            disabled={!replyDraft.trim()}
+                                                                            style={{
+                                                                                backgroundColor: '#0073ea', color: 'white', border: 'none',
+                                                                                padding: '6px 16px', borderRadius: '4px 0 0 4px', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
+                                                                                fontSize: '13px', fontWeight: 500, opacity: replyDraft.trim() ? 1 : 0.6
+                                                                            }}
+                                                                        >
+                                                                            Reply
+                                                                        </button>
+                                                                        <button
+                                                                            disabled={!replyDraft.trim()}
+                                                                            style={{
+                                                                                backgroundColor: '#0060c2', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.2)',
+                                                                                padding: '6px 8px', borderRadius: '0 4px 4px 0', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
+                                                                                display: 'flex', alignItems: 'center', opacity: replyDraft.trim() ? 1 : 0.6
+                                                                            }}
+                                                                        >
+                                                                            <ChevronDown size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}

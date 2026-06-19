@@ -446,7 +446,10 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         if (!updatesMap[itemId]) updatesMap[itemId] = [];
                         
                         const createdAtRaw = uRow[colIdx.createdAt];
-                        const dateObj = parseUpdateDateTime(createdAtRaw);
+                        // Monday's "Created At" export column is 5 hours ahead of the actual local
+                        // time of the update (confirmed against known update/reply times), so shift
+                        // it back by 5 hours after parsing.
+                        const dateObj = new Date(parseUpdateDateTime(createdAtRaw).getTime() - 5 * 60 * 60 * 1000);
 
                         const content = richifyUpdateContent(String(uRow[colIdx.content] || '').trim());
 

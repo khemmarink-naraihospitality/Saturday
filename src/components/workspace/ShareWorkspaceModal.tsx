@@ -1,9 +1,10 @@
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { InviteMemberForm } from './InviteMemberForm';
 import { MembersList } from './MembersList';
 import { useAuth } from '../../contexts/AuthContext';
+import { showToast } from '../../utils/toast';
 
 interface ShareWorkspaceModalProps {
     workspaceId: string;
@@ -23,6 +24,8 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
 
     const [members, setMembers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [pendingTransfer, setPendingTransfer] = useState<{ memberId: string; userId: string; name: string } | null>(null);
+    const [isTransferring, setIsTransferring] = useState(false);
 
     const workspace = workspaces.find(w => w.id === workspaceId);
     const isOwner = workspace?.owner_id === user?.id;
@@ -51,22 +54,31 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
     const handleRoleChange = async (memberId: string, newRole: string) => {
         if (newRole === 'owner') {
             const target = members.find(m => m.id === memberId);
-            const targetProfile = Array.isArray(target?.profiles) ? target?.profiles[0] : target?.profiles;
-            const targetName = targetProfile?.full_name || targetProfile?.email || 'this member';
             if (!target) return;
-            if (!confirm(`Transfer ownership of "${workspace?.title}" to ${targetName}? You will become a Workspace - Member and lose owner permissions.`)) {
-                return;
-            }
-            try {
-                await transferWorkspaceOwnership(workspaceId, target.user_id);
-            } catch (err: any) {
-                alert(err?.message || 'Failed to transfer ownership');
-            }
-            await loadMembers();
+            const targetProfile = Array.isArray(target.profiles) ? target.profiles[0] : target.profiles;
+            const targetName = targetProfile?.full_name || targetProfile?.email || 'this member';
+            // Stage the transfer — actually changing the owner happens from the confirm panel below,
+            // not immediately, so a misclick on the dropdown can't transfer ownership by itself.
+            setPendingTransfer({ memberId, userId: target.user_id, name: targetName });
             return;
         }
         await updateMemberRole(memberId, newRole, 'workspace');
         await loadMembers();
+    };
+
+    const confirmTransfer = async () => {
+        if (!pendingTransfer) return;
+        setIsTransferring(true);
+        try {
+            await transferWorkspaceOwnership(workspaceId, pendingTransfer.userId);
+            showToast(`Ownership transferred to ${pendingTransfer.name}`, 'success');
+        } catch (err: any) {
+            showToast(err?.message || 'Failed to transfer ownership', 'error');
+        } finally {
+            setIsTransferring(false);
+            setPendingTransfer(null);
+            await loadMembers();
+        }
     };
 
     const handleRemove = async (memberId: string) => {
@@ -140,6 +152,53 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
                         <X size={20} />
                     </button>
                 </div>
+
+                {/* Transfer Ownership confirm panel */}
+                {pendingTransfer && (
+                    <div style={{
+                        margin: '16px 24px 0',
+                        padding: '14px 16px',
+                        backgroundColor: '#fff8e1',
+                        border: '1px solid #f0c040',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        gap: '12px'
+                    }}>
+                        <AlertTriangle size={18} style={{ color: '#b45309', flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
+                                Transfer ownership to {pendingTransfer.name}?
+                            </div>
+                            <div style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', marginBottom: '12px' }}>
+                                You will become a Workspace - Member and lose owner permissions for "{workspace?.title}".
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={confirmTransfer}
+                                    disabled={isTransferring}
+                                    style={{
+                                        padding: '7px 14px', borderRadius: '6px', border: 'none',
+                                        backgroundColor: '#b45309', color: 'white', fontSize: '13px', fontWeight: 600,
+                                        cursor: isTransferring ? 'not-allowed' : 'pointer', opacity: isTransferring ? 0.6 : 1
+                                    }}
+                                >
+                                    {isTransferring ? 'Transferring…' : 'Confirm Transfer'}
+                                </button>
+                                <button
+                                    onClick={() => setPendingTransfer(null)}
+                                    disabled={isTransferring}
+                                    style={{
+                                        padding: '7px 14px', borderRadius: '6px',
+                                        border: '1px solid hsl(var(--color-border))', backgroundColor: 'white',
+                                        fontSize: '13px', fontWeight: 500, cursor: isTransferring ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Invite Form */}
                 {(isOwner || currentUserRole === 'admin') && (

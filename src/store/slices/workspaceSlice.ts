@@ -20,6 +20,7 @@ export interface WorkspaceSlice {
     inviteToWorkspace: (workspaceId: string, email: string, role: string) => Promise<void>;
     getWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
     reorderWorkspaces: (sourceId: string, destinationId: string) => Promise<void>;
+    transferWorkspaceOwnership: (workspaceId: string, newOwnerUserId: string) => Promise<void>;
 }
 
 export const createWorkspaceSlice: StateCreator<
@@ -442,6 +443,49 @@ export const createWorkspaceSlice: StateCreator<
 
         if (error) throw error;
         return data || [];
+    },
+
+    transferWorkspaceOwnership: async (workspaceId, newOwnerUserId) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const previousOwnerId = user.id;
+
+        // Optimistic update so the UI reflects the new owner immediately
+        set(state => ({
+            workspaces: state.workspaces.map(w => w.id === workspaceId ? { ...w, owner_id: newOwnerUserId } : w)
+        }));
+
+        try {
+            // 1. The workspace's owner_id is the single source of truth for "who is owner"
+            const { error: wsError } = await supabase
+                .from('workspaces')
+                .update({ owner_id: newOwnerUserId })
+                .eq('id', workspaceId);
+            if (wsError) throw wsError;
+
+            // 2. Demote the previous owner's membership row to member, so it displays
+            // correctly once they no longer match the workspace's owner_id
+            const { error: demoteError } = await supabase
+                .from('workspace_members')
+                .update({ role: 'member' })
+                .eq('workspace_id', workspaceId)
+                .eq('user_id', previousOwnerId);
+            if (demoteError) console.error('[TransferOwnership] Failed to demote previous owner:', demoteError);
+
+            // 3. Keep the new owner's membership role field consistent (display logic
+            // already overrides via owner_id match, but keep the stored value accurate)
+            const { error: promoteError } = await supabase
+                .from('workspace_members')
+                .update({ role: 'owner' })
+                .eq('workspace_id', workspaceId)
+                .eq('user_id', newOwnerUserId);
+            if (promoteError) console.error('[TransferOwnership] Failed to update new owner role field:', promoteError);
+        } catch (err) {
+            console.error('[TransferOwnership] Failed, reverting:', err);
+            await get().loadUserData(true);
+            throw err;
+        }
     },
 
     reorderWorkspaces: async (sourceId, destinationId) => {

@@ -17,7 +17,8 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
         inviteToWorkspace,
         getWorkspaceMembers,
         updateMemberRole,
-        removeMember
+        removeMember,
+        transferWorkspaceOwnership
     } = useBoardStore();
 
     const [members, setMembers] = useState<any[]>([]);
@@ -48,6 +49,22 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
     };
 
     const handleRoleChange = async (memberId: string, newRole: string) => {
+        if (newRole === 'owner') {
+            const target = members.find(m => m.id === memberId);
+            const targetProfile = Array.isArray(target?.profiles) ? target?.profiles[0] : target?.profiles;
+            const targetName = targetProfile?.full_name || targetProfile?.email || 'this member';
+            if (!target) return;
+            if (!confirm(`Transfer ownership of "${workspace?.title}" to ${targetName}? You will become a Workspace - Member and lose owner permissions.`)) {
+                return;
+            }
+            try {
+                await transferWorkspaceOwnership(workspaceId, target.user_id);
+            } catch (err: any) {
+                alert(err?.message || 'Failed to transfer ownership');
+            }
+            await loadMembers();
+            return;
+        }
         await updateMemberRole(memberId, newRole, 'workspace');
         await loadMembers();
     };

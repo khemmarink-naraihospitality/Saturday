@@ -150,15 +150,23 @@ export const createBoardSlice: StateCreator<
                 return;
             }
 
+            // parent_id (sub-workspace support) may not exist yet on every environment's
+            // workspaces table — if selecting it errors (e.g. undefined column), retry
+            // without it so a missing migration doesn't wipe out the entire app's data.
+            let workspacesRes: any = await supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order');
+            if (workspacesRes.error) {
+                console.warn('[loadUserData] workspaces.parent_id unavailable, retrying without it:', workspacesRes.error.message);
+                workspacesRes = await supabase.from('workspaces').select('id, title, order, owner_id').order('order');
+            }
+            const workspaces: any[] | null = workspacesRes.data;
+
             // Using full typed response validation would be better but keeping structure
             const [
-                { data: workspaces },
                 { data: boards },
                 { data: sharedBoardsData },
                 { data: sharedWorkspacesData },
                 { data: userFavoritesData }
             ] = await Promise.all([
-                supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),

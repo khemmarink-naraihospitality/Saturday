@@ -214,13 +214,10 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
 // Preserves newlines, converts basic markdown syntax, and leaves existing HTML untouched.
 const richifyUpdateContent = (raw: string): string => {
     if (!raw) return '';
-    // Already HTML — leave as-is, but strip any embedded <a> tags first. Monday.com
-    // sometimes embeds a permalink/mention as a hyperlink on the update's first line;
-    // left intact it would inherit blue/underlined link styling while the rest of the
-    // comment renders as plain black text, making the two look inconsistent.
-    if (/<[a-z][^>]*>/i.test(raw)) {
-        return raw.replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, '$1');
-    }
+    // Already HTML — leave as-is. Hyperlinks stay clickable, and any color the source
+    // specifies (inline style) is preserved as-is; see narai-update-content's `a` rule
+    // for the default (no forced color) applied when the source has none.
+    if (/<[a-z][^>]*>/i.test(raw)) return raw;
 
     // Handle \r\n (Windows), \r (old Mac), \n (Unix)
     const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');

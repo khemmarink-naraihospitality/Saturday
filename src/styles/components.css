@@ -47,7 +47,9 @@
     margin: 6px 0 4px;
 }
 .narai-update-content a {
-    color: hsl(var(--color-brand-primary));
+    /* Inherit the surrounding text color by default — an inline style on the source
+       <a> tag (e.g. from a Monday.com import) still wins and shows its own color. */
+    color: inherit;
     text-decoration: underline;
 }
 .narai-update-content a:hover {

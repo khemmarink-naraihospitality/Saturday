@@ -373,18 +373,26 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     const uHeader = (uRows[uHeaderRowIdx] || []).map((h: any) => String(h || '').toLowerCase().trim());
                     
                     const colIdx = {
-                        itemId: uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) !== -1 
-                            ? uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) 
+                        itemId: uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id')) !== -1
+                            ? uHeader.findIndex((h: string) => h === 'item id' || h === 'id' || h.includes('id'))
                             : 0,
                         user: uHeader.indexOf('user') !== -1 ? uHeader.indexOf('user') : 4,
                         createdAt: uHeader.indexOf('created at') !== -1 ? uHeader.indexOf('created at') : 5,
-                        content: uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') !== -1 
-                            ? uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') 
+                        content: uHeader.findIndex((h: string) => h.includes('update content') || h === 'content') !== -1
+                            ? uHeader.findIndex((h: string) => h.includes('update content') || h === 'content')
                             : 6,
-                        contentType: uHeader.indexOf('content type') !== -1 ? uHeader.indexOf('content type') : 3,
                         postId: uHeader.indexOf('post id') !== -1 ? uHeader.indexOf('post id') : 7,
                         parentId: uHeader.indexOf('parent post id') !== -1 ? uHeader.indexOf('parent post id') : 8
                     };
+
+                    // ⚠️ Monday.com exports sometimes repeat the "Content Type" header across two columns —
+                    // "Update" lands in the first one, "Reply" lands in the second. Collect all matching
+                    // column indices and read whichever one is non-empty for a given row.
+                    const contentTypeIndices = uHeader.reduce<number[]>((acc, h, idx) => {
+                        if (h === 'content type') acc.push(idx);
+                        return acc;
+                    }, []);
+                    if (contentTypeIndices.length === 0) contentTypeIndices.push(3);
 
                     const normalizeId = (id: any): string => {
                         let s = String(id || '').trim();
@@ -403,12 +411,16 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                         const content = richifyUpdateContent(String(uRow[colIdx.content] || '').trim());
 
+                        const contentTypeRaw = contentTypeIndices
+                            .map(idx => String(uRow[idx] || '').trim())
+                            .find(v => v !== '') || 'Update';
+
                         updatesMap[itemId].push({
                             id: Math.random().toString(36).substring(7),
                             author: String(uRow[colIdx.user] || 'System'),
                             createdAt: dateObj.toISOString(),
                             content: content,
-                            contentType: String(uRow[colIdx.contentType] || 'Update'),
+                            contentType: contentTypeRaw,
                             postId: String(uRow[colIdx.postId] || ''),
                             parentId: String(uRow[colIdx.parentId] || '')
                         });

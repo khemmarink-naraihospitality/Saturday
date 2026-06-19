@@ -489,22 +489,45 @@ export const createWorkspaceSlice: StateCreator<
             if (wsError) throw wsError;
 
             // 2. Demote the previous owner's membership row to member, so it displays
-            // correctly once they no longer match the workspace's owner_id
-            const { error: demoteError } = await supabase
+            // correctly once they no longer match the workspace's owner_id. Owners (like
+            // the one created by addWorkspace) often have no existing workspace_members
+            // row — update() silently no-ops in that case, so fall back to inserting one.
+            const { data: demoteRows, error: demoteError } = await supabase
                 .from('workspace_members')
                 .update({ role: 'member' })
                 .eq('workspace_id', workspaceId)
-                .eq('user_id', previousOwnerId);
-            if (demoteError) console.error('[TransferOwnership] Failed to demote previous owner:', demoteError);
+                .eq('user_id', previousOwnerId)
+                .select('id');
+            if (demoteError) {
+                console.error('[TransferOwnership] Failed to demote previous owner:', demoteError);
+            } else if (!demoteRows || demoteRows.length === 0) {
+                const { error: insErr } = await supabase.from('workspace_members')
+                    .insert({ workspace_id: workspaceId, user_id: previousOwnerId, role: 'member' });
+                if (insErr) console.error('[TransferOwnership] Failed to insert membership row for previous owner:', insErr);
+            }
 
             // 3. Keep the new owner's membership role field consistent (display logic
-            // already overrides via owner_id match, but keep the stored value accurate)
-            const { error: promoteError } = await supabase
+            // already overrides via owner_id match, but keep the stored value accurate).
+            // Same update-or-insert fallback as above.
+            const { data: promoteRows, error: promoteError } = await supabase
                 .from('workspace_members')
                 .update({ role: 'owner' })
                 .eq('workspace_id', workspaceId)
-                .eq('user_id', newOwnerUserId);
-            if (promoteError) console.error('[TransferOwnership] Failed to update new owner role field:', promoteError);
+                .eq('user_id', newOwnerUserId)
+                .select('id');
+            if (promoteError) {
+                console.error('[TransferOwnership] Failed to update new owner role field:', promoteError);
+            } else if (!promoteRows || promoteRows.length === 0) {
+                const { error: insErr2 } = await supabase.from('workspace_members')
+                    .insert({ workspace_id: workspaceId, user_id: newOwnerUserId, role: 'owner' });
+                if (insErr2) console.error('[TransferOwnership] Failed to insert membership row for new owner:', insErr2);
+            }
+
+            // Reflect the new role for the current session immediately (this function
+            // always runs as the previous owner, so update their own local role state).
+            set(state => ({
+                userWorkspaceRoles: { ...state.userWorkspaceRoles, [workspaceId]: 'member' }
+            }));
         } catch (err) {
             console.error('[TransferOwnership] Failed, reverting:', err);
             await get().loadUserData(true);

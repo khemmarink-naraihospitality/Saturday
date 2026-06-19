@@ -360,7 +360,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                             fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px'
+                            gap: '8px',
+                            flex: 1,
+                            minWidth: 0
                         }}>
 
                             <textarea

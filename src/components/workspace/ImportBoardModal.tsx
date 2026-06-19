@@ -359,14 +359,24 @@ const parseFiles = (val: any) => {
     if (!val) return [];
     const s = String(val).trim();
     if (!s) return [];
-    
-    const urls = s.split(/[\s,]+/).filter(u => u.startsWith('http'));
-    return urls.map(url => ({
-        id: Math.random().toString(36).substring(7),
-        name: url.split('/').pop() || 'File',
-        url: url,
-        type: 'link'
-    }));
+
+    // Split multiple file URLs on a comma — but only when that comma is followed by the start
+    // of the next URL. A plain comma/whitespace split would shred a single URL whose filename
+    // itself contains a comma (e.g. ".../IT-018 Plan - 5_15_26, 10_19 AM (2).pdf").
+    const urls = s.split(/,\s*(?=https?:\/\/)/).map(u => u.trim()).filter(u => u.startsWith('http'));
+
+    return urls.map(url => {
+        // Name = the last path segment, with its file extension (text after the last ".") stripped.
+        const lastSegment = url.split('/').pop() || 'File';
+        const lastDot = lastSegment.lastIndexOf('.');
+        const name = lastDot > 0 ? lastSegment.substring(0, lastDot) : lastSegment;
+        return {
+            id: Math.random().toString(36).substring(7),
+            name,
+            url,
+            type: 'link'
+        };
+    });
 };
 
 export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) => {

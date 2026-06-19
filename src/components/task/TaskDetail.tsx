@@ -353,11 +353,70 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         setDeleteConfirmId(updateId);
     };
 
+    const getReplyDraft = (updateId: string) => replyDrafts[updateId] || '';
+    const setReplyDraftFor = (updateId: string, val: string) =>
+        setReplyDrafts(prev => ({ ...prev, [updateId]: val }));
+
     const handleSendReply = (parentId: string) => {
-        if (!replyDraft.trim()) return;
-        addUpdate(itemId, replyDraft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, [], parentId);
-        setReplyDraft('');
-        setReplyingToId(null);
+        const draft = getReplyDraft(parentId);
+        const files = replyFiles[parentId] || [];
+        if (!draft.trim() && files.length === 0) return;
+        addUpdate(itemId, draft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, files, parentId);
+        setReplyDrafts(prev => ({ ...prev, [parentId]: '' }));
+        setReplyFiles(prev => ({ ...prev, [parentId]: [] }));
+    };
+
+    const handleReplyEmojiSelect = (updateId: string, emoji: string) => {
+        setReplyDraftFor(updateId, getReplyDraft(updateId) + emoji);
+        setReplyActiveEmojiId(null);
+    };
+
+    const toggleReplyEmojiPicker = (updateId: string) => {
+        if (replyActiveEmojiId === updateId) { setReplyActiveEmojiId(null); return; }
+        const btn = replyEmojiButtonRefs.current[updateId];
+        if (btn) setReplyEmojiPickerPos(calcPickerPos(btn.getBoundingClientRect()));
+        setReplyEmojiSearch('');
+        setReplyActiveEmojiId(updateId);
+        setReplyActiveGifId(null);
+        setReplyActiveUrlId(null);
+    };
+
+    const toggleReplyGifPicker = (updateId: string) => {
+        if (replyActiveGifId === updateId) { setReplyActiveGifId(null); return; }
+        const btn = replyGifButtonRefs.current[updateId];
+        if (btn) {
+            const rect = btn.getBoundingClientRect();
+            setReplyGifPickerPos({ bottom: window.innerHeight - rect.top + 8, left: rect.left });
+        }
+        setReplyActiveGifId(updateId);
+        setReplyActiveEmojiId(null);
+        setReplyActiveUrlId(null);
+    };
+
+    const handleReplyGifSelect = (updateId: string, url: string) => {
+        setReplyFiles(prev => ({
+            ...prev,
+            [updateId]: [...(prev[updateId] || []), { id: uuidv4(), name: 'GIF', url, type: 'file-url' }]
+        }));
+        setReplyActiveGifId(null);
+    };
+
+    const handleAddReplyAttachUrl = (updateId: string) => {
+        if (!replyAttachUrl.trim()) return;
+        let url = replyAttachUrl.trim();
+        if (!url.startsWith('http')) url = `https://${url}`;
+        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
+            ? getGoogleDriveFileName(url)
+            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
+        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
+        setReplyFiles(prev => ({ ...prev, [updateId]: [...(prev[updateId] || []), { id: uuidv4(), name, url, type }] }));
+        setReplyAttachUrl('');
+        setReplyAttachError(null);
+        setReplyActiveUrlId(null);
+    };
+
+    const removeReplyFile = (updateId: string, fileId: string) => {
+        setReplyFiles(prev => ({ ...prev, [updateId]: (prev[updateId] || []).filter(f => f.id !== fileId) }));
     };
 
 
@@ -915,7 +974,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     <div style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '2px',
+                                                        gap: '4px',
                                                         marginTop: likedIds.has(update.id) ? '8px' : '12px',
                                                         paddingTop: '8px',
                                                         borderTop: '1px solid hsl(var(--color-border))'
@@ -928,98 +987,168 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                 return n;
                                                             })}
                                                             style={{
-                                                                display: 'flex', alignItems: 'center', gap: '5px',
+                                                                display: 'flex', alignItems: 'center', gap: '6px',
                                                                 background: 'none', border: 'none', cursor: 'pointer',
                                                                 color: likedIds.has(update.id) ? '#D4A000' : 'hsl(var(--color-text-secondary))',
-                                                                fontSize: likedIds.has(update.id) ? '18px' : '13px',
-                                                                padding: '4px 10px', borderRadius: '4px', fontWeight: 500,
+                                                                fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500,
                                                                 lineHeight: 1
                                                             }}
                                                             onMouseEnter={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
                                                             onMouseLeave={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'transparent'; }}
                                                         >
-                                                            {likedIds.has(update.id) ? '👍' : <><span>👍</span><span>Like</span></>}
+                                                            <ThumbsUp size={15} fill={likedIds.has(update.id) ? '#D4A000' : 'none'} />
+                                                            <span>Like</span>
                                                         </button>
 
                                                         <button
-                                                            onClick={() => { setReplyingToId(replyingToId === update.id ? null : update.id); setReplyDraft(''); }}
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: replyingToId === update.id ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
-                                                            onMouseEnter={(e) => { if (replyingToId !== update.id) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
-                                                            onMouseLeave={(e) => { if (replyingToId !== update.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                            onClick={() => {
+                                                                document.getElementById(`reply-input-${update.id}`)?.focus();
+                                                            }}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                         >
-                                                            ↩ Reply
+                                                            <ReplyIcon size={15} />
+                                                            <span>Reply</span>
                                                         </button>
                                                     </div>
 
-                                                    {replyingToId === update.id && (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                                                            <div style={{
-                                                                width: '32px', height: '32px', borderRadius: '50%',
-                                                                backgroundColor: currentUser.name?.toLowerCase().includes('lubd') ? '#1a1728' : '#00c875',
-                                                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                fontSize: '13px', fontWeight: 700, flexShrink: 0, fontFamily: 'serif'
-                                                            }}>
-                                                                {currentUser.name?.charAt(0) || '?'}
-                                                            </div>
-                                                            <div style={{ 
-                                                                flex: 1, 
-                                                                border: '1px solid #0073ea', 
-                                                                borderRadius: '8px', 
-                                                                backgroundColor: 'white', 
-                                                                display: 'flex', 
-                                                                flexDirection: 'column', 
-                                                                overflow: 'hidden' 
-                                                            }}>
-                                                                <textarea
-                                                                    value={replyDraft}
-                                                                    onChange={(e) => setReplyDraft(e.target.value)}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(update.id); }
-                                                                        if (e.key === 'Escape') { setReplyingToId(null); setReplyDraft(''); }
-                                                                    }}
-                                                                    placeholder="Write a reply..."
-                                                                    autoFocus
-                                                                    style={{
-                                                                        width: '100%', minHeight: '60px', padding: '12px',
-                                                                        border: 'none', resize: 'none', fontSize: '14px', outline: 'none',
-                                                                        backgroundColor: 'transparent', color: '#1f1f1f', fontFamily: 'inherit'
-                                                                    }}
-                                                                />
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', color: '#666' }}>
-                                                                        <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '16px', color: '#666' }} title="Mention">@</span>
-                                                                        <span title="Attach File" style={{ display: 'flex' }}><Paperclip size={18} style={{ cursor: 'pointer', color: '#666' }} /></span>
-                                                                        <span style={{ cursor: 'pointer', fontWeight: 700, fontSize: '12px', letterSpacing: '0.03em', color: '#666' }} title="GIF">GIF</span>
-                                                                        <span style={{ cursor: 'pointer', fontSize: '18px', color: '#666' }} title="Emoji">😊</span>
-                                                                        <span title="Rich Text" style={{ display: 'flex' }}><Edit2 size={16} style={{ cursor: 'pointer', color: '#666' }} /></span>
-                                                                    </div>
-                                                                    <div style={{ display: 'flex' }}>
-                                                                        <button
-                                                                            onClick={() => handleSendReply(update.id)}
-                                                                            disabled={!replyDraft.trim()}
-                                                                            style={{
-                                                                                backgroundColor: '#0073ea', color: 'white', border: 'none',
-                                                                                padding: '6px 16px', borderRadius: '4px 0 0 4px', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
-                                                                                fontSize: '13px', fontWeight: 500, opacity: replyDraft.trim() ? 1 : 0.6
-                                                                            }}
-                                                                        >
-                                                                            Reply
-                                                                        </button>
-                                                                        <button
-                                                                            disabled={!replyDraft.trim()}
-                                                                            style={{
-                                                                                backgroundColor: '#0060c2', color: 'white', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.2)',
-                                                                                padding: '6px 8px', borderRadius: '0 4px 4px 0', cursor: replyDraft.trim() ? 'pointer' : 'not-allowed',
-                                                                                display: 'flex', alignItems: 'center', opacity: replyDraft.trim() ? 1 : 0.6
-                                                                            }}
-                                                                        >
-                                                                            <ChevronDown size={14} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                    {/* Reply box — always visible, Monday.com style */}
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '10px' }}>
+                                                        <div style={{
+                                                            width: '32px', height: '32px', borderRadius: '50%',
+                                                            backgroundColor: currentUser.name?.toLowerCase().includes('lubd') ? '#1a1728' : '#00c875',
+                                                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: '13px', fontWeight: 700, flexShrink: 0, fontFamily: 'serif'
+                                                        }}>
+                                                            {currentUser.name?.charAt(0) || '?'}
                                                         </div>
-                                                    )}
+                                                        <div style={{
+                                                            flex: 1,
+                                                            border: '1px solid hsl(var(--color-border))',
+                                                            borderRadius: '8px',
+                                                            backgroundColor: 'hsl(var(--color-bg-canvas))',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            overflow: 'hidden'
+                                                        }}
+                                                            onFocus={(e) => e.currentTarget.style.borderColor = '#0073ea'}
+                                                            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.style.borderColor = 'hsl(var(--color-border))'; }}
+                                                        >
+                                                            {/* Pending reply file/GIF chips */}
+                                                            {(replyFiles[update.id] || []).length > 0 && (
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 10px 0' }}>
+                                                                    {(replyFiles[update.id] || []).map(file => (
+                                                                        <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
+                                                                            <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                                                            <button onClick={() => removeReplyFile(update.id, file.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, lineHeight: 1, fontSize: '11px', flexShrink: 0 }}>✕</button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Attach URL mini panel */}
+                                                            {replyActiveUrlId === update.id && (
+                                                                <div style={{ padding: '8px 10px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={replyAttachUrl}
+                                                                            onChange={(e) => { setReplyAttachUrl(e.target.value); setReplyAttachError(null); }}
+                                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddReplyAttachUrl(update.id)}
+                                                                            placeholder="Paste link to attach..."
+                                                                            autoFocus
+                                                                            style={{ flex: 1, padding: '6px 10px', borderRadius: '4px', border: replyAttachError ? '1px solid #e11d48' : '1px solid hsl(var(--color-border))', fontSize: '13px', outline: 'none', backgroundColor: 'hsl(var(--color-bg-surface))', color: 'hsl(var(--color-text-primary))' }}
+                                                                        />
+                                                                        <button onClick={() => handleAddReplyAttachUrl(update.id)} disabled={!replyAttachUrl.trim()} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', backgroundColor: replyAttachUrl.trim() ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-brand-primary) / 0.3)', color: 'white', fontSize: '13px', fontWeight: 500, cursor: replyAttachUrl.trim() ? 'pointer' : 'not-allowed' }}>Attach</button>
+                                                                        <button onClick={() => { setReplyActiveUrlId(null); setReplyAttachUrl(''); setReplyAttachError(null); }} style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px' }}>✕</button>
+                                                                    </div>
+                                                                    {replyAttachError && <div style={{ fontSize: '12px', color: '#e11d48' }}>{replyAttachError}</div>}
+                                                                </div>
+                                                            )}
+
+                                                            <textarea
+                                                                id={`reply-input-${update.id}`}
+                                                                value={getReplyDraft(update.id)}
+                                                                onChange={(e) => setReplyDraftFor(update.id, e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(update.id); }
+                                                                }}
+                                                                placeholder="Write a reply and mention others with @"
+                                                                style={{
+                                                                    width: '100%', minHeight: '40px', padding: '10px 12px',
+                                                                    border: 'none', resize: 'none', fontSize: '14px', outline: 'none',
+                                                                    backgroundColor: 'transparent', color: 'hsl(var(--color-text-primary))', fontFamily: 'inherit',
+                                                                    boxSizing: 'border-box'
+                                                                }}
+                                                            />
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                    {/* @ mention */}
+                                                                    <button
+                                                                        onMouseDown={(e) => { e.preventDefault(); setReplyDraftFor(update.id, getReplyDraft(update.id) + '@'); document.getElementById(`reply-input-${update.id}`)?.focus(); }}
+                                                                        title="Mention someone"
+                                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))' }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    >@</button>
+
+                                                                    {/* Paperclip / File URL */}
+                                                                    <button
+                                                                        onClick={() => { setReplyActiveUrlId(replyActiveUrlId === update.id ? null : update.id); setReplyActiveGifId(null); setReplyActiveEmojiId(null); }}
+                                                                        title="Attach file URL"
+                                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '5px', border: 'none', backgroundColor: replyActiveUrlId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = replyActiveUrlId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                    ><Paperclip size={15} /></button>
+
+                                                                    {/* GIF */}
+                                                                    <button
+                                                                        ref={(el) => { replyGifButtonRefs.current[update.id] = el; }}
+                                                                        onClick={() => toggleReplyGifPicker(update.id)}
+                                                                        title="Insert GIF or Sticker"
+                                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '28px', padding: '0 6px', borderRadius: '5px', border: 'none', backgroundColor: replyActiveGifId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))', letterSpacing: '0.03em' }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = replyActiveGifId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                    >GIF</button>
+
+                                                                    {/* Emoji */}
+                                                                    <button
+                                                                        ref={(el) => { replyEmojiButtonRefs.current[update.id] = el; }}
+                                                                        onClick={() => toggleReplyEmojiPicker(update.id)}
+                                                                        title="Add emoji"
+                                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '5px', border: 'none', backgroundColor: replyActiveEmojiId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', fontSize: '15px', padding: 0 }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = replyActiveEmojiId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent'}
+                                                                    >😊</button>
+                                                                </div>
+
+                                                                <button
+                                                                    onClick={() => handleSendReply(update.id)}
+                                                                    disabled={!getReplyDraft(update.id).trim() && (replyFiles[update.id] || []).length === 0}
+                                                                    style={{
+                                                                        backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white', border: 'none',
+                                                                        padding: '6px 16px', borderRadius: '6px',
+                                                                        cursor: (getReplyDraft(update.id).trim() || (replyFiles[update.id] || []).length > 0) ? 'pointer' : 'not-allowed',
+                                                                        fontSize: '13px', fontWeight: 600,
+                                                                        opacity: (getReplyDraft(update.id).trim() || (replyFiles[update.id] || []).length > 0) ? 1 : 0.5
+                                                                    }}
+                                                                >
+                                                    Reply
+                                                                </button>
+                                                            </div>
+
+                                                            {replyActiveGifId === update.id && (
+                                                                <GifStickerPicker
+                                                                    onSelect={(url) => handleReplyGifSelect(update.id, url)}
+                                                                    onClose={() => setReplyActiveGifId(null)}
+                                                                    anchorBottom={replyGifPickerPos.bottom}
+                                                                    anchorLeft={replyGifPickerPos.left}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </>
                                             )}
 
@@ -1241,6 +1370,57 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     </div>
                 )}
             </div>
+
+            {/* Emoji Picker — fixed portal for reply boxes */}
+            {replyActiveEmojiId && (() => {
+                const activeReplyId = replyActiveEmojiId;
+                const allEmojis = EMOJI_CATEGORIES.flatMap(c => c.emojis);
+                const q = replyEmojiSearch.trim().toLowerCase();
+                const filtered = q ? allEmojis.filter(e => e.includes(replyEmojiSearch)) : null;
+                return (
+                    <div ref={replyEmojiPickerRef} style={{
+                        position: 'fixed', top: replyEmojiPickerPos.top, bottom: replyEmojiPickerPos.bottom, left: replyEmojiPickerPos.left,
+                        width: '320px', maxHeight: '380px', zIndex: 9999,
+                        backgroundColor: 'hsl(var(--color-bg-surface))',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                        display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid hsl(var(--color-border))', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Emoji</span>
+                                <button onClick={() => setReplyActiveEmojiId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '18px', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>×</button>
+                            </div>
+                            <input type="text" placeholder="Search emoji..." value={replyEmojiSearch} onChange={e => setReplyEmojiSearch(e.target.value)} autoFocus
+                                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid hsl(var(--color-border))', backgroundColor: 'hsl(var(--color-bg-canvas))', color: 'hsl(var(--color-text-primary))', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ overflowY: 'auto', flex: 1, padding: '8px 8px 4px' }}>
+                            {filtered ? (
+                                filtered.length > 0 ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                        {filtered.map((emoji, i) => (
+                                            <button key={i} onClick={() => handleReplyEmojiSelect(activeReplyId, emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '24px 0', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>No results for "{replyEmojiSearch}"</div>
+                                )
+                            ) : (
+                                EMOJI_CATEGORIES.map(cat => (
+                                    <div key={cat.label} style={{ marginBottom: '10px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-text-tertiary))', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.07em', paddingLeft: '4px' }}>{cat.label}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px' }}>
+                                            {cat.emojis.map((emoji, i) => (
+                                                <button key={i} onClick={() => handleReplyEmojiSelect(activeReplyId, emoji)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '6px', borderRadius: '6px', lineHeight: 1 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{emoji}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Emoji Picker — fixed portal for new update composer */}
             {showEmojiPanel && (() => {

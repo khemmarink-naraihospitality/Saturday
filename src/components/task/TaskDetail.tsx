@@ -11,19 +11,46 @@ import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 
 // Valid, de-duplicated updates for an item. Re-imports / Monday exports can repeat the
-// same post; postId uniquely identifies a Monday post, with author+time+content as fallback.
+// same post — sometimes as near-identical copies that differ only in length. Two updates
+// are treated as the same when they share author + timestamp + the first 50 chars of their
+// plain-text content; among duplicates we keep the longest (most complete) version.
+const plainTextOf = (html: any): string =>
+    String(html || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+
+// Normalize to minute precision so timestamps that display identically are treated as equal.
+const minuteKeyOf = (createdAt: any): string => {
+    const d = new Date(createdAt);
+    if (isNaN(d.getTime())) return String(createdAt || '');
+    return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+};
+
+const dedupeKeyOf = (u: any): string =>
+    `${u.author}::${minuteKeyOf(u.createdAt)}::${plainTextOf(u.content).slice(0, 50)}`;
+
 const getDedupedUpdates = (updates: any): any[] => {
     if (!Array.isArray(updates)) return [];
     const valid = updates.filter((u: any) => typeof u === 'object' && u?.id);
+
+    // Pick the longest-content update for each key
+    const bestByKey = new Map<string, any>();
+    for (const u of valid) {
+        const k = dedupeKeyOf(u);
+        const existing = bestByKey.get(k);
+        if (!existing || plainTextOf(u.content).length > plainTextOf(existing.content).length) {
+            bestByKey.set(k, u);
+        }
+    }
+
+    // Preserve original (first-seen) ordering of the kept updates
     const seen = new Set<string>();
-    return valid.filter((u: any) => {
-        const key = u.postId
-            ? `pid:${u.postId}`
-            : `ac:${u.author}::${u.createdAt}::${u.content}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
+    const result: any[] = [];
+    for (const u of valid) {
+        const k = dedupeKeyOf(u);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        result.push(bestByKey.get(k));
+    }
+    return result;
 };
 
 export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () => void }) => {

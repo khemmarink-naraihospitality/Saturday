@@ -427,18 +427,37 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     });
                     
                     // 🧹 Deduplicate updates per item — re-imports and Monday exports can repeat the
-                    // same post. A post is uniquely identified by its postId; for rows without one,
-                    // fall back to author + content + timestamp so exact duplicates are still collapsed.
+                    // same post, sometimes as near-identical copies that differ only in length. Treat
+                    // updates as the same when they share author + timestamp + the first 50 chars of
+                    // their plain-text content, and keep the longest (most complete) version.
+                    const plainTextOf = (html: any): string =>
+                        String(html || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+                    const minuteKeyOf = (createdAt: any): string => {
+                        const d = new Date(createdAt);
+                        if (isNaN(d.getTime())) return String(createdAt || '');
+                        return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+                    };
+                    const dedupeKeyOf = (u: any): string =>
+                        `${u.author}::${minuteKeyOf(u.createdAt)}::${plainTextOf(u.content).slice(0, 50)}`;
                     Object.keys(updatesMap).forEach(itemId => {
+                        const list = updatesMap[itemId];
+                        const bestByKey = new Map<string, any>();
+                        for (const u of list) {
+                            const k = dedupeKeyOf(u);
+                            const existing = bestByKey.get(k);
+                            if (!existing || plainTextOf(u.content).length > plainTextOf(existing.content).length) {
+                                bestByKey.set(k, u);
+                            }
+                        }
                         const seen = new Set<string>();
-                        updatesMap[itemId] = updatesMap[itemId].filter(u => {
-                            const key = u.postId
-                                ? `pid:${u.postId}`
-                                : `ac:${u.author}::${u.createdAt}::${u.content}`;
-                            if (seen.has(key)) return false;
-                            seen.add(key);
-                            return true;
-                        });
+                        const result: any[] = [];
+                        for (const u of list) {
+                            const k = dedupeKeyOf(u);
+                            if (seen.has(k)) continue;
+                            seen.add(k);
+                            result.push(bestByKey.get(k));
+                        }
+                        updatesMap[itemId] = result;
                     });
 
                     // 🕒 Sort updates by date descending (latest first)

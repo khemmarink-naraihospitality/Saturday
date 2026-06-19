@@ -540,10 +540,17 @@ export const createBoardSlice: StateCreator<
     },
 
     deleteBoard: async (id) => {
+        const board = get().boards.find(b => b.id === id);
         set(state => ({
             boards: state.boards.map(b => b.id === id ? { ...b, is_archived: true } : b),
-            activeBoardId: state.activeBoardId === id ? null : state.activeBoardId
+            activeBoardId: state.activeBoardId === id ? null : state.activeBoardId,
+            ...(board?.workspaceId ? { activeWorkspaceId: board.workspaceId } : {})
         }));
+        // Land on the deleted board's workspace dashboard instead of leaving the user on a
+        // now-gone board page.
+        if (board?.workspaceId) {
+            get().navigateTo('dashboard');
+        }
         await supabase.from('boards').update({ is_archived: true }).eq('id', id);
     },
 

@@ -10,6 +10,22 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 
+// Valid, de-duplicated updates for an item. Re-imports / Monday exports can repeat the
+// same post; postId uniquely identifies a Monday post, with author+time+content as fallback.
+const getDedupedUpdates = (updates: any): any[] => {
+    if (!Array.isArray(updates)) return [];
+    const valid = updates.filter((u: any) => typeof u === 'object' && u?.id);
+    const seen = new Set<string>();
+    return valid.filter((u: any) => {
+        const key = u.postId
+            ? `pid:${u.postId}`
+            : `ac:${u.author}::${u.createdAt}::${u.content}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+
 export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () => void }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeItem = board?.items.find(i => i.id === itemId);
@@ -366,14 +382,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     >
                         <tab.icon size={16} />
                         {tab.label}
-                        {tab.id === 'updates' && Array.isArray(activeItem.updates) && activeItem.updates.filter(u => typeof u === 'object' && u?.id).length > 0 && (
+                        {tab.id === 'updates' && getDedupedUpdates(activeItem.updates).length > 0 && (
                             <span style={{
                                 background: 'hsl(var(--color-brand-primary))',
                                 color: 'white',
                                 padding: '2px 6px',
                                 borderRadius: '10px',
                                 fontSize: '11px'
-                            }}>{activeItem.updates.filter(u => typeof u === 'object' && u?.id).length}</span>
+                            }}>{getDedupedUpdates(activeItem.updates).length}</span>
                         )}
                     </button>
                 ))}
@@ -514,7 +530,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                         </div>
 
                         {/* Updates List */}
-                        {(!activeItem.updates || !Array.isArray(activeItem.updates) || activeItem.updates.filter(u => typeof u === 'object' && u?.id).length === 0) ? (
+                        {(getDedupedUpdates(activeItem.updates).length === 0) ? (
                             <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
                                 <div style={{ marginBottom: '16px' }}>
                                     <img src="https://cdn.monday.com/images/pulse-page-empty-state.svg" alt="No updates" style={{ width: '200px', opacity: 0.6 }} />
@@ -525,8 +541,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                 {(() => {
-                                    const validUpdates = activeItem.updates.filter(u => typeof u === 'object' && u?.id);
-                                    
+                                    const validUpdates = getDedupedUpdates(activeItem.updates);
+
                                     // Separate top-level updates and replies
                                     // Use update.id as fallback when postId is absent (for new replies created in-app)
                                     const hasParent = (u: any) => u.parentId && validUpdates.some((p: any) => p.postId === u.parentId || p.id === u.parentId);

@@ -426,6 +426,21 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         });
                     });
                     
+                    // 🧹 Deduplicate updates per item — re-imports and Monday exports can repeat the
+                    // same post. A post is uniquely identified by its postId; for rows without one,
+                    // fall back to author + content + timestamp so exact duplicates are still collapsed.
+                    Object.keys(updatesMap).forEach(itemId => {
+                        const seen = new Set<string>();
+                        updatesMap[itemId] = updatesMap[itemId].filter(u => {
+                            const key = u.postId
+                                ? `pid:${u.postId}`
+                                : `ac:${u.author}::${u.createdAt}::${u.content}`;
+                            if (seen.has(key)) return false;
+                            seen.add(key);
+                            return true;
+                        });
+                    });
+
                     // 🕒 Sort updates by date descending (latest first)
                     Object.keys(updatesMap).forEach(itemId => {
                         updatesMap[itemId].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

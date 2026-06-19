@@ -573,7 +573,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             setIsTypeUIOpen(!isTypeUIOpen); setIsFontUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false);
         } },
         { id: 'font', text: 'Font', label: 'Font', action: () => { setIsFontUIOpen(!isFontUIOpen); setIsFontSizeUIOpen(false); setIsTypeUIOpen(false); setIsColorUIOpen(false); setIsLinkUIOpen(false); } },
-        { id: 'fontSize', text: '11', label: 'Font Size', action: () => {
+        { id: 'fontSize', text: '14', label: 'Font Size', action: () => {
             const selection = window.getSelection();
             if (selection && selection.rangeCount > 0) {
                 setSavedSelection(selection.getRangeAt(0).cloneRange());
@@ -802,7 +802,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                                                 color: 'hsl(var(--color-text-primary))',
                                                 borderRadius: '4px',
                                                 fontSize: '13px',
-                                                fontWeight: size === 11 ? 700 : 400
+                                                fontWeight: size === 14 ? 700 : 400
                                             }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -951,7 +951,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 style={{
                     minHeight: '120px',
                     padding: '16px',
-                    fontSize: '11px',
+                    fontSize: '14px',
                     outline: 'none',
                     lineHeight: '1.5',
                     color: 'hsl(var(--color-text-primary))' // Dark mode fix

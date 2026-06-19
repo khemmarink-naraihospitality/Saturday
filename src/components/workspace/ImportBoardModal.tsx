@@ -82,21 +82,58 @@ const parseDate = (val: any, _isUpdate = false): string | null => {
 
 // Parses the "Created At" cell of the Updates sheet, preserving time-of-day.
 // Unlike parseDate (which is date-only, for board column values), this keeps the
-// exact timestamp so re-importing a board exported by backupService.ts doesn't
-// collapse every Update's createdAt to midnight.
+// exact timestamp so Monday exports like "27/January/2025 14:30:05" don't collapse
+// to midnight (which would display as 07:00 in UTC+7).
 const parseUpdateDateTime = (val: any): Date => {
     if (val instanceof Date && !isNaN(val.getTime())) return val;
 
-    if (typeof val === 'string' && val.includes('T')) {
-        const d = new Date(val);
+    // Excel serial number — the fractional part carries the time-of-day. Excel serials are
+    // timezone-naive, so read the UTC wall-clock and rebuild it as a local Date so the
+    // displayed time matches the source value rather than shifting by the local offset.
+    if (typeof val === 'number' || (typeof val === 'string' && /^\d+(\.\d+)?$/.test(val.trim()))) {
+        const num = Number(val);
+        if (!isNaN(num) && num > 1 && num < 2958466) {
+            const u = new Date(Math.round((num - 25569) * 86400 * 1000));
+            if (!isNaN(u.getTime())) {
+                return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), u.getUTCHours(), u.getUTCMinutes(), u.getUTCSeconds());
+            }
+        }
+    }
+
+    const s = String(val ?? '').trim();
+    if (!s) return new Date();
+
+    // Native ISO 8601 (e.g. "2025-01-27T14:30:05Z")
+    if (s.includes('T')) {
+        const d = new Date(s);
         if (!isNaN(d.getTime())) return d;
     }
 
-    const dateOnly = parseDate(val, true);
-    if (dateOnly) {
-        const d = new Date(dateOnly);
-        if (!isNaN(d.getTime())) return d;
+    // Pull out the time-of-day, if any (HH:MM[:SS] with optional AM/PM)
+    let hh = 0, mm = 0, ss = 0;
+    const timeMatch = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?/);
+    if (timeMatch) {
+        hh = Number(timeMatch[1]);
+        mm = Number(timeMatch[2]);
+        ss = timeMatch[3] ? Number(timeMatch[3]) : 0;
+        const ap = timeMatch[4]?.toLowerCase();
+        if (ap === 'pm' && hh < 12) hh += 12;
+        if (ap === 'am' && hh === 12) hh = 0;
     }
+
+    // Parse the date portion (with the time substring removed) and combine.
+    // Build from local components so the displayed time matches the source value.
+    const dateStr = timeMatch ? s.replace(timeMatch[0], '').trim() : s;
+    const ymd = parseDate(dateStr, true);
+    if (ymd) {
+        const [y, m, d] = ymd.split('-').map(Number);
+        const dt = new Date(y, m - 1, d, hh, mm, ss);
+        if (!isNaN(dt.getTime())) return dt;
+    }
+
+    // General fallback — keeps time if Date.parse understands the string.
+    const d2 = new Date(s);
+    if (!isNaN(d2.getTime())) return d2;
 
     return new Date();
 };
@@ -361,7 +398,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     return low.includes('update') || low.includes('อัพเดท') || low.includes('อัปเดต') || low.includes('record');
                 });
                 if (updatesSheet) {
-                    const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1 });
+                    // raw:false → dates come back as their displayed text (incl. time-of-day),
+                    // so parseUpdateDateTime can preserve the exact timestamp instead of a serial.
+                    const uRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[updatesSheet], { header: 1, raw: false });
                     
                     // 🔍 Robust Header Detection for Updates Sheet
                     let uHeaderRowIdx = uRows.findIndex(r => Array.isArray(r) && r.some(c => {

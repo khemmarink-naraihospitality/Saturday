@@ -36,13 +36,20 @@ const TEXT_COLORS = [
     { label: 'Yellow', value: '#ffcb00' },
     { label: 'Lime', value: '#9cd326' },
     { label: 'Green', value: '#00c875' },
-    
+
     { label: 'Teal', value: '#00d1d1' },
     { label: 'Dark Blue', value: '#0086c0' },
     { label: 'Dark Indigo', value: '#225091' },
     { label: 'Dark Purple', value: '#401694' },
     { label: 'Dark Green', value: '#007f36' },
     { label: 'Brown', value: '#7f5347' },
+
+    { label: 'Sky', value: '#66ccff' },
+    { label: 'Cyan', value: '#0fc6c2' },
+    { label: 'Magenta', value: '#d6259c' },
+    { label: 'Rose', value: '#ff90c2' },
+    { label: 'Mustard', value: '#c4a000' },
+    { label: 'Olive', value: '#808000' },
 ];
 
 const FONTS = [

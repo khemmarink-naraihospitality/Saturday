@@ -150,28 +150,25 @@ export const createBoardSlice: StateCreator<
                 return;
             }
 
+            // None of these queries depend on each other's results, so fire them together
+            // instead of awaiting one round-trip at a time.
+            let [workspacesRes, { data: boards }, { data: sharedBoardsData }, { data: sharedWorkspacesData }, { data: userFavoritesData }, { data: existingProfile }]: [any, any, any, any, any, any] = await Promise.all([
+                supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order'),
+                supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
+                supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
+                supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
+                supabase.from('user_favorites').select('board_id').eq('user_id', user.id),
+                supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url').eq('id', user.id).single()
+            ]);
+
             // parent_id (sub-workspace support) may not exist yet on every environment's
             // workspaces table — if selecting it errors (e.g. undefined column), retry
             // without it so a missing migration doesn't wipe out the entire app's data.
-            let workspacesRes: any = await supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order');
             if (workspacesRes.error) {
                 console.warn('[loadUserData] workspaces.parent_id unavailable, retrying without it:', workspacesRes.error.message);
                 workspacesRes = await supabase.from('workspaces').select('id, title, order, owner_id').order('order');
             }
             const workspaces: any[] | null = workspacesRes.data;
-
-            // Using full typed response validation would be better but keeping structure
-            const [
-                { data: boards },
-                { data: sharedBoardsData },
-                { data: sharedWorkspacesData },
-                { data: userFavoritesData }
-            ] = await Promise.all([
-                supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
-                supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
-                supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
-                supabase.from('user_favorites').select('board_id').eq('user_id', user.id)
-            ]);
 
             // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
             // Removed global sweep to save time, logic moved to loadBoardData if needed
@@ -179,10 +176,7 @@ export const createBoardSlice: StateCreator<
 
             if (!workspaces || !boards) throw new Error('Failed to load core data');
 
-            // 0. ENSURE PROFILE
-            let { data: existingProfile } = await supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url').eq('id', user.id).single();
-
-            // Fetch profiles for workspace owners to display names
+            // Fetch profiles for workspace owners to display names (depends on workspaces, so stays sequential)
             const workspaceOwnerIds = Array.from(new Set(workspaces.map((w: any) => w.owner_id).filter(Boolean)));
             let ownerProfilesMap: Record<string, string> = {};
             if (workspaceOwnerIds.length > 0) {
@@ -194,19 +188,16 @@ export const createBoardSlice: StateCreator<
                 }
             }
 
-            console.log('[DEBUG] User Metadata:', user.user_metadata);
-            console.log('[DEBUG] Existing Profile:', existingProfile);
-
-            const { error: profileError } = await supabase.from('profiles').upsert({
+            // ENSURE PROFILE — fire and forget, nothing below reads its result
+            supabase.from('profiles').upsert({
                 id: user.id,
                 email: user.email,
                 full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
                 avatar_url: user.user_metadata?.avatar_url,
                 system_role: existingProfile?.system_role || 'user'
-            }, { onConflict: 'id' });
-
-            if (profileError) console.error("Failed to ensure profile:", profileError);
-            else console.log('[DEBUG] Profile ensured successfully');
+            }, { onConflict: 'id' }).then(({ error }) => {
+                if (error) console.error("Failed to ensure profile:", error);
+            });
 
             // console.log('DEBUG: loadUserData sharedBoardsData:', sharedBoardsData);
 
@@ -221,10 +212,10 @@ export const createBoardSlice: StateCreator<
                 });
             }
 
-            const favoritedBoardIds = new Set(userFavoritesData?.map(f => f.board_id) || []);
+            const favoritedBoardIds = new Set(userFavoritesData?.map((f: any) => f.board_id) || []);
 
 
-            const fullBoards: Board[] = boards.map(b => {
+            const fullBoards: Board[] = boards.map((b: any) => {
                 // Determine if we should preserve existing groups/columns/items from local state cache
                 const existingBoard = get().boards.find(eb => eb.id === b.id);
                 

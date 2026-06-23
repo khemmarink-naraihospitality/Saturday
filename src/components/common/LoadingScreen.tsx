@@ -3,7 +3,7 @@ export const LoadingScreen = ({ message }: { message?: string }) => {
         <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
             <div style={{ perspective: '400px' }}>
                 <img
-                    src="https://guideline.lubd.com/wp-content/uploads/2026/02/image-24-e1774017935237.png"
+                    src="/loading-logo.png"
                     alt="Loading"
                     className="logo-spin"
                     style={{ width: '48px', height: '48px', objectFit: 'contain' }}

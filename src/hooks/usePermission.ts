@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBoardStore } from '../store/useBoardStore';
+import { useUserStore } from '../store/useUserStore';
 import { supabase } from '../lib/supabase';
 
 type PermissionAction =
@@ -17,6 +18,9 @@ type PermissionAction =
 
 export const usePermission = () => {
     const { user } = useAuth();
+    const isSystemAdmin = useUserStore(state =>
+        state.currentUser.system_role === 'super_admin' || state.currentUser.system_role === 'it_admin'
+    );
 
     // Optimize state selection to avoid re-running on every board update
     const activeBoardWorkspaceId = useBoardStore(state =>
@@ -112,6 +116,8 @@ export const usePermission = () => {
     }, [user?.id, activeWorkspaceId, activeBoardId, activeBoardWorkspaceId, activeWorkspaceOwnerId, useBoardStore(state => state.activeBoardMembers)]);
 
     const can = useCallback((action: PermissionAction): boolean => {
+        if (isSystemAdmin) return true;
+
         const role = userRole.toLowerCase();
         if (role === 'owner') return true;
 
@@ -129,7 +135,7 @@ export const usePermission = () => {
         };
 
         return permissions[action]?.includes(role) || false;
-    }, [userRole]);
+    }, [userRole, isSystemAdmin]);
 
-    return useMemo(() => ({ can, role: userRole }), [can, userRole]);
+    return useMemo(() => ({ can, role: isSystemAdmin ? 'owner' : userRole }), [can, userRole, isSystemAdmin]);
 };

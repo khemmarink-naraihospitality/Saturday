@@ -20,7 +20,8 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, 
 
     const roleLabels: Record<string, string> = isWorkspace ? {
         member: 'Workspace - Member',
-        owner: 'Workspace - Owner'
+        owner: 'Workspace - Owner',
+        guest: 'Guest'
     } : {
         viewer: 'Viewer',
         member: 'Member',
@@ -31,7 +32,8 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, 
 
     const roleDescriptions: Record<string, string> = isWorkspace ? {
         member: 'Access all boards & create boards',
-        owner: 'Full control'
+        owner: 'Full control',
+        guest: 'Invited to one board only — manage access from that board'
     } : {
         viewer: 'Can view only',
         member: 'Can edit items & columns',

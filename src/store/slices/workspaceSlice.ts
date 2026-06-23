@@ -466,6 +466,32 @@ export const createWorkspaceSlice: StateCreator<
             }
         }
 
+        // Surface people who only have access via a single board invite (not full
+        // workspace access) as read-only "Guest" rows, purely for visibility — they are
+        // intentionally NOT inserted into workspace_members, so they don't gain the
+        // broader "see/create every board" access a real workspace member has.
+        const { data: wsBoards } = await supabase.from('boards').select('id').eq('workspace_id', workspaceId);
+        const boardIds = (wsBoards || []).map((b: any) => b.id);
+        if (boardIds.length > 0) {
+            const { data: boardMembers } = await supabase
+                .from('board_members')
+                .select('user_id, profiles(*)')
+                .in('board_id', boardIds);
+
+            const knownUserIds = new Set(members.map((m: any) => m.user_id));
+            (boardMembers || []).forEach((bm: any) => {
+                if (knownUserIds.has(bm.user_id)) return;
+                knownUserIds.add(bm.user_id);
+                members.push({
+                    id: `guest-${bm.user_id}`,
+                    user_id: bm.user_id,
+                    workspace_id: workspaceId,
+                    role: 'guest',
+                    profiles: Array.isArray(bm.profiles) ? bm.profiles[0] : bm.profiles
+                });
+            });
+        }
+
         return members;
     },
 

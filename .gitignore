@@ -32,3 +32,4 @@ dist-ssr
 *.zip
 
 .tmp.driveupload/
+.superpowers/

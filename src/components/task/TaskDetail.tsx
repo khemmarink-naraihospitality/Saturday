@@ -1004,6 +1004,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
                                                         <button
                                                             onClick={() => {
+                                                                const hasDraft = getReplyDraft(update.id).trim() || (replyFiles[update.id] || []).length > 0;
+                                                                if (openReplyBoxId === update.id && !hasDraft) {
+                                                                    setOpenReplyBoxId(null);
+                                                                    return;
+                                                                }
                                                                 setOpenReplyBoxId(update.id);
                                                                 setTimeout(() => document.getElementById(`reply-input-${update.id}`)?.focus(), 0);
                                                             }}

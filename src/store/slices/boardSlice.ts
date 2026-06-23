@@ -225,6 +225,7 @@ export const createBoardSlice: StateCreator<
                     title: b.title,
                     description: b.description,
                     is_archived: b.is_archived,
+                    is_private: b.is_private,
                     isFavorite: favoritedBoardIds.has(b.id),
                     lastViewedAt: lastViewedMap[b.id] || undefined,
                     columns: existingBoard?.columns || [],

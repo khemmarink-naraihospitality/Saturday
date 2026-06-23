@@ -6,6 +6,7 @@ import { MembersList } from './MembersList';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../ui/Toast';
+import { PrivateBoardSection } from '../board/PrivateBoardSection';
 
 interface ShareBoardModalProps {
     boardId: string;
@@ -126,6 +127,11 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                         <X size={20} />
                     </button>
                 </div>
+
+                {/* Private Board (PIN) — owner only */}
+                {currentUserRole === 'owner' && board && (
+                    <PrivateBoardSection boardId={boardId} isPrivate={!!board.is_private} showToast={showToast} />
+                )}
 
                 {/* Invite Form */}
                 {(isOwner || currentUserRole === 'admin') && (

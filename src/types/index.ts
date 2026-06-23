@@ -118,6 +118,7 @@ export interface Board {
     filters?: FilterState[]; // Support multiple column filters
     lastViewedAt?: string; // Captured from board_members
     is_archived?: boolean;
+    is_private?: boolean;
 }
 
 export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added';

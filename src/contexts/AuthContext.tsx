@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { clearAllBoardUnlocks } from '../lib/boardPinUnlock';
 
 interface AuthContextType {
     session: Session | null;
@@ -45,6 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Clear localStorage first to prevent race conditions
         localStorage.removeItem('lastActiveBoardId');
         localStorage.removeItem('lastActiveWorkspaceId');
+        clearAllBoardUnlocks();
 
         // Clear URL to root (use replaceState to prevent back button issues)
         window.history.replaceState(null, '', '/');

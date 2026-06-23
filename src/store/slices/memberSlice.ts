@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import type { Notification } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import type { Item } from '../../types';
+import { clearBoardUnlock } from '../../lib/boardPinUnlock';
 
 // Helper to map DB item to Store type
 const parseSqlJson = (val: any, fallback: any) => {
@@ -514,6 +515,19 @@ export const createMemberSlice: StateCreator<
                     table: 'boards'
                 }, (payload) => {
                     const board = (payload.new || payload.old) as any;
+
+                    // Force-lock: if this board just became private, drop any
+                    // existing PIN unlock for it so the lock screen re-appears
+                    // immediately, even if this client already had it open.
+                    // (payload.old only reliably has the primary key, not the full
+                    // previous row, so compare against local state instead.)
+                    if (payload.eventType === 'UPDATE' && board.is_private) {
+                        const prevBoard = get().boards.find(b => b.id === board.id);
+                        if (prevBoard && !prevBoard.is_private) {
+                            clearBoardUnlock(board.id);
+                        }
+                    }
+
                     set(state => {
                         let newBoards = [...state.boards];
                         if (payload.eventType === 'INSERT') {
@@ -523,6 +537,7 @@ export const createMemberSlice: StateCreator<
                                     workspaceId: board.workspace_id,
                                     title: board.title,
                                     is_archived: board.is_archived || false,
+                                    is_private: board.is_private || false,
                                     columns: [],
                                     groups: [],
                                     items: [],
@@ -531,10 +546,11 @@ export const createMemberSlice: StateCreator<
                                 });
                             }
                         } else if (payload.eventType === 'UPDATE') {
-                            newBoards = newBoards.map(b => b.id === board.id ? { 
-                                ...b, 
-                                title: board.title, 
-                                is_archived: board.is_archived
+                            newBoards = newBoards.map(b => b.id === board.id ? {
+                                ...b,
+                                title: board.title,
+                                is_archived: board.is_archived,
+                                is_private: board.is_private
                             } : b);
                         } else if (payload.eventType === 'DELETE') {
                             newBoards = newBoards.filter(b => b.id !== board.id);

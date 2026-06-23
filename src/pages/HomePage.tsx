@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Layout, Star, Bell, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Layout, Star, Bell, X, Check, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const BoardCard = ({ board, workspace, onClick, onToggleFavorite }: any) => {
@@ -57,8 +57,9 @@ const BoardCard = ({ board, workspace, onClick, onToggleFavorite }: any) => {
             </div>
 
             <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))' }}>
-                    {board.title}
+                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{board.title}</span>
+                    {board.is_private && <Lock size={13} style={{ flexShrink: 0, color: 'hsl(var(--color-text-tertiary))' }} />}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
                     <span>Work Management</span>

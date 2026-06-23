@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { clsx } from 'clsx';
-import { GripVertical, MoreHorizontal } from 'lucide-react';
+import { GripVertical, MoreHorizontal, Lock } from 'lucide-react';
 import { BoardIcon } from './SidebarIcons';
 import type { Board } from '../../../types';
 
@@ -97,6 +97,7 @@ export const SortableBoardItem = ({
                         <span className="item-label">{board.title}</span>
                     )
                 }
+                {board.is_private && <Lock size={11} style={{ flexShrink: 0, color: '#999', marginLeft: '2px' }} />}
 
                 <div className="sidebar-item-action" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal

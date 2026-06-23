@@ -44,3 +44,4 @@
 - **Group Row:** บังคับให้หัวกลุ่ม (Group Title) แสดงผลบนบรรทัดเดียว (No Wrap / Single Line) และปรับความกว้างอัตโนมัติ (Auto-width)
 - **Table:** นำขอบขวาสุด (Right-hand border) ของคอลัมน์สุดท้ายออก เพื่อความโปร่งและทันสมัยตาม NHG Style Premium
 - **Header Sticks:** ตารางรองรับการตรึงหัวข้อกลุ่ม (Sticky Title) ขณะเลื่อนไปทางขวาเพื่อให้ไม่หลุดจากการมองเห็น
+- **Icon Style:** ใช้ไอคอนจาก `lucide-react` เสมอสำหรับ UI ใหม่ (เช่น `ReplyIcon`, `ThumbsUp` ที่ใช้อยู่แล้วใน Updates) ห้ามใช้ emoji (🔒, 👍 ฯลฯ) แทนไอคอนจริงในส่วนที่เป็น action/indicator ของ UI

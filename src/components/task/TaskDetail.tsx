@@ -86,6 +86,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     // Reply State — every top-level update shows its own always-visible reply box
     // (Monday.com style), so drafts/files/popovers are keyed by the parent update's id
     // rather than a single shared field.
+    const [openReplyBoxId, setOpenReplyBoxId] = useState<string | null>(null);
     const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
     const [replyFiles, setReplyFiles] = useState<Record<string, FileLink[]>>({});
     const [replyActiveUrlId, setReplyActiveUrlId] = useState<string | null>(null);
@@ -364,6 +365,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         addUpdate(itemId, draft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, files, parentId);
         setReplyDrafts(prev => ({ ...prev, [parentId]: '' }));
         setReplyFiles(prev => ({ ...prev, [parentId]: [] }));
+        setOpenReplyBoxId(null);
     };
 
     const handleReplyEmojiSelect = (updateId: string, emoji: string) => {
@@ -1002,7 +1004,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
                                                         <button
                                                             onClick={() => {
-                                                                document.getElementById(`reply-input-${update.id}`)?.focus();
+                                                                setOpenReplyBoxId(update.id);
+                                                                setTimeout(() => document.getElementById(`reply-input-${update.id}`)?.focus(), 0);
                                                             }}
                                                             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500 }}
                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
@@ -1013,7 +1016,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                         </button>
                                                     </div>
 
-                                                    {/* Reply box — always visible, Monday.com style */}
+                                                    {/* Reply box — hidden until "Reply" is clicked, but stays visible if there's a draft */}
+                                                    {(openReplyBoxId === update.id || getReplyDraft(update.id).trim() || (replyFiles[update.id] || []).length > 0) && (
                                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '10px' }}>
                                                         <div style={{
                                                             width: '32px', height: '32px', borderRadius: '50%',
@@ -1149,6 +1153,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                             )}
                                                         </div>
                                                     </div>
+                                                    )}
                                                 </>
                                             )}
 

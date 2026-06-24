@@ -368,11 +368,13 @@ export const createBoardSlice: StateCreator<
             const [
                 { data: groups },
                 { data: columns },
-                { data: items }
+                { data: items },
+                { data: groupLinks }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).order('order'),
                 supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code').eq('board_id', boardId).order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order')
+                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order'),
+                supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`)
             ]);
 
             set(state => {
@@ -385,6 +387,16 @@ export const createBoardSlice: StateCreator<
                 const bGroups = groups || [];
                 const bColumns = columns || [];
                 const bItems = items || [];
+                const bGroupLinks = groupLinks || [];
+
+                const linkByGroupId = new Map<string, { linkedGroupId: string; linkedBoardId: string }>();
+                bGroupLinks.forEach(l => {
+                    const isAThisBoard = l.board_a_id === boardId;
+                    const thisSideGroupId = isAThisBoard ? l.group_a_id : l.group_b_id;
+                    const otherGroupId = isAThisBoard ? l.group_b_id : l.group_a_id;
+                    const otherBoardId = isAThisBoard ? l.board_b_id : l.board_a_id;
+                    linkByGroupId.set(thisSideGroupId, { linkedGroupId: otherGroupId, linkedBoardId: otherBoardId });
+                });
 
                 const parsedItemsMap: Record<string, any[]> = {};
                 
@@ -438,7 +450,9 @@ export const createBoardSlice: StateCreator<
                             title: g.title,
                             color: g.color,
                             order: g.order,
-                            items: groupItems
+                            items: groupItems,
+                            linkedGroupId: linkByGroupId.get(g.id)?.linkedGroupId,
+                            linkedBoardId: linkByGroupId.get(g.id)?.linkedBoardId
                         };
                     }),
                     items: parsedItems

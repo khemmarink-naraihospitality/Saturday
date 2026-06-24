@@ -43,6 +43,25 @@ export interface Group {
     color: string;
     items: Item[];
     order?: number;
+    linkedGroupId?: string; // populated client-side from group_links — not a DB column on `groups`
+    linkedBoardId?: string;
+}
+
+export interface ColumnMapEntry {
+    targetColumnId: string;
+    optionMap?: { [optionId: string]: string };
+}
+
+export interface GroupLink {
+    id: string;
+    boardAId: string;
+    groupAId: string;
+    boardBId: string;
+    groupBId: string;
+    columnMapAToB: { [columnId: string]: ColumnMapEntry };
+    columnMapBToA: { [columnId: string]: ColumnMapEntry };
+    createdBy?: string;
+    createdAt?: string;
 }
 
 

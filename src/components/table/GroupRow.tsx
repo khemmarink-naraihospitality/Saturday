@@ -1,9 +1,10 @@
-import { ChevronDown, ChevronRight, Trash2, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, GripVertical, Link2 } from 'lucide-react';
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { supabase } from '../../lib/supabase';
 
 export const GroupRow = ({ 
     data, 
@@ -21,15 +22,40 @@ export const GroupRow = ({
     const updateGroupTitle = useBoardStore(state => state.updateGroupTitle);
     const deleteGroup = useBoardStore(state => state.deleteGroup);
     const updateGroupColor = useBoardStore(state => state.updateGroupColor);
+    const unlinkGroup = useBoardStore(state => state.unlinkGroup);
     const { can } = usePermission();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(data.title);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showLinkedDeleteBlocked, setShowLinkedDeleteBlocked] = useState(false);
 
     // Color Picker State
     const [showColorPicker, setShowColorPicker] = useState(false);
     const colorBtnRef = useRef<HTMLDivElement>(null);
+
+    // Link Popover State
+    const [showLinkPopover, setShowLinkPopover] = useState(false);
+    const [linkedNames, setLinkedNames] = useState<{ workspaceTitle: string; boardTitle: string; groupTitle: string } | null>(null);
+    const linkIconRef = useRef<HTMLDivElement>(null);
+
+    const handleOpenLinkPopover = async () => {
+        setShowLinkPopover(!showLinkPopover);
+        if (!showLinkPopover && data.linkedBoardId && data.linkedGroupId && !linkedNames) {
+            const [{ data: boardRow }, { data: groupRow }] = await Promise.all([
+                supabase.from('boards').select('title, workspace_id').eq('id', data.linkedBoardId).single(),
+                supabase.from('groups').select('title').eq('id', data.linkedGroupId).single()
+            ]);
+            const { data: workspaceRow } = boardRow?.workspace_id
+                ? await supabase.from('workspaces').select('title').eq('id', boardRow.workspace_id).single()
+                : { data: null };
+            setLinkedNames({
+                workspaceTitle: workspaceRow?.title || 'Unknown workspace',
+                boardTitle: boardRow?.title || 'Unknown board',
+                groupTitle: groupRow?.title || 'Unknown group'
+            });
+        }
+    };
 
     const GROUP_COLORS = [
         '#7C3FE4', '#3F6FE4', '#C03FE4', '#92BF0A', '#279966',
@@ -238,6 +264,50 @@ export const GroupRow = ({
                     </span>
                 )}
 
+                {data.linkedGroupId && (
+                    <div
+                        ref={linkIconRef}
+                        onClick={(e) => { e.stopPropagation(); handleOpenLinkPopover(); }}
+                        style={{ display: 'flex', alignItems: 'center', marginLeft: '6px', cursor: 'pointer', color: 'hsl(var(--color-text-tertiary))' }}
+                        title="This group is linked"
+                    >
+                        <Link2 size={13} />
+                    </div>
+                )}
+
+                {showLinkPopover && linkIconRef.current && createPortal(
+                    <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setShowLinkPopover(false)} />
+                        <div style={{
+                            position: 'fixed',
+                            top: linkIconRef.current.getBoundingClientRect().bottom + 6,
+                            left: linkIconRef.current.getBoundingClientRect().left,
+                            backgroundColor: 'white',
+                            border: '1px solid hsl(var(--color-border))',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 9999,
+                            width: '220px',
+                            fontSize: '13px'
+                        }}>
+                            <div style={{ color: 'hsl(var(--color-text-secondary))', marginBottom: '8px' }}>
+                                Linked to: <br />
+                                <strong>{linkedNames ? `${linkedNames.workspaceTitle} / ${linkedNames.boardTitle} / ${linkedNames.groupTitle}` : 'Loading…'}</strong>
+                            </div>
+                            {can('group_ungroup') && (
+                                <button
+                                    onClick={() => { unlinkGroup(data.id); setShowLinkPopover(false); }}
+                                    style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'transparent', cursor: 'pointer', fontSize: '12px', color: '#e11d48' }}
+                                >
+                                    Unlink
+                                </button>
+                            )}
+                        </div>
+                    </>,
+                    document.body
+                )}
+
                 <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-tertiary))', marginLeft: '8px' }}>
                     {data.count} items
                 </span>
@@ -245,9 +315,9 @@ export const GroupRow = ({
                 {can('group_ungroup') && (
                     <div className="group-actions" style={{ marginLeft: '12px', display: 'flex', gap: '4px', opacity: 0.2 }}>
                         <button
-                            onClick={() => setShowDeleteConfirm(true)}
+                            onClick={() => data.linkedGroupId ? setShowLinkedDeleteBlocked(true) : setShowDeleteConfirm(true)}
                             className="icon-btn"
-                            title="Delete Group"
+                            title={data.linkedGroupId ? "Unlink before deleting" : "Delete Group"}
                         >
                             <Trash2 size={14} />
                         </button>
@@ -268,6 +338,18 @@ export const GroupRow = ({
                     setShowDeleteConfirm(false);
                 }}
                 onCancel={() => setShowDeleteConfirm(false)}
+            />
+
+            <ConfirmModal
+                isOpen={showLinkedDeleteBlocked}
+                title="This Group is Linked"
+                message={`"${data.title}" is linked to another group. Unlink it first, then you can delete it.`}
+                confirmText="Unlink Now"
+                onConfirm={() => {
+                    unlinkGroup(data.id);
+                    setShowLinkedDeleteBlocked(false);
+                }}
+                onCancel={() => setShowLinkedDeleteBlocked(false)}
             />
 
             <style>{`

@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff, Link2 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
+import { LinkGroupModal } from './LinkGroupModal';
 
 export const BoardViewsToolbar = () => {
     const addItem = useBoardStore(state => state.addItem);
@@ -11,6 +12,7 @@ export const BoardViewsToolbar = () => {
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showLinkGroupModal, setShowLinkGroupModal] = useState(false);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [showGroupByDropdown, setShowGroupByDropdown] = useState(false);
@@ -32,6 +34,11 @@ export const BoardViewsToolbar = () => {
             addGroup("Group Title");
             setShowDropdown(false);
         }
+    };
+
+    const handleOpenLinkGroup = () => {
+        setShowDropdown(false);
+        setShowLinkGroupModal(true);
     };
 
     const toggleFilter = (columnId: string, val: string) => {
@@ -58,6 +65,7 @@ export const BoardViewsToolbar = () => {
     };
 
     return (
+        <>
         <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -133,6 +141,15 @@ export const BoardViewsToolbar = () => {
                                 >
                                     <LayoutGrid size={16} />
                                     <span>New group of items</span>
+                                </div>
+                                <div
+                                    onClick={handleOpenLinkGroup}
+                                    style={dropdownItemStyle}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    <Link2 size={16} />
+                                    <span>Link to other group</span>
                                 </div>
                             </div>
                         </>,
@@ -461,6 +478,10 @@ export const BoardViewsToolbar = () => {
             {/* Right Side: Empty */}
             <div />
         </div>
+        {showLinkGroupModal && (
+            <LinkGroupModal onClose={() => setShowLinkGroupModal(false)} />
+        )}
+        </>
     );
 };
 

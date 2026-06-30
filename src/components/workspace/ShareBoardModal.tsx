@@ -172,35 +172,6 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                         />
                     )}
                 </div>
-
-                {/* Footer */}
-                <div style={{
-                    padding: '16px 20px',
-                    borderTop: '1px solid hsl(var(--color-border))',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    backgroundColor: 'white',
-                    marginTop: 'auto'
-                }}>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            padding: '8px 24px',
-                            backgroundColor: '#4f46e5',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'opacity 0.2s',
-                            fontSize: '14px'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                    >
-                        Done
-                    </button>
-                </div>
             </div>
 
             {/* Toast Notifications */}

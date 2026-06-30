@@ -162,7 +162,7 @@ export const createGroupLinkSlice: StateCreator<
         // 3. Fetch the source group's items directly from Supabase.
         const { data: sourceItems, error: fetchError } = await supabase
             .from('items')
-            .select('id, title, values, is_hidden, order, parent_id')
+            .select('id, title, values, updates, is_hidden, order, parent_id')
             .eq('group_id', sourceGroupId);
 
         if (fetchError) {
@@ -185,6 +185,7 @@ export const createGroupLinkSlice: StateCreator<
                 groupId: newGroupId,
                 boardId: activeBoardId,
                 values: translateValues(srcItem.values || {}, columnMapSourceToCurrent),
+                updates: srcItem.updates || [],
                 isHidden: srcItem.is_hidden,
                 order: srcItem.order,
                 parentId: undefined
@@ -194,7 +195,7 @@ export const createGroupLinkSlice: StateCreator<
         if (newTopLevelItems.length > 0) {
             const { error: topLevelInsertError } = await supabase.from('items').insert(newTopLevelItems.map(i => ({
                 id: i.id, title: i.title, board_id: i.boardId, group_id: i.groupId,
-                values: i.values, is_hidden: i.isHidden, order: i.order, parent_id: null
+                values: i.values, updates: i.updates || [], is_hidden: i.isHidden, order: i.order, parent_id: null
             })));
             if (topLevelInsertError) {
                 console.error('linkGroupToOther: failed to insert top-level items', topLevelInsertError);
@@ -213,6 +214,7 @@ export const createGroupLinkSlice: StateCreator<
                 groupId: newGroupId,
                 boardId: activeBoardId,
                 values: translateValues(srcItem.values || {}, columnMapSourceToCurrent),
+                updates: srcItem.updates || [],
                 isHidden: srcItem.is_hidden,
                 order: srcItem.order,
                 parentId: newParentId
@@ -222,7 +224,7 @@ export const createGroupLinkSlice: StateCreator<
         if (newSubItems.length > 0) {
             const { error: subItemInsertError } = await supabase.from('items').insert(newSubItems.map(i => ({
                 id: i.id, title: i.title, board_id: i.boardId, group_id: i.groupId,
-                values: i.values, is_hidden: i.isHidden, order: i.order, parent_id: i.parentId || null
+                values: i.values, updates: i.updates || [], is_hidden: i.isHidden, order: i.order, parent_id: i.parentId || null
             })));
             if (subItemInsertError) {
                 console.error('linkGroupToOther: failed to insert sub-items', subItemInsertError);

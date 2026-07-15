@@ -359,8 +359,57 @@ export const createBoardSlice: StateCreator<
     loadBoardData: async (boardId: string) => {
         const { boards, loadingBoardIds } = get();
         const board = boards.find(b => b.id === boardId);
-        
-        if (!board || board.isDataLoaded || loadingBoardIds.has(boardId)) return;
+
+        if (!board || loadingBoardIds.has(boardId)) return;
+
+        // Already loaded: silently refresh items only when this board has linked groups,
+        // so that mirror items created by the DB trigger while the user was elsewhere
+        // are picked up immediately without a full page reload.
+        if (board.isDataLoaded) {
+            const hasLinkedGroups = board.groups.some(g => g.linkedGroupId);
+            if (!hasLinkedGroups) return;
+
+            const { data: items } = await supabase
+                .from('items')
+                .select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id')
+                .eq('board_id', boardId)
+                .order('order');
+
+            if (!items) return;
+
+            set(state => {
+                const boardIndex = state.boards.findIndex(b => b.id === boardId);
+                if (boardIndex === -1) return state;
+
+                const b = state.boards[boardIndex];
+                const parsedItemsMap: Record<string, any[]> = {};
+                const parsedItems = items.map(i => {
+                    const p = {
+                        id: i.id, title: i.title, groupId: i.group_id, boardId,
+                        values: parseSqlJson(i.values, {}), isHidden: i.is_hidden,
+                        updates: parseSqlJson(i.updates, []), files: parseSqlJson(i.files, []),
+                        order: i.order, parentId: i.parent_id, createdAt: i.created_at
+                    };
+                    if (!parsedItemsMap[i.group_id]) parsedItemsMap[i.group_id] = [];
+                    parsedItemsMap[i.group_id].push(p);
+                    return p;
+                });
+
+                const newBoards = [...state.boards];
+                newBoards[boardIndex] = {
+                    ...b,
+                    items: parsedItems,
+                    groups: b.groups.map(g => ({
+                        ...g,
+                        items: (parsedItemsMap[g.id] || [])
+                            .filter(i => !i.parentId)
+                            .sort((a, bItem) => (a.order || 0) - (bItem.order || 0) || a.id.localeCompare(bItem.id))
+                    }))
+                };
+                return { boards: newBoards };
+            });
+            return;
+        }
 
         set(state => ({ loadingBoardIds: new Set(state.loadingBoardIds).add(boardId) }));
 

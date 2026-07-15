@@ -393,18 +393,25 @@ export const createMemberSlice: StateCreator<
                     schema: 'public',
                     table: 'items'
                 }, (payload) => {
-                    const { activeBoardId, lastOptimisticUpdate } = get();
+                    const { activeBoardId, lastOptimisticUpdate, boards } = get();
                     const item = (payload.new || payload.old) as any;
-                    
+
                     // Fallback for missing board_id in UPDATE payload
                     let itemBoardId = item.board_id;
                     if (!itemBoardId && payload.eventType === 'UPDATE') {
-                        const existingItem = get().boards.find(b => b.id === activeBoardId)?.items.find(i => i.id === item.id);
-                        if (existingItem) itemBoardId = existingItem.boardId;
+                        // Search all loaded boards, not just the active one
+                        for (const b of boards) {
+                            if (!b.isDataLoaded) continue;
+                            const found = b.items.find(i => i.id === item.id);
+                            if (found) { itemBoardId = b.id; break; }
+                        }
                     }
 
-                    // Skip if item doesn't belong to current board or if we just updated it optimistically
-                    if (itemBoardId !== activeBoardId) return;
+                    // Skip items for boards not yet loaded (no point updating state that isn't there)
+                    // Allow updates for ANY loaded board — not just the active one — so that
+                    // mirror items created by the linked-groups DB trigger are reflected immediately
+                    // even when the user is looking at the other side.
+                    if (!boards.find(b => b.id === itemBoardId)?.isDataLoaded) return;
                     if (payload.eventType === 'UPDATE' && lastOptimisticUpdate[item.id] && Date.now() - lastOptimisticUpdate[item.id] < 3000) {
                         return;
                     }

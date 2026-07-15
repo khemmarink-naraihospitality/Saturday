@@ -939,6 +939,12 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 ref={editorRef}
                 contentEditable
                 onInput={handleChange}
+                onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+                        handleChange();
+                    }
+                }}
                 onKeyUp={(e) => {
                     // Navigate mention list TODO
                     if (e.key === 'Escape') {

@@ -41,7 +41,7 @@ export interface BoardSlice {
 
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
-    loadBoardData: (boardId: string) => Promise<void>;
+    loadBoardData: (boardId: string, _skipLinkedAutoLoad?: boolean) => Promise<void>;
     loadingBoardIds: Set<string>;
 
     // Import Actions
@@ -356,11 +356,19 @@ export const createBoardSlice: StateCreator<
         }
     },
 
-    loadBoardData: async (boardId: string) => {
+    loadBoardData: async (boardId: string, _skipLinkedAutoLoad = false) => {
         const { boards, loadingBoardIds } = get();
         const board = boards.find(b => b.id === boardId);
 
         if (!board || loadingBoardIds.has(boardId)) return;
+
+        const autoLoadLinked = () => {
+            if (_skipLinkedAutoLoad) return;
+            const current = get().boards.find(b => b.id === boardId);
+            const ids = new Set((current?.groups || []).filter(g => g.linkedBoardId).map(g => g.linkedBoardId!));
+            // Pass _skipLinkedAutoLoad=true to prevent the linked board from triggering another round
+            ids.forEach(id => get().loadBoardData(id, true));
+        };
 
         // Already loaded: silently refresh items only when this board has linked groups,
         // so that mirror items created by the DB trigger while the user was elsewhere
@@ -408,6 +416,7 @@ export const createBoardSlice: StateCreator<
                 };
                 return { boards: newBoards };
             });
+            autoLoadLinked();
             return;
         }
 
@@ -509,11 +518,15 @@ export const createBoardSlice: StateCreator<
 
                 const newBoards = [...state.boards];
                 newBoards[boardIndex] = updatedBoard;
-                return { 
+                return {
                     boards: newBoards,
                     loadingBoardIds: nextLoading
                 };
             });
+
+            // After full load, auto-load each linked board in the background so that
+            // realtime events from the DB trigger are wired up for both sides immediately.
+            autoLoadLinked();
         } catch (err) {
             console.error('Failed to load board data', err);
             set(state => {

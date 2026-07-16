@@ -393,7 +393,7 @@ export const createMemberSlice: StateCreator<
                     schema: 'public',
                     table: 'items'
                 }, (payload) => {
-                    const { activeBoardId, lastOptimisticUpdate, boards } = get();
+                    const { lastOptimisticUpdate, boards } = get();
                     const item = (payload.new || payload.old) as any;
 
                     // Fallback for missing board_id in UPDATE payload

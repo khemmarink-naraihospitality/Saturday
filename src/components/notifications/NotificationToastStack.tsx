@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Notification } from '../../types';
 import { NotificationItem } from './NotificationItem';
-
-const AUTO_DISMISS_MS = 5000;
+import { useBoardStore } from '../../store/useBoardStore';
 
 interface ToastCardProps {
     notification: Notification;
@@ -12,10 +11,19 @@ interface ToastCardProps {
 }
 
 const ToastCard = ({ notification, onRemove }: ToastCardProps) => {
+    // No auto-dismiss timer — this card is meant to stay put until the user has
+    // actually looked at it. Instead, watch the real notification in the store:
+    // clicking the card marks it read (NotificationItem's own click handler),
+    // and its dismiss button deletes it outright — either way it stops matching
+    // here (is_read flips true, or the row disappears entirely) and the toast
+    // removes itself at that point, never on a blind timer.
+    const liveNotification = useBoardStore(state => state.notifications.find(n => n.id === notification.id));
+
     useEffect(() => {
-        const timer = setTimeout(() => onRemove(notification.id), AUTO_DISMISS_MS);
-        return () => clearTimeout(timer);
-    }, [notification.id, onRemove]);
+        if (!liveNotification || liveNotification.is_read) {
+            onRemove(notification.id);
+        }
+    }, [liveNotification, notification.id, onRemove]);
 
     return (
         <motion.div
@@ -34,10 +42,7 @@ const ToastCard = ({ notification, onRemove }: ToastCardProps) => {
                 pointerEvents: 'auto'
             }}
         >
-            {/* Auto-dismiss only hides this popup — the NotificationItem's own
-                controls (mark-as-read on click, dismiss = delete) still act on
-                the real notification, same as inside the bell popover. */}
-            <NotificationItem notification={notification} onClose={() => onRemove(notification.id)} />
+            <NotificationItem notification={liveNotification ?? notification} onClose={() => onRemove(notification.id)} />
         </motion.div>
     );
 };

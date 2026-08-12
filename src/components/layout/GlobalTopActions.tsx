@@ -31,22 +31,28 @@ export const GlobalTopActions = () => {
 
     // New notifications are prepended (memberSlice.ts), so notifications[0] is
     // always the newest. Comparing its id across renders — rather than deriving
-    // from unreadCount — tells a genuine new arrival apart from the initial
-    // load and from read-count decreases, which should not replay any effect.
+    // from unreadCount — tells a genuine new arrival apart from a read-count
+    // decrease, which should never queue a toast.
+    //
+    // loadNotifications() is async, so the *first* real data is one render
+    // behind mount (mount fires with notifications still empty, then the
+    // fetch resolves and repopulates it) — that repopulation is not a real
+    // arrival either. `initialLoadDone` only flips true once that fetch has
+    // actually resolved, so both the empty-mount render and the fetch-resolved
+    // render land before it's true and never queue a toast; only ids that show
+    // up *after* that point count as arrivals.
     const latestNotificationId = notifications[0]?.id;
-    const prevLatestIdRef = useRef<string | null>('__uninitialized__');
-    const [arrivalKey, setArrivalKey] = useState(0);
+    const prevLatestIdRef = useRef<string | null>(null);
     const [toastQueue, setToastQueue] = useState<typeof notifications>([]);
+    const [initialLoadDone, setInitialLoadDone] = useState(false);
 
     useEffect(() => {
-        const isFirstRun = prevLatestIdRef.current === '__uninitialized__';
-        if (!isFirstRun && latestNotificationId && latestNotificationId !== prevLatestIdRef.current) {
-            setArrivalKey(k => k + 1);
+        if (initialLoadDone && latestNotificationId && latestNotificationId !== prevLatestIdRef.current) {
             setToastQueue(prev => [...prev, notifications[0]].slice(-3));
         }
         prevLatestIdRef.current = latestNotificationId ?? null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [latestNotificationId]);
+    }, [latestNotificationId, initialLoadDone]);
 
     const removeToast = useCallback((id: string) => {
         setToastQueue(prev => prev.filter(n => n.id !== id));
@@ -54,7 +60,7 @@ export const GlobalTopActions = () => {
 
     useEffect(() => {
         if (user?.id) {
-            loadNotifications();
+            loadNotifications().finally(() => setInitialLoadDone(true));
         }
     }, [user?.id, loadNotifications]);
 
@@ -125,13 +131,12 @@ export const GlobalTopActions = () => {
                     <Bell size={20} />
                     {unreadCount > 0 && (
                         <>
-                            {/* One-shot ring that expands out from the badge and fades,
-                                replayed on each new arrival via the `arrivalKey` remount. */}
+                            {/* Ring that continuously expands out from the badge and fades,
+                                looping for as long as anything is unread — stops the instant
+                                this button/component unmounts the block below zero. */}
                             <motion.span
-                                key={`ring-${arrivalKey}`}
-                                initial={{ scale: 1, opacity: 0.55 }}
-                                animate={{ scale: 2.4, opacity: 0 }}
-                                transition={{ duration: 0.7, ease: 'easeOut' }}
+                                animate={{ scale: [1, 2.2], opacity: [0.55, 0] }}
+                                transition={{ duration: 1.3, repeat: Infinity, ease: 'easeOut' }}
                                 style={{
                                     position: 'absolute',
                                     top: '0px',
@@ -144,10 +149,8 @@ export const GlobalTopActions = () => {
                                 }}
                             />
                             <motion.div
-                                key={`badge-${arrivalKey}`}
-                                initial={{ scale: 0.4 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+                                animate={{ scale: [1, 1.18, 1] }}
+                                transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }}
                                 style={{
                                     position: 'absolute',
                                     top: '0px',

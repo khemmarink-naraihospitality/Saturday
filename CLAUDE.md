@@ -20,7 +20,10 @@ Copy `.env.example` to `.env` and fill in:
 ```
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
+VITE_GIPHY_API_KEY=...        # optional — GifStickerPicker falls back to a shared demo key
 ```
+
+Two more vars are read but not in `.env.example`: `VITE_GOOGLE_API_KEY` / `VITE_GOOGLE_CLIENT_ID` (`src/hooks/useGooglePicker.ts`, Google file picker integration).
 
 ## Architecture Overview
 
@@ -36,13 +39,14 @@ Pages: `home`, `board`, `notifications`, `admin`, `dashboard`, `favorites`.
 
 Two Zustand stores:
 
-- **`useBoardStore`** (`src/store/useBoardStore.ts`) — the primary store, composed of 6 slices:
+- **`useBoardStore`** (`src/store/useBoardStore.ts`) — the primary store, composed of 7 slices:
   - `boardSlice` — boards CRUD, navigation, view state, Excel import
   - `workspaceSlice` — workspaces CRUD
   - `itemSlice` — items/sub-items CRUD, selection, drag-and-drop
   - `groupSlice` — groups CRUD
   - `columnSlice` — columns CRUD, type changes
   - `memberSlice` — board/workspace members, notifications, Supabase Realtime subscription
+  - `groupLinkSlice` — Linked Groups: creates/removes cross-board group links (see below)
 
 - **`useUserStore`** (`src/store/useUserStore.ts`) — persisted (localStorage). Stores `currentUser` including their `system_role` and `is_approved`.
 
@@ -79,9 +83,22 @@ Column types: `text`, `long_text`, `status`, `date`, `number`, `dropdown`, `chec
 
 Board views: `main_table` (default), `timeline`, `kanban`, `calendar` — switched via `Board.activeViewId`.
 
+### Linked Groups
+
+A group can be mirrored to a group on a *different* board (`groupLinkSlice.ts`, `group_links` table). `linkGroupToOther` clones the source group's items into a brand-new group on the current board, auto-creating any missing columns and mapping `status`/`dropdown` option ids across boards by matching option **label** (since option UUIDs differ per board). `Group.linkedGroupId` / `linkedBoardId` (`src/types/index.ts`) are populated client-side from `group_links` — not real columns on `groups`.
+
+Ongoing sync after the initial link is handled by a **Postgres trigger** (see `supabase/migrations/20260630_sync_linked_group_updates.sql` and related migrations), not client code — writes to one side's items are mirrored to the other side server-side. The client's job is only to keep both sides subscribed: `loadBoardData` auto-loads any linked board in the background (`boardSlice.ts`), and silently re-fetches items when reopening a board that has linked groups, so mirror rows created while the user was elsewhere appear immediately.
+
+### Private Board PIN Protection
+
+Boards with `is_private: true` are gated by a 6-digit PIN before any board data (columns/groups/items) is fetched — `BoardPage.tsx` renders `PinLockScreen` in place of the board until unlocked. PIN verification, attempt lockout, and OTP-based reset all happen server-side in the `board-pin` Edge Function (never compared client-side). Once unlocked, the board id is cached in `sessionStorage` via `src/lib/boardPinUnlock.ts` for the rest of the tab session, and cleared on sign-out (`AuthContext`).
+
 ### Supabase Edge Functions
 
-`inviteToBoard` calls the `invite-user` Supabase Edge Function to send email invitations and handle pending invites for users who don't have an account yet.
+- `invite-user` — sends board invitation emails; called via `inviteToBoard`, also handles pending invites for users without an account yet.
+- `board-pin` — verifies/sets/resets private-board PINs (OTP-based reset flow); called from `PinLockScreen` and `PinResetModal`.
+- `ai-summary` — generates AI summaries of board/group activity; called from `AISummaryView` and `AISettings`.
+- `test-smtp` — sends a test email to verify SMTP settings from `EmailSettings` (admin).
 
 ### Styling
 

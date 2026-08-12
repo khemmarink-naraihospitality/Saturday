@@ -322,18 +322,29 @@ export const createMemberSlice: StateCreator<
         // 2. Update value in DB
         await get().updateItemValue(itemId, columnId, newValues);
 
-        // 3. Send "You're assigned" email only if we just ADDED them
+        // 3. Notify + send "You're assigned" email only if we just ADDED them
         if (!isRemoving) {
-            const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
-            const workspaceTitle = get().workspaces.find(w => w.id === board?.workspaceId)?.title || 'NHG Saturday';
-            const groupName = board?.groups.find(g => g.id === item?.groupId)?.title || '';
-
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             const { data: inviterProfile } = await supabase.from('profiles').select('full_name').eq('id', currentUser?.id).single();
             const inviterName = inviterProfile?.full_name
                 || currentUser?.user_metadata?.full_name
                 || currentUser?.email?.split('@')[0]
                 || 'A Team Member';
+
+            // In-app notification (skip if assigning yourself — nothing to alert).
+            if (userId !== currentUser?.id) {
+                await get().createNotification(
+                    userId,
+                    'assignment',
+                    `${inviterName} assigned you to "${item?.title || 'a task'}"`,
+                    itemId,
+                    { board_id: boardId }
+                );
+            }
+
+            const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single();
+            const workspaceTitle = get().workspaces.find(w => w.id === board?.workspaceId)?.title || 'NHG Saturday';
+            const groupName = board?.groups.find(g => g.id === item?.groupId)?.title || '';
 
             if (profile?.email && item?.title && board?.title) {
                 await supabase.functions.invoke('invite-user', {

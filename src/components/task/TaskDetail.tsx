@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
+import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
@@ -611,14 +611,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                 >@</button>
 
-                                                {/* Paperclip / File URL */}
+                                                {/* Link / File URL */}
                                                 <button
                                                     onClick={() => { setShowUrlPanel(!showUrlPanel); setShowGifPicker(false); }}
                                                     title="Attach file URL"
                                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
                                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
-                                                ><Paperclip size={16} /></button>
+                                                ><Link size={16} /></button>
 
                                                 {/* GIF */}
                                                 <button
@@ -842,14 +842,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                         >@</button>
 
-                                                                        {/* Paperclip */}
+                                                                        {/* Link / File URL */}
                                                                         <button
                                                                             onClick={() => { setShowEditUrlPanel(!showEditUrlPanel); setShowEditGifPicker(false); }}
                                                                             title="Attach file URL"
                                                                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', backgroundColor: showEditUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
                                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showEditUrlPanel ? 'hsl(var(--color-bg-hover))' : 'transparent'}
-                                                                        ><Paperclip size={16} /></button>
+                                                                        ><Link size={16} /></button>
 
                                                                         {/* GIF */}
                                                                         <button
@@ -1103,14 +1103,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                     >@</button>
 
-                                                                    {/* Paperclip / File URL */}
+                                                                    {/* Link / File URL */}
                                                                     <button
                                                                         onClick={() => { setReplyActiveUrlId(replyActiveUrlId === update.id ? null : update.id); setReplyActiveGifId(null); setReplyActiveEmojiId(null); }}
                                                                         title="Attach file URL"
                                                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '5px', border: 'none', backgroundColor: replyActiveUrlId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent', cursor: 'pointer', color: 'hsl(var(--color-text-secondary))' }}
                                                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = replyActiveUrlId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent'}
-                                                                    ><Paperclip size={15} /></button>
+                                                                    ><Link size={15} /></button>
 
                                                                     {/* GIF */}
                                                                     <button

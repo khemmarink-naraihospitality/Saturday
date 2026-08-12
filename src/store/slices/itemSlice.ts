@@ -25,6 +25,7 @@ export interface ItemSlice {
     addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }, files?: import('../../types').FileLink[], parentId?: string) => Promise<void>;
     deleteUpdate: (itemId: string, updateId: string) => Promise<void>;
     editUpdate: (itemId: string, updateId: string, newContent: string, files?: import('../../types').FileLink[]) => Promise<void>;
+    toggleUpdateLike: (itemId: string, updateId: string, user: { id: string; name: string }) => Promise<void>;
 
     // View Options
     toggleShowHiddenItems: () => void;
@@ -387,9 +388,11 @@ export const createItemSlice: StateCreator<
         const itemLink = `https://saturdaycom.vercel.app`;
         const dataIdRegex = /data-id="([^"]+)"/g;
         let dataIdMatch;
+        const mentionedUserIds = new Set<string>();
         while ((dataIdMatch = dataIdRegex.exec(content)) !== null) {
             const mentionedUserId = dataIdMatch[1];
             if (mentionedUserId && mentionedUserId !== author.id) {
+                mentionedUserIds.add(mentionedUserId);
                 // Resolve mentioned user's display name from board members
                 const mentionedMember = get().activeBoardMembers.find((m: any) => m.user_id === mentionedUserId);
                 const mentionedUserName = mentionedMember?.profiles?.full_name || 'Someone';
@@ -424,6 +427,28 @@ export const createItemSlice: StateCreator<
                 }).catch((e: unknown) => console.error('Mention email error:', e));
             }
         }
+
+        // Plain-comment notification: alert this item's assignees even when they
+        // weren't @mentioned, so a comment on your task doesn't go unnoticed.
+        // "Assignee" mirrors the convention already used for dashboard people-stats
+        // (WorkspaceDashboardPage.tsx) — any people-type column's value, not just
+        // one hardcoded "Person" column.
+        const assigneeIds = new Set<string>();
+        (board?.columns || []).filter(c => c.type === 'people').forEach(col => {
+            const val = item?.values?.[col.id];
+            const ids: string[] = Array.isArray(val) ? val : (val ? [val] : []);
+            ids.forEach(id => assigneeIds.add(id));
+        });
+        for (const assigneeId of assigneeIds) {
+            if (assigneeId === author.id || mentionedUserIds.has(assigneeId)) continue;
+            await get().createNotification(
+                assigneeId,
+                'comment',
+                `${author.name} commented on "${item?.title || 'a task'}" you're assigned to`,
+                itemId,
+                { board_id: activeBoardId, updatePreview: textPreview }
+            );
+        }
     },
 
     deleteUpdate: async (itemId, updateId) => {
@@ -441,6 +466,55 @@ export const createItemSlice: StateCreator<
         const board = get().boards.find(b => b.id === activeBoardId);
         const item = board?.items.find(i => i.id === itemId);
         await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
+    },
+
+    toggleUpdateLike: async (itemId, updateId, user) => {
+        const { activeBoardId } = get();
+        let wasLiked = false;
+        let updateAuthorId: string | undefined;
+        let itemTitle: string | undefined;
+
+        set(state => ({
+            boards: state.boards.map(b => {
+                if (b.id !== activeBoardId) return b;
+                return {
+                    ...b,
+                    items: b.items.map(i => {
+                        if (i.id !== itemId) return i;
+                        itemTitle = i.title;
+                        return {
+                            ...i,
+                            updates: (i.updates || []).map(u => {
+                                if (u.id !== updateId) return u;
+                                updateAuthorId = u.userId;
+                                const likedBy = u.likedBy || [];
+                                wasLiked = likedBy.includes(user.id);
+                                return {
+                                    ...u,
+                                    likedBy: wasLiked ? likedBy.filter(id => id !== user.id) : [...likedBy, user.id]
+                                };
+                            })
+                        };
+                    })
+                };
+            })
+        }));
+
+        const board = get().boards.find(b => b.id === activeBoardId);
+        const item = board?.items.find(i => i.id === itemId);
+        await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
+
+        // Notify the update's author when someone else likes it — not on unlike,
+        // and not when liking your own update.
+        if (!wasLiked && updateAuthorId && updateAuthorId !== user.id) {
+            await get().createNotification(
+                updateAuthorId,
+                'like',
+                `${user.name} liked your update on "${itemTitle || 'a task'}"`,
+                itemId,
+                { board_id: activeBoardId }
+            );
+        }
     },
 
     editUpdate: async (itemId, updateId, newContent, files) => {

@@ -59,6 +59,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const addUpdate = useBoardStore(state => state.addUpdate);
     const editUpdate = useBoardStore(state => state.editUpdate);
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
+    const toggleUpdateLike = useBoardStore(state => state.toggleUpdateLike);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
 
@@ -100,8 +101,6 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const replyEmojiButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
     const replyGifButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
     const replyEmojiPickerRef = useRef<HTMLDivElement>(null);
-    const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-
     // File Tab State
     const [fileUrl, setFileUrl] = useState('');
     const [fileName, setFileName] = useState('');
@@ -953,8 +952,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             {/* Like / Reply action bar — top-level only */}
                                             {depth === 0 && editingUpdateId !== update.id && (
                                                 <>
-                                                    {/* Like count badge — only visible when liked */}
-                                                    {likedIds.has(update.id) && (
+                                                    {/* Like count badge — only visible when someone has liked it */}
+                                                    {(update.likedBy?.length || 0) > 0 && (
                                                         <div style={{ marginTop: '10px' }}>
                                                             <span style={{
                                                                 display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -966,9 +965,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                 color: '#5A4A00',
                                                                 cursor: 'pointer', userSelect: 'none'
                                                             }}
-                                                                onClick={() => setLikedIds(prev => { const n = new Set(prev); n.delete(update.id); return n; })}
+                                                                onClick={() => toggleUpdateLike(itemId, update.id, { id: currentUser.id, name: currentUser.name })}
                                                             >
-                                                                👍 1
+                                                                👍 {update.likedBy.length}
                                                             </span>
                                                         </div>
                                                     )}
@@ -977,28 +976,24 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         gap: '4px',
-                                                        marginTop: likedIds.has(update.id) ? '8px' : '12px',
+                                                        marginTop: (update.likedBy?.length || 0) > 0 ? '8px' : '12px',
                                                         paddingTop: '8px',
                                                         borderTop: '1px solid hsl(var(--color-border))'
                                                     }}>
                                                         {/* Like button */}
                                                         <button
-                                                            onClick={() => setLikedIds(prev => {
-                                                                const n = new Set(prev);
-                                                                if (n.has(update.id)) { n.delete(update.id); } else { n.add(update.id); }
-                                                                return n;
-                                                            })}
+                                                            onClick={() => toggleUpdateLike(itemId, update.id, { id: currentUser.id, name: currentUser.name })}
                                                             style={{
                                                                 display: 'flex', alignItems: 'center', gap: '6px',
                                                                 background: 'none', border: 'none', cursor: 'pointer',
-                                                                color: likedIds.has(update.id) ? '#D4A000' : 'hsl(var(--color-text-secondary))',
+                                                                color: update.likedBy?.includes(currentUser.id) ? '#D4A000' : 'hsl(var(--color-text-secondary))',
                                                                 fontSize: '13px', padding: '4px 10px', borderRadius: '4px', fontWeight: 500,
                                                                 lineHeight: 1
                                                             }}
-                                                            onMouseEnter={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
-                                                            onMouseLeave={(e) => { if (!likedIds.has(update.id)) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                            onMouseEnter={(e) => { if (!update.likedBy?.includes(currentUser.id)) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
+                                                            onMouseLeave={(e) => { if (!update.likedBy?.includes(currentUser.id)) e.currentTarget.style.backgroundColor = 'transparent'; }}
                                                         >
-                                                            <ThumbsUp size={15} fill={likedIds.has(update.id) ? '#D4A000' : 'none'} />
+                                                            <ThumbsUp size={15} fill={update.likedBy?.includes(currentUser.id) ? '#D4A000' : 'none'} />
                                                             <span>Like</span>
                                                         </button>
 

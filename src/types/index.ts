@@ -75,6 +75,7 @@ export interface Comment {
     contentType?: 'Update' | 'Reply'; // From Excel sheet
     postId?: string; // Original Post ID from Excel
     files?: FileLink[]; // Attached files
+    likedBy?: string[]; // User ids who liked this update/reply
 }
 
 export interface Item {
@@ -140,7 +141,7 @@ export interface Board {
     is_private?: boolean;
 }
 
-export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added';
+export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like';
 export type NotificationStatus = 'pending' | 'accepted' | 'declined';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -2,7 +2,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { useBoardStore } from '../../store/useBoardStore';
 import type { Notification } from '../../types';
-import { Check, X, Bell, UserPlus, FileText, MessageSquare } from 'lucide-react';
+import { Check, X, Bell, UserPlus, FileText, MessageSquare, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 
 
@@ -24,6 +24,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     const isInvite = notification.type === 'workspace_invite' || notification.type === 'board_invite';
     const isAssignment = notification.type === 'assignment';
     const isMention = notification.type === 'mention';
+    const isComment = notification.type === 'comment';
+    const isLike = notification.type === 'like';
 
     const handleAction = async (action: 'accept' | 'decline') => {
         setIsProcessing(true);
@@ -65,6 +67,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
         if (isInvite) return <UserPlus size={16} color="hsl(var(--color-brand-primary))" />;
         if (isAssignment) return <FileText size={16} color="hsl(var(--color-status-green-bg))" />;
         if (isMention) return <MessageSquare size={16} color="#f97316" />; // Keeping orange for now as no var
+        if (isComment) return <MessageSquare size={16} color="hsl(var(--color-text-secondary))" />;
+        if (isLike) return <ThumbsUp size={16} color="#D4A000" />;
         return <Bell size={16} color="hsl(var(--color-text-secondary))" />;
     };
 

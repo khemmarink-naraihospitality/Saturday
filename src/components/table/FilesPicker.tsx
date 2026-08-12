@@ -163,7 +163,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 } else if (mime.includes('form')) {
                                     iconUrl = "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png";
                                 } else if (mime.includes('pdf') || name.endsWith('.pdf')) {
-                                    iconUrl = "https://www.gstatic.com/images/branding/product/1x/pdf_48dp.png";
+                                    iconUrl = "https://drive-thirdparty.googleusercontent.com/32/type/application/pdf";
                                 } else if (mime.includes('image') || name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg')) {
                                     iconUrl = "https://www.gstatic.com/images/branding/product/1x/photos_48dp.png"; // Fixed icon mapping
                                 } else if (file.type === 'google-drive') {

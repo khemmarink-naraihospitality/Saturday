@@ -18,7 +18,7 @@ const FILE_ICONS = {
     slides: "https://www.gstatic.com/images/branding/product/1x/slides_2020q4_48dp.png",
     forms: "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png",
     drive: "https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png",
-    pdf: "https://www.gstatic.com/images/branding/product/1x/pdf_48dp.png"
+    pdf: "https://drive-thirdparty.googleusercontent.com/32/type/application/pdf"
 };
 
 export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files: propFiles }) => {

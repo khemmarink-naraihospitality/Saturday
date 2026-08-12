@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import type { Workspace, Board, ColumnType, Column, Item } from '../../types';
 import type { BoardState } from '../useBoardStore';
+import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 
 export interface WorkspaceSlice {
     workspaces: Workspace[];
@@ -70,14 +71,10 @@ export const createWorkspaceSlice: StateCreator<
             const groupId = uuidv4();
             const itemId = uuidv4();
 
+            const statusOptions = await getDefaultStatusOptions();
             const defaultColumns: Column[] = [
                 {
-                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
-                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
-                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Stuck', color: '#e2445c' },
-                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                    ]
+                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: statusOptions
                 },
                 { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
                 { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
@@ -92,8 +89,9 @@ export const createWorkspaceSlice: StateCreator<
 
             const statusCol = defaultColumns[0];
             const dateCol = defaultColumns[4];
+            const doneOption = statusCol.options?.find(o => o.label.toLowerCase() === 'done');
             const defaultValues = {
-                [statusCol.id]: statusCol.options?.[1].id, // 'Done'
+                [statusCol.id]: (doneOption ?? statusCol.options?.[0])?.id,
                 [dateCol.id]: new Date().toISOString().split('T')[0]
             };
 
@@ -200,14 +198,10 @@ export const createWorkspaceSlice: StateCreator<
             const groupId = uuidv4();
             const itemId = uuidv4();
 
+            const statusOptions = await getDefaultStatusOptions();
             const defaultColumns: Column[] = [
                 {
-                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
-                        { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' },
-                        { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },
-                        { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Stuck', color: '#e2445c' },
-                        { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                    ]
+                    id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: statusOptions
                 },
                 { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
                 { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },
@@ -222,8 +216,9 @@ export const createWorkspaceSlice: StateCreator<
 
             const statusCol = defaultColumns[0];
             const dateCol = defaultColumns[4];
+            const doneOption = statusCol.options?.find(o => o.label.toLowerCase() === 'done');
             const defaultValues = {
-                [statusCol.id]: statusCol.options?.[1].id, // 'Done'
+                [statusCol.id]: (doneOption ?? statusCol.options?.[0])?.id,
                 [dateCol.id]: new Date().toISOString().split('T')[0]
             };
 

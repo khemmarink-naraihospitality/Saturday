@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Board, ColumnType, Column } from '../../types';
 import type { BoardState } from '../useBoardStore';
+import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 
 export interface BoardSlice {
     boards: Board[];
@@ -557,14 +558,10 @@ export const createBoardSlice: StateCreator<
         const defaultGroups = [
             { id: uuidv4(), title: 'Group Title', color: '#579bfc', order: 0 }
         ];
+        const statusOptions = await getDefaultStatusOptions();
         const defaultColumns: Column[] = [
             {
-                id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: [
-                    { id: 'c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4', label: 'Default', color: '#c4c4c4' }, // Status ID must be UUID to avoid DB triggers failing
-                    { id: '00c87500-c875-c875-c875-00c87500c875', label: 'Done', color: '#00c875' },     // Using consistent pseudo-UUIDs for defaults
-                    { id: 'e2445c00-445c-445c-445c-e2445c00e244', label: 'Stuck', color: '#e2445c' },
-                    { id: 'fdab3d00-ab3d-ab3d-ab3d-fdab3d00fdab', label: 'Working on it', color: '#fdab3d' }
-                ]
+                id: uuidv4(), title: 'Status', type: 'status' as ColumnType, order: 0, width: 140, options: statusOptions
             },
             { id: uuidv4(), title: 'Files', type: 'files' as ColumnType, order: 1, width: 140 },
             { id: uuidv4(), title: 'Person', type: 'people' as ColumnType, order: 2, width: 140 },

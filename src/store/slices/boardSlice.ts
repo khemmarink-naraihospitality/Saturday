@@ -74,7 +74,7 @@ export const createBoardSlice: StateCreator<
     isSyncing: false,
     isInitializing: false,
     error: null,
-    activePage: 'board',
+    activePage: 'home',
     userBoardRoles: {},
     userWorkspaceRoles: {},
     sharedBoardIds: [],

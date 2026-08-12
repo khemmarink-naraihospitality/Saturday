@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogOut, Bell, Sun, Moon, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -6,6 +6,7 @@ import { CloudStatus } from './CloudStatus';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { NotificationItem } from '../notifications/NotificationItem';
+import { NotificationToastStack } from '../notifications/NotificationToastStack';
 import { useUserStore } from '../../store/useUserStore';
 
 const selectUnreadCount = (state: ReturnType<typeof useBoardStore.getState>) =>
@@ -27,6 +28,29 @@ export const GlobalTopActions = () => {
 
     const notifications = useBoardStore(state => state.notifications || []);
     const recentNotifications = notifications.slice(0, 5);
+
+    // New notifications are prepended (memberSlice.ts), so notifications[0] is
+    // always the newest. Comparing its id across renders — rather than deriving
+    // from unreadCount — tells a genuine new arrival apart from the initial
+    // load and from read-count decreases, which should not replay any effect.
+    const latestNotificationId = notifications[0]?.id;
+    const prevLatestIdRef = useRef<string | null>('__uninitialized__');
+    const [arrivalKey, setArrivalKey] = useState(0);
+    const [toastQueue, setToastQueue] = useState<typeof notifications>([]);
+
+    useEffect(() => {
+        const isFirstRun = prevLatestIdRef.current === '__uninitialized__';
+        if (!isFirstRun && latestNotificationId && latestNotificationId !== prevLatestIdRef.current) {
+            setArrivalKey(k => k + 1);
+            setToastQueue(prev => [...prev, notifications[0]].slice(-3));
+        }
+        prevLatestIdRef.current = latestNotificationId ?? null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [latestNotificationId]);
+
+    const removeToast = useCallback((id: string) => {
+        setToastQueue(prev => prev.filter(n => n.id !== id));
+    }, []);
 
     useEffect(() => {
         if (user?.id) {
@@ -100,16 +124,54 @@ export const GlobalTopActions = () => {
                 >
                     <Bell size={20} />
                     {unreadCount > 0 && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '6px',
-                            right: '6px',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: '#ff3b30',
-                            border: '2px solid hsl(var(--color-bg-surface))'
-                        }} />
+                        <>
+                            {/* One-shot ring that expands out from the badge and fades,
+                                replayed on each new arrival via the `arrivalKey` remount. */}
+                            <motion.span
+                                key={`ring-${arrivalKey}`}
+                                initial={{ scale: 1, opacity: 0.55 }}
+                                animate={{ scale: 2.4, opacity: 0 }}
+                                transition={{ duration: 0.7, ease: 'easeOut' }}
+                                style={{
+                                    position: 'absolute',
+                                    top: '0px',
+                                    right: '-2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    border: '2px solid #ff3b30',
+                                    pointerEvents: 'none'
+                                }}
+                            />
+                            <motion.div
+                                key={`badge-${arrivalKey}`}
+                                initial={{ scale: 0.4 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+                                style={{
+                                    position: 'absolute',
+                                    top: '0px',
+                                    right: '-2px',
+                                    minWidth: '20px',
+                                    height: '20px',
+                                    padding: '0 4px',
+                                    borderRadius: '999px',
+                                    backgroundColor: '#ff3b30',
+                                    color: 'white',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    lineHeight: '1',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px solid hsl(var(--color-bg-surface))',
+                                    boxSizing: 'content-box',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)'
+                                }}
+                            >
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </motion.div>
+                        </>
                     )}
                 </button>
 
@@ -173,6 +235,8 @@ export const GlobalTopActions = () => {
                         </div>
                     </div>
                 )}
+
+                <NotificationToastStack toasts={toastQueue} onRemove={removeToast} />
             </div>
 
             {/* Profile Dropdown */}

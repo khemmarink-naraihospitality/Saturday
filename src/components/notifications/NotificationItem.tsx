@@ -2,7 +2,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { useBoardStore } from '../../store/useBoardStore';
 import type { Notification } from '../../types';
-import { Check, X, Bell, UserPlus, FileText, MessageSquare, ThumbsUp } from 'lucide-react';
+import { Check, X, Bell, UserPlus, FileText, MessageSquare, ThumbsUp, CalendarClock } from 'lucide-react';
 import { useState } from 'react';
 
 
@@ -26,6 +26,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     const isMention = notification.type === 'mention';
     const isComment = notification.type === 'comment';
     const isLike = notification.type === 'like';
+    const isDueDateReminder = notification.type === 'due_date_reminder';
 
     const handleAction = async (action: 'accept' | 'decline') => {
         setIsProcessing(true);
@@ -69,6 +70,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
         if (isMention) return <MessageSquare size={16} color="#f97316" />; // Keeping orange for now as no var
         if (isComment) return <MessageSquare size={16} color="hsl(var(--color-text-secondary))" />;
         if (isLike) return <ThumbsUp size={16} color="#D4A000" />;
+        if (isDueDateReminder) return <CalendarClock size={16} color="#e2445c" />;
         return <Bell size={16} color="hsl(var(--color-text-secondary))" />;
     };
 

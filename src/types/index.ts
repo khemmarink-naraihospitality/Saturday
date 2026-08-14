@@ -141,7 +141,7 @@ export interface Board {
     is_private?: boolean;
 }
 
-export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like';
+export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like' | 'due_date_reminder';
 export type NotificationStatus = 'pending' | 'accepted' | 'declined';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

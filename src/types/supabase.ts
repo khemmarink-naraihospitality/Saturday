@@ -188,7 +188,7 @@ export type ActivityLogUpdate = Partial<ActivityLogInsert>;
 // Notification Types
 // =====================================================
 
-export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like';
+export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like' | 'due_date_reminder';
 
 export interface NotificationRow {
     id: string;

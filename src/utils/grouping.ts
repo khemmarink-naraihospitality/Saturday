@@ -80,7 +80,7 @@ export const groupItems = (
                     if (col.type === 'number') {
                         const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
                         aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
-                    } else if (col.type === 'date') {
+                    } else if (col.type === 'date' || col.type === 'due_date') {
                         const dateValues = vals.filter(Boolean).sort();
                         aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
                     } else if (col.type === 'timeline') {
@@ -155,7 +155,7 @@ export const groupItems = (
                 if (col.type === 'number') {
                     const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
                     aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
-                } else if (col.type === 'date') {
+                } else if (col.type === 'date' || col.type === 'due_date') {
                     const dateValues = vals.filter(Boolean).sort();
                     aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
                 } else if (col.type === 'timeline') {

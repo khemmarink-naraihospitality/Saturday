@@ -46,8 +46,8 @@ export const ColumnMenu = ({
     const menuRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
 
-    // Filter/Sort enabled for: Status, Date, Dropdown, Checkbox
-    const isSortFilterEnabled = ['status', 'date', 'dropdown', 'checkbox'].includes(columnType);
+    // Filter/Sort enabled for: Status, Date, Due Date, Dropdown, Checkbox
+    const isSortFilterEnabled = ['status', 'date', 'due_date', 'dropdown', 'checkbox'].includes(columnType);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

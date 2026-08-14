@@ -466,7 +466,7 @@ export const backupService = {
                         if (col.type === 'people') {
                             return getPeopleNames(val);
                         }
-                        if (col.type === 'date' || col.type === 'timeline') {
+                        if (col.type === 'date' || col.type === 'due_date' || col.type === 'timeline') {
                             // Assuming val is string or { from, to }
                             if (typeof val === 'object' && val !== null) {
                                 if (val.from && val.to) return `${val.from} - ${val.to}`;

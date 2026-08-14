@@ -692,6 +692,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 colType = 'files';
                             } else if (text.includes('cost') || text.includes('budget') || text.includes('number') || text.includes('amount')) {
                                 colType = 'number';
+                            } else if (text.includes('due date') || text.includes('due')) {
+                                colType = 'due_date';
                             } else if (text === 'date' || text.includes(' date')) {
                                 colType = 'date';
                             } else if (text.includes('timeline')) {
@@ -793,6 +795,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         else if (shLower.includes('file')) cType = 'files';
                                         // person/owner/responsible from Monday → text (stores names, not Saturday user IDs)
                                         else if (shLower.includes('cost') || shLower.includes('budget') || shLower.includes('number')) cType = 'number';
+                                        else if (shLower.includes('due date') || shLower.includes('due')) cType = 'due_date';
                                         else if (shLower === 'date') cType = 'date';
                                         
                                         const newCol: any = { title: sh, type: cType, subIndex: shIdx, originalIndex: -1, options: [] };
@@ -922,7 +925,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         for (const nIdx of neighbors) {
                                             if (nIdx >= 0 && row[nIdx]) {
                                                 const nVal = row[nIdx];
-                                                if (c.type === 'date' && parseDate(nVal)) {
+                                                if ((c.type === 'date' || c.type === 'due_date') && parseDate(nVal)) {
                                                     rawVal = nVal; break;
                                                 }
                                             }
@@ -932,7 +935,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                                 if (c.type === 'files') {
                                     itemValues[c.title] = parseFiles(rawVal);
-                                } else if (c.type === 'date') {
+                                } else if (c.type === 'date' || c.type === 'due_date') {
                                     itemValues[c.title] = parseDate(rawVal) || '';
                                 } else if (isInsideSubitems && c.type === 'status') {
                                     // Hybrid mapping trick

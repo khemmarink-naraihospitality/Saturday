@@ -103,7 +103,7 @@ export const TimelineView = () => {
 
     if (!activeBoard) return null;
 
-    const timelineCols = activeBoard.columns.filter(c => c.type === 'timeline' || c.type === 'date');
+    const timelineCols = activeBoard.columns.filter(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date');
 
     const navBtnStyle: React.CSSProperties = {
         height: '32px',
@@ -264,7 +264,7 @@ export const TimelineView = () => {
                                         if (val.from) startDate = new Date(val.from);
                                         if (val.to) endDate = new Date(val.to);
                                         colId = col.id;
-                                    } else if (col.type === 'date') {
+                                    } else if (col.type === 'date' || col.type === 'due_date') {
                                         startDate = new Date(val);
                                         endDate = new Date(val);
                                         colId = col.id;

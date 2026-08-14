@@ -1,4 +1,4 @@
-export type ColumnType = 'text' | 'long_text' | 'status' | 'date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files';
+export type ColumnType = 'text' | 'long_text' | 'status' | 'date' | 'due_date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files';
 
 export interface ColumnOption {
     id: string;

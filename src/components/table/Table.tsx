@@ -157,7 +157,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     if (col.type === 'number') {
                         valA = parseFloat(valA) || 0;
                         valB = parseFloat(valB) || 0;
-                    } else if (col.type === 'date') {
+                    } else if (col.type === 'date' || col.type === 'due_date') {
                         // Date strings usually sortable if ISO, otherwise parse
                         valA = valA || '';
                         valB = valB || '';
@@ -530,7 +530,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                     })()}
                                                                                 </div>
                                                                             )}
-                                                                            {(col.type === 'date' || col.type === 'timeline') && (() => {
+                                                                            {(col.type === 'date' || col.type === 'due_date' || col.type === 'timeline') && (() => {
                                                                                 if (!agg || !agg.min) return null;
                                                                                 const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

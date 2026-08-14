@@ -43,6 +43,8 @@ export const Cell = memo(({
             return <PeopleCell itemId={itemId} boardId={boardId} value={value} column={column} />;
         case 'date':
             return <DateCell itemId={itemId} value={value} column={column} />;
+        case 'due_date':
+            return <DateCell itemId={itemId} value={value} column={column} isDueDate />;
         case 'timeline':
             return <TimelineCell itemId={itemId} value={value} column={column} groupColor={groupColor} />;
         case 'files':

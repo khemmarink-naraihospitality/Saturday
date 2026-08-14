@@ -201,6 +201,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             'text': 'Text',
             'status': 'Status',
             'date': 'Date',
+            'due_date': 'Due Date',
             'number': 'Numbers',
             'people': 'Person',
             'checkbox': 'Check',

@@ -10,9 +10,23 @@ interface DateCellProps {
     itemId: string;
     column: Column;
     value: any;
+    isDueDate?: boolean;
 }
 
-export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }) => {
+// A due date counts as overdue once it's strictly before today (local time) —
+// today itself still reads as "due today", not overdue yet.
+const isOverdue = (dateStr: string): boolean => {
+    if (!dateStr) return false;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return false;
+    const [y, m, d] = parts.map(Number);
+    const due = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due.getTime() < today.getTime();
+};
+
+export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value, isDueDate }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
 
@@ -20,6 +34,7 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
     const [isHovered, setIsHovered] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
+    const overdue = isDueDate && value && isOverdue(value);
 
     const formatDate = (dateStr: string) => {
         if (!dateStr || dateStr === 'Invalid Date') return '';
@@ -71,14 +86,14 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value }
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    color: value ? 'inherit' : 'hsl(var(--color-text-tertiary))',
+                    color: overdue ? '#e2445c' : (value ? 'inherit' : 'hsl(var(--color-text-tertiary))'),
                     backgroundColor: isEditing ? 'hsl(var(--color-brand-light))' : 'transparent',
                     position: 'relative'
                 }}
             >
                 {value ? (
                     <>
-                        <span>{formatDate(value)}</span>
+                        <span style={{ fontWeight: overdue ? 600 : 400 }} title={overdue ? 'Overdue' : undefined}>{formatDate(value)}</span>
                         {isHovered && can('edit_items') && (
                             <div
                                 onClick={(e) => {

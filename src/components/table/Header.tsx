@@ -12,6 +12,7 @@ import { ColumnMenu } from './ColumnMenu';
 import { FilterMenu } from './FilterMenu';
 import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
 
 // Sortable Header Cell Component
 const SortableHeaderCell = ({
@@ -149,6 +150,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const [activeMenuColId, setActiveMenuColId] = React.useState<string | null>(null);
     const [activeFilterColId, setActiveFilterColId] = React.useState<string | null>(null);
     const [activeNumberFormatColId, setActiveNumberFormatColId] = React.useState<string | null>(null);
+    const [showNotificationSettings, setShowNotificationSettings] = React.useState(false);
     const [menuPos, setMenuPos] = React.useState<{ top: number, left: number } | null>(null);
     const [confirmDeleteColId, setConfirmDeleteColId] = React.useState<string | null>(null);
     const [showAddMenu, setShowAddMenu] = React.useState(false);
@@ -457,7 +459,15 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                             setActiveNumberFormatColId(activeMenuColId);
                             setActiveMenuColId(null);
                         }}
+                        onNotificationSettings={() => {
+                            setShowNotificationSettings(true);
+                            setActiveMenuColId(null);
+                        }}
                     />
+                )}
+
+                {showNotificationSettings && (
+                    <NotificationSettingsModal onClose={() => setShowNotificationSettings(false)} />
                 )}
 
                 {activeNumberFormatColId && menuPos && activeNumberFormatColumn && (

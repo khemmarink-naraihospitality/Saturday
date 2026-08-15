@@ -8,7 +8,8 @@ import {
     PenLine,
     Trash2,
     Check,
-    Hash
+    Hash,
+    BellRing
 } from 'lucide-react';
 import type { ColumnType } from '../../types';
 
@@ -25,6 +26,7 @@ interface ColumnMenuProps {
     onRename: () => void;
     onDelete: () => void;
     onNumberFormat?: () => void;
+    onNotificationSettings?: () => void;
 }
 
 import { usePermission } from '../../hooks/usePermission';
@@ -41,7 +43,8 @@ export const ColumnMenu = ({
     onAddRight,
     onRename,
     onDelete,
-    onNumberFormat
+    onNumberFormat,
+    onNotificationSettings
 }: ColumnMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
@@ -127,6 +130,23 @@ export const ColumnMenu = ({
                     />
                 )}
             </div>
+
+            {columnType === 'due_date' && onNotificationSettings && (
+                <>
+                    <div className="menu-divider" style={{
+                        height: '1px',
+                        backgroundColor: '#e1e4e8',
+                        margin: '8px 0'
+                    }} />
+                    <div className="menu-group">
+                        <MenuItem
+                            icon={<BellRing size={16} />}
+                            label="Notification Settings"
+                            onClick={() => { onNotificationSettings(); onClose(); }}
+                        />
+                    </div>
+                </>
+            )}
 
             {can('manage_columns') && (
                 <>

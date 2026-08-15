@@ -371,9 +371,9 @@ export const UserTable = () => {
                                         Last Log-in {getSortIcon('last_login_at')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('created_at')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('auth_type')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        Joined {getSortIcon('created_at')}
+                                        Authentication {getSortIcon('auth_type')}
                                     </div>
                                 </th>
                                 <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
@@ -432,18 +432,7 @@ export const UserTable = () => {
                                         <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>{profile.full_name || 'Unknown'}</div>
                                     </td>
                                     <td style={{ padding: '12px 24px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <div style={{ fontSize: '14px', color: '#64748b' }}>{profile.email}</div>
-                                            {profile.auth_type === 'internal' ? (
-                                                <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f1f5f9', color: '#64748b' }}>
-                                                    <Lock size={9} /> Internal
-                                                </span>
-                                            ) : (
-                                                <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f1f5f9', color: '#64748b' }}>
-                                                    Google
-                                                </span>
-                                            )}
-                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#64748b' }}>{profile.email}</div>
                                     </td>
                                     <td style={{ padding: '12px 24px' }}>
                                         <span style={{
@@ -485,8 +474,16 @@ export const UserTable = () => {
                                             hour12: true 
                                         }) : '-'}
                                     </td>
-                                    <td style={{ padding: '12px 24px', fontSize: '13px', color: '#64748b' }}>
-                                        {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '-'}
+                                    <td style={{ padding: '12px 24px' }}>
+                                        {profile.auth_type === 'internal' ? (
+                                            <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, backgroundColor: '#f1f5f9', color: '#475569' }}>
+                                                <Lock size={11} /> Internal
+                                            </span>
+                                        ) : (
+                                            <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, backgroundColor: '#f1f5f9', color: '#475569' }}>
+                                                Google
+                                            </span>
+                                        )}
                                     </td>
                                     <td style={{ padding: '12px 24px', position: 'relative' }}>
                                         {(() => {

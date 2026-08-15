@@ -83,6 +83,9 @@ export interface ProfileRow {
     system_role: SystemRole;
     created_at: string;
     avatar_url?: string;
+    // Per-user due-date reminder day offsets (0 = due today). null/absent =
+    // inherit system_settings.due_date_reminder_offsets. [] = muted for this user.
+    due_date_reminder_offsets?: number[] | null;
 }
 
 export type ProfileInsert = Omit<ProfileRow, 'created_at'>;

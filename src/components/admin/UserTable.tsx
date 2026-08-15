@@ -54,11 +54,12 @@ export const UserTable = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     // Edit Profile State
-    const [editProfileModal, setEditProfileModal] = useState<{ 
-        userId: string; 
-        fullName: string; 
-        email: string; 
-        role: string 
+    const [editProfileModal, setEditProfileModal] = useState<{
+        userId: string;
+        fullName: string;
+        email: string;
+        role: string;
+        authType: 'google' | 'internal';
     } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -110,10 +111,11 @@ export const UserTable = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ 
+                .update({
                     full_name: editProfileModal.fullName,
                     email: editProfileModal.email,
-                    system_role: editProfileModal.role 
+                    system_role: editProfileModal.role,
+                    auth_type: editProfileModal.authType
                 })
                 .eq('id', editProfileModal.userId);
 
@@ -134,11 +136,12 @@ export const UserTable = () => {
             }
 
             setProfiles(prev => prev.map(p =>
-                p.id === editProfileModal.userId ? { 
-                    ...p, 
+                p.id === editProfileModal.userId ? {
+                    ...p,
                     full_name: editProfileModal.fullName,
                     email: editProfileModal.email,
-                    system_role: editProfileModal.role as any 
+                    system_role: editProfileModal.role as any,
+                    auth_type: editProfileModal.authType
                 } : p
             ));
             setEditProfileModal(null);
@@ -555,7 +558,8 @@ export const UserTable = () => {
                                                                             userId: profile.id, 
                                                                             fullName: profile.full_name || '', 
                                                                             email: profile.email || '', 
-                                                                            role: profile.system_role 
+                                                                            role: profile.system_role,
+                                                                            authType: profile.auth_type || 'google'
                                                                         });
                                                                         setOpenPopoverId(null);
                                                                     }}
@@ -752,6 +756,38 @@ export const UserTable = () => {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* Authentication */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>Authentication</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    {(['google', 'internal'] as const).map((authType) => (
+                                        <button
+                                            key={authType}
+                                            onClick={() => setEditProfileModal({ ...editProfileModal, authType })}
+                                            style={{
+                                                padding: '10px 8px',
+                                                border: editProfileModal.authType === authType ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                                                borderRadius: '8px',
+                                                backgroundColor: editProfileModal.authType === authType ? '#eef2ff' : 'white',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                fontWeight: 500,
+                                                color: editProfileModal.authType === authType ? '#4338ca' : '#64748b',
+                                                transition: 'all 0.2s',
+                                                textAlign: 'center'
+                                            }}
+                                        >
+                                            {authType === 'google' ? 'Google' : 'Internal'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>
+                                    {editProfileModal.authType === 'google'
+                                        ? 'Signs in with Continue with Google.'
+                                        : 'Signs in with email + a password. Switching this label alone does not send a setup email or change their existing credentials.'}
+                                </p>
                             </div>
                         </div>
 

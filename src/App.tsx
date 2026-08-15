@@ -12,6 +12,7 @@ import { ContactSupportButton } from './components/ui/ContactSupportButton';
 import { TaskDetail } from './components/task/TaskDetail';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
+import { SetPasswordPage } from './pages/SetPasswordPage';
 import { supabase } from './lib/supabase';
 
 // HomePage moved to lazy
@@ -459,7 +460,11 @@ function AppContent() {
   if (!session) {
     return <LoginPage />;
   }
-  
+
+  if (window.location.pathname === '/set-password') {
+    return <SetPasswordPage />;
+  }
+
   const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
   const userDomain = currentUser?.email?.split('@')[1];
   const isAutoApproved = userDomain && ALLOWED_DOMAINS.includes(userDomain);

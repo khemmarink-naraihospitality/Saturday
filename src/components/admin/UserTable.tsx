@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../store/useUserStore';
-import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock } from 'lucide-react';
+import { CreateUserModal } from './CreateUserModal';
 
 interface Profile {
     id: string;
@@ -11,6 +12,7 @@ interface Profile {
     is_approved: boolean;
     created_at: string;
     last_login_at: string | null;
+    auth_type?: 'google' | 'internal';
 }
 
 const ROLE_HIERARCHY = {
@@ -31,6 +33,7 @@ export const UserTable = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
+    const [showCreateUserModal, setShowCreateUserModal] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ 
         key: keyof Profile | 'status' | null; 
         direction: 'asc' | 'desc' | null 
@@ -274,6 +277,25 @@ export const UserTable = () => {
                     />
                 </div>
                 <button
+                    onClick={() => setShowCreateUserModal(true)}
+                    style={{
+                        padding: '6px 14px',
+                        backgroundColor: '#059669',
+                        border: '1px solid #059669',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: 'white'
+                    }}
+                >
+                    <UserPlus size={14} />
+                    Create User
+                </button>
+                <button
                     onClick={fetchProfiles}
                     style={{
                         padding: '6px 12px',
@@ -407,7 +429,18 @@ export const UserTable = () => {
                                         <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>{profile.full_name || 'Unknown'}</div>
                                     </td>
                                     <td style={{ padding: '12px 24px' }}>
-                                        <div style={{ fontSize: '14px', color: '#64748b' }}>{profile.email}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ fontSize: '14px', color: '#64748b' }}>{profile.email}</div>
+                                            {profile.auth_type === 'internal' ? (
+                                                <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                                                    <Lock size={9} /> Internal
+                                                </span>
+                                            ) : (
+                                                <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f1f5f9', color: '#64748b' }}>
+                                                    Google
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '12px 24px' }}>
                                         <span style={{
@@ -826,6 +859,13 @@ export const UserTable = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showCreateUserModal && (
+                <CreateUserModal
+                    onClose={() => setShowCreateUserModal(false)}
+                    onCreated={fetchProfiles}
+                />
             )}
         </div>
     );

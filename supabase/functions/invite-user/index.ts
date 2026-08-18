@@ -24,12 +24,14 @@ Deno.serve(async (req) => {
       redirectTo,
       workspaceName = 'NHG Saturday',
       inviterName = 'A Team Member',
-      action = 'invite', // 'invite' | 'assign_item' | 'test_email' | 'mention'
+      action = 'invite', // 'invite' | 'assign_item' | 'test_email' | 'mention' | 'status_update'
       itemName = '',
       boardName = '',
       groupName = '',
       mentionedBy = '',
       updatePreview = '',
+      oldStatus = '',
+      newStatus = '',
       itemLink = 'https://saturdaycom.vercel.app'
     } = await req.json();
 
@@ -48,7 +50,7 @@ Deno.serve(async (req) => {
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('system_settings')
       .select('key, value')
-      .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template']);
+      .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'status_update_email_template']);
 
     if (settingsError) {
       console.error('Error fetching settings:', settingsError);
@@ -60,6 +62,7 @@ Deno.serve(async (req) => {
     const templateExisting = settingsData?.find(s => s.key === 'invite_existing_user_template')?.value;
     const templateAssign = settingsData?.find(s => s.key === 'assign_item_template')?.value;
     const templateMention = settingsData?.find(s => s.key === 'mention_email_template')?.value;
+    const templateStatusUpdate = settingsData?.find(s => s.key === 'status_update_email_template')?.value;
 
     if (!smtpConfig || !smtpConfig.host) {
       throw new Error('SMTP Configuration is missing or incomplete in system_settings');
@@ -79,6 +82,11 @@ Deno.serve(async (req) => {
       finalTemplate = templateMention || {
         subject: '{{mentionedBy}} mentioned you in {{itemName}}',
         bodyHtml: `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`
+      };
+    } else if (action === 'status_update') {
+      finalTemplate = templateStatusUpdate || {
+        subject: '{{inviterName}} changed the status of {{itemName}}',
+        bodyHtml: `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{inviterName}}</strong> changed the status of <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; padding: 12px 16px; margin: 0 0 20px; text-align: center; border-radius: 4px;"><span style="font-size: 13px; color: #94a3b8; text-decoration: line-through;">{{oldStatus}}</span><span style="font-size: 15px; color: #1e293b; font-weight: bold; margin-left: 8px;">→ {{newStatus}}</span></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`
       };
     } else if (action === 'assign_item') {
       finalTemplate = templateAssign;
@@ -124,7 +132,9 @@ Deno.serve(async (req) => {
                      .replace(/\{\{itemName\}\}/g, itemName)
                      .replace(/\{\{boardName\}\}/g, boardName)
                      .replace(/\{\{groupName\}\}/g, groupName)
-                     .replace(/\{\{mentionedBy\}\}/g, mentionedBy);
+                     .replace(/\{\{mentionedBy\}\}/g, mentionedBy)
+                     .replace(/\{\{oldStatus\}\}/g, oldStatus)
+                     .replace(/\{\{newStatus\}\}/g, newStatus);
 
     htmlBody = htmlBody.replace(/\{\{workspaceName\}\}/g, workspaceName)
                        .replace(/\{\{inviterName\}\}/g, inviterName)
@@ -134,7 +144,9 @@ Deno.serve(async (req) => {
                        .replace(/\{\{boardName\}\}/g, boardName)
                        .replace(/\{\{groupName\}\}/g, groupName)
                        .replace(/\{\{mentionedBy\}\}/g, mentionedBy)
-                       .replace(/\{\{updatePreview\}\}/g, updatePreview);
+                       .replace(/\{\{updatePreview\}\}/g, updatePreview)
+                       .replace(/\{\{oldStatus\}\}/g, oldStatus)
+                       .replace(/\{\{newStatus\}\}/g, newStatus);
 
     const transporter = nodemailer.createTransport({
       host: smtpConfig.host,

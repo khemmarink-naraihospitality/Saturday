@@ -190,8 +190,9 @@ export const createItemSlice: StateCreator<
 
                     // Notify assignees (people-type column values) that the status
                     // changed — same assignee-lookup convention as the plain-comment
-                    // notification below, and in-app only (no email), consistent
-                    // with how comment/like notifications are handled.
+                    // notification below. Both in-app and email, since a status
+                    // change is high-signal enough to warrant an email the way
+                    // assignment/mention already do.
                     const { data: { user: actor } } = await supabase.auth.getUser();
                     if (actor) {
                         const actorName = actor.user_metadata?.full_name || actor.email?.split('@')[0] || 'Someone';
@@ -201,6 +202,7 @@ export const createItemSlice: StateCreator<
                             const ids: string[] = Array.isArray(val) ? val : (val ? [val] : []);
                             ids.forEach(id => assigneeIds.add(id));
                         });
+                        const oldLabel = logMeta.old_label || 'None';
                         const newLabel = logMeta.new_label || 'a new status';
                         for (const assigneeId of assigneeIds) {
                             if (assigneeId === actor.id) continue;
@@ -211,6 +213,22 @@ export const createItemSlice: StateCreator<
                                 itemId,
                                 { board_id: activeBoardId, old_label: logMeta.old_label, new_label: newLabel }
                             );
+
+                            const assigneeEmail = get().activeBoardMembers.find((m: any) => m.user_id === assigneeId)?.profiles?.email;
+                            if (assigneeEmail) {
+                                supabase.functions.invoke('invite-user', {
+                                    body: {
+                                        action: 'status_update',
+                                        email: assigneeEmail,
+                                        inviterName: actorName,
+                                        itemName: currentItem.title || 'an item',
+                                        boardName: board.title || 'a board',
+                                        oldStatus: oldLabel,
+                                        newStatus: newLabel,
+                                        itemLink: 'https://saturdaycom.vercel.app'
+                                    }
+                                }).catch((e: unknown) => console.error('Status update email error:', e));
+                            }
                         }
                     }
                 } else {

@@ -939,6 +939,12 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 ref={editorRef}
                 contentEditable
                 onInput={handleChange}
+                onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                        e.preventDefault();
+                        openLinkUI();
+                    }
+                }}
                 onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target instanceof HTMLInputElement && target.type === 'checkbox') {

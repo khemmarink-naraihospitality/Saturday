@@ -187,6 +187,32 @@ export const createItemSlice: StateCreator<
             if (logMeta) {
                 if (column?.type === 'status') {
                     get().logActivity('item_status_updated', 'item', itemId, logMeta);
+
+                    // Notify assignees (people-type column values) that the status
+                    // changed — same assignee-lookup convention as the plain-comment
+                    // notification below, and in-app only (no email), consistent
+                    // with how comment/like notifications are handled.
+                    const { data: { user: actor } } = await supabase.auth.getUser();
+                    if (actor) {
+                        const actorName = actor.user_metadata?.full_name || actor.email?.split('@')[0] || 'Someone';
+                        const assigneeIds = new Set<string>();
+                        board.columns.filter(c => c.type === 'people').forEach(col => {
+                            const val = currentItem.values?.[col.id];
+                            const ids: string[] = Array.isArray(val) ? val : (val ? [val] : []);
+                            ids.forEach(id => assigneeIds.add(id));
+                        });
+                        const newLabel = logMeta.new_label || 'a new status';
+                        for (const assigneeId of assigneeIds) {
+                            if (assigneeId === actor.id) continue;
+                            await get().createNotification(
+                                assigneeId,
+                                'status_update',
+                                `${actorName} changed the status of "${currentItem.title || 'a task'}" to "${newLabel}"`,
+                                itemId,
+                                { board_id: activeBoardId, old_label: logMeta.old_label, new_label: newLabel }
+                            );
+                        }
+                    }
                 } else {
                     get().logActivity('item_value_updated', 'item', itemId, logMeta);
                 }

@@ -246,6 +246,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     };
 
     const updateColumnWidth = useBoardStore(state => state.updateColumnWidth);
+    const persistColumnWidth = useBoardStore(state => state.persistColumnWidth);
     const startXRef = React.useRef(0);
     const startWidthRef = React.useRef(0);
 
@@ -254,10 +255,12 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         e.stopPropagation();
         startXRef.current = e.clientX;
         startWidthRef.current = currentWidth;
+        let latestWidth = currentWidth;
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const diff = moveEvent.clientX - startXRef.current;
             const newWidth = Math.max(100, startWidthRef.current + diff);
+            latestWidth = newWidth;
             if (isItemCol) {
                 updateBoardItemColumnWidth(newWidth);
             } else {
@@ -268,6 +271,12 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+            // Persist once on release rather than on every mousemove, so the
+            // width the user settled on survives a reload without spamming
+            // the DB mid-drag.
+            if (!isItemCol && latestWidth !== startWidthRef.current) {
+                persistColumnWidth(colId, latestWidth);
+            }
         };
 
         document.addEventListener('mousemove', handleMouseMove);

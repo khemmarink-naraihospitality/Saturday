@@ -11,6 +11,7 @@ export interface ColumnSlice {
     deleteColumn: (columnId: string) => Promise<void>;
     updateColumnTitle: (columnId: string, newTitle: string) => Promise<void>;
     updateColumnWidth: (columnId: string, width: number) => void;
+    persistColumnWidth: (columnId: string, width: number) => Promise<void>;
     moveColumn: (fromIndex: number, toIndex: number) => void;
     // Options
     addColumnOption: (columnId: string, label: string, color: string) => void;
@@ -97,6 +98,13 @@ export const createColumnSlice: StateCreator<
     updateColumnWidth: (columnId, width) => {
         const { activeBoardId } = get();
         set(state => ({ boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, width } : c) } : b) }));
+    },
+
+    // Called once when a resize drag ends (not on every mousemove, unlike
+    // updateColumnWidth above) so the width the user settled on survives a
+    // reload instead of only living in local state.
+    persistColumnWidth: async (columnId, width) => {
+        await supabase.from('columns').update({ width }).eq('id', columnId);
     },
 
     moveColumn: async (fromIndex, toIndex) => {

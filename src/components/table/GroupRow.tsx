@@ -331,7 +331,7 @@ export const GroupRow = ({
             <ConfirmModal
                 isOpen={showDeleteConfirm}
                 title="Delete Group"
-                message={`Are you sure you want to delete "${data.title}" and all its items? This action cannot be undone.`}
+                message={`Are you sure you want to delete "${data.title}"? You can restore it (and its items) later from this board's Archive/Trash.`}
                 confirmText="Delete"
                 onConfirm={() => {
                     deleteGroup(data.id);

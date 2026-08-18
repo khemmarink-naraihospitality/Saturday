@@ -6,6 +6,7 @@ import type { BoardState } from '../useBoardStore';
 export interface GroupSlice {
     addGroup: (title: string) => Promise<void>;
     deleteGroup: (groupId: string) => Promise<void>;
+    restoreGroup: (groupId: string, boardId?: string) => Promise<void>;
     updateGroupTitle: (groupId: string, newTitle: string) => Promise<void>;
     updateGroupColor: (groupId: string, color: string) => Promise<void>;
     toggleGroup: (boardId: string, groupId: string) => void;
@@ -49,13 +50,29 @@ export const createGroupSlice: StateCreator<
         set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? { ...b, groups: b.groups.filter(g => g.id !== groupId) } : b)
         }));
-        await supabase.from('groups').delete().eq('id', groupId);
+        // Soft-delete: items keep their group_id untouched, so restoring the
+        // group brings everything back exactly as it was.
+        await supabase.from('groups').update({ is_archived: true }).eq('id', groupId);
 
         if (activeBoardId) {
             get().logActivity('group_deleted', 'board', activeBoardId, {
                 board_id: activeBoardId,
                 group_title: group?.title || 'Unknown'
             });
+        }
+    },
+
+    restoreGroup: async (groupId, boardId) => {
+        await supabase.from('groups').update({ is_archived: false }).eq('id', groupId);
+
+        // loadBoardData() short-circuits once a board is already loaded (it only
+        // refreshes items for linked groups) — it never re-queries `groups`. Marking
+        // the board as not-loaded routes the next load through the full fetch path
+        // instead of duplicating that query/parsing logic here.
+        if (boardId) {
+            set(state => ({
+                boards: state.boards.map(b => b.id === boardId ? { ...b, isDataLoaded: false } : b)
+            }));
         }
     },
 

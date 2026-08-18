@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Plus, Trash2, Edit2, Copy, ChevronRight, Users, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, Copy, ChevronRight, Users, MoreHorizontal, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
     DndContext,
@@ -22,6 +22,8 @@ import { showToast } from '../../../utils/toast';
 import { ConfirmModal } from '../../ui/ConfirmModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
 import { ShareBoardModal } from '../../workspace/ShareBoardModal';
+import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
+import { BoardArchiveTrashModal } from '../BoardArchiveTrashModal';
 import { BoardIcon, WorkspaceIcon } from './SidebarIcons';
 import { SortableBoardItem } from './SortableBoardItem';
 
@@ -71,6 +73,10 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     // Share workspace modal
     const [shareWorkspaceId, setShareWorkspaceId] = useState<string | null>(null);
     const [shareBoardId, setShareBoardId] = useState<string | null>(null);
+
+    // Archive/Trash modals
+    const [archiveTrashWorkspaceId, setArchiveTrashWorkspaceId] = useState<string | null>(null);
+    const [archiveTrashBoardId, setArchiveTrashBoardId] = useState<string | null>(null);
 
     // Tree expansion state
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set([workspaces[0]?.id].filter(Boolean)));
@@ -621,6 +627,15 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 )}
 
                                 {isOwnerAdmin && (
+                                    <div className="menu-item" onClick={() => {
+                                        setArchiveTrashBoardId(activeBoardMenu);
+                                        setActiveBoardMenu(null);
+                                    }} onMouseEnter={() => setActiveSubmenu(null)}>
+                                        <Archive size={14} /> Archive/Trash
+                                    </div>
+                                )}
+
+                                {isOwnerAdmin && (
                                     <div className="menu-item delete" onClick={() => {
                                         setBoardToDelete(activeBoardMenu);
                                         setActiveBoardMenu(null);
@@ -682,6 +697,14 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             </div>
                         )}
                         {ws?.owner_id === user?.id && (
+                            <div className="menu-item" onClick={() => {
+                                setArchiveTrashWorkspaceId(activeWorkspaceMenu);
+                                setActiveWorkspaceMenu(null);
+                            }}>
+                                <Archive size={14} /> Archive/Trash
+                            </div>
+                        )}
+                        {ws?.owner_id === user?.id && (
                             <div className="menu-item delete" onClick={() => {
                                 setWorkspaceToDelete(activeWorkspaceMenu);
                                 setActiveWorkspaceMenu(null);
@@ -696,7 +719,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
             <ConfirmModal
                 isOpen={!!boardToDelete}
                 title="Delete Board"
-                message="Are you sure you want to delete this board? This action cannot be undone."
+                message="Are you sure you want to delete this board? You can restore it later from this workspace's Archive/Trash."
                 confirmText="Delete"
                 onConfirm={() => {
                     if (boardToDelete) deleteBoard(boardToDelete);
@@ -728,6 +751,21 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                 <ShareBoardModal
                     boardId={shareBoardId}
                     onClose={() => setShareBoardId(null)}
+                />
+            )}
+
+            {archiveTrashWorkspaceId && (
+                <ArchiveTrashModal
+                    workspaceId={archiveTrashWorkspaceId}
+                    workspaceTitle={workspaces.find(w => w.id === archiveTrashWorkspaceId)?.title}
+                    onClose={() => setArchiveTrashWorkspaceId(null)}
+                />
+            )}
+
+            {archiveTrashBoardId && (
+                <BoardArchiveTrashModal
+                    boardId={archiveTrashBoardId}
+                    onClose={() => setArchiveTrashBoardId(null)}
                 />
             )}
 

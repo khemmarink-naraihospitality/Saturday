@@ -4,7 +4,7 @@ import { useBoardStore } from '../store/useBoardStore';
 import { supabase } from '../lib/supabase';
 import {
     LayoutDashboard, Users, Settings,
-    ShieldCheck, Activity, ArrowLeft, Building2, Trello, Download, Upload, Mail, Palette, Sparkles, CalendarClock
+    ShieldCheck, Activity, ArrowLeft, Building2, Trello, Download, Upload, Mail, Palette, Sparkles, CalendarClock, Trash2
 } from 'lucide-react';
 import { UserTable } from '../components/admin/UserTable';
 import { WorkspaceTable } from '../components/admin/WorkspaceTable';
@@ -14,11 +14,12 @@ import { EmailSettings } from '../components/admin/EmailSettings';
 import { StatusMappingSettings } from '../components/admin/StatusMappingSettings';
 import { DueDateReminderSettings } from '../components/admin/DueDateReminderSettings';
 import { AISettings } from '../components/admin/AISettings';
+import { TrashManagement } from '../components/admin/TrashManagement';
 
 export const AdminPage = () => {
     const { currentUser } = useUserStore();
     const { navigateTo } = useBoardStore();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'email_templates' | 'status_mapping' | 'due_date_reminders' | 'settings' | 'ai_settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'trash' | 'email_templates' | 'status_mapping' | 'due_date_reminders' | 'settings' | 'ai_settings'>('dashboard');
 
     // Real Stats State
     const [stats, setStats] = useState([
@@ -91,6 +92,7 @@ export const AdminPage = () => {
                         { id: 'users', label: 'User Management', icon: Users },
                         { id: 'workspaces', label: 'Workspaces', icon: Building2 },
                         { id: 'boards', label: 'Boards', icon: Trello },
+                        { id: 'trash', label: 'Trash', icon: Trash2 },
                         { id: 'email_templates', label: 'Email & SMTP', icon: Mail },
                         { id: 'status_mapping', label: 'Status Mapping', icon: Palette },
                         { id: 'due_date_reminders', label: 'Due Date Reminders', icon: CalendarClock },
@@ -133,7 +135,7 @@ export const AdminPage = () => {
             <main style={{ flex: 1, overflow: 'auto', padding: '32px 48px' }}>
                 <header style={{ marginBottom: '32px' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
-                        {activeTab === 'dashboard' ? 'Overview' : activeTab === 'users' ? 'User Management' : activeTab === 'workspaces' ? 'Workspace Management' : activeTab === 'boards' ? 'Board Management' : activeTab === 'email_templates' ? 'Email Settings' : activeTab === 'status_mapping' ? 'Status Mapping' : activeTab === 'due_date_reminders' ? 'Due Date Reminders' : activeTab === 'ai_settings' ? 'AI Settings' : 'Settings'}
+                        {activeTab === 'dashboard' ? 'Overview' : activeTab === 'users' ? 'User Management' : activeTab === 'workspaces' ? 'Workspace Management' : activeTab === 'boards' ? 'Board Management' : activeTab === 'trash' ? 'Trash' : activeTab === 'email_templates' ? 'Email Settings' : activeTab === 'status_mapping' ? 'Status Mapping' : activeTab === 'due_date_reminders' ? 'Due Date Reminders' : activeTab === 'ai_settings' ? 'AI Settings' : 'Settings'}
                     </h1>
                     <p style={{ color: '#64748b', marginTop: '8px' }}>
                         Welcome back, {currentUser.name}. managing system as {currentUser.system_role}.
@@ -191,7 +193,11 @@ export const AdminPage = () => {
                         <BoardTable />
                     </div>
                 )}
-                
+
+                {activeTab === 'trash' && (
+                    <TrashManagement />
+                )}
+
                 {activeTab === 'email_templates' && (
                     <EmailSettings />
                 )}

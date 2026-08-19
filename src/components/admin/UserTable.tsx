@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../store/useUserStore';
-import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { CreateUserModal } from './CreateUserModal';
 
 interface Profile {
@@ -259,6 +260,48 @@ export const UserTable = () => {
             return 0;
         });
 
+    const exportToExcel = () => {
+        const exportData = filteredAndSortedProfiles.map((p) => ({
+            Name: p.full_name || 'Unknown',
+            Email: p.email || '',
+            Role: ROLE_LABELS[p.system_role] || p.system_role,
+            Authentication: p.auth_type === 'internal' ? 'Internal' : 'Google',
+            Status: p.is_approved ? 'Approved' : 'Pending',
+            'Last Login': p.last_login_at
+                ? new Date(p.last_login_at).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit', hour12: true
+                })
+                : '-',
+            'Created At': p.created_at
+                ? new Date(p.created_at).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit', hour12: true
+                })
+                : '-',
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Set column widths
+        ws['!cols'] = [
+            { wch: 30 }, // Name
+            { wch: 35 }, // Email
+            { wch: 15 }, // Role
+            { wch: 16 }, // Authentication
+            { wch: 12 }, // Status
+            { wch: 24 }, // Last Login
+            { wch: 24 }, // Created At
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Users');
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        XLSX.writeFile(wb, `user-list-${dateStr}.xlsx`);
+    };
+
     return (
         <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             {/* Header */}
@@ -297,6 +340,35 @@ export const UserTable = () => {
                 >
                     <UserPlus size={14} />
                     Create User
+                </button>
+                <button
+                    onClick={exportToExcel}
+                    title={`Export ${filteredAndSortedProfiles.length} user(s) to Excel`}
+                    style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: '#15803d',
+                        transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#dcfce7';
+                        e.currentTarget.style.borderColor = '#86efac';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0fdf4';
+                        e.currentTarget.style.borderColor = '#bbf7d0';
+                    }}
+                >
+                    <FileSpreadsheet size={14} />
+                    Export Excel
                 </button>
                 <button
                     onClick={fetchProfiles}

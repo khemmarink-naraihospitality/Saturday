@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock } from 'lucide-react';
+import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock, CalendarClock } from 'lucide-react';
 
 const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
@@ -9,6 +9,8 @@ const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; bac
 const DEFAULT_PIN_RESET_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 20px;">You requested to reset the PIN for the private board <strong>{{boardName}}</strong>.</p><div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e293b; background-color: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">{{otpCode}}</div><p style="font-size: 13px; color: #94a3b8;">This code expires in {{expiryMinutes}} minutes. If you didn't request this, you can ignore this email.</p></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const DEFAULT_STATUS_UPDATE_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{inviterName}}</strong> changed the status of <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; padding: 12px 16px; margin: 0 0 20px; text-align: center; border-radius: 4px;"><span style="font-size: 13px; color: #94a3b8; text-decoration: line-through;">{{oldStatus}}</span><span style="font-size: 15px; color: #1e293b; font-weight: bold; margin-left: 8px;">→ {{newStatus}}</span></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
+const DEFAULT_DUE_DATE_REMINDER_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong> is <strong>{{dueLabel}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 export const EmailSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -53,6 +55,11 @@ export const EmailSettings = () => {
         bodyHtml: DEFAULT_STATUS_UPDATE_TEMPLATE
     });
 
+    const [dueDateReminderTemplate, setDueDateReminderTemplate] = useState({
+        subject: '{{itemName}} is {{dueLabel}}',
+        bodyHtml: DEFAULT_DUE_DATE_REMINDER_TEMPLATE
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
     
     // Test SMTP state
@@ -71,7 +78,7 @@ export const EmailSettings = () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template']);
+                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template', 'due_date_reminder_email_template']);
 
             if (error) throw error;
 
@@ -83,6 +90,7 @@ export const EmailSettings = () => {
                 const mentionTmpl = data.find(item => item.key === 'mention_email_template');
                 const pinResetTmpl = data.find(item => item.key === 'pin_reset_otp_template');
                 const statusUpdateTmpl = data.find(item => item.key === 'status_update_email_template');
+                const dueDateReminderTmpl = data.find(item => item.key === 'due_date_reminder_email_template');
 
                 if (smtp?.value) setSmtpConfig(smtp.value);
                 if (template?.value) setInviteTemplate(template.value);
@@ -108,6 +116,13 @@ export const EmailSettings = () => {
                     // Auto-seed the default status-update template so the Edge Function picks it up
                     const defaultVal = { subject: '{{inviterName}} changed the status of {{itemName}}', bodyHtml: DEFAULT_STATUS_UPDATE_TEMPLATE };
                     await supabase.from('system_settings').upsert({ key: 'status_update_email_template', value: defaultVal, description: 'Template for item status-change notifications' }, { onConflict: 'key' });
+                }
+                if (dueDateReminderTmpl?.value) {
+                    setDueDateReminderTemplate(dueDateReminderTmpl.value);
+                } else {
+                    // Auto-seed the default due-date reminder template so the Edge Function picks it up
+                    const defaultVal = { subject: '{{itemName}} is {{dueLabel}}', bodyHtml: DEFAULT_DUE_DATE_REMINDER_TEMPLATE };
+                    await supabase.from('system_settings').upsert({ key: 'due_date_reminder_email_template', value: defaultVal, description: 'Template for due-date reminder emails' }, { onConflict: 'key' });
                 }
             }
         } catch (error: any) {
@@ -158,6 +173,11 @@ export const EmailSettings = () => {
                     key: 'status_update_email_template',
                     value: statusUpdateTemplate,
                     description: 'Template for item status-change notifications'
+                },
+                {
+                    key: 'due_date_reminder_email_template',
+                    value: dueDateReminderTemplate,
+                    description: 'Template for due-date reminder emails'
                 }
             ];
 
@@ -706,6 +726,67 @@ export const EmailSettings = () => {
                                     .replace(/\{\{boardName\}\}/g, 'Business Tech')
                                     .replace(/\{\{oldStatus\}\}/g, 'Working on it')
                                     .replace(/\{\{newStatus\}\}/g, 'Done')
+                                    .replace(/\{\{itemLink\}\}/g, '#')
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Due Date Reminder Email Template ── */}
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CalendarClock size={20} color="#e2445c" />
+                    Due Date Reminder Email Template
+                    <span title="สถานการณ์ที่ส่ง: ทุกวันตอน 08:00 UTC เมื่อ Due Date ของ Item ตรงกับรอบแจ้งเตือนที่ตั้งไว้&#10;จุดประสงค์: แจ้งเตือนทุกคนใน Person column ของ Item นั้นทางอีเมล์" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong>{' '}
+                    <code style={codeStyle}>{'{{itemName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{boardName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{dueLabel}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemLink}}'}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input
+                        type="text"
+                        value={dueDateReminderTemplate.subject}
+                        onChange={e => setDueDateReminderTemplate({ ...dueDateReminderTemplate, subject: e.target.value })}
+                        style={inputStyle}
+                    />
+                </div>
+
+                <CollapsibleHtmlBody
+                    label="Email HTML Body"
+                    value={dueDateReminderTemplate.bodyHtml}
+                    onChange={val => setDueDateReminderTemplate({ ...dueDateReminderTemplate, bodyHtml: val })}
+                />
+
+                {/* Live Preview */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{ ...labelStyle, color: '#e2445c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{ marginTop: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span>{' '}
+                            <strong>
+                                {dueDateReminderTemplate.subject
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{dueLabel\}\}/g, 'due today')}
+                            </strong>
+                        </div>
+                        <div
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{
+                                __html: dueDateReminderTemplate.bodyHtml
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')
+                                    .replace(/\{\{dueLabel\}\}/g, 'due today')
                                     .replace(/\{\{itemLink\}\}/g, '#')
                             }}
                         />

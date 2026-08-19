@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
-import * as XLSX from 'xlsx';
+// xlsx is loaded lazily on-demand inside exportBoardData() to avoid bundling it at startup
 
 export const backupService = {
     /**
@@ -429,6 +429,7 @@ export const backupService = {
                     return s.length > 31 ? s.slice(0, 31) : s;
                 };
 
+                const XLSX = await import('xlsx');
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(aoa);
                 XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(board?.title || 'Board'));

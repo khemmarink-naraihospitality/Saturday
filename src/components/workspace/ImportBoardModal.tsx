@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
+// xlsx is loaded lazily inside parseExcel() to avoid a ~424KB hit on initial load
+import type * as XLSX from 'xlsx';
 import { X, Upload, Loader2, CheckCircle2, Layers, Plus, AlertCircle } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { showToast } from '../../utils/toast';
@@ -430,10 +431,12 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                 console.error('[Import] Failed to fetch mappings:', err);
             }
 
+            const XLSX = await import('xlsx');
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellStyles: true });
+                const data2 = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data2, { type: 'array', cellDates: true, cellStyles: true });
+
                 
                 // 🌈 Define Status Color Map early for use in row parsing
                 const standardStatusColorMap: Record<string, string> = {

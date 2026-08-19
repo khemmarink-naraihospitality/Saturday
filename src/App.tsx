@@ -155,9 +155,9 @@ function MainApp() {
                                 ALLOWED_DOMAINS.includes(userDomain) || 
                                 userEmail === 'khemmarin.k@naraihospitality.com';
 
-        // Auto-update database if they should be approved but aren't yet
+        // Auto-update database if they should be approved but aren't yet (fire and forget)
         if (shouldBeApproved && !profile?.is_approved) {
-          await supabase.from('profiles').update({ is_approved: true }).eq('id', session.user.id);
+          supabase.from('profiles').update({ is_approved: true }).eq('id', session.user.id).then(() => {});
         }
 
         // Sync UserStore with Supabase Session
@@ -171,6 +171,10 @@ function MainApp() {
           is_approved: shouldBeApproved
         });
 
+        // 🚀 Start loading workspace data immediately — don't wait for template seeding below
+        console.log('MainApp: calling loadUserData');
+        loadUserData();
+
         // Deep linking logic: 
         // Only go to home if the current path is '/' and we don't have an active page set.
         // Otherwise, let the existing routing logic handle things.
@@ -178,36 +182,39 @@ function MainApp() {
            console.log('MainApp: Already at home, staying there');
         }
 
-        // Seed default email templates to DB if not yet saved (admins only)
+        // Seed default email templates to DB if not yet saved — fire and forget, never blocks startup
         if (profile?.system_role === 'super_admin' || profile?.system_role === 'it_admin') {
-          const { data: existing } = await supabase.from('system_settings').select('key').eq('key', 'mention_email_template').maybeSingle();
-          if (!existing) {
-            await supabase.from('system_settings').upsert({
-              key: 'mention_email_template',
-              value: {
-                subject: '{{mentionedBy}} mentioned you in {{itemName}}',
-                bodyHtml: `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`
-              },
-              description: 'Template for @mention notifications'
-            }, { onConflict: 'key' });
-          }
+          (async () => {
+            try {
+              const { data: existing } = await supabase.from('system_settings').select('key').eq('key', 'mention_email_template').maybeSingle();
+              if (!existing) {
+                await supabase.from('system_settings').upsert({
+                  key: 'mention_email_template',
+                  value: {
+                    subject: '{{mentionedBy}} mentioned you in {{itemName}}',
+                    bodyHtml: `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`
+                  },
+                  description: 'Template for @mention notifications'
+                }, { onConflict: 'key' });
+              }
 
-          // Seed/upgrade the assign-item template (adds group name + direct item link)
-          const { data: existingAssign } = await supabase.from('system_settings').select('value').eq('key', 'assign_item_template').maybeSingle();
-          if (!existingAssign?.value?.bodyHtml?.includes('{{groupName}}')) {
-            await supabase.from('system_settings').upsert({
-              key: 'assign_item_template',
-              value: {
-                subject: "[You're assigned] {{itemName}}",
-                bodyHtml: DEFAULT_ASSIGN_TEMPLATE
-              },
-              description: 'Template for item assignments'
-            }, { onConflict: 'key' });
-          }
+              // Seed/upgrade the assign-item template (adds group name + direct item link)
+              const { data: existingAssign } = await supabase.from('system_settings').select('value').eq('key', 'assign_item_template').maybeSingle();
+              if (!existingAssign?.value?.bodyHtml?.includes('{{groupName}}')) {
+                await supabase.from('system_settings').upsert({
+                  key: 'assign_item_template',
+                  value: {
+                    subject: "[You're assigned] {{itemName}}",
+                    bodyHtml: DEFAULT_ASSIGN_TEMPLATE
+                  },
+                  description: 'Template for item assignments'
+                }, { onConflict: 'key' });
+              }
+            } catch (err) {
+              console.warn('[App] Template seeding failed (non-critical):', err);
+            }
+          })();
         }
-
-        console.log('MainApp: calling loadUserData');
-        loadUserData();
       };
 
       initUser().catch((err) => {

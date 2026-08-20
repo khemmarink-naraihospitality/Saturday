@@ -19,6 +19,7 @@ export interface ItemSlice {
     updateItemTitle: (itemId: string, newTitle: string, shouldLog?: boolean) => Promise<void>;
     updateItemFiles: (itemId: string, files: FileLink[]) => Promise<void>;
     deleteItem: (itemId: string) => Promise<void>;
+    restoreItem: (itemId: string, boardId: string, itemTitle?: string) => Promise<void>;
     moveItem: (activeId: string, overId: string) => Promise<void>;
 
     // Update/Comment
@@ -300,29 +301,57 @@ export const createItemSlice: StateCreator<
 
     deleteItem: async (itemId) => {
         const { activeBoardId } = get();
-        const item = get().boards.find(b => b.id === activeBoardId)?.items.find(i => i.id === itemId);
+        const board = get().boards.find(b => b.id === activeBoardId);
+        const item = board?.items.find(i => i.id === itemId);
         const title = item?.title;
+        // Cascade: a deleted parent's sub-items would otherwise become
+        // orphaned and unreachable (their row only exists nested inside the
+        // now-archived parent's expanded view).
+        const childIds = (board?.items || []).filter(i => i.parentId === itemId).map(i => i.id);
+        const idsToArchive = [itemId, ...childIds];
 
         set(state => ({
             boards: state.boards.map(b =>
                 b.id === activeBoardId
                     ? {
                         ...b,
-                        items: b.items.filter(i => i.id !== itemId),
-                        groups: b.groups.map(g => ({ ...g, items: g.items.filter(i => i.id !== itemId) }))
+                        items: b.items.filter(i => !idsToArchive.includes(i.id)),
+                        groups: b.groups.map(g => ({ ...g, items: g.items.filter(i => !idsToArchive.includes(i.id)) }))
                     }
                     : b
             ),
-            selectedItemIds: state.selectedItemIds.filter(id => id !== itemId)
+            selectedItemIds: state.selectedItemIds.filter(id => !idsToArchive.includes(id))
         }));
 
-        await supabase.from('items').delete().eq('id', itemId);
+        await supabase.from('items').update({ is_archived: true }).in('id', idsToArchive);
         if (activeBoardId) {
-            get().logActivity('item_deleted', 'item', itemId, {
+            get().logActivity('item_deleted', 'board', activeBoardId, {
                 board_id: activeBoardId,
                 item_title: title || 'Unknown'
             });
         }
+    },
+
+    restoreItem: async (itemId, boardId, itemTitle) => {
+        await supabase.from('items').update({ is_archived: false }).eq('id', itemId);
+        // Cascade restore: bring back any direct children that were archived
+        // alongside this item by deleteItem's cascade above. A child that was
+        // separately archived on its own later is the rare edge case this
+        // over-restores, accepted as a reasonable default.
+        await supabase.from('items').update({ is_archived: false }).eq('parent_id', itemId).eq('is_archived', true);
+
+        // loadBoardData() short-circuits once a board is already loaded (it only
+        // refreshes items for linked groups) — it never re-queries with the
+        // is_archived filter. Marking the board as not-loaded routes the next
+        // load through the full fetch path instead of duplicating that logic here.
+        set(state => ({
+            boards: state.boards.map(b => b.id === boardId ? { ...b, isDataLoaded: false } : b)
+        }));
+
+        get().logActivity('item_restored', 'board', boardId, {
+            board_id: boardId,
+            item_title: itemTitle || 'Unknown'
+        });
     },
 
     moveItem: async (activeId, overId) => {
@@ -641,15 +670,25 @@ export const createItemSlice: StateCreator<
     deleteSelectedItems: async () => {
         const { activeBoardId, selectedItemIds } = get();
         if (!activeBoardId) return;
+        const board = get().boards.find(b => b.id === activeBoardId);
+        const childIds = (board?.items || [])
+            .filter(i => i.parentId && selectedItemIds.includes(i.parentId))
+            .map(i => i.id);
+        const idsToArchive = [...new Set([...selectedItemIds, ...childIds])];
+
         set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? {
                 ...b,
-                items: b.items.filter(i => !selectedItemIds.includes(i.id)),
-                groups: b.groups.map(g => ({ ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) }))
+                items: b.items.filter(i => !idsToArchive.includes(i.id)),
+                groups: b.groups.map(g => ({ ...g, items: g.items.filter(i => !idsToArchive.includes(i.id)) }))
             } : b),
             selectedItemIds: []
         }));
-        await supabase.from('items').delete().in('id', selectedItemIds);
+        await supabase.from('items').update({ is_archived: true }).in('id', idsToArchive);
+        get().logActivity('item_deleted', 'board', activeBoardId, {
+            board_id: activeBoardId,
+            count: idsToArchive.length
+        });
     },
 
     duplicateSelectedItems: async () => {

@@ -291,10 +291,18 @@ export const createGroupLinkSlice: StateCreator<
             } : b)
         }));
 
+        get().logActivity('group_linked', 'board', activeBoardId, {
+            board_id: activeBoardId,
+            group_title: newGroupTitle,
+            source_board_id: sourceBoardId
+        });
+
         return { success: true };
     },
 
     unlinkGroup: async (groupId) => {
+        const { activeBoardId } = get();
+        const group = get().boards.find(b => b.id === activeBoardId)?.groups.find(g => g.id === groupId);
         const { error } = await supabase
             .from('group_links')
             .delete()
@@ -310,5 +318,12 @@ export const createGroupLinkSlice: StateCreator<
                 groups: b.groups.map(g => g.id === groupId ? { ...g, linkedGroupId: undefined, linkedBoardId: undefined } : g)
             }))
         }));
+
+        if (activeBoardId) {
+            get().logActivity('group_unlinked', 'board', activeBoardId, {
+                board_id: activeBoardId,
+                group_title: group?.title || 'Unknown'
+            });
+        }
     }
 });

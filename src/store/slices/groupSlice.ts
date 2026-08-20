@@ -6,7 +6,7 @@ import type { BoardState } from '../useBoardStore';
 export interface GroupSlice {
     addGroup: (title: string) => Promise<void>;
     deleteGroup: (groupId: string) => Promise<void>;
-    restoreGroup: (groupId: string, boardId?: string) => Promise<void>;
+    restoreGroup: (groupId: string, boardId?: string, groupTitle?: string) => Promise<void>;
     updateGroupTitle: (groupId: string, newTitle: string) => Promise<void>;
     updateGroupColor: (groupId: string, color: string) => Promise<void>;
     toggleGroup: (boardId: string, groupId: string) => void;
@@ -62,7 +62,7 @@ export const createGroupSlice: StateCreator<
         }
     },
 
-    restoreGroup: async (groupId, boardId) => {
+    restoreGroup: async (groupId, boardId, groupTitle) => {
         await supabase.from('groups').update({ is_archived: false }).eq('id', groupId);
 
         // loadBoardData() short-circuits once a board is already loaded (it only
@@ -73,6 +73,10 @@ export const createGroupSlice: StateCreator<
             set(state => ({
                 boards: state.boards.map(b => b.id === boardId ? { ...b, isDataLoaded: false } : b)
             }));
+            get().logActivity('group_restored', 'board', boardId, {
+                board_id: boardId,
+                group_title: groupTitle || 'Unknown'
+            });
         }
     },
 

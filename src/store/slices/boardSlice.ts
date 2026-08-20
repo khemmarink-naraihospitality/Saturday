@@ -382,6 +382,7 @@ export const createBoardSlice: StateCreator<
                 .from('items')
                 .select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id')
                 .eq('board_id', boardId)
+                .eq('is_archived', false)
                 .order('order');
 
             if (!items) return;
@@ -432,7 +433,7 @@ export const createBoardSlice: StateCreator<
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code').eq('board_id', boardId).order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`)
             ]);
 
@@ -608,9 +609,14 @@ export const createBoardSlice: StateCreator<
             }));
         }
         
-        // Removed loadUserData(true) to prevent race condition where DB replicas 
+        // Removed loadUserData(true) to prevent race condition where DB replicas
         // haven't resolved the insert yet, which would momentarily wipe the optimistic columns.
         // Realtime channels and optimistic state will handle the rest.
+
+        get().logActivity('board_created', 'workspace', activeWorkspaceId, {
+            workspace_id: activeWorkspaceId,
+            board_title: title
+        });
     },
 
     deleteBoard: async (id) => {
@@ -626,13 +632,28 @@ export const createBoardSlice: StateCreator<
             get().navigateTo('dashboard');
         }
         await supabase.from('boards').update({ is_archived: true }).eq('id', id);
+
+        if (board?.workspaceId) {
+            get().logActivity('board_deleted', 'workspace', board.workspaceId, {
+                workspace_id: board.workspaceId,
+                board_title: board.title
+            });
+        }
     },
 
     restoreBoard: async (id) => {
+        const board = get().boards.find(b => b.id === id);
         set(state => ({
             boards: state.boards.map(b => b.id === id ? { ...b, is_archived: false } : b)
         }));
         await supabase.from('boards').update({ is_archived: false }).eq('id', id);
+
+        if (board?.workspaceId) {
+            get().logActivity('board_restored', 'workspace', board.workspaceId, {
+                workspace_id: board.workspaceId,
+                board_title: board.title
+            });
+        }
     },
 
     updateBoard: async (boardId, updates) => {
@@ -790,6 +811,11 @@ export const createBoardSlice: StateCreator<
                 role: 'owner'
             });
 
+            get().logActivity('board_duplicated', 'workspace', targetWorkspaceId, {
+                workspace_id: targetWorkspaceId,
+                board_title: duplicatedBoard.title,
+                source_board_title: sourceBoard.title
+            });
         } catch (err: any) {
             console.error('[Duplicate] Failed to persist duplicated board:', err);
             get().loadUserData(true);
@@ -798,6 +824,7 @@ export const createBoardSlice: StateCreator<
 
     moveBoardToWorkspace: async (boardId, workspaceId) => {
         if (!boardId || !workspaceId) return;
+        const board = get().boards.find(b => b.id === boardId);
         set(state => ({
             boards: state.boards.map(b => b.id === boardId ? { ...b, workspaceId } : b)
         }));
@@ -805,6 +832,11 @@ export const createBoardSlice: StateCreator<
         if (error) {
             console.error('[Move] Failed to move board:', error);
             get().loadUserData(true);
+        } else {
+            get().logActivity('board_moved', 'workspace', workspaceId, {
+                workspace_id: workspaceId,
+                board_title: board?.title || 'Unknown'
+            });
         }
     },
 
@@ -979,5 +1011,12 @@ export const createBoardSlice: StateCreator<
         // 6. Reload board list and navigate to the new board
         await get().loadUserData(true);
         await get().setActiveBoard(boardId);
+
+        get().logActivity('board_imported', 'workspace', activeWorkspaceId, {
+            workspace_id: activeWorkspaceId,
+            board_title: data.title,
+            group_count: dbGroups.length,
+            item_count: dbItems.length
+        });
     }
 });

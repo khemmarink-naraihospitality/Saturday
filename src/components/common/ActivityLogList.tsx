@@ -30,22 +30,43 @@ const ACTION_LABELS: Record<string, string> = {
     role_updated: 'Role Updated',
     user_deleted: 'User Deleted',
     workspace_created: 'Workspace Created',
+    workspace_deleted: 'Workspace Deleted',
+    workspace_renamed: 'Workspace Renamed',
+    workspace_duplicated: 'Workspace Duplicated',
+    workspace_invite_sent: 'Workspace Invite Sent',
+    workspace_ownership_transferred: 'Ownership Transferred',
     board_created: 'Board Created',
+    board_deleted: 'Board Deleted',
+    board_restored: 'Board Restored',
+    board_duplicated: 'Board Duplicated',
+    board_moved: 'Board Moved',
+    board_imported: 'Board Imported',
+    board_invite_sent: 'Board Invite Sent',
+    invite_accepted: 'Invite Accepted',
+    invite_declined: 'Invite Declined',
+    member_role_updated: 'Member Role Updated',
+    member_removed: 'Member Removed',
 
     group_created: 'Group Created',
     group_deleted: 'Group Deleted',
+    group_restored: 'Group Restored',
     group_renamed: 'Group Renamed',
+    group_linked: 'Group Linked',
+    group_unlinked: 'Group Unlinked',
 
     column_created: 'Column Added',
     column_deleted: 'Column Deleted',
+    column_renamed: 'Column Renamed',
 
     item_created: 'Task Created',
     item_deleted: 'Task Deleted',
+    item_restored: 'Task Restored',
     item_renamed: 'Task Renamed',
     item_status_updated: 'Status Changed',
     item_value_updated: 'Item Updated',
     item_comment_added: 'Update Posted',
     item_mention: 'Mentioned',
+    item_assigned: 'Task Assigned',
 };
 
 const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: (id: string) => void }) => {
@@ -136,7 +157,35 @@ const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: 
             case 'item_renamed':
                 return <span>Renamed task to <strong>{itemTitle}</strong></span>;
             case 'item_deleted':
-                return <span>Deleted task <strong>{meta.item_title}</strong></span>;
+                return meta.count
+                    ? <span>Deleted <strong>{meta.count}</strong> tasks</span>
+                    : <span>Deleted task <strong>{meta.item_title}</strong></span>;
+            case 'item_restored':
+                return <span>Restored task <strong>{meta.item_title}</strong></span>;
+            case 'item_assigned':
+                return <span>Assigned a task</span>;
+            case 'group_restored':
+                return <span>Restored group <strong>{meta.group_title}</strong></span>;
+            case 'group_linked':
+                return <span>Linked group <strong>{meta.group_title}</strong> to another board</span>;
+            case 'group_unlinked':
+                return <span>Unlinked group <strong>{meta.group_title}</strong></span>;
+            case 'board_deleted':
+                return <span>Deleted board <strong>{meta.board_title}</strong></span>;
+            case 'board_restored':
+                return <span>Restored board <strong>{meta.board_title}</strong></span>;
+            case 'board_created':
+                return <span>Created board <strong>{meta.board_title}</strong></span>;
+            case 'workspace_renamed':
+                return <span>Renamed workspace from <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
+            case 'member_role_updated':
+                return <span>Updated a member's role to <strong>{meta.new_role}</strong></span>;
+            case 'member_removed':
+                return <span>Removed a member</span>;
+            case 'workspace_ownership_transferred':
+                return <span>Transferred workspace ownership</span>;
+            case 'column_renamed':
+                return <span>Renamed column <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
             case 'item_comment_added':
                 return <span>Posted an update on <strong>{itemTitle}</strong></span>;
             case 'item_mention':

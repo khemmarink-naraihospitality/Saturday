@@ -158,6 +158,8 @@ export const createWorkspaceSlice: StateCreator<
             }));
             
             // Removed loadUserData(true) to avoid UI flicker/race conditions with DB replication
+
+            get().logActivity('workspace_created', 'workspace', newWsId, { workspace_title: title });
         } catch (err) {
             console.error('[AddWorkspace] Full Error context:', err);
             // Re-load to undo optimistic state if needed
@@ -283,7 +285,8 @@ export const createWorkspaceSlice: StateCreator<
                 userWorkspaceRoles: { ...state.userWorkspaceRoles, [newWsId]: 'owner' },
                 userBoardRoles: { ...state.userBoardRoles, [boardId]: 'owner' }
             }));
-            
+
+            get().logActivity('workspace_created', 'workspace', newWsId, { workspace_title: title, parent_workspace_id: parentId });
         } catch (err) {
             console.error('[AddSubWorkspace] Full Error context:', err);
             await get().loadUserData(true);
@@ -292,23 +295,33 @@ export const createWorkspaceSlice: StateCreator<
     },
 
     deleteWorkspace: async (id) => {
+        const workspace = get().workspaces.find(w => w.id === id);
         set(state => ({
             workspaces: state.workspaces.filter(w => w.id !== id),
             boards: state.boards.filter(b => b.workspaceId !== id)
         }));
         await supabase.from('workspaces').delete().eq('id', id);
+        get().logActivity('workspace_deleted', 'workspace', id, { workspace_title: workspace?.title || 'Unknown' });
     },
 
     updateWorkspace: async (id, title) => {
+        const oldTitle = get().workspaces.find(w => w.id === id)?.title;
         set(state => ({
             workspaces: state.workspaces.map(w => w.id === id ? { ...w, title } : w)
         }));
         await supabase.from('workspaces').update({ title }).eq('id', id);
+        if (oldTitle && oldTitle !== title) {
+            get().logActivity('workspace_renamed', 'workspace', id, { old_title: oldTitle, new_title: title });
+        }
     },
 
     renameWorkspace: async (id, newTitle) => {
+        const oldTitle = get().workspaces.find(w => w.id === id)?.title;
         set(state => ({ workspaces: state.workspaces.map(w => w.id === id ? { ...w, title: newTitle } : w) }));
         await supabase.from('workspaces').update({ title: newTitle }).eq('id', id);
+        if (oldTitle && oldTitle !== newTitle) {
+            get().logActivity('workspace_renamed', 'workspace', id, { old_title: oldTitle, new_title: newTitle });
+        }
     },
 
     duplicateWorkspace: async (id) => {
@@ -351,6 +364,8 @@ export const createWorkspaceSlice: StateCreator<
         for (const board of wsBoards) {
             await get().duplicateBoardToWorkspace(board.id, newWsId);
         }
+
+        get().logActivity('workspace_duplicated', 'workspace', newWsId, { workspace_title: newTitle, source_workspace_title: ws.title });
     },
 
     inviteToWorkspace: async (workspaceId, email, role) => {
@@ -424,6 +439,7 @@ export const createWorkspaceSlice: StateCreator<
                 }
             }
 
+            get().logActivity('workspace_invite_sent', 'workspace', workspaceId, { email, role });
         } catch (e) {
             console.error("Invite failed", e);
             throw e;
@@ -549,6 +565,11 @@ export const createWorkspaceSlice: StateCreator<
             set(state => ({
                 userWorkspaceRoles: { ...state.userWorkspaceRoles, [workspaceId]: 'member' }
             }));
+
+            get().logActivity('workspace_ownership_transferred', 'workspace', workspaceId, {
+                previous_owner_user_id: previousOwnerId,
+                new_owner_user_id: newOwnerUserId
+            });
         } catch (err) {
             console.error('[TransferOwnership] Failed, reverting:', err);
             await get().loadUserData(true);

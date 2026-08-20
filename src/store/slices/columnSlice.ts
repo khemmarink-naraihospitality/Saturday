@@ -91,8 +91,16 @@ export const createColumnSlice: StateCreator<
     updateColumnTitle: async (columnId, newTitle) => {
         const { activeBoardId } = get();
         if (!activeBoardId) return;
+        const oldTitle = get().boards.find(b => b.id === activeBoardId)?.columns.find(c => c.id === columnId)?.title;
         set(state => ({ boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, title: newTitle } : c) } : b) }));
         await supabase.from('columns').update({ title: newTitle }).eq('id', columnId);
+        if (oldTitle && oldTitle !== newTitle) {
+            get().logActivity('column_renamed', 'board', activeBoardId, {
+                board_id: activeBoardId,
+                old_title: oldTitle,
+                new_title: newTitle
+            });
+        }
     },
 
     updateColumnWidth: (columnId, width) => {

@@ -183,6 +183,8 @@ export const createMemberSlice: StateCreator<
                 }
             }
         }
+
+        get().logActivity('board_invite_sent', 'board', boardId, { board_id: boardId, email, role });
     },
 
     updateMemberRole: async (memberId, newRole, type) => {
@@ -191,10 +193,11 @@ export const createMemberSlice: StateCreator<
         if (type === 'board' && get().activeBoardId) {
             set({ activeBoardMembers: await get().getBoardMembers(get().activeBoardId!) });
         }
+        get().logActivity('member_role_updated', type, memberId, { member_id: memberId, new_role: newRole });
     },
     removeMember: async (memberId, type) => {
         const table = type === 'workspace' ? 'workspace_members' : 'board_members';
-        
+
         if (type === 'workspace') {
             // 1. Get user_id and workspace_id for the member being removed
             const { data: memberData } = await supabase
@@ -233,6 +236,7 @@ export const createMemberSlice: StateCreator<
         if (type === 'board' && get().activeBoardId) {
             set({ activeBoardMembers: await get().getBoardMembers(get().activeBoardId!) });
         }
+        get().logActivity('member_removed', type, memberId, { member_id: memberId });
     },
 
     searchUsers: async (query) => {
@@ -361,6 +365,8 @@ export const createMemberSlice: StateCreator<
                     }
                 });
             }
+
+            get().logActivity('item_assigned', 'item', itemId, { board_id: boardId, assignee_user_id: userId });
         }
     },
 
@@ -693,6 +699,9 @@ export const createMemberSlice: StateCreator<
             get().loadNotifications();
             get().loadUserData(true);
 
+            if (entity_id) {
+                get().logActivity('invite_accepted', type === 'board_invite' ? 'board' : 'workspace', entity_id, { role });
+            }
         } catch (e) {
             console.error("Accept invite failed:", e);
         }
@@ -703,6 +712,11 @@ export const createMemberSlice: StateCreator<
             const newData = { ...notification.data, status: 'declined' };
             await supabase.from('notifications').update({ data: newData, is_read: true }).eq('id', notification.id);
             get().loadNotifications();
+
+            const { type, entity_id } = notification;
+            if (entity_id) {
+                get().logActivity('invite_declined', type === 'board_invite' ? 'board' : 'workspace', entity_id, {});
+            }
         } catch (e) {
             console.error("Decline invite failed:", e);
         }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock, CalendarClock } from 'lucide-react';
+import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock, CalendarClock, MessageSquare, ThumbsUp } from 'lucide-react';
 
 const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
@@ -9,6 +9,10 @@ const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; bac
 const DEFAULT_PIN_RESET_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 20px;">You requested to reset the PIN for the private board <strong>{{boardName}}</strong>.</p><div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e293b; background-color: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">{{otpCode}}</div><p style="font-size: 13px; color: #94a3b8;">This code expires in {{expiryMinutes}} minutes. If you didn't request this, you can ignore this email.</p></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const DEFAULT_STATUS_UPDATE_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{inviterName}}</strong> changed the status of <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; padding: 12px 16px; margin: 0 0 20px; text-align: center; border-radius: 4px;"><span style="font-size: 13px; color: #94a3b8; text-decoration: line-through;">{{oldStatus}}</span><span style="font-size: 15px; color: #1e293b; font-weight: bold; margin-left: 8px;">→ {{newStatus}}</span></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
+const DEFAULT_COMMENT_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{commenterName}}</strong> commented on <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
+const DEFAULT_LIKE_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{likerName}}</strong> liked your update on <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const DEFAULT_DUE_DATE_REMINDER_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong> is <strong>{{dueLabel}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
@@ -60,6 +64,16 @@ export const EmailSettings = () => {
         bodyHtml: DEFAULT_DUE_DATE_REMINDER_TEMPLATE
     });
 
+    const [commentTemplate, setCommentTemplate] = useState({
+        subject: '{{commenterName}} commented on {{itemName}}',
+        bodyHtml: DEFAULT_COMMENT_TEMPLATE
+    });
+
+    const [likeTemplate, setLikeTemplate] = useState({
+        subject: '{{likerName}} liked your update on {{itemName}}',
+        bodyHtml: DEFAULT_LIKE_TEMPLATE
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
     
     // Test SMTP state
@@ -78,7 +92,7 @@ export const EmailSettings = () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template', 'due_date_reminder_email_template']);
+                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template', 'due_date_reminder_email_template', 'comment_email_template', 'like_email_template']);
 
             if (error) throw error;
 
@@ -91,6 +105,8 @@ export const EmailSettings = () => {
                 const pinResetTmpl = data.find(item => item.key === 'pin_reset_otp_template');
                 const statusUpdateTmpl = data.find(item => item.key === 'status_update_email_template');
                 const dueDateReminderTmpl = data.find(item => item.key === 'due_date_reminder_email_template');
+                const commentTmpl = data.find(item => item.key === 'comment_email_template');
+                const likeTmpl = data.find(item => item.key === 'like_email_template');
 
                 if (smtp?.value) setSmtpConfig(smtp.value);
                 if (template?.value) setInviteTemplate(template.value);
@@ -123,6 +139,18 @@ export const EmailSettings = () => {
                     // Auto-seed the default due-date reminder template so the Edge Function picks it up
                     const defaultVal = { subject: '{{itemName}} is {{dueLabel}}', bodyHtml: DEFAULT_DUE_DATE_REMINDER_TEMPLATE };
                     await supabase.from('system_settings').upsert({ key: 'due_date_reminder_email_template', value: defaultVal, description: 'Template for due-date reminder emails' }, { onConflict: 'key' });
+                }
+                if (commentTmpl?.value) {
+                    setCommentTemplate(commentTmpl.value);
+                } else {
+                    const defaultVal = { subject: '{{commenterName}} commented on {{itemName}}', bodyHtml: DEFAULT_COMMENT_TEMPLATE };
+                    await supabase.from('system_settings').upsert({ key: 'comment_email_template', value: defaultVal, description: 'Template for comment notifications to assignees' }, { onConflict: 'key' });
+                }
+                if (likeTmpl?.value) {
+                    setLikeTemplate(likeTmpl.value);
+                } else {
+                    const defaultVal = { subject: '{{likerName}} liked your update on {{itemName}}', bodyHtml: DEFAULT_LIKE_TEMPLATE };
+                    await supabase.from('system_settings').upsert({ key: 'like_email_template', value: defaultVal, description: 'Template for update-like notifications' }, { onConflict: 'key' });
                 }
             }
         } catch (error: any) {
@@ -178,6 +206,16 @@ export const EmailSettings = () => {
                     key: 'due_date_reminder_email_template',
                     value: dueDateReminderTemplate,
                     description: 'Template for due-date reminder emails'
+                },
+                {
+                    key: 'comment_email_template',
+                    value: commentTemplate,
+                    description: 'Template for comment notifications to assignees'
+                },
+                {
+                    key: 'like_email_template',
+                    value: likeTemplate,
+                    description: 'Template for update-like notifications'
                 }
             ];
 
@@ -726,6 +764,132 @@ export const EmailSettings = () => {
                                     .replace(/\{\{boardName\}\}/g, 'Business Tech')
                                     .replace(/\{\{oldStatus\}\}/g, 'Working on it')
                                     .replace(/\{\{newStatus\}\}/g, 'Done')
+                                    .replace(/\{\{itemLink\}\}/g, '#')
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Comment Email Template ── */}
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageSquare size={20} color="#64748b" />
+                    Comment Email Template
+                    <span title="สถานการณ์ที่ส่ง: เมื่อมีคน comment ใน Item (ที่ไม่ได้ @mention)&#10;จุดประสงค์: แจ้งเตือนทุกคนใน Person column ของ Item นั้นทางอีเมล์" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong>{' '}
+                    <code style={codeStyle}>{'{{commenterName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{boardName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{updatePreview}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemLink}}'}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input
+                        type="text"
+                        value={commentTemplate.subject}
+                        onChange={e => setCommentTemplate({ ...commentTemplate, subject: e.target.value })}
+                        style={inputStyle}
+                    />
+                </div>
+
+                <CollapsibleHtmlBody
+                    label="Email HTML Body"
+                    value={commentTemplate.bodyHtml}
+                    onChange={val => setCommentTemplate({ ...commentTemplate, bodyHtml: val })}
+                />
+
+                {/* Live Preview */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{ ...labelStyle, color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{ marginTop: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span>{' '}
+                            <strong>
+                                {commentTemplate.subject
+                                    .replace(/\{\{commenterName\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')}
+                            </strong>
+                        </div>
+                        <div
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{
+                                __html: commentTemplate.bodyHtml
+                                    .replace(/\{\{commenterName\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')
+                                    .replace(/\{\{updatePreview\}\}/g, 'Just pushed the latest changes — can you review before Friday?')
+                                    .replace(/\{\{itemLink\}\}/g, '#')
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Like Email Template ── */}
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ThumbsUp size={20} color="#D4A000" />
+                    Like Email Template
+                    <span title="สถานการณ์ที่ส่ง: เมื่อมีคนกด Like บน Update ของผู้ใช้&#10;จุดประสงค์: แจ้งเตือนเจ้าของ Update นั้นทางอีเมล์" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong>{' '}
+                    <code style={codeStyle}>{'{{likerName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{boardName}}'}</code>,{' '}
+                    <code style={codeStyle}>{'{{itemLink}}'}</code>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input
+                        type="text"
+                        value={likeTemplate.subject}
+                        onChange={e => setLikeTemplate({ ...likeTemplate, subject: e.target.value })}
+                        style={inputStyle}
+                    />
+                </div>
+
+                <CollapsibleHtmlBody
+                    label="Email HTML Body"
+                    value={likeTemplate.bodyHtml}
+                    onChange={val => setLikeTemplate({ ...likeTemplate, bodyHtml: val })}
+                />
+
+                {/* Live Preview */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{ ...labelStyle, color: '#D4A000', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{ marginTop: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span>{' '}
+                            <strong>
+                                {likeTemplate.subject
+                                    .replace(/\{\{likerName\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')}
+                            </strong>
+                        </div>
+                        <div
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{
+                                __html: likeTemplate.bodyHtml
+                                    .replace(/\{\{likerName\}\}/g, 'Alex Johnson')
+                                    .replace(/\{\{itemName\}\}/g, 'Saturday.com Launch')
+                                    .replace(/\{\{boardName\}\}/g, 'Business Tech')
                                     .replace(/\{\{itemLink\}\}/g, '#')
                             }}
                         />

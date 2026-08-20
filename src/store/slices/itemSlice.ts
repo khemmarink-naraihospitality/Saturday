@@ -492,6 +492,21 @@ export const createItemSlice: StateCreator<
                 itemId,
                 { board_id: activeBoardId, updatePreview: textPreview }
             );
+
+            const assigneeEmail = get().activeBoardMembers.find((m: any) => m.user_id === assigneeId)?.profiles?.email;
+            if (assigneeEmail) {
+                supabase.functions.invoke('invite-user', {
+                    body: {
+                        action: 'comment',
+                        email: assigneeEmail,
+                        commenterName: author.name,
+                        itemName: item?.title || 'an item',
+                        boardName: board?.title || 'a board',
+                        updatePreview: textPreview,
+                        itemLink
+                    }
+                }).catch((e: unknown) => console.error('Comment email error:', e));
+            }
         }
     },
 
@@ -558,6 +573,20 @@ export const createItemSlice: StateCreator<
                 itemId,
                 { board_id: activeBoardId }
             );
+
+            const authorEmail = get().activeBoardMembers.find((m: any) => m.user_id === updateAuthorId)?.profiles?.email;
+            if (authorEmail) {
+                supabase.functions.invoke('invite-user', {
+                    body: {
+                        action: 'like',
+                        email: authorEmail,
+                        likerName: user.name,
+                        itemName: itemTitle || 'an item',
+                        boardName: board?.title || 'a board',
+                        itemLink: 'https://saturdaycom.vercel.app'
+                    }
+                }).catch((e: unknown) => console.error('Like email error:', e));
+            }
         }
     },
 

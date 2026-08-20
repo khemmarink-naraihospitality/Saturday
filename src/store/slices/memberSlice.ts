@@ -132,7 +132,7 @@ export const createMemberSlice: StateCreator<
                 'access_granted',
                 `You have been added to board`,
                 boardId,
-                { role, boardName: boardData?.title || 'Board', workspaceName: workspaceTitle }
+                { role, boardName: boardData?.title || 'Board', workspaceName: workspaceTitle, board_id: boardId }
             );
         } else {
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';

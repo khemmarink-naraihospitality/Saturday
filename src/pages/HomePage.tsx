@@ -319,6 +319,10 @@ const InboxFeed = () => {
     const handleDeclineInvite = useBoardStore(state => state.handleDeclineInvite);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const isLoading = useBoardStore(state => state.isLoading);
+    const setActiveBoard = useBoardStore(state => state.setActiveBoard);
+    const setActiveWorkspace = useBoardStore(state => state.setActiveWorkspace);
+    const setActiveItem = useBoardStore(state => state.setActiveItem);
+    const markNotificationAsRead = useBoardStore(state => state.markNotificationAsRead);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     // Filter to show limited items in feed (top 5)
@@ -343,6 +347,18 @@ const InboxFeed = () => {
     };
 
     const handleMarkAsRead = (n: any) => dismissNotification(n.id);
+
+    const handleNotificationClick = (n: any) => {
+        if (!n.is_read) markNotificationAsRead(n.id);
+
+        if (n.data?.board_id) {
+            setActiveBoard(n.data.board_id);
+            if (n.entity_id) setActiveItem(n.entity_id);
+        } else if (n.data?.workspace_id) {
+            setActiveWorkspace(n.data.workspace_id);
+            navigateTo('home');
+        }
+    };
 
     const onAccept = async (notification: any) => {
         setProcessingId(notification.id);
@@ -413,7 +429,11 @@ const InboxFeed = () => {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {feedNotifications.map(n => (
-                            <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', borderBottom: '1px solid hsl(var(--color-border))', paddingBottom: '16px', position: 'relative', paddingRight: '24px' }}>
+                            <div
+                                key={n.id}
+                                onClick={() => handleNotificationClick(n)}
+                                style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', borderBottom: '1px solid hsl(var(--color-border))', paddingBottom: '16px', position: 'relative', paddingRight: '24px', cursor: (n.data?.board_id || n.data?.workspace_id) ? 'pointer' : 'default' }}
+                            >
                                 <div style={{
                                     width: '40px', height: '40px', borderRadius: '50%',
                                     backgroundColor: 'hsl(var(--color-bg-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -461,7 +481,7 @@ const InboxFeed = () => {
                                         ((n.data?.status || 'pending') === 'pending' && (!n.status || n.status === 'pending')) && (
                                             <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                                                 <button
-                                                    onClick={() => onAccept(n)}
+                                                    onClick={(e) => { e.stopPropagation(); onAccept(n); }}
                                                     disabled={processingId === n.id}
                                                     style={{
                                                         backgroundColor: processingId === n.id ? 'hsl(var(--color-brand-primary), 0.7)' : 'hsl(var(--color-brand-primary))',
@@ -480,7 +500,7 @@ const InboxFeed = () => {
                                                     {processingId === n.id ? 'Accepting...' : 'Accept'}
                                                 </button>
                                                 <button
-                                                    onClick={() => onDecline(n)}
+                                                    onClick={(e) => { e.stopPropagation(); onDecline(n); }}
                                                     disabled={processingId === n.id}
                                                     style={{
                                                         backgroundColor: 'hsl(var(--color-bg-surface))',
@@ -502,7 +522,7 @@ const InboxFeed = () => {
                                         )}
                                 </div>
                                 <button
-                                    onClick={() => handleMarkAsRead(n)}
+                                    onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n); }}
                                     title="Dismiss"
                                     style={{
                                         position: 'absolute',

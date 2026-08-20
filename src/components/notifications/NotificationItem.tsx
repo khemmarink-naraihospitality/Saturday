@@ -19,6 +19,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     const setActiveBoard = useBoardStore(state => state.setActiveBoard);
     const setActiveWorkspace = useBoardStore(state => state.setActiveWorkspace);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
+    const navigateTo = useBoardStore(state => state.navigateTo);
     const [isProcessing, setIsProcessing] = useState(false);
 
     const isInvite = notification.type === 'workspace_invite' || notification.type === 'board_invite';
@@ -61,6 +62,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
             if (onClose) onClose();
         } else if (notification.data?.workspace_id) {
             setActiveWorkspace(notification.data.workspace_id);
+            navigateTo('home');
             if (onClose) onClose();
         }
     };

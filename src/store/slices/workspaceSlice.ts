@@ -388,7 +388,7 @@ export const createWorkspaceSlice: StateCreator<
                     'access_granted',
                     `You have been added to workspace`,
                     workspaceId,
-                    { role, workspaceName }
+                    { role, workspaceName, workspace_id: workspaceId }
                 );
             } else {
                 const { workspaces } = get();

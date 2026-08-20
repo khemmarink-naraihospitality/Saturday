@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserStore } from '../../store/useUserStore';
-import { X, UserCog, Save } from 'lucide-react';
+import { X, UserCog, Save, Camera } from 'lucide-react';
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 const formatRole = (role?: string) => {
     if (!role) return 'User';
@@ -21,10 +23,67 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
     const [name, setName] = useState(currentUser.name);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [avatarUrl, setAvatarUrl] = useState(
+        currentUser.avatar?.startsWith('http') ? currentUser.avatar : user?.user_metadata?.avatar_url
+    );
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const userAvatar = user?.user_metadata?.avatar_url;
+    const userAvatar = avatarUrl;
     const userInitials = (currentUser.name || user?.email?.split('@')[0] || 'U').charAt(0).toUpperCase();
     const trimmedName = name.trim();
+
+    const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ''; // allow re-selecting the same file later
+        if (!file || !user?.id) return;
+
+        if (!file.type.startsWith('image/')) {
+            setMessage({ type: 'error', text: 'Please choose an image file.' });
+            return;
+        }
+        if (file.size > MAX_AVATAR_BYTES) {
+            setMessage({ type: 'error', text: 'Image must be under 5MB.' });
+            return;
+        }
+
+        setUploadingAvatar(true);
+        setMessage({ type: '', text: '' });
+
+        const ext = file.name.split('.').pop() || 'jpg';
+        // Unique filename per upload (rather than a fixed name) so the public
+        // URL changes too — otherwise the browser/CDN would keep showing the
+        // old cached image at the same URL after a re-upload.
+        const path = `${user.id}/${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file);
+        if (uploadError) {
+            setUploadingAvatar(false);
+            setMessage({ type: 'error', text: 'Upload failed: ' + uploadError.message });
+            return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+
+        const [{ error: dbError }, authResult] = await Promise.all([
+            supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id),
+            supabase.auth.updateUser({ data: { avatar_url: publicUrl } })
+        ]);
+
+        setUploadingAvatar(false);
+
+        if (dbError) {
+            setMessage({ type: 'error', text: 'Failed to save avatar: ' + dbError.message });
+            return;
+        }
+        if (authResult.error) {
+            console.error('Failed to sync auth avatar metadata:', authResult.error);
+        }
+
+        setAvatarUrl(publicUrl);
+        setUser({ ...currentUser, avatar: publicUrl });
+        setMessage({ type: 'success', text: 'Profile photo updated' });
+    };
 
     const handleSave = async () => {
         if (!user?.id || !trimmedName) return;
@@ -89,16 +148,39 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-                        <div style={{
-                            width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-                            border: '1px solid hsl(var(--color-border))',
-                            backgroundColor: userAvatar ? 'transparent' : 'hsl(var(--color-brand-primary))',
-                            color: 'white', fontSize: '20px', fontWeight: 600,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            {userAvatar ? (
-                                <img src={userAvatar} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : userInitials}
+                        <div
+                            onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
+                            style={{
+                                position: 'relative', width: '56px', height: '56px', borderRadius: '50%', flexShrink: 0,
+                                cursor: uploadingAvatar ? 'default' : 'pointer'
+                            }}
+                        >
+                            <div style={{
+                                width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
+                                border: '1px solid hsl(var(--color-border))',
+                                backgroundColor: userAvatar ? 'transparent' : 'hsl(var(--color-brand-primary))',
+                                color: 'white', fontSize: '20px', fontWeight: 600,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                opacity: uploadingAvatar ? 0.5 : 1
+                            }}>
+                                {userAvatar ? (
+                                    <img src={userAvatar} alt="Profile" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : userInitials}
+                            </div>
+                            <div style={{
+                                position: 'absolute', bottom: -2, right: -2, width: '22px', height: '22px', borderRadius: '50%',
+                                backgroundColor: 'hsl(var(--color-brand-primary))', border: '2px solid hsl(var(--color-bg-surface))',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <Camera size={11} color="white" />
+                            </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarSelect}
+                                style={{ display: 'none' }}
+                            />
                         </div>
                         <div>
                             <div style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>{currentUser.name}</div>

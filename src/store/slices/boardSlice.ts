@@ -189,12 +189,17 @@ export const createBoardSlice: StateCreator<
                 }
             }
 
-            // ENSURE PROFILE — fire and forget, nothing below reads its result
+            // ENSURE PROFILE — fire and forget, nothing below reads its result.
+            // avatar_url prefers whatever is already on the profile row (a
+            // manually-uploaded avatar) over the Google metadata photo — this
+            // upsert runs on every loadUserData call (including the 5-minute
+            // poll), so without that guard a custom-uploaded avatar would get
+            // silently overwritten back to the Google photo shortly after upload.
             supabase.from('profiles').upsert({
                 id: user.id,
                 email: user.email,
                 full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-                avatar_url: user.user_metadata?.avatar_url,
+                avatar_url: existingProfile?.avatar_url || user.user_metadata?.avatar_url,
                 system_role: existingProfile?.system_role || 'user'
             }, { onConflict: 'id' }).then(({ error }) => {
                 if (error) console.error("Failed to ensure profile:", error);

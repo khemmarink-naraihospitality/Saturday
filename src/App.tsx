@@ -145,8 +145,8 @@ function MainApp() {
       lastUserIdRef.current = session.user.id;
       
       const initUser = async () => {
-        // Fetch full profile to get system_role and is_approved
-        const { data: profile } = await supabase.from('profiles').select('system_role, is_approved').eq('id', session.user.id).single();
+        // Fetch full profile to get system_role, is_approved and a possible custom avatar
+        const { data: profile } = await supabase.from('profiles').select('system_role, is_approved, avatar_url').eq('id', session.user.id).single();
 
         const userEmail = session.user.email || '';
         const userDomain = userEmail.split('@')[1];
@@ -165,7 +165,7 @@ function MainApp() {
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email,
-          avatar: session.user.user_metadata?.avatar_url,
+          avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url,
           role: 'owner',
           system_role: (profile?.system_role as any) || 'user',
           is_approved: shouldBeApproved

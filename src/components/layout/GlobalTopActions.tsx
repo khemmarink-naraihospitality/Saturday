@@ -91,8 +91,9 @@ export const GlobalTopActions = () => {
         setShowProfileMenu(false);
     };
 
-    // Get user avatar or initials
-    const userAvatar = user?.user_metadata?.avatar_url;
+    // Get user avatar or initials — currentUser.avatar reflects a manually-uploaded
+    // avatar (profiles.avatar_url); falls back to the Google metadata photo.
+    const userAvatar = currentUser.avatar?.startsWith('http') ? currentUser.avatar : user?.user_metadata?.avatar_url;
     const userInitials = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U').charAt(0).toUpperCase();
 
     return (

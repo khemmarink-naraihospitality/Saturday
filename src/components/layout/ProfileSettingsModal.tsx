@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserStore } from '../../store/useUserStore';
 import { X, UserCog, Save, Camera } from 'lucide-react';
+import { AvatarCropModal } from './AvatarCropModal';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
@@ -27,13 +28,16 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
         currentUser.avatar?.startsWith('http') ? currentUser.avatar : user?.user_metadata?.avatar_url
     );
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    // Holds the picked file while the user frames it in the crop modal; the
+    // upload only happens once they confirm the crop.
+    const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const userAvatar = avatarUrl;
     const userInitials = (currentUser.name || user?.email?.split('@')[0] || 'U').charAt(0).toUpperCase();
     const trimmedName = name.trim();
 
-    const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = ''; // allow re-selecting the same file later
         if (!file || !user?.id) return;
@@ -47,16 +51,26 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
             return;
         }
 
+        setMessage({ type: '', text: '' });
+        setPendingAvatarFile(file);
+    };
+
+    const handleCroppedAvatar = async (blob: Blob) => {
+        if (!user?.id) return;
+
         setUploadingAvatar(true);
         setMessage({ type: '', text: '' });
 
-        const ext = file.name.split('.').pop() || 'jpg';
+        // The cropper always outputs JPEG, so the extension is fixed rather
+        // than derived from the original filename.
         // Unique filename per upload (rather than a fixed name) so the public
         // URL changes too — otherwise the browser/CDN would keep showing the
         // old cached image at the same URL after a re-upload.
-        const path = `${user.id}/${Date.now()}.${ext}`;
+        const path = `${user.id}/${Date.now()}.jpg`;
 
-        const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file);
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(path, blob, { contentType: 'image/jpeg' });
         if (uploadError) {
             setUploadingAvatar(false);
             setMessage({ type: 'error', text: 'Upload failed: ' + uploadError.message });
@@ -82,6 +96,7 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
 
         setAvatarUrl(publicUrl);
         setUser({ ...currentUser, avatar: publicUrl });
+        setPendingAvatarFile(null);
         setMessage({ type: 'success', text: 'Profile photo updated' });
     };
 
@@ -251,6 +266,15 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
                     </button>
                 </div>
             </div>
+
+            {pendingAvatarFile && (
+                <AvatarCropModal
+                    file={pendingAvatarFile}
+                    saving={uploadingAvatar}
+                    onCancel={() => setPendingAvatarFile(null)}
+                    onConfirm={handleCroppedAvatar}
+                />
+            )}
         </div>,
         document.body
     );

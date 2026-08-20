@@ -13,6 +13,7 @@ import { TaskDetail } from './components/task/TaskDetail';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { SetPasswordPage } from './pages/SetPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { supabase } from './lib/supabase';
 
 // HomePage moved to lazy
@@ -470,6 +471,10 @@ function AppContent() {
 
   if (window.location.pathname === '/set-password') {
     return <SetPasswordPage />;
+  }
+
+  if (window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />;
   }
 
   const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];

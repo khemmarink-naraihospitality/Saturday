@@ -8,6 +8,11 @@ export const LoginPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [showEmailLogin, setShowEmailLogin] = useState(false);
 
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotResult, setForgotResult] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -24,6 +29,43 @@ export const LoginPage = () => {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotResult(null);
+
+        try {
+            const { data, error: fnError } = await supabase.functions.invoke('invite-user', {
+                body: {
+                    action: 'forgot_password',
+                    email: forgotEmail,
+                    redirectTo: `${window.location.origin}/reset-password`
+                }
+            });
+
+            // On a non-2xx response the SDK throws before parsing the body, so
+            // `data` is null and the real error payload only lives on
+            // fnError.context (the raw Response) — read it back explicitly to
+            // tell a Google-account rejection apart from any other failure.
+            let errorBody: any = data;
+            if (fnError && (fnError as any).context?.json) {
+                try { errorBody = await (fnError as any).context.json(); } catch { /* body already consumed or not JSON */ }
+            }
+
+            if (errorBody?.error === 'GOOGLE_ACCOUNT') {
+                setForgotResult({ type: 'error', text: 'This account uses Google Sign-In. Please use "Continue with Google" instead.' });
+            } else if (fnError || errorBody?.error) {
+                setForgotResult({ type: 'error', text: errorBody?.error || fnError?.message || 'Something went wrong. Please try again.' });
+            } else {
+                setForgotResult({ type: 'success', text: 'If this email belongs to an internal account, a reset link has been sent.' });
+            }
+        } catch (err: any) {
+            setForgotResult({ type: 'error', text: err.message || 'Something went wrong. Please try again.' });
+        } finally {
+            setForgotLoading(false);
         }
     };
 
@@ -156,11 +198,11 @@ export const LoginPage = () => {
                     </span>
                 </div>
 
-                {showEmailLogin && (
+                {showEmailLogin && !showForgotPassword && (
                     <>
                         <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Email Address</label>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Your Alias Email</label>
                                 <input
                                     type="email"
                                     placeholder="name@company.com"
@@ -179,7 +221,7 @@ export const LoginPage = () => {
                                     }}
                                 />
                             </div>
-                            <div style={{ marginBottom: '24px' }}>
+                            <div style={{ marginBottom: '10px' }}>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Password</label>
                                 <input
                                     type="password"
@@ -197,6 +239,20 @@ export const LoginPage = () => {
                                         backgroundColor: '#f8fafc'
                                     }}
                                 />
+                            </div>
+
+                            <div style={{ textAlign: 'right', marginBottom: '20px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForgotEmail(email);
+                                        setForgotResult(null);
+                                        setShowForgotPassword(true);
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}
+                                >
+                                    Forgot your password?
+                                </button>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
@@ -238,6 +294,80 @@ export const LoginPage = () => {
                                 }}
                             >
                                 Need an account? Sign Up
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {showEmailLogin && showForgotPassword && (
+                    <>
+                        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', textAlign: 'left' }}>
+                            Enter your alias email and we'll send a password reset link. This only works for Internal accounts — Google accounts should sign in with "Continue with Google".
+                        </p>
+                        <form onSubmit={handleForgotPassword} style={{ textAlign: 'left' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Your Alias Email</label>
+                                <input
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 14px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '15px',
+                                        outline: 'none',
+                                        backgroundColor: '#f8fafc'
+                                    }}
+                                />
+                            </div>
+
+                            {forgotResult && (
+                                <div style={{
+                                    backgroundColor: forgotResult.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                                    color: forgotResult.type === 'success' ? '#15803d' : '#b91c1c',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    marginBottom: '20px',
+                                    fontSize: '13px',
+                                    border: `1px solid ${forgotResult.type === 'success' ? '#dcfce7' : '#fee2e2'}`
+                                }}>
+                                    {forgotResult.text}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                                <button
+                                    type="submit"
+                                    disabled={forgotLoading}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        backgroundColor: '#6366f1',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '15px',
+                                        fontWeight: 600,
+                                        cursor: forgotLoading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
+                                    }}
+                                >
+                                    {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                                </button>
+                            </div>
+                        </form>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                onClick={() => setShowForgotPassword(false)}
+                                style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
+                            >
+                                Back to login
                             </button>
                         </div>
                     </>

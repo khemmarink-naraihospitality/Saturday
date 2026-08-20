@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../store/useUserStore';
-import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet, Globe, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { CreateUserModal } from './CreateUserModal';
 
@@ -14,7 +14,42 @@ interface Profile {
     created_at: string;
     last_login_at: string | null;
     auth_type?: 'google' | 'internal';
+    avatar_url?: string | null;
 }
+
+const initialsFrom = (name?: string, email?: string) =>
+    (name || email || '?').trim().charAt(0).toUpperCase();
+
+const HEADER_ROW_HEIGHT = 44;
+
+const thStyle: React.CSSProperties = {
+    cursor: 'pointer',
+    padding: '0 20px',
+    height: `${HEADER_ROW_HEIGHT}px`,
+    boxSizing: 'border-box',
+    textAlign: 'left',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    backgroundColor: '#f8fafc',
+    zIndex: 2,
+    borderBottom: '1px solid #e2e8f0'
+};
+
+const thFilterStyle: React.CSSProperties = {
+    padding: '8px 20px',
+    boxSizing: 'border-box',
+    position: 'sticky',
+    top: `${HEADER_ROW_HEIGHT}px`,
+    backgroundColor: '#fcfdfe',
+    zIndex: 2,
+    borderBottom: '1px solid #e2e8f0'
+};
 
 const ROLE_HIERARCHY = {
     'user': 1,
@@ -305,9 +340,9 @@ export const UserTable = () => {
     return (
         <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             {/* Header */}
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                    <Search size={18} color="#64748b" />
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
+                    <Search size={18} color="#64748b" style={{ flexShrink: 0 }} />
                     <input
                         type="text"
                         placeholder="Search users..."
@@ -321,158 +356,176 @@ export const UserTable = () => {
                             color: '#0f172a'
                         }}
                     />
+                    {!isLoading && (
+                        <span style={{
+                            display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0,
+                            padding: '3px 10px', borderRadius: '999px', backgroundColor: '#f1f5f9',
+                            fontSize: '12px', fontWeight: 600, color: '#475569'
+                        }}>
+                            <Users size={12} />
+                            {filteredAndSortedProfiles.length}{filteredAndSortedProfiles.length !== profiles.length ? ` / ${profiles.length}` : ''}
+                        </span>
+                    )}
                 </div>
-                <button
-                    onClick={() => setShowCreateUserModal(true)}
-                    style={{
-                        padding: '6px 14px',
-                        backgroundColor: '#059669',
-                        border: '1px solid #059669',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: 'white'
-                    }}
-                >
-                    <UserPlus size={14} />
-                    Create User
-                </button>
-                <button
-                    onClick={exportToExcel}
-                    title={`Export ${filteredAndSortedProfiles.length} user(s) to Excel`}
-                    style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#15803d',
-                        transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#dcfce7';
-                        e.currentTarget.style.borderColor = '#86efac';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f0fdf4';
-                        e.currentTarget.style.borderColor = '#bbf7d0';
-                    }}
-                >
-                    <FileSpreadsheet size={14} />
-                    Export Excel
-                </button>
-                <button
-                    onClick={fetchProfiles}
-                    style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#f1f5f9',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        color: '#475569'
-                    }}
-                >
-                    <RefreshCw size={14} />
-                    Refresh
-                </button>
-                <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    style={{
-                        padding: '6px 12px',
-                        backgroundColor: showFilters ? '#eef2ff' : '#f1f5f9',
-                        border: '1px solid',
-                        borderColor: showFilters ? '#6366f1' : '#e2e8f0',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        color: showFilters ? '#4338ca' : '#475569',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    <Filter size={14} />
-                    {showFilters ? 'Hide Filters' : 'Filter'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                        onClick={() => setShowCreateUserModal(true)}
+                        style={{
+                            padding: '6px 14px',
+                            backgroundColor: '#059669',
+                            border: '1px solid #059669',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: 'white',
+                            transition: 'background-color 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                    >
+                        <UserPlus size={14} />
+                        Create User
+                    </button>
+                    <button
+                        onClick={exportToExcel}
+                        title={`Export ${filteredAndSortedProfiles.length} user(s) to Excel`}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#15803d',
+                            transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#dcfce7';
+                            e.currentTarget.style.borderColor = '#86efac';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f0fdf4';
+                            e.currentTarget.style.borderColor = '#bbf7d0';
+                        }}
+                    >
+                        <FileSpreadsheet size={14} />
+                        Export Excel
+                    </button>
+                    <button
+                        onClick={fetchProfiles}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            color: '#475569',
+                            transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                    >
+                        <RefreshCw size={14} />
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: showFilters ? '#eef2ff' : '#f1f5f9',
+                            border: '1px solid',
+                            borderColor: showFilters ? '#6366f1' : '#e2e8f0',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            color: showFilters ? '#4338ca' : '#475569',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <Filter size={14} />
+                        {showFilters ? 'Hide Filters' : 'Filter'}
+                    </button>
+                </div>
             </div>
 
             {/* Table */}
-            <div style={{ overflow: 'visible' }}>
+            <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 340px)', minHeight: '200px' }}>
                 {isLoading ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading...</div>
                 ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                <th onClick={() => requestSort('full_name')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            <tr style={{ backgroundColor: '#f8fafc' }}>
+                                <th onClick={() => requestSort('full_name')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         Name {getSortIcon('full_name')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('email')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('email')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         Email {getSortIcon('email')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('system_role')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('system_role')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         Role {getSortIcon('system_role')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('status')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('status')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         Status {getSortIcon('status')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('last_login_at')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('last_login_at')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        Last Log-in {getSortIcon('last_login_at')}
+                                        Last Login {getSortIcon('last_login_at')}
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('auth_type')} style={{ cursor: 'pointer', padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <th onClick={() => requestSort('auth_type')} style={thStyle}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         Authentication {getSortIcon('auth_type')}
                                     </div>
                                 </th>
-                                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
+                                <th style={{ ...thStyle, cursor: 'default', textAlign: 'center' }}>Actions</th>
                             </tr>
                             {showFilters && (
-                                <tr style={{ backgroundColor: '#fcfdfe', borderBottom: '1px solid #e2e8f0' }}>
-                                    <th style={{ padding: '8px 24px' }}>
-                                        <input 
+                                <tr style={{ backgroundColor: '#fcfdfe' }}>
+                                    <th style={thFilterStyle}>
+                                        <input
                                             placeholder="Filter name..."
                                             value={columnFilters.full_name}
                                             onChange={(e) => setColumnFilters({ ...columnFilters, full_name: e.target.value })}
-                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', boxSizing: 'border-box' }}
                                         />
                                     </th>
-                                    <th style={{ padding: '8px 24px' }}>
-                                        <input 
+                                    <th style={thFilterStyle}>
+                                        <input
                                             placeholder="Filter email..."
                                             value={columnFilters.email}
                                             onChange={(e) => setColumnFilters({ ...columnFilters, email: e.target.value })}
-                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', boxSizing: 'border-box' }}
                                         />
                                     </th>
-                                    <th style={{ padding: '8px 24px' }}>
-                                        <select 
+                                    <th style={thFilterStyle}>
+                                        <select
                                             value={columnFilters.system_role}
                                             onChange={(e) => setColumnFilters({ ...columnFilters, system_role: e.target.value })}
-                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', backgroundColor: 'white', boxSizing: 'border-box' }}
                                         >
                                             <option value="">All Roles</option>
                                             <option value="user">User</option>
@@ -480,88 +533,109 @@ export const UserTable = () => {
                                             <option value="super_admin">Super Admin</option>
                                         </select>
                                     </th>
-                                    <th style={{ padding: '8px 24px' }}>
-                                        <select 
+                                    <th style={thFilterStyle}>
+                                        <select
                                             value={columnFilters.status}
                                             onChange={(e) => setColumnFilters({ ...columnFilters, status: e.target.value })}
-                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', backgroundColor: 'white', boxSizing: 'border-box' }}
                                         >
                                             <option value="">All Status</option>
                                             <option value="approved">Approved</option>
                                             <option value="pending">Pending</option>
                                         </select>
                                     </th>
-                                    <th style={{ padding: '8px 24px' }}></th>
-                                    <th style={{ padding: '8px 24px' }}></th>
-                                    <th style={{ padding: '8px 24px' }}></th>
+                                    <th style={thFilterStyle}></th>
+                                    <th style={thFilterStyle}></th>
+                                    <th style={thFilterStyle}></th>
                                 </tr>
                             )}
                         </thead>
                         <tbody>
-                            {filteredAndSortedProfiles.map((profile) => (
-                                <tr key={profile.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <td style={{ padding: '12px 24px' }}>
-                                        <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>{profile.full_name || 'Unknown'}</div>
+                            {filteredAndSortedProfiles.map((profile, idx) => (
+                                <tr
+                                    key={profile.id}
+                                    className="user-table-row"
+                                    style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? 'white' : '#fafbfc' }}
+                                >
+                                    <td style={{ padding: '10px 20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{
+                                                width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
+                                                backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '12px', fontWeight: 600, color: '#475569'
+                                            }}>
+                                                {profile.avatar_url ? (
+                                                    <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : initialsFrom(profile.full_name, profile.email)}
+                                            </div>
+                                            <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }} title={profile.full_name || 'Unknown'}>
+                                                {profile.full_name || 'Unknown'}
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td style={{ padding: '12px 24px' }}>
-                                        <div style={{ fontSize: '14px', color: '#64748b' }}>{profile.email}</div>
+                                    <td style={{ padding: '10px 20px' }}>
+                                        <div style={{ fontSize: '14px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px' }} title={profile.email}>{profile.email}</div>
                                     </td>
-                                    <td style={{ padding: '12px 24px' }}>
+                                    <td style={{ padding: '10px 20px' }}>
                                         <span style={{
+                                            display: 'inline-block',
                                             padding: '4px 12px',
                                             borderRadius: '12px',
                                             fontSize: '12px',
                                             fontWeight: 500,
+                                            whiteSpace: 'nowrap',
                                             backgroundColor: profile.system_role === 'super_admin' ? '#dbeafe' : profile.system_role === 'it_admin' ? '#fef3c7' : '#f1f5f9',
                                             color: profile.system_role === 'super_admin' ? '#1e40af' : profile.system_role === 'it_admin' ? '#92400e' : '#475569'
                                         }}>
                                             {ROLE_LABELS[profile.system_role] || profile.system_role}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '12px 24px' }}>
-                                        <span style={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            gap: '6px', 
-                                            fontSize: '13px', 
+                                    <td style={{ padding: '10px 20px' }}>
+                                        <span style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            fontSize: '13px',
+                                            whiteSpace: 'nowrap',
                                             color: profile.is_approved ? '#10b981' : '#f59e0b',
                                             fontWeight: 500
                                         }}>
-                                            <div style={{ 
-                                                width: '6px', 
-                                                height: '6px', 
-                                                borderRadius: '50%', 
-                                                backgroundColor: profile.is_approved ? '#10b981' : '#f59e0b' 
+                                            <div style={{
+                                                width: '6px',
+                                                height: '6px',
+                                                borderRadius: '50%',
+                                                flexShrink: 0,
+                                                backgroundColor: profile.is_approved ? '#10b981' : '#f59e0b'
                                             }} />
                                             {profile.is_approved ? 'Approved' : 'Pending'}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '12px 24px', fontSize: '13px', color: '#64748b' }}>
-                                        {profile.last_login_at ? new Date(profile.last_login_at).toLocaleString('en-US', { 
-                                            month: 'short', 
-                                            day: 'numeric', 
-                                            year: 'numeric', 
-                                            hour: 'numeric', 
-                                            minute: '2-digit', 
-                                            hour12: true 
+                                    <td style={{ padding: '10px 20px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                        {profile.last_login_at ? new Date(profile.last_login_at).toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
                                         }) : '-'}
                                     </td>
-                                    <td style={{ padding: '12px 24px' }}>
+                                    <td style={{ padding: '10px 20px' }}>
                                         {profile.auth_type === 'internal' ? (
-                                            <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, backgroundColor: '#f1f5f9', color: '#475569' }}>
+                                            <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', backgroundColor: '#f1f5f9', color: '#475569' }}>
                                                 <Lock size={11} /> Internal
                                             </span>
                                         ) : (
-                                            <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, backgroundColor: '#f1f5f9', color: '#475569' }}>
-                                                Google
+                                            <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', backgroundColor: '#eff6ff', color: '#1d4ed8' }}>
+                                                <Globe size={11} /> Google
                                             </span>
                                         )}
                                     </td>
-                                    <td style={{ padding: '12px 24px', position: 'relative' }}>
+                                    <td style={{ padding: '10px 20px', position: 'relative', textAlign: 'center' }}>
                                         {(() => {
                                             // Don't show button for current user's own account
                                             if (profile.id === currentUser.id) {
-                                                return null;
+                                                return <span style={{ fontSize: '12px', color: '#cbd5e1' }}>—</span>;
                                             }
 
                                             const currentRoleLevel = ROLE_HIERARCHY[currentUser.system_role as keyof typeof ROLE_HIERARCHY] || 0;
@@ -724,6 +798,12 @@ export const UserTable = () => {
                     </table>
                 )}
             </div>
+
+            <style>{`
+                .user-table-row:hover {
+                    background-color: #eef2ff !important;
+                }
+            `}</style>
 
             {/* Edit Profile Modal */}
             {editProfileModal && (

@@ -4,9 +4,10 @@ import { Save, Plus, Trash2, CalendarClock, Clock } from 'lucide-react';
 
 const DEFAULT_OFFSETS = [7, 0];
 
-// Matches the pg_cron schedule '0 8 * * *' in
-// supabase/migrations/20260818_due_date_reminder_emails.sql.
-const REMINDER_UTC_HOUR = 8;
+// Matches the pg_cron schedule '0 1 * * *' in
+// supabase/migrations/20260821_reminder_morning_bangkok.sql — chosen so it
+// lands at 08:00 in Bangkok.
+const REMINDER_UTC_HOUR = 1;
 
 export const DueDateReminderSettings = () => {
     const [loading, setLoading] = useState(true);

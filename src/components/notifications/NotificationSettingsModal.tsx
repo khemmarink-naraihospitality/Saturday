@@ -7,8 +7,9 @@ import { X, Plus, Trash2, CalendarClock, Save, BellOff, Clock } from 'lucide-rea
 const ORG_FALLBACK_OFFSETS = [7, 0];
 
 // The reminder job runs on a fixed daily schedule in UTC
-// (pg_cron '0 8 * * *' — see supabase/migrations/20260818_due_date_reminder_emails.sql).
-const REMINDER_UTC_HOUR = 8;
+// (pg_cron '0 1 * * *' — see supabase/migrations/20260821_reminder_morning_bangkok.sql).
+// Chosen so it lands at 08:00 in Bangkok.
+const REMINDER_UTC_HOUR = 1;
 
 const describeOffset = (n: number) =>
     n === 0 ? 'Due today' : `${n} day${n === 1 ? '' : 's'} before due date`;

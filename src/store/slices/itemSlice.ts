@@ -5,6 +5,21 @@ import { arrayMove } from '@dnd-kit/sortable';
 import type { Item, FileLink, Comment } from '../../types';
 import type { BoardState } from '../useBoardStore';
 
+// activeBoardMembers only holds this board's board_members rows, but a
+// people-column value can point at someone who isn't one — most commonly an
+// assignee copied over by the linked-groups mirror trigger onto a board they
+// were never individually added to. The in-app notification only needs the
+// user id and still fires correctly for them; the email was silently
+// skipped because the lookup came back empty. Fall back to a direct profile
+// read so a valid assignee always gets the email regardless of board
+// membership.
+const resolveAssigneeEmail = async (get: () => BoardState, userId: string): Promise<string | null> => {
+    const cached = get().activeBoardMembers.find((m: any) => m.user_id === userId)?.profiles?.email;
+    if (cached) return cached;
+    const { data } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
+    return data?.email || null;
+};
+
 export interface ItemSlice {
     selectedItemIds: string[];
     showHiddenItems: boolean;
@@ -215,7 +230,7 @@ export const createItemSlice: StateCreator<
                                 { board_id: activeBoardId, old_label: logMeta.old_label, new_label: newLabel }
                             );
 
-                            const assigneeEmail = get().activeBoardMembers.find((m: any) => m.user_id === assigneeId)?.profiles?.email;
+                            const assigneeEmail = await resolveAssigneeEmail(get, assigneeId);
                             if (assigneeEmail) {
                                 supabase.functions.invoke('invite-user', {
                                     body: {
@@ -522,7 +537,7 @@ export const createItemSlice: StateCreator<
                 { board_id: activeBoardId, updatePreview: textPreview }
             );
 
-            const assigneeEmail = get().activeBoardMembers.find((m: any) => m.user_id === assigneeId)?.profiles?.email;
+            const assigneeEmail = await resolveAssigneeEmail(get, assigneeId);
             if (assigneeEmail) {
                 supabase.functions.invoke('invite-user', {
                     body: {
@@ -603,7 +618,7 @@ export const createItemSlice: StateCreator<
                 { board_id: activeBoardId }
             );
 
-            const authorEmail = get().activeBoardMembers.find((m: any) => m.user_id === updateAuthorId)?.profiles?.email;
+            const authorEmail = await resolveAssigneeEmail(get, updateAuthorId);
             if (authorEmail) {
                 supabase.functions.invoke('invite-user', {
                     body: {

@@ -1,14 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Plus, Trash2, CalendarClock } from 'lucide-react';
+import { Save, Plus, Trash2, CalendarClock, Clock } from 'lucide-react';
 
 const DEFAULT_OFFSETS = [7, 0];
+
+// Matches the pg_cron schedule '0 8 * * *' in
+// supabase/migrations/20260818_due_date_reminder_emails.sql.
+const REMINDER_UTC_HOUR = 8;
 
 export const DueDateReminderSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [offsets, setOffsets] = useState<number[]>([]);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    // 08:00 UTC is mid-afternoon in Thailand — spell out the local equivalent
+    // so the schedule isn't misread as 8am local time.
+    const { deliveryLocal, deliveryZone } = useMemo(() => {
+        const d = new Date();
+        d.setUTCHours(REMINDER_UTC_HOUR, 0, 0, 0);
+        return {
+            deliveryLocal: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
+            deliveryZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }, []);
 
     useEffect(() => {
         fetchSettings();
@@ -131,10 +146,25 @@ export const DueDateReminderSettings = () => {
                     </button>
                 </div>
 
-                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.5' }}>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px', lineHeight: '1.5' }}>
                     Everyone assigned to an item gets notified when its "Due Date" column value lands on one of
                     these day counts before the deadline. Use 0 for "due today". Applies to every board.
+                    Each reminder sends both an in-app notification and an email.
                 </p>
+
+                <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '8px',
+                    padding: '10px 12px', borderRadius: '6px', marginBottom: '20px',
+                    backgroundColor: '#eef2ff', border: '1px solid #c7d2fe',
+                    fontSize: '13px', color: '#475569', lineHeight: '1.5'
+                }}>
+                    <Clock size={15} style={{ flexShrink: 0, marginTop: '1px', color: '#6366f1' }} />
+                    <span>
+                        Reminders are sent once a day at <strong>{String(REMINDER_UTC_HOUR).padStart(2, '0')}:00 UTC</strong>
+                        {' — '}that's <strong>{deliveryLocal}</strong> in {deliveryZone}.
+                        Individual users can override these day counts for themselves.
+                    </span>
+                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {offsets.map((offset, idx) => (

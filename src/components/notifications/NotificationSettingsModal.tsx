@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { X, Plus, Trash2, CalendarClock, Save, BellOff } from 'lucide-react';
+import { X, Plus, Trash2, CalendarClock, Save, BellOff, Clock } from 'lucide-react';
 
 const ORG_FALLBACK_OFFSETS = [7, 0];
+
+// The reminder job runs on a fixed daily schedule in UTC
+// (pg_cron '0 8 * * *' — see supabase/migrations/20260818_due_date_reminder_emails.sql).
+const REMINDER_UTC_HOUR = 8;
 
 const describeOffset = (n: number) =>
     n === 0 ? 'Due today' : `${n} day${n === 1 ? '' : 's'} before due date`;
@@ -21,6 +25,18 @@ export const NotificationSettingsModal = ({ onClose }: NotificationSettingsModal
     const [orgOffsets, setOrgOffsets] = useState<number[]>(ORG_FALLBACK_OFFSETS);
     const [offsets, setOffsets] = useState<number[]>(ORG_FALLBACK_OFFSETS);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    // 08:00 UTC is mid-afternoon in Thailand, so showing only the UTC hour
+    // reads as "8 in the morning" to most people here. Resolve it against the
+    // viewer's own timezone as well.
+    const delivery = useMemo(() => {
+        const d = new Date();
+        d.setUTCHours(REMINDER_UTC_HOUR, 0, 0, 0);
+        return {
+            local: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
+            zone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }, []);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -129,7 +145,27 @@ export const NotificationSettingsModal = ({ onClose }: NotificationSettingsModal
                         <>
                             <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', marginTop: 0, marginBottom: '12px' }}>
                                 Choose when you get reminded about items assigned to you that have a Due Date.
+                                You'll get both an in-app notification and an email.
                             </p>
+
+                            <div style={{
+                                display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                padding: '10px 12px', borderRadius: '6px', marginBottom: '16px',
+                                backgroundColor: 'hsl(var(--color-brand-light))',
+                                border: '1px solid hsl(var(--color-border))',
+                                fontSize: '12px', color: 'hsl(var(--color-text-secondary))', lineHeight: 1.5
+                            }}>
+                                <Clock size={14} style={{ flexShrink: 0, marginTop: '1px', color: 'hsl(var(--color-brand-primary))' }} />
+                                <span>
+                                    Reminders go out once a day at{' '}
+                                    <strong style={{ color: 'hsl(var(--color-text-primary))' }}>
+                                        {String(REMINDER_UTC_HOUR).padStart(2, '0')}:00 UTC
+                                    </strong>
+                                    {' — '}that's{' '}
+                                    <strong style={{ color: 'hsl(var(--color-text-primary))' }}>{delivery.local}</strong>
+                                    {' '}for you ({delivery.zone}).
+                                </span>
+                            </div>
 
                             <div style={{
                                 display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',

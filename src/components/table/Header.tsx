@@ -25,6 +25,7 @@ const SortableHeaderCell = ({
     startEditing,
     openMenu,
     handleResizeStart,
+    handleAutoFit,
     editValue,
     setEditValue,
     saveTitle,
@@ -52,6 +53,7 @@ const SortableHeaderCell = ({
     return (
         <div
             ref={setNodeRef}
+            data-col-id={col.id}
             style={style}
             {...attributes}
             {...listeners}
@@ -111,6 +113,8 @@ const SortableHeaderCell = ({
             {canManage && (
                 <div
                     onMouseDown={(e) => handleResizeStart(e, col.id, col.width || 150)}
+                    onDoubleClick={(e) => handleAutoFit(e, col.id)}
+                    title="Drag to resize · double-click to fit content"
                     style={{
                         position: 'absolute',
                         right: 0,
@@ -283,6 +287,50 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         document.addEventListener('mouseup', handleMouseUp);
     };
 
+    // Double-clicking the resize handle sizes the column to its widest content,
+    // the way a spreadsheet does. Cell contents vary far too much by column type
+    // (status pills, avatars, file chips, wrapped text) to compute a width from
+    // the data, so this measures the real DOM instead: every cell of the column
+    // is briefly switched to `max-content`, the widest one wins, then the
+    // original inline widths are put back before the browser paints.
+    const AUTOFIT_MIN = 100;
+    const AUTOFIT_MAX = 600;
+    const AUTOFIT_PADDING = 24;
+
+    const handleAutoFit = (e: React.MouseEvent, colId: string, isItemCol = false) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const selector = isItemCol ? '[data-item-col="true"]' : `[data-col-id="${colId}"]`;
+        const nodes = Array.from(document.querySelectorAll<HTMLElement>(selector));
+        if (nodes.length === 0) return;
+
+        const saved = nodes.map(n => ({ width: n.style.width, flexShrink: n.style.flexShrink }));
+        nodes.forEach(n => {
+            n.style.width = 'max-content';
+            n.style.flexShrink = '0'; // otherwise flex would shrink it right back
+        });
+
+        // offsetWidth, not scrollWidth: box-sizing is border-box app-wide, so the
+        // border-box width read here is exactly what can be written back as `width`.
+        let widest = 0;
+        nodes.forEach(n => { widest = Math.max(widest, n.offsetWidth); });
+
+        nodes.forEach((n, i) => {
+            n.style.width = saved[i].width;
+            n.style.flexShrink = saved[i].flexShrink;
+        });
+
+        const nextWidth = Math.min(AUTOFIT_MAX, Math.max(AUTOFIT_MIN, Math.ceil(widest) + AUTOFIT_PADDING));
+
+        if (isItemCol) {
+            updateBoardItemColumnWidth(nextWidth);
+        } else {
+            updateColumnWidth(colId, nextWidth);
+            persistColumnWidth(colId, nextWidth);
+        }
+    };
+
     const openMenu = (e: React.MouseEvent, colId: string) => {
         e.stopPropagation();
         e.preventDefault();
@@ -336,7 +384,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 }} />
             )}
 
-            <div className="table-cell table-header-cell sticky-col" style={{
+            <div className="table-cell table-header-cell sticky-col" data-item-col="true" style={{
                 width: `${itemColumnWidth}px`,
                 position: 'sticky', left: 0, zIndex: 60,
                 backgroundColor: 'hsl(var(--color-table-header-bg))',
@@ -372,6 +420,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 {can('manage_columns') && isFirstGroup && (
                     <div
                         onMouseDown={(e) => handleResizeStart(e, 'item-col', itemColumnWidth, true)}
+                        onDoubleClick={(e) => handleAutoFit(e, 'item-col', true)}
+                        title="Drag to resize · double-click to fit content"
                         style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
                         className="resize-handle"
                     />
@@ -392,6 +442,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                             startEditing={startEditing}
                             openMenu={openMenu}
                             handleResizeStart={handleResizeStart}
+                            handleAutoFit={handleAutoFit}
                             editValue={editValue}
                             setEditValue={setEditValue}
                             saveTitle={saveTitle}

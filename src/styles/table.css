@@ -127,3 +127,25 @@
     box-sizing: border-box !important;
     border-bottom: 0.5px solid hsl(var(--color-bg-canvas)) !important;
 }
+/* Column resize handle. Sits on the column's right edge — drag to resize,
+   double-click to auto-fit to the widest cell. Widened past the 4px inline
+   width via a transparent ::before so double-clicking is actually practical,
+   while the visible line stays hairline-thin. */
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -3px;
+    right: -3px;
+}
+
+.resize-handle:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 2px;
+    background-color: hsl(var(--color-brand-primary));
+}

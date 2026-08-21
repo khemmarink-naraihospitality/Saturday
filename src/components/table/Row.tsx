@@ -97,7 +97,7 @@ export const Row = React.memo(({
             )}
 
             {/* Frozen First Column: Item Name */}
-            <div className="table-cell sticky-col" style={{
+            <div className="table-cell sticky-col" data-item-col="true" style={{
                 width: `${itemColumnWidth}px`,
                 position: 'sticky', left: 0, zIndex: 70,
                 backgroundColor: 'hsl(var(--color-bg-canvas))',
@@ -310,7 +310,7 @@ export const Row = React.memo(({
 
             {
                 columns.map((col) => (
-                    <div key={col.id} style={{
+                    <div key={col.id} data-col-id={col.id} style={{
                         width: `${col.width || 150}px`,
                         height: '100%',
                         display: 'flex',

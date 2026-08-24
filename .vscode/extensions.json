@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "pesosz.antigravity-auto-accept"
+        "pesosz.antigravity-auto-accept",
+        "anthropic.claude-code"
     ]
 }

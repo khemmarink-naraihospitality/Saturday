@@ -79,7 +79,7 @@ Core types defined in `src/types/index.ts`:
 - `Item.values: { [columnId: string]: any }` — dynamic map keyed by column UUID. **Status values are stored as the option UUID** (not the label string).
 - `Item.parentId` — links sub-items to a parent item. Groups only render top-level items; sub-items are filtered by `parentId !== null`.
 
-Column types: `text`, `long_text`, `status`, `date`, `number`, `dropdown`, `checkbox`, `link`, `people`, `timeline`, `files`.
+Column types: `text`, `long_text`, `status`, `date`, `due_date`, `number`, `dropdown`, `checkbox`, `link`, `people`, `timeline`, `files`.
 
 Board views: `main_table` (default), `timeline`, `kanban`, `calendar` — switched via `Board.activeViewId`.
 
@@ -99,6 +99,7 @@ Boards with `is_private: true` are gated by a 6-digit PIN before any board data 
 - `board-pin` — verifies/sets/resets private-board PINs (OTP-based reset flow); called from `PinLockScreen` and `PinResetModal`.
 - `ai-summary` — generates AI summaries of board/group activity; called from `AISummaryView` and `AISettings`.
 - `test-smtp` — sends a test email to verify SMTP settings from `EmailSettings` (admin).
+- `admin-create-user` — creates a user account server-side (service-role key, re-verifies caller's `system_role` against the target role's `ROLE_HIERARCHY`); called from `CreateUserModal` (admin).
 
 ### Styling
 

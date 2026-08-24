@@ -241,7 +241,7 @@ export const createItemSlice: StateCreator<
                                         boardName: board.title || 'a board',
                                         oldStatus: oldLabel,
                                         newStatus: newLabel,
-                                        itemLink: 'https://saturdaycom.vercel.app'
+                                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
                                     }
                                 }).catch((e: unknown) => console.error('Status update email error:', e));
                             }
@@ -473,7 +473,7 @@ export const createItemSlice: StateCreator<
 
         // Mentions Logic
         const textPreview = content.replace(/<[^>]*>/g, '').trim().substring(0, 300);
-        const itemLink = `https://saturdaycom.vercel.app`;
+        const itemLink = `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`;
         const dataIdRegex = /data-id="([^"]+)"/g;
         let dataIdMatch;
         const mentionedUserIds = new Set<string>();
@@ -627,7 +627,7 @@ export const createItemSlice: StateCreator<
                         likerName: user.name,
                         itemName: itemTitle || 'an item',
                         boardName: board?.title || 'a board',
-                        itemLink: 'https://saturdaycom.vercel.app'
+                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
                     }
                 }).catch((e: unknown) => console.error('Like email error:', e));
             }

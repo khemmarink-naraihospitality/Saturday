@@ -94,9 +94,29 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
         '#9E9E9E', '#757575', '#616161', '#424242', '#1A1728',
     ];
 
+    // Focus the freshly added label so the user is typing its name immediately.
+    // The placeholder text is selected rather than left empty, so typing replaces
+    // it in one go while still leaving a usable value if they click away.
+    const labelInputs = useRef<Map<string, HTMLInputElement>>(new Map());
+    const focusNewLabel = useRef(false);
+
     const handleAddLabel = () => {
+        focusNewLabel.current = true;
         addColumnOption(columnId, 'New Label', '#c4c4c4');
     };
+
+    useEffect(() => {
+        if (!focusNewLabel.current) return;
+        const added = safeOptions[safeOptions.length - 1];
+        const input = added && labelInputs.current.get(added.id);
+        if (!input) return;
+        focusNewLabel.current = false;
+        // The list scrolls, so a label appended past the fold needs bringing back
+        // into view before focusing it.
+        input.scrollIntoView({ block: 'nearest' });
+        input.focus();
+        input.select();
+    }, [safeOptions]);
 
     // Anchored to the swatch's on-screen rect rather than to the row, because the
     // palette is rendered in a portal to escape the scrolling label list.
@@ -181,8 +201,20 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                             </div>
 
                             <input
+                                ref={(el) => {
+                                    if (el) labelInputs.current.set(opt.id, el);
+                                    else labelInputs.current.delete(opt.id);
+                                }}
                                 value={opt.label}
                                 onChange={(e) => updateColumnOption(columnId, opt.id, { label: e.target.value })}
+                                onKeyDown={(e) => {
+                                    // Enter commits and gets out of the way; Escape closes
+                                    // the editor rather than leaking up to the grid.
+                                    if (e.key === 'Enter' || e.key === 'Escape') {
+                                        e.stopPropagation();
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                                 style={{
                                     flex: 1,
                                     border: '1px solid hsl(var(--color-border))',

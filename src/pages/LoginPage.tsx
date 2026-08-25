@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { savePendingDeepLink } from '../lib/pendingDeepLink';
 
 export const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -24,6 +25,9 @@ export const LoginPage = () => {
                 password,
             });
             if (error) throw error;
+            // Keep any emailed item link before the URL is reset, so signing in
+            // from the link still lands on that item.
+            savePendingDeepLink(window.location.search);
             window.history.replaceState(null, '', '/');
         } catch (err: any) {
             setError(err.message);
@@ -71,6 +75,11 @@ export const LoginPage = () => {
 
     const handleGoogleLogin = async () => {
         try {
+            // The OAuth round trip returns to the bare origin, so the link has to
+            // be stashed before leaving the page. sessionStorage survives it
+            // (same tab, same origin); redirectTo is left alone so it keeps
+            // matching the allowed-redirect list configured in Supabase.
+            savePendingDeepLink(window.location.search);
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {

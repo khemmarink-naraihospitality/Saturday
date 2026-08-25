@@ -15,6 +15,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SetPasswordPage } from './pages/SetPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { supabase } from './lib/supabase';
+import { takePendingDeepLink, clearPendingDeepLink } from './lib/pendingDeepLink';
 
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
@@ -226,6 +227,8 @@ function MainApp() {
       // Handle logout - clear all state
       console.log('MainApp: session cleared (logged out)');
       lastUserIdRef.current = null;
+      // Don't let a link stashed before sign-in fire for whoever logs in next.
+      clearPendingDeepLink();
       window.history.replaceState(null, '', '/');
 
       // Clear board store state
@@ -242,6 +245,13 @@ function MainApp() {
       });
     }
   }, [session?.user?.id]);
+
+  // Target of an emailed "View Item" link (/?boardId=…&itemId=…), held until the
+  // board's items actually exist in the store. Read on mount and kept in a ref
+  // because the State→URL sync effect below pushes a clean /user/workspace/board
+  // path as soon as the board resolves, which drops the query string long before
+  // the item is loadable.
+  const pendingItemLink = useRef<{ boardId: string; itemId: string } | null>(null);
 
   // URL Sync and Popstate Handler
   useEffect(() => {
@@ -274,15 +284,22 @@ function MainApp() {
       navigateTo('admin');
     }
 
-    // Check for query parameters as fallback deep links
+    // Check for query parameters as fallback deep links. When the user had to
+    // sign in first the query string is already gone, so fall back to whatever
+    // LoginPage stashed before it reset the URL.
     const params = new URLSearchParams(window.location.search);
-    const qBoardId = params.get('boardId');
-    const qWorkspaceId = params.get('workspaceId');
-    const qItemId = params.get('itemId');
+    const stashed = takePendingDeepLink() || {};
+    const qBoardId = params.get('boardId') || stashed.boardId || null;
+    const qWorkspaceId = params.get('workspaceId') || stashed.workspaceId || null;
+    const qItemId = params.get('itemId') || stashed.itemId || null;
 
     if (qBoardId) {
       useBoardStore.getState().setActiveBoard(qBoardId);
       if (qItemId) {
+        // Open the panel straight away — TaskDetail renders its own spinner
+        // while the item is still loading — but the group/scroll work has to
+        // wait for the board's items, so hand the rest to the resolver below.
+        pendingItemLink.current = { boardId: qBoardId, itemId: qItemId };
         useBoardStore.getState().setActiveItem(qItemId);
       }
     } else if (qWorkspaceId) {
@@ -293,6 +310,43 @@ function MainApp() {
 
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Finish the emailed item link once the board's items are in the store: reveal
+  // the item where it actually lives rather than just opening the panel over
+  // whatever the grid happens to be showing. The group is read from the item
+  // itself, not the URL, so a link still lands correctly on an item that was
+  // moved to another group after the email went out.
+  useEffect(() => {
+    const target = pendingItemLink.current;
+    if (!target) return;
+
+    const board = boards.find(b => b.id === target.boardId);
+    if (!board?.isDataLoaded) return;
+
+    const item = board.items.find(i => i.id === target.itemId);
+    if (!item) {
+      // Items are loaded and it isn't among them — deleted or archived since the
+      // email was sent. Stop retrying and leave the board open on its own.
+      pendingItemLink.current = null;
+      return;
+    }
+
+    pendingItemLink.current = null;
+    const store = useBoardStore.getState();
+
+    // A collapsed group (or a collapsed parent, for a sub-item) means the row
+    // isn't in the virtualized list at all, so there'd be nothing to scroll to.
+    if (item.groupId && (board.collapsedGroups || []).includes(item.groupId)) {
+      store.toggleGroup(board.id, item.groupId);
+    }
+    if (item.parentId && !(board.expandedItemIds || []).includes(item.parentId)) {
+      store.toggleItemExpansion(board.id, item.parentId);
+    }
+
+    // Table.tsx watches highlightedItemId and scrolls that row into view.
+    store.setActiveItem(target.itemId);
+    store.setHighlightedItem(target.itemId);
+  }, [boards]);
 
   // 3. Deep Link Resolution (On Initial Data Load ONLY)
   const hasResolvedDeepLink = useRef(false);

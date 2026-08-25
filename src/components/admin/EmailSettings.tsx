@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock, CalendarClock, MessageSquare, ThumbsUp, KeyRound } from 'lucide-react';
+import { Save, Mail, Server, ChevronRight, Info, Eye, EyeOff, Lock, CalendarClock, MessageSquare, ThumbsUp, KeyRound, UserPlus } from 'lucide-react';
 
 const DEFAULT_MENTION_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{mentionedBy}}</strong> mentioned you in <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><div style="background-color: #f8fafc; border-left: 3px solid #a86315; padding: 12px 16px; margin: 0 0 20px; text-align: left; border-radius: 0 4px 4px 0;"><p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; font-style: italic;">"{{updatePreview}}"</p></div><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
@@ -15,6 +15,8 @@ const DEFAULT_COMMENT_TEMPLATE = `<div style="font-family: Arial, sans-serif; ba
 const DEFAULT_LIKE_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{likerName}}</strong> liked your update on <strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Update</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const DEFAULT_DUE_DATE_REMINDER_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{itemName}}</strong> on board <strong>{{boardName}}</strong> is <strong>{{dueLabel}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
+
+const DEFAULT_ACCESS_GRANTED_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 16px;"><strong>{{inviterName}}</strong> gave you access to the {{targetType}} <strong>{{targetName}}</strong> in <strong>{{workspaceName}}</strong>.</p><div style="background-color: #f8fafc; padding: 12px 16px; margin: 0 0 20px; text-align: center; border-radius: 4px;"><span style="font-size: 13px; color: #94a3b8;">Your role</span><span style="font-size: 15px; color: #1e293b; font-weight: bold; margin-left: 8px;">{{role}}</span></div><a href="{{accessLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">Open {{targetType}}</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const DEFAULT_RESET_PASSWORD_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;">We received a request to reset the password for your Saturday.com account. Click below to choose a new password. If you didn't request this, you can safely ignore this email.</p><a href="{{resetLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">Reset Password</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
@@ -81,6 +83,11 @@ export const EmailSettings = () => {
         bodyHtml: DEFAULT_RESET_PASSWORD_TEMPLATE
     });
 
+    const [accessGrantedTemplate, setAccessGrantedTemplate] = useState({
+        subject: '{{inviterName}} added you to {{targetName}}',
+        bodyHtml: DEFAULT_ACCESS_GRANTED_TEMPLATE
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
     
     // Test SMTP state
@@ -99,7 +106,7 @@ export const EmailSettings = () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template', 'due_date_reminder_email_template', 'comment_email_template', 'like_email_template', 'reset_password_email_template']);
+                .in('key', ['smtp_config', 'invite_email_template', 'invite_existing_user_template', 'assign_item_template', 'mention_email_template', 'pin_reset_otp_template', 'status_update_email_template', 'due_date_reminder_email_template', 'comment_email_template', 'like_email_template', 'reset_password_email_template', 'access_granted_email_template']);
 
             if (error) throw error;
 
@@ -115,6 +122,7 @@ export const EmailSettings = () => {
                 const commentTmpl = data.find(item => item.key === 'comment_email_template');
                 const likeTmpl = data.find(item => item.key === 'like_email_template');
                 const resetPasswordTmpl = data.find(item => item.key === 'reset_password_email_template');
+                const accessGrantedTmpl = data.find(item => item.key === 'access_granted_email_template');
 
                 if (smtp?.value) setSmtpConfig(smtp.value);
                 if (template?.value) setInviteTemplate(template.value);
@@ -165,6 +173,12 @@ export const EmailSettings = () => {
                 } else {
                     const defaultVal = { subject: 'Reset your Saturday.com password', bodyHtml: DEFAULT_RESET_PASSWORD_TEMPLATE };
                     await supabase.from('system_settings').upsert({ key: 'reset_password_email_template', value: defaultVal, description: 'Template for forgot-password reset emails (Internal accounts only)' }, { onConflict: 'key' });
+                }
+                if (accessGrantedTmpl?.value) {
+                    setAccessGrantedTemplate(accessGrantedTmpl.value);
+                } else {
+                    const defaultVal = { subject: '{{inviterName}} added you to {{targetName}}', bodyHtml: DEFAULT_ACCESS_GRANTED_TEMPLATE };
+                    await supabase.from('system_settings').upsert({ key: 'access_granted_email_template', value: defaultVal, description: 'Template for direct board/workspace access grants' }, { onConflict: 'key' });
                 }
             }
         } catch (error: any) {
@@ -235,6 +249,11 @@ export const EmailSettings = () => {
                     key: 'reset_password_email_template',
                     value: resetPasswordTemplate,
                     description: 'Template for forgot-password reset emails (Internal accounts only)'
+                },
+                {
+                    key: 'access_granted_email_template',
+                    value: accessGrantedTemplate,
+                    description: 'Template for direct board/workspace access grants'
                 }
             ];
 
@@ -1080,6 +1099,74 @@ export const EmailSettings = () => {
                             dangerouslySetInnerHTML={{
                                 __html: resetPasswordTemplate.bodyHtml
                                     .replace(/\{\{resetLink\}\}/g, '#')
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Access Granted Email Template ── */}
+            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserPlus size={20} color="#6366f1" />
+                    Access Granted Email Template
+                    <span title="สถานการณ์ที่ส่ง: เมื่อผู้ใช้ที่มีบัญชีอยู่แล้ว ถูกเพิ่มเข้า Board หรือ Workspace โดยตรง (ไม่ต้องกดตอบรับ)&#10;จุดประสงค์: แจ้งให้ทราบว่าได้สิทธิ์เข้าถึงอะไร พร้อมลิงก์เปิดเข้าได้ทันที" style={{ display: 'flex' }}>
+                        <Info size={16} color="#94a3b8" style={{ cursor: 'help', marginLeft: '4px' }} />
+                    </span>
+                </h2>
+                <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
+                    <strong>Available Variables:</strong>{' '}
+                    <code style={codeStyle}>{'{{inviterName}}'}</code>{' '}
+                    <code style={codeStyle}>{'{{targetType}}'}</code>{' '}
+                    <code style={codeStyle}>{'{{targetName}}'}</code>{' '}
+                    <code style={codeStyle}>{'{{workspaceName}}'}</code>{' '}
+                    <code style={codeStyle}>{'{{role}}'}</code>{' '}
+                    <code style={codeStyle}>{'{{accessLink}}'}</code>
+                    <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                        <code style={codeStyle}>{'{{targetType}}'}</code> จะเป็น <strong>board</strong> หรือ <strong>workspace</strong> — template เดียวนี้ใช้กับทั้งสองกรณี
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Email Subject</label>
+                    <input
+                        type="text"
+                        value={accessGrantedTemplate.subject}
+                        onChange={e => setAccessGrantedTemplate({ ...accessGrantedTemplate, subject: e.target.value })}
+                        style={inputStyle}
+                    />
+                </div>
+
+                <CollapsibleHtmlBody
+                    label="Email HTML Body"
+                    value={accessGrantedTemplate.bodyHtml}
+                    onChange={val => setAccessGrantedTemplate({ ...accessGrantedTemplate, bodyHtml: val })}
+                />
+
+                {/* Live Preview */}
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+                    <label style={{ ...labelStyle, color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Mail size={16} /> Live Email Preview
+                    </label>
+                    <div style={{ marginTop: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                        <div style={{ padding: '12px 16px', backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                            <span style={{ color: '#64748b' }}>Subject:</span>{' '}
+                            <strong>
+                                {accessGrantedTemplate.subject
+                                    .replace(/\{\{inviterName\}\}/g, 'Somchai')
+                                    .replace(/\{\{targetName\}\}/g, 'IT Brand Office')}
+                            </strong>
+                        </div>
+                        <div
+                            style={{ padding: '0', backgroundColor: 'white' }}
+                            dangerouslySetInnerHTML={{
+                                __html: accessGrantedTemplate.bodyHtml
+                                    .replace(/\{\{inviterName\}\}/g, 'Somchai')
+                                    .replace(/\{\{targetType\}\}/g, 'board')
+                                    .replace(/\{\{targetName\}\}/g, 'IT Brand Office')
+                                    .replace(/\{\{workspaceName\}\}/g, 'BusinessTech')
+                                    .replace(/\{\{role\}\}/g, 'editor')
+                                    .replace(/\{\{accessLink\}\}/g, '#')
                             }}
                         />
                     </div>

@@ -387,15 +387,30 @@ export const createWorkspaceSlice: StateCreator<
                 const ws = workspaces.find(w => w.id === workspaceId);
                 const workspaceName = ws?.title || 'NHG Saturday';
 
-                // Send email notification for existing user added
-                await supabase.functions.invoke('invite-user', {
-                    body: { 
-                        email, 
+                // Same as the board path: the user is already a member by this
+                // point, so send the access-granted notice rather than the default
+                // 'invite' magic-link email for something with nothing to accept.
+                const { data: inviterProfile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+                const inviterName = inviterProfile?.full_name || 'A Team Member';
+
+                const { error: grantEmailError } = await supabase.functions.invoke('invite-user', {
+                    body: {
+                        email,
+                        action: 'access_granted',
                         workspaceId,
                         workspaceName,
+                        targetType: 'workspace',
+                        targetName: workspaceName,
+                        role,
+                        inviterName,
+                        accessLink: `https://saturdaycom.vercel.app/?workspaceId=${workspaceId}`,
                         redirectTo: 'https://saturdaycom.vercel.app/'
                     }
                 });
+
+                if (grantEmailError) {
+                    console.error('Access Granted Email Error (Workspace):', grantEmailError);
+                }
 
                 // Send Access Granted Notification (No need to accept)
                 await get().createNotification(

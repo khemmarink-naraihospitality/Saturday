@@ -109,21 +109,29 @@ export const createMemberSlice: StateCreator<
 
             const workspaceTitle = get().workspaces.find(w => w.id === boardData?.workspace_id)?.title || 'NHG Saturday';
 
-            // Send Email Notification for existing user
+            // Existing users are added straight away with nothing to accept, so
+            // this is an access-granted notice rather than an invitation — the
+            // default 'invite' action would have sent them a magic-link invite
+            // email for access they already have.
             const { error: fnError } = await supabase.functions.invoke('invite-user', {
-                body: { 
-                    email, 
-                    boardId, 
+                body: {
+                    email,
+                    action: 'access_granted',
+                    boardId,
                     boardName,
+                    targetType: 'board',
+                    targetName: boardName,
+                    role,
                     workspaceId: boardData?.workspace_id,
                     workspaceName: workspaceTitle,
                     inviterName,
+                    accessLink: `https://saturdaycom.vercel.app/?boardId=${boardId}`,
                     redirectTo: `https://saturdaycom.vercel.app/board/${boardId}`
                 }
             });
 
             if (fnError) {
-                console.error('Edge Function Invite Error (Existing User):', fnError);
+                console.error('Access Granted Email Error (Board):', fnError);
             }
 
             // Send in-app notification without accept action

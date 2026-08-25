@@ -51,12 +51,11 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
         // Navigation Logic
         if (notification.data?.board_id) {
             setActiveBoard(notification.data.board_id);
-            // If linked to an item (mention/assignment), open it
-            if (notification.entity_id) {
-                // Short delay to allow board switch to register if needed, 
-                // though Zustand updates are sync usually. 
-                // However, switching board might trigger data fetch.
-                // But setActiveItem just sets ID, so it should be fine.
+            // If linked to an item (mention/assignment), open it. Board-scoped
+            // notifications such as access_granted carry the board id as their
+            // entity_id, and opening that as an item left the side panel stuck
+            // on its loading spinner looking for an item that cannot exist.
+            if (notification.entity_id && notification.entity_id !== notification.data.board_id) {
                 setActiveItem(notification.entity_id);
             }
             if (onClose) onClose();

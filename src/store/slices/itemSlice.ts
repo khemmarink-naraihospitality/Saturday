@@ -241,7 +241,9 @@ export const createItemSlice: StateCreator<
                                         boardName: board.title || 'a board',
                                         oldStatus: oldLabel,
                                         newStatus: newLabel,
-                                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
+                                        // Board, not the item: a status change is read in the
+                                        // context of the board, so the link opens the grid.
+                                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}`
                                     }
                                 }).catch((e: unknown) => console.error('Status update email error:', e));
                             }
@@ -473,7 +475,11 @@ export const createItemSlice: StateCreator<
 
         // Mentions Logic
         const textPreview = content.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+        // A mention points at one specific update, so it opens the item itself.
+        // A plain comment notice opens the board instead — same reasoning as the
+        // status-change mail above.
         const itemLink = `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`;
+        const boardLink = `https://saturdaycom.vercel.app/?boardId=${activeBoardId}`;
         const dataIdRegex = /data-id="([^"]+)"/g;
         let dataIdMatch;
         const mentionedUserIds = new Set<string>();
@@ -547,7 +553,7 @@ export const createItemSlice: StateCreator<
                         itemName: item?.title || 'an item',
                         boardName: board?.title || 'a board',
                         updatePreview: textPreview,
-                        itemLink
+                        itemLink: boardLink
                     }
                 }).catch((e: unknown) => console.error('Comment email error:', e));
             }

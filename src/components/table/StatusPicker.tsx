@@ -15,6 +15,7 @@ interface StatusPickerProps {
 
 export const StatusPicker = ({ columnId, options = [], onSelect, onClose, position }: StatusPickerProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
+    const colorPaletteRef = useRef<HTMLDivElement>(null);
     const [isEditingLabels, setIsEditingLabels] = useState(false);
     const [pickerHeight, setPickerHeight] = useState(0);
 
@@ -31,9 +32,13 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
     const spaceBelow = window.innerHeight - position.bottom;
     const shouldShowAbove = spaceBelow < (isEditingLabels ? 400 : 250) && position.top > (isEditingLabels ? 400 : 250);
 
-    const topPos = shouldShowAbove 
-        ? position.top - (pickerHeight || (isEditingLabels ? 400 : 220)) - 8 
+    // Clamped to the viewport: opening the picker from a row near the bottom of a
+    // long board used to push the top of the list off-screen, hiding the first
+    // labels (and, in edit mode, whatever sat above the fold).
+    const rawTopPos = shouldShowAbove
+        ? position.top - (pickerHeight || (isEditingLabels ? 400 : 220)) - 8
         : position.bottom + 8;
+    const topPos = Math.max(8, Math.min(rawTopPos, window.innerHeight - (pickerHeight || 220) - 8));
 
     // Store actions
     const addColumnOption = useBoardStore(state => state.addColumnOption);
@@ -43,7 +48,12 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
     // Handle click outside to close
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            // The colour palette is portalled out of the menu (so the scrolling
+            // label list can't clip it), so it has to be excluded explicitly or
+            // picking a colour would close the whole picker.
+            if (colorPaletteRef.current?.contains(target)) return;
+            if (menuRef.current && !menuRef.current.contains(target)) {
                 onClose();
             }
         };
@@ -88,7 +98,26 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
         addColumnOption(columnId, 'New Label', '#c4c4c4');
     };
 
-    const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
+    // Anchored to the swatch's on-screen rect rather than to the row, because the
+    // palette is rendered in a portal to escape the scrolling label list.
+    const [colorPicker, setColorPicker] = useState<{ optionId: string; top: number; left: number } | null>(null);
+
+    const openColorPicker = (optionId: string, swatch: HTMLElement) => {
+        if (colorPicker?.optionId === optionId) {
+            setColorPicker(null);
+            return;
+        }
+        const rect = swatch.getBoundingClientRect();
+        const PALETTE_WIDTH = 252;
+        const PALETTE_HEIGHT = 220;
+        // Keep it on screen: flip above the swatch when there's no room below,
+        // and pull it left when it would run past the right edge.
+        const top = rect.bottom + PALETTE_HEIGHT > window.innerHeight
+            ? Math.max(8, rect.top - PALETTE_HEIGHT - 4)
+            : rect.bottom + 4;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - PALETTE_WIDTH - 8));
+        setColorPicker({ optionId, top, left });
+    };
 
     if (isEditingLabels) {
         return createPortal(
@@ -126,9 +155,13 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                     borderBottom: shouldShowAbove ? '1px solid hsl(var(--color-border))' : 'none',
                 }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'visible' }}>
+                {/* Scrolls rather than overflowing: with `overflow: visible` a long
+                    label list spilled past this 300px box and painted straight over
+                    the "New label" button below, so the button was both invisible
+                    and unclickable once a board had ~9 statuses. */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto', flexShrink: 0, paddingRight: '4px' }}>
                     {safeOptions.map((opt) => (
-                        <div key={opt.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+                        <div key={opt.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
                             <div style={{
                                 width: '24px',
                                 height: '24px',
@@ -141,47 +174,11 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                                 cursor: 'pointer',
                                 flexShrink: 0
                             }}
-                                onClick={() => setActiveColorPickerId(activeColorPickerId === opt.id ? null : opt.id)}
+                                onClick={(e) => openColorPicker(opt.id, e.currentTarget)}
                                 title="Change color"
                             >
                                 <PaintBucket size={12} />
                             </div>
-
-                            {activeColorPickerId === opt.id && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '30px',
-                                    left: '0',
-                                    backgroundColor: 'white',
-                                    border: '1px solid hsl(var(--color-border))',
-                                    borderRadius: '6px',
-                                    padding: '8px',
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(10, 1fr)',
-                                    gap: '4px',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                    zIndex: 10000,
-                                    width: '252px'
-                                }}>
-                                    {LABEL_COLORS.map(c => (
-                                        <div
-                                            key={c}
-                                            onClick={() => {
-                                                updateColumnOption(columnId, opt.id, { color: c });
-                                                setActiveColorPickerId(null);
-                                            }}
-                                            style={{
-                                                width: '18px',
-                                                height: '18px',
-                                                backgroundColor: c,
-                                                borderRadius: '3px',
-                                                cursor: 'pointer',
-                                                border: opt.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
 
                             <input
                                 value={opt.label}
@@ -249,6 +246,49 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                         Apply
                     </button>
                 </div>
+
+                {colorPicker && createPortal(
+                    <div
+                        ref={colorPaletteRef}
+                        style={{
+                            position: 'fixed',
+                            top: colorPicker.top,
+                            left: colorPicker.left,
+                            backgroundColor: 'white',
+                            border: '1px solid hsl(var(--color-border))',
+                            borderRadius: '6px',
+                            padding: '8px',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(10, 1fr)',
+                            gap: '4px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            zIndex: 10000,
+                            width: '252px'
+                        }}
+                    >
+                        {(() => {
+                            const opt = safeOptions.find(o => o.id === colorPicker.optionId);
+                            return LABEL_COLORS.map(c => (
+                                <div
+                                    key={c}
+                                    onClick={() => {
+                                        updateColumnOption(columnId, colorPicker.optionId, { color: c });
+                                        setColorPicker(null);
+                                    }}
+                                    style={{
+                                        width: '18px',
+                                        height: '18px',
+                                        backgroundColor: c,
+                                        borderRadius: '3px',
+                                        cursor: 'pointer',
+                                        border: opt?.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'
+                                    }}
+                                />
+                            ));
+                        })()}
+                    </div>,
+                    document.body
+                )}
             </div>,
             document.body
         );

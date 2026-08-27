@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, RefreshCw, ExternalLink, Users } from 'lucide-react';
 import { useUserStore } from '../../store/useUserStore';
 import { slugify } from '../../lib/utils';
+import { AdminBoardMembersModal } from './AdminBoardMembersModal';
+
+interface BoardMemberSummary {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+}
 
 interface BoardRow {
     id: string;
@@ -13,6 +21,7 @@ interface BoardRow {
     owner_name: string;
     owner_email: string;
     workspace_title: string;
+    members: BoardMemberSummary[];
 }
 
 export const BoardTable = () => {
@@ -22,6 +31,7 @@ export const BoardTable = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [managingBoard, setManagingBoard] = useState<{ id: string; title: string } | null>(null);
 
     const fetchBoards = async () => {
         setLoading(true);
@@ -48,6 +58,22 @@ export const BoardTable = () => {
 
             if (fetchError) throw fetchError;
 
+            const boardIds = (data || []).map((board: any) => board.id);
+            const membersByBoard: Record<string, BoardMemberSummary[]> = {};
+            if (boardIds.length > 0) {
+                const { data: memberRows } = await supabase
+                    .from('board_members')
+                    .select('board_id, profiles(id, full_name, email, avatar_url)')
+                    .in('board_id', boardIds);
+
+                (memberRows || []).forEach((row: any) => {
+                    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+                    if (!profile) return;
+                    if (!membersByBoard[row.board_id]) membersByBoard[row.board_id] = [];
+                    membersByBoard[row.board_id].push(profile);
+                });
+            }
+
             const mapped: BoardRow[] = (data || []).map((board: any) => ({
                 id: board.id,
                 title: board.title,
@@ -56,7 +82,8 @@ export const BoardTable = () => {
                 workspace_id: board.workspace_id,
                 owner_name: board.workspaces?.profiles?.full_name || 'Unknown',
                 owner_email: board.workspaces?.profiles?.email || 'N/A',
-                workspace_title: board.workspaces?.title || 'Unknown Workspace'
+                workspace_title: board.workspaces?.title || 'Unknown Workspace',
+                members: membersByBoard[board.id] || []
             }));
 
             setBoards(mapped);
@@ -140,6 +167,7 @@ export const BoardTable = () => {
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Board</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Workspace</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Owner</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Members</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Created</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
                             </tr>
@@ -147,7 +175,7 @@ export const BoardTable = () => {
                         <tbody>
                             {filteredBoards.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                                         No boards found
                                     </td>
                                 </tr>
@@ -163,6 +191,80 @@ export const BoardTable = () => {
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ fontSize: '14px', color: '#0f172a' }}>{board.owner_name}</div>
                                             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{board.owner_email}</div>
+                                        </td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                            <button
+                                                onClick={() => setManagingBoard({ id: board.id, title: board.title })}
+                                                title="Manage members"
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    padding: 0,
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                {board.members.length === 0 ? (
+                                                    <span style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        fontSize: '13px',
+                                                        color: '#94a3b8'
+                                                    }}>
+                                                        <Users size={14} />
+                                                        No members
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <div style={{ display: 'flex' }}>
+                                                            {board.members.slice(0, 4).map((member, idx) => (
+                                                                <div
+                                                                    key={member.id}
+                                                                    title={member.full_name || member.email || ''}
+                                                                    style={{
+                                                                        width: '26px',
+                                                                        height: '26px',
+                                                                        borderRadius: '50%',
+                                                                        backgroundColor: member.avatar_url ? 'transparent' : '#6366f1',
+                                                                        color: 'white',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '11px',
+                                                                        fontWeight: 600,
+                                                                        overflow: 'hidden',
+                                                                        border: '2px solid white',
+                                                                        marginLeft: idx === 0 ? 0 : '-8px',
+                                                                        flexShrink: 0
+                                                                    }}
+                                                                >
+                                                                    {member.avatar_url ? (
+                                                                        <img
+                                                                            src={member.avatar_url}
+                                                                            alt=""
+                                                                            referrerPolicy="no-referrer"
+                                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        />
+                                                                    ) : (
+                                                                        (member.full_name?.[0] || member.email?.[0] || '?').toUpperCase()
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {board.members.length > 4 && (
+                                                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+                                                                +{board.members.length - 4}
+                                                            </span>
+                                                        )}
+                                                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                                            ({board.members.length})
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </button>
                                         </td>
                                         <td style={{ padding: '16px 20px', fontSize: '14px', color: '#64748b' }}>
                                             {new Date(board.created_at).toLocaleDateString()}
@@ -209,6 +311,15 @@ export const BoardTable = () => {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {managingBoard && (
+                <AdminBoardMembersModal
+                    boardId={managingBoard.id}
+                    boardTitle={managingBoard.title}
+                    onClose={() => setManagingBoard(null)}
+                    onMembersChanged={fetchBoards}
+                />
             )}
         </div>
     );

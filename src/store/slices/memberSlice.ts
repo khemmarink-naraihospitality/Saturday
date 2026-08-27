@@ -37,6 +37,7 @@ export interface MemberSlice {
     getBoardMembers: (boardId: string) => Promise<any[]>;
     updateMemberRole: (memberId: string, newRole: string, type: 'workspace' | 'board') => Promise<void>;
     removeMember: (memberId: string, type: 'workspace' | 'board') => Promise<void>;
+    adminAddBoardMember: (boardId: string, userId: string, role: string) => Promise<void>;
     
     // Person Column Assignment Helpers
     inviteAndAssignUser: (boardId: string, userId: string, role: string, itemId: string, columnId: string) => Promise<void>;
@@ -193,6 +194,23 @@ export const createMemberSlice: StateCreator<
         }
 
         get().logActivity('board_invite_sent', 'board', boardId, { board_id: boardId, email, role });
+    },
+
+    adminAddBoardMember: async (boardId, userId, role) => {
+        const { count } = await supabase.from('board_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('board_id', boardId)
+            .eq('user_id', userId);
+        if (count) return;
+
+        const { error } = await supabase.from('board_members').insert({
+            board_id: boardId,
+            user_id: userId,
+            role
+        });
+        if (error) throw error;
+
+        get().logActivity('board_member_added_by_admin', 'board', boardId, { user_id: userId, role });
     },
 
     updateMemberRole: async (memberId, newRole, type) => {

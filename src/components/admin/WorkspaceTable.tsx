@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, RefreshCw, ExternalLink, Users, Trash2 } from 'lucide-react';
 import { useUserStore } from '../../store/useUserStore';
+import { useBoardStore } from '../../store/useBoardStore';
 import { slugify } from '../../lib/utils';
+import { AdminWorkspaceMembersModal } from './AdminWorkspaceMembersModal';
+import { AdminDeleteWorkspaceModal } from './AdminDeleteWorkspaceModal';
+
+interface WorkspaceMemberSummary {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+}
 
 interface WorkspaceRow {
     id: string;
@@ -11,15 +21,19 @@ interface WorkspaceRow {
     owner_id: string;
     owner_name: string;
     owner_email: string;
+    members: WorkspaceMemberSummary[];
 }
 
 export const WorkspaceTable = () => {
     const { currentUser } = useUserStore();
+    const canDelete = currentUser.system_role === 'super_admin';
     const [workspaces, setWorkspaces] = useState<WorkspaceRow[]>([]);
     const [filteredWorkspaces, setFilteredWorkspaces] = useState<WorkspaceRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [managingWorkspace, setManagingWorkspace] = useState<{ id: string; title: string; ownerId: string } | null>(null);
+    const [deletingWorkspace, setDeletingWorkspace] = useState<{ id: string; title: string } | null>(null);
 
     const fetchWorkspaces = async () => {
         setLoading(true);
@@ -42,14 +56,44 @@ export const WorkspaceTable = () => {
 
             if (fetchError) throw fetchError;
 
-            const mapped: WorkspaceRow[] = (data || []).map((ws: any) => ({
-                id: ws.id,
-                title: ws.title,
-                created_at: ws.created_at,
-                owner_id: ws.owner_id,
-                owner_name: ws.profiles?.full_name || 'Unknown',
-                owner_email: ws.profiles?.email || 'N/A'
-            }));
+            const workspaceIds = (data || []).map((ws: any) => ws.id);
+            const membersByWorkspace: Record<string, WorkspaceMemberSummary[]> = {};
+            if (workspaceIds.length > 0) {
+                const { data: memberRows } = await supabase
+                    .from('workspace_members')
+                    .select('workspace_id, profiles(id, full_name, email, avatar_url)')
+                    .in('workspace_id', workspaceIds);
+
+                (memberRows || []).forEach((row: any) => {
+                    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+                    if (!profile) return;
+                    if (!membersByWorkspace[row.workspace_id]) membersByWorkspace[row.workspace_id] = [];
+                    membersByWorkspace[row.workspace_id].push(profile);
+                });
+            }
+
+            const mapped: WorkspaceRow[] = (data || []).map((ws: any) => {
+                let members = membersByWorkspace[ws.id] || [];
+                // The owner doesn't always have a workspace_members row — surface them
+                // in the summary too so the count/avatars match the manage-members modal.
+                if (ws.owner_id && !members.some(m => m.id === ws.owner_id)) {
+                    members = [{
+                        id: ws.owner_id,
+                        full_name: ws.profiles?.full_name || null,
+                        email: ws.profiles?.email || null,
+                        avatar_url: null
+                    }, ...members];
+                }
+                return {
+                    id: ws.id,
+                    title: ws.title,
+                    created_at: ws.created_at,
+                    owner_id: ws.owner_id,
+                    owner_name: ws.profiles?.full_name || 'Unknown',
+                    owner_email: ws.profiles?.email || 'N/A',
+                    members
+                };
+            });
 
             setWorkspaces(mapped);
             setFilteredWorkspaces(mapped);
@@ -58,6 +102,16 @@ export const WorkspaceTable = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingWorkspace) return;
+        const { id, title } = deletingWorkspace;
+        await supabase.from('workspaces').delete().eq('id', id);
+        await useBoardStore.getState().logActivity('workspace_deleted', 'workspace', id, { workspace_title: title });
+        setWorkspaces(prev => prev.filter(w => w.id !== id));
+        setFilteredWorkspaces(prev => prev.filter(w => w.id !== id));
+        setDeletingWorkspace(null);
     };
 
     useEffect(() => {
@@ -131,6 +185,7 @@ export const WorkspaceTable = () => {
                             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Workspace</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Owner</th>
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Members</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Created</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
                             </tr>
@@ -138,7 +193,7 @@ export const WorkspaceTable = () => {
                         <tbody>
                             {filteredWorkspaces.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                                         No workspaces found
                                     </td>
                                 </tr>
@@ -151,6 +206,80 @@ export const WorkspaceTable = () => {
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ fontSize: '14px', color: '#0f172a' }}>{ws.owner_name}</div>
                                             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{ws.owner_email}</div>
+                                        </td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                            <button
+                                                onClick={() => setManagingWorkspace({ id: ws.id, title: ws.title, ownerId: ws.owner_id })}
+                                                title="Manage members"
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    padding: 0,
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                {ws.members.length === 0 ? (
+                                                    <span style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        fontSize: '13px',
+                                                        color: '#94a3b8'
+                                                    }}>
+                                                        <Users size={14} />
+                                                        No members
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <div style={{ display: 'flex' }}>
+                                                            {ws.members.slice(0, 4).map((member, idx) => (
+                                                                <div
+                                                                    key={member.id}
+                                                                    title={member.full_name || member.email || ''}
+                                                                    style={{
+                                                                        width: '26px',
+                                                                        height: '26px',
+                                                                        borderRadius: '50%',
+                                                                        backgroundColor: member.avatar_url ? 'transparent' : '#6366f1',
+                                                                        color: 'white',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '11px',
+                                                                        fontWeight: 600,
+                                                                        overflow: 'hidden',
+                                                                        border: '2px solid white',
+                                                                        marginLeft: idx === 0 ? 0 : '-8px',
+                                                                        flexShrink: 0
+                                                                    }}
+                                                                >
+                                                                    {member.avatar_url ? (
+                                                                        <img
+                                                                            src={member.avatar_url}
+                                                                            alt=""
+                                                                            referrerPolicy="no-referrer"
+                                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        />
+                                                                    ) : (
+                                                                        (member.full_name?.[0] || member.email?.[0] || '?').toUpperCase()
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {ws.members.length > 4 && (
+                                                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+                                                                +{ws.members.length - 4}
+                                                            </span>
+                                                        )}
+                                                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                                            ({ws.members.length})
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </button>
                                         </td>
                                         <td style={{ padding: '16px 20px', fontSize: '14px', color: '#64748b' }}>
                                             {new Date(ws.created_at).toLocaleDateString()}
@@ -189,6 +318,37 @@ export const WorkspaceTable = () => {
                                                 <ExternalLink size={14} />
                                                 Access
                                             </button>
+                                            <button
+                                                onClick={() => canDelete && setDeletingWorkspace({ id: ws.id, title: ws.title })}
+                                                disabled={!canDelete}
+                                                title={canDelete ? 'Delete workspace' : 'Only Super Admin can delete'}
+                                                style={{
+                                                    marginLeft: '8px',
+                                                    padding: '6px 12px',
+                                                    backgroundColor: canDelete ? '#fef2f2' : '#f8fafc',
+                                                    border: canDelete ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                                                    borderRadius: '6px',
+                                                    cursor: canDelete ? 'pointer' : 'not-allowed',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '13px',
+                                                    fontWeight: 500,
+                                                    color: canDelete ? '#dc2626' : '#94a3b8',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!canDelete) return;
+                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!canDelete) return;
+                                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                }}
+                                            >
+                                                <Trash2 size={14} />
+                                                Delete
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -196,6 +356,24 @@ export const WorkspaceTable = () => {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {managingWorkspace && (
+                <AdminWorkspaceMembersModal
+                    workspaceId={managingWorkspace.id}
+                    workspaceTitle={managingWorkspace.title}
+                    ownerId={managingWorkspace.ownerId}
+                    onClose={() => setManagingWorkspace(null)}
+                    onMembersChanged={fetchWorkspaces}
+                />
+            )}
+
+            {deletingWorkspace && (
+                <AdminDeleteWorkspaceModal
+                    workspaceTitle={deletingWorkspace.title}
+                    onCancel={() => setDeletingWorkspace(null)}
+                    onConfirm={handleConfirmDelete}
+                />
             )}
         </div>
     );

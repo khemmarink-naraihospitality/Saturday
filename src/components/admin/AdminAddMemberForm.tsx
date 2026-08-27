@@ -5,12 +5,15 @@ import { useBoardStore } from '../../store/useBoardStore';
 
 interface AdminAddMemberFormProps {
     onAdd: (userId: string, role: string) => Promise<void>;
+    type?: 'board' | 'workspace';
+    allowedRoles?: string[];
 }
 
-export const AdminAddMemberForm = ({ onAdd }: AdminAddMemberFormProps) => {
+export const AdminAddMemberForm = ({ onAdd, type = 'board', allowedRoles }: AdminAddMemberFormProps) => {
     const searchUsers = useBoardStore(state => state.searchUsers);
+    const roleChoices = allowedRoles || (type === 'workspace' ? ['member'] : ['viewer', 'member', 'admin']);
     const [query, setQuery] = useState('');
-    const [role, setRole] = useState('member');
+    const [role, setRole] = useState(roleChoices[0]);
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -52,7 +55,7 @@ export const AdminAddMemberForm = ({ onAdd }: AdminAddMemberFormProps) => {
             await onAdd(selectedUser.id, role);
             setQuery('');
             setSelectedUser(null);
-            setRole('member');
+            setRole(roleChoices[0]);
         } finally {
             setIsLoading(false);
         }
@@ -137,8 +140,8 @@ export const AdminAddMemberForm = ({ onAdd }: AdminAddMemberFormProps) => {
                     value={role}
                     onChange={setRole}
                     disabled={isLoading}
-                    type="board"
-                    allowedRoles={['viewer', 'member', 'admin']}
+                    type={type}
+                    allowedRoles={roleChoices}
                 />
 
                 <button

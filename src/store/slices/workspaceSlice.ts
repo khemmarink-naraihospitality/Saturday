@@ -20,6 +20,7 @@ export interface WorkspaceSlice {
     renameWorkspace: (id: string, newTitle: string) => Promise<void>;
     inviteToWorkspace: (workspaceId: string, email: string, role: string) => Promise<void>;
     getWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
+    adminAddWorkspaceMember: (workspaceId: string, userId: string, role: string) => Promise<void>;
     reorderWorkspaces: (sourceId: string, destinationId: string) => Promise<void>;
     transferWorkspaceOwnership: (workspaceId: string, newOwnerUserId: string) => Promise<void>;
 }
@@ -519,6 +520,23 @@ export const createWorkspaceSlice: StateCreator<
         }
 
         return members;
+    },
+
+    adminAddWorkspaceMember: async (workspaceId, userId, role) => {
+        const { count } = await supabase.from('workspace_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId);
+        if (count) return;
+
+        const { error } = await supabase.from('workspace_members').insert({
+            workspace_id: workspaceId,
+            user_id: userId,
+            role
+        });
+        if (error) throw error;
+
+        get().logActivity('workspace_member_added_by_admin', 'workspace', workspaceId, { user_id: userId, role });
     },
 
     transferWorkspaceOwnership: async (workspaceId, newOwnerUserId) => {

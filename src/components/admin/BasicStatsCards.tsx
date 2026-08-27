@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { fetchActivityLogsSince, startOfWindow } from '../../lib/activityStats';
+import { fetchDashboardActivity, startOfWindow, DASHBOARD_WINDOW_DAYS } from '../../lib/activityStats';
 
-const WINDOW_DAYS = 60;
+const WINDOW_DAYS = DASHBOARD_WINDOW_DAYS;
 const PERIOD_LABEL = `Last ${WINDOW_DAYS} days`;
 
 interface Stat {
@@ -45,7 +45,7 @@ export const BasicStatsCards = () => {
             const sinceIso = since.toISOString();
 
             const [{ rows, truncated: hitCap }, { count: joinedCount }] = await Promise.all([
-                fetchActivityLogsSince(sinceIso, 'actor_id, action_type, created_at, metadata'),
+                fetchDashboardActivity(),
                 supabase
                     .from('profiles')
                     .select('id', { count: 'exact', head: true })

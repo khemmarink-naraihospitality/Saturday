@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Activity } from 'lucide-react';
-import { fetchActivityLogsSince } from '../../lib/activityStats';
+import { fetchDashboardActivity } from '../../lib/activityStats';
 
 interface DayBucket {
     key: string;
@@ -41,14 +41,12 @@ export const DailyActiveUsersChart = () => {
             days.push(d);
         }
 
-        const since = days[0];
         const byDay: Record<string, Map<string, { name: string; email: string }>> = {};
         days.forEach(d => { byDay[toDayKey(d)] = new Map(); });
 
-        const { rows } = await fetchActivityLogsSince(
-            since.toISOString(),
-            'actor_id, action_type, created_at, metadata, profiles!activity_logs_actor_id_fkey(full_name, email)'
-        );
+        // Shared 60-day fetch; days outside this chart's window simply find no
+        // bucket below and are skipped.
+        const { rows } = await fetchDashboardActivity();
 
         rows.forEach((row: any) => {
             const dayKey = toDayKey(new Date(row.created_at));

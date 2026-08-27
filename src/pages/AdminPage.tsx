@@ -12,6 +12,7 @@ import { BoardTable } from '../components/admin/BoardTable';
 import { ActivityLogs } from '../components/admin/ActivityLogs';
 import { DailyActiveUsersChart } from '../components/admin/DailyActiveUsersChart';
 import { BasicStatsCards } from '../components/admin/BasicStatsCards';
+import { ActivityLeaderboards } from '../components/admin/ActivityLeaderboards';
 import { EmailSettings } from '../components/admin/EmailSettings';
 import { StatusMappingSettings } from '../components/admin/StatusMappingSettings';
 import { DueDateReminderSettings } from '../components/admin/DueDateReminderSettings';
@@ -177,6 +178,8 @@ export const AdminPage = () => {
                         <BasicStatsCards />
 
                         <DailyActiveUsersChart />
+
+                        <ActivityLeaderboards />
 
                         <ActivityLogs />
                     </div>

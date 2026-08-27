@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useUserStore } from '../../store/useUserStore';
 import { InviteMemberForm } from './InviteMemberForm';
 import { MembersList } from './MembersList';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +16,8 @@ interface ShareBoardModalProps {
 
 export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
     const { user } = useAuth();
+    const { currentUser } = useUserStore();
+    const isSuperAdmin = currentUser.system_role === 'super_admin';
     const {
         boards,
         workspaces,
@@ -134,8 +137,20 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                 )}
 
                 {/* Invite Form */}
-                {(isOwner || currentUserRole === 'admin') && (
+                {(isOwner || currentUserRole === 'admin' || isSuperAdmin) && (
                     <InviteMemberForm onInvite={handleInvite} type="board" />
+                )}
+
+                {isSuperAdmin && (
+                    <div style={{
+                        padding: '8px 20px',
+                        fontSize: '12px',
+                        color: '#92400e',
+                        backgroundColor: '#fef3c7',
+                        borderBottom: '1px solid hsl(var(--color-border))'
+                    }}>
+                        Super Admin mode: you can change or remove any member, including admins and the board owner.
+                    </div>
                 )}
 
                 {/* Members List */}
@@ -169,6 +184,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                             onRoleChange={handleRoleChange}
                             onRemove={handleRemove}
                             type="board"
+                            adminOverride={isSuperAdmin}
                         />
                     )}
                 </div>

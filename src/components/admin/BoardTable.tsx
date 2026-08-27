@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, RefreshCw, ExternalLink, Users } from 'lucide-react';
+import { Search, RefreshCw, ExternalLink, Users, Trash2 } from 'lucide-react';
 import { useUserStore } from '../../store/useUserStore';
+import { useBoardStore } from '../../store/useBoardStore';
 import { slugify } from '../../lib/utils';
 import { AdminBoardMembersModal } from './AdminBoardMembersModal';
 
@@ -26,12 +28,21 @@ interface BoardRow {
 
 export const BoardTable = () => {
     const { currentUser } = useUserStore();
+    const canDelete = currentUser.system_role === 'super_admin';
     const [boards, setBoards] = useState<BoardRow[]>([]);
     const [filteredBoards, setFilteredBoards] = useState<BoardRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [managingBoard, setManagingBoard] = useState<{ id: string; title: string } | null>(null);
+    const [deletePopover, setDeletePopover] = useState<{
+        boardId: string;
+        boardTitle: string;
+        workspaceId: string;
+        top: number;
+        left: number;
+    } | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const fetchBoards = async () => {
         setLoading(true);
@@ -92,6 +103,38 @@ export const BoardTable = () => {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteClick = (board: BoardRow, e: React.MouseEvent) => {
+        if (!canDelete) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        let left = rect.right - 260;
+        if (left < 10) left = 10;
+        setDeletePopover({
+            boardId: board.id,
+            boardTitle: board.title,
+            workspaceId: board.workspace_id,
+            top: rect.bottom + 4,
+            left
+        });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletePopover) return;
+        const { boardId, boardTitle, workspaceId } = deletePopover;
+        setDeletingId(boardId);
+        setDeletePopover(null);
+        try {
+            await supabase.from('boards').update({ is_archived: true }).eq('id', boardId);
+            await useBoardStore.getState().logActivity('board_deleted', 'workspace', workspaceId, {
+                workspace_id: workspaceId,
+                board_title: boardTitle
+            });
+            setBoards(prev => prev.filter(b => b.id !== boardId));
+            setFilteredBoards(prev => prev.filter(b => b.id !== boardId));
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -304,6 +347,38 @@ export const BoardTable = () => {
                                                 <ExternalLink size={14} />
                                                 Access
                                             </button>
+                                            <button
+                                                onClick={(e) => handleDeleteClick(board, e)}
+                                                disabled={!canDelete || deletingId === board.id}
+                                                title={canDelete ? 'Delete board' : 'Only Super Admin can delete'}
+                                                style={{
+                                                    marginLeft: '8px',
+                                                    padding: '6px 12px',
+                                                    backgroundColor: canDelete ? '#fef2f2' : '#f8fafc',
+                                                    border: canDelete ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                                                    borderRadius: '6px',
+                                                    cursor: canDelete && deletingId !== board.id ? 'pointer' : 'not-allowed',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '13px',
+                                                    fontWeight: 500,
+                                                    color: canDelete ? '#dc2626' : '#94a3b8',
+                                                    opacity: deletingId === board.id ? 0.6 : 1,
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!canDelete) return;
+                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!canDelete) return;
+                                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                }}
+                                            >
+                                                <Trash2 size={14} />
+                                                {deletingId === board.id ? 'Deleting...' : 'Delete'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -320,6 +395,65 @@ export const BoardTable = () => {
                     onClose={() => setManagingBoard(null)}
                     onMembersChanged={fetchBoards}
                 />
+            )}
+
+            {deletePopover && createPortal(
+                <>
+                    <div
+                        style={{ position: 'fixed', inset: 0, zIndex: 9999 }}
+                        onClick={() => setDeletePopover(null)}
+                    />
+                    <div style={{
+                        position: 'fixed',
+                        top: deletePopover.top,
+                        left: deletePopover.left,
+                        zIndex: 10000,
+                        backgroundColor: 'white',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                        border: '1px solid #e2e8f0',
+                        width: '260px'
+                    }}>
+                        <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>
+                            Delete "{deletePopover.boardTitle}"?
+                        </h4>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b' }}>
+                            The board will be moved to Trash and can be restored later by a Super Admin.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setDeletePopover(null)}
+                                style={{
+                                    padding: '6px 12px',
+                                    border: '1px solid #e2e8f0',
+                                    backgroundColor: 'white',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                style={{
+                                    padding: '6px 12px',
+                                    border: 'none',
+                                    backgroundColor: '#dc2626',
+                                    color: 'white',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </>,
+                document.body
             )}
         </div>
     );

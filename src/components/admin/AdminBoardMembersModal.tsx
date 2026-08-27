@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useUserStore } from '../../store/useUserStore';
 import { MembersList } from '../workspace/MembersList';
 import { AdminAddMemberForm } from './AdminAddMemberForm';
 
@@ -13,6 +14,8 @@ interface AdminBoardMembersModalProps {
 
 export const AdminBoardMembersModal = ({ boardId, boardTitle, onClose, onMembersChanged }: AdminBoardMembersModalProps) => {
     const { getBoardMembers, updateMemberRole, removeMember, adminAddBoardMember } = useBoardStore();
+    const { currentUser } = useUserStore();
+    const isSuperAdmin = currentUser.system_role === 'super_admin';
 
     const [members, setMembers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -109,6 +112,18 @@ export const AdminBoardMembersModal = ({ boardId, boardTitle, onClose, onMembers
 
                 <AdminAddMemberForm onAdd={handleAdd} />
 
+                {isSuperAdmin && (
+                    <div style={{
+                        padding: '8px 20px',
+                        fontSize: '12px',
+                        color: '#92400e',
+                        backgroundColor: '#fef3c7',
+                        borderBottom: '1px solid hsl(var(--color-border))'
+                    }}>
+                        Super Admin mode: you can change or remove any member, including the board owner.
+                    </div>
+                )}
+
                 <div style={{
                     flex: 1,
                     overflow: 'hidden',
@@ -139,6 +154,7 @@ export const AdminBoardMembersModal = ({ boardId, boardTitle, onClose, onMembers
                             onRoleChange={handleRoleChange}
                             onRemove={handleRemove}
                             type="board"
+                            adminOverride={isSuperAdmin}
                         />
                     )}
                 </div>

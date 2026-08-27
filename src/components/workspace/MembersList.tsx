@@ -23,6 +23,8 @@ interface MembersListProps {
     onRoleChange: (memberId: string, newRole: string) => Promise<void>;
     onRemove: (memberId: string) => Promise<void>;
     type: 'workspace' | 'board';
+    /** Bypasses the owner/self/admin protections below — for Super Admin use in the Admin Console only. */
+    adminOverride?: boolean;
 }
 
 export const MembersList = ({
@@ -31,7 +33,8 @@ export const MembersList = ({
     currentUserRole,
     onRoleChange,
     onRemove,
-    type
+    type,
+    adminOverride = false
 }: MembersListProps) => {
     const { user } = useAuth();
     const [deletePopover, setDeletePopover] = useState<{
@@ -65,6 +68,8 @@ export const MembersList = ({
     };
 
     const canChangeRole = (member: Member) => {
+        if (adminOverride) return true;
+
         const memberRole = getMemberDisplayRole(member);
 
         // Can't change owner role
@@ -80,6 +85,8 @@ export const MembersList = ({
     };
 
     const canRemoveMember = (member: Member) => {
+        if (adminOverride) return true;
+
         const memberRole = getMemberDisplayRole(member);
 
         // Can't remove owner
@@ -205,11 +212,13 @@ export const MembersList = ({
                                 disabled={!canChangeRole(member)}
                                 type={type}
                                 allowedRoles={
-                                    displayRole === 'owner'
-                                        ? ['owner']
-                                        : type === 'workspace'
-                                            ? (isOwner ? ['member', 'owner'] : ['member'])
-                                            : ['viewer', 'member', 'admin']
+                                    adminOverride && type === 'board'
+                                        ? ['viewer', 'member', 'admin', 'owner']
+                                        : displayRole === 'owner'
+                                            ? ['owner']
+                                            : type === 'workspace'
+                                                ? (isOwner ? ['member', 'owner'] : ['member'])
+                                                : ['viewer', 'member', 'admin']
                                 }
                             />
 

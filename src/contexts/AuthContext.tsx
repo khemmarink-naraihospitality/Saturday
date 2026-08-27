@@ -12,6 +12,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const logLoginActivity = async (userId: string) => {
+    try {
+        await supabase.rpc('log_activity', {
+            p_action_type: 'user_login',
+            p_target_type: 'user',
+            p_target_id: userId,
+            p_metadata: {}
+        });
+    } catch (e) {
+        console.error('Failed to log login activity:', e);
+    }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
@@ -26,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            if (session?.user) logLoginActivity(session.user.id);
         }).catch(err => {
             console.error('AuthProvider: Unexpected error checking session:', err);
             setLoading(false);
@@ -37,6 +51,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            if (_event === 'SIGNED_IN' && session?.user) {
+                logLoginActivity(session.user.id);
+            }
         });
 
         return () => subscription.unsubscribe();

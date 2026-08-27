@@ -50,6 +50,7 @@ export const ActivityLogs = () => {
                         email
                     )
                 `)
+                .neq('action_type', 'user_login')
                 .order('created_at', { ascending: false })
                 .limit(100);
 

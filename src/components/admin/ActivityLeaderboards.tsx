@@ -4,7 +4,12 @@ import { fetchDashboardActivity, actorProfile } from '../../lib/activityStats';
 
 const WEEKS = 4;
 const DAYS_COVERED = WEEKS * 7;
-const TOP_N = 5;
+// Bounded so one very busy period can't render a thousand rows, but high enough
+// that the tables are something you scroll through rather than a top-5 cut-off.
+const TOP_N = 50;
+// Roughly five and a half rows, so the clipped row is itself the hint that the
+// list keeps going.
+const LIST_MAX_HEIGHT = 360;
 
 interface BoardRow {
     boardId: string;
@@ -145,7 +150,7 @@ export const ActivityLeaderboards = () => {
 
     return (
         <div style={{ marginTop: '24px' }}>
-            <Section title="Trending boards" subtitle={`in the last ${WEEKS} weeks`}>
+            <Section title="Trending boards" subtitle={`in the last ${WEEKS} weeks`} count={boards.length}>
                 <table style={tableStyle}>
                     <thead>
                         <tr style={headRowStyle}>
@@ -172,22 +177,34 @@ export const ActivityLeaderboards = () => {
                 </table>
             </Section>
 
-            <Section title="Top creators" subtitle={`items created in the last ${WEEKS} weeks`}>
+            <Section title="Top creators" subtitle={`items created in the last ${WEEKS} weeks`} count={creators.length}>
                 <PeopleTable people={creators} weekLabels={weekLabels} loading={loading} />
             </Section>
 
-            <Section title="Top communicators" subtitle={`updates posted in the last ${WEEKS} weeks`}>
+            <Section title="Top communicators" subtitle={`updates posted in the last ${WEEKS} weeks`} count={communicators.length}>
                 <PeopleTable people={communicators} weekLabels={weekLabels} loading={loading} />
             </Section>
         </div>
     );
 };
 
-const Section = ({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) => (
+const Section = ({ title, subtitle, count, children }: { title: string; subtitle: string; count: number; children: React.ReactNode }) => (
     <div style={{ marginBottom: '24px' }}>
         <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#0f172a' }}>{title}</h3>
-        <p style={{ margin: '2px 0 12px 0', fontSize: '12px', color: '#94a3b8' }}>{subtitle}</p>
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+        <p style={{ margin: '2px 0 12px 0', fontSize: '12px', color: '#94a3b8' }}>
+            {subtitle}{count > 0 && ` · ${count} in total`}
+        </p>
+        {/* Scrolls in both directions: down through the ranking, and sideways for the
+            week columns on a narrow screen. The header is sticky so it stays readable
+            the whole way down. */}
+        <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0',
+            overflowX: 'auto',
+            overflowY: 'auto',
+            maxHeight: `${LIST_MAX_HEIGHT}px`
+        }}>
             {children}
         </div>
     </div>
@@ -266,7 +283,11 @@ const headRowStyle: React.CSSProperties = { backgroundColor: '#f8fafc', borderBo
 const bodyRowStyle: React.CSSProperties = { borderBottom: '1px solid #f1f5f9' };
 const thStyle: React.CSSProperties = {
     padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600,
-    color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap'
+    color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap',
+    // Sticky headers don't carry their row's border through a scroll, so the rule
+    // under the header is drawn on the cells themselves.
+    position: 'sticky', top: 0, zIndex: 1,
+    backgroundColor: '#f8fafc', boxShadow: 'inset 0 -1px 0 #e2e8f0'
 };
 const numHeadStyle: React.CSSProperties = { textAlign: 'right' };
 const tdStyle: React.CSSProperties = { padding: '14px 20px', fontSize: '14px', color: '#0f172a' };

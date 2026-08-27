@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Activity } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { fetchActivityLogsSince } from '../../lib/activityStats';
 
 interface DayBucket {
     key: string;
@@ -45,13 +45,12 @@ export const DailyActiveUsersChart = () => {
         const byDay: Record<string, Map<string, { name: string; email: string }>> = {};
         days.forEach(d => { byDay[toDayKey(d)] = new Map(); });
 
-        const { data } = await supabase
-            .from('activity_logs')
-            .select('actor_id, created_at, profiles!activity_logs_actor_id_fkey(full_name, email)')
-            .gte('created_at', since.toISOString())
-            .not('actor_id', 'is', null);
+        const { rows } = await fetchActivityLogsSince(
+            since.toISOString(),
+            'actor_id, action_type, created_at, metadata, profiles!activity_logs_actor_id_fkey(full_name, email)'
+        );
 
-        (data || []).forEach((row: any) => {
+        rows.forEach((row: any) => {
             const dayKey = toDayKey(new Date(row.created_at));
             const bucket = byDay[dayKey];
             if (!bucket || !row.actor_id) return;

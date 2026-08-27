@@ -75,7 +75,38 @@ export const StatusMappingSettings = () => {
         try {
             setSaving(true);
             setMessage({ type: '', text: '' });
-            
+
+            // The mapping is stored as a { label: color } object, so a blank label or a
+            // second row reusing an existing label silently disappears on save — the row
+            // stays on screen (local state) while never reaching the database, which then
+            // shows up later as a Status column that's missing labels the admin thinks
+            // they added. Refuse the save and name the offending rows instead.
+            const blankCount = mappings.filter(m => !m.label.trim()).length;
+            const seen = new Set<string>();
+            const duplicates = new Set<string>();
+            mappings.forEach(m => {
+                const key = m.label.trim().toLowerCase();
+                if (!key) return;
+                if (seen.has(key)) duplicates.add(m.label.trim());
+                seen.add(key);
+            });
+
+            if (blankCount > 0 || duplicates.size > 0) {
+                const problems: string[] = [];
+                if (duplicates.size > 0) {
+                    problems.push(`duplicate label${duplicates.size > 1 ? 's' : ''}: ${Array.from(duplicates).join(', ')}`);
+                }
+                if (blankCount > 0) {
+                    problems.push(`${blankCount} empty label${blankCount > 1 ? 's' : ''}`);
+                }
+                setMessage({
+                    type: 'error',
+                    text: `Can't save — every status needs its own unique name. Found ${problems.join(' and ')}.`
+                });
+                setSaving(false);
+                return;
+            }
+
             // Convert array back to lookup object
             const valueObject: Record<string, string> = {};
             mappings.forEach(m => {
@@ -94,9 +125,15 @@ export const StatusMappingSettings = () => {
 
             if (error) throw error;
 
-            setMessage({ type: 'success', text: 'Status mappings saved successfully' });
+            // Mirror exactly what was written, so the list on screen can never drift from
+            // what new Status columns will be built out of. (fetchSettings() would blank
+            // the whole panel behind its loading state, so rebuild from valueObject —
+            // the upsert succeeded, so that is what the row now holds.)
+            setMappings(Object.entries(valueObject).map(([label, color]) => ({ label, color })));
+
+            setMessage({ type: 'success', text: `Saved ${Object.keys(valueObject).length} status mappings` });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-            
+
         } catch (error: any) {
             console.error('Error saving settings:', error);
             setMessage({ type: 'error', text: 'Failed to save settings: ' + error.message });
@@ -170,15 +207,23 @@ export const StatusMappingSettings = () => {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {mappings.map((m, idx) => (
+                    {mappings.map((m, idx) => {
+                        const key = m.label.trim().toLowerCase();
+                        // A blank name, or one that repeats an earlier row, can't be stored
+                        // (the mapping is keyed by label) — flag it here so it's findable
+                        // without hunting through a long list after a failed save.
+                        const isDuplicate = !!key && mappings.some((other, i) => i < idx && other.label.trim().toLowerCase() === key);
+                        const hasProblem = !key || isDuplicate;
+                        return (
                         <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={m.label}
                                     onChange={e => updateMapping(idx, 'label', e.target.value)}
                                     placeholder="Status Label (e.g. Done)"
-                                    style={inputStyle}
+                                    style={hasProblem ? { ...inputStyle, borderColor: '#f87171', backgroundColor: '#fef2f2' } : inputStyle}
+                                    title={isDuplicate ? 'Another row already uses this name' : (!key ? 'This status needs a name' : undefined)}
                                 />
                             </div>
                             <div style={{ display: 'flex', gap: '6px', backgroundColor: '#f8fafc', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -221,8 +266,9 @@ export const StatusMappingSettings = () => {
                                 <Trash2 size={18} />
                             </button>
                         </div>
-                    ))}
-                    
+                        );
+                    })}
+
                     {mappings.length === 0 && (
                         <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', border: '2px dashed #e2e8f0', borderRadius: '12px' }}>
                             No mappings defined. Click "Add New" to start.

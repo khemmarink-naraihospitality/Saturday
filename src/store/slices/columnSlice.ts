@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { ColumnType } from '../../types';
 import type { BoardState } from '../useBoardStore';
+import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 
 export interface ColumnSlice {
     // Column Actions
@@ -42,13 +43,12 @@ export const createColumnSlice: StateCreator<
         const board = get().boards.find(b => b.id === activeBoardId);
         const order = index !== undefined ? index : (board ? board.columns.length : 0);
 
+        // Seed Status columns from the admin-configured Status-to-Color Mapping so a
+        // column added to an existing board starts with the same vocabulary a brand new
+        // board gets, instead of a separate hardcoded three-option list.
         let options: any[] = [];
         if (type === 'status') {
-            options = [
-                { id: uuidv4(), label: 'Done', color: '#279966' },
-                { id: uuidv4(), label: 'Working on it', color: '#F0960A' },
-                { id: uuidv4(), label: 'Stuck', color: '#E03333' },
-            ];
+            options = await getDefaultStatusOptions();
         }
 
         const newCol = { id: newColId, title, type, order, width: 140, options };

@@ -63,7 +63,7 @@ Realtime updates come through a Supabase channel subscription (set up in `member
 
 ### Authentication & Access Control
 
-`AuthContext` wraps the app and exposes `session`. `App.tsx` checks `is_approved` before rendering `MainApp`. Auto-approval applies to emails from `naraihospitality.com`, `marasca.live`, and `lubd.com`.
+`AuthContext` wraps the app and exposes `session`. `App.tsx` checks `is_approved` before rendering `MainApp`. Auto-approval applies to emails from the domains in `ALLOWED_DOMAINS` (`App.tsx`): `naraihospitality.com`, `marasca.live`, `lubd.com`, `visitamanta.com`, and `riverineplace.com`.
 
 **Two separate role systems:**
 

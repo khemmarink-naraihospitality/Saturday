@@ -20,6 +20,23 @@ import { takePendingDeepLink, clearPendingDeepLink } from './lib/pendingDeepLink
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
 
+// Signing in with an address at one of these domains approves the account on the
+// spot, instead of parking it on the pending-approval screen for an admin. Checked
+// in two places — when the session is first synced, and again by the approval gate
+// below — so it lives here rather than being re-declared at each call site.
+const ALLOWED_DOMAINS = [
+  'naraihospitality.com',
+  'marasca.live',
+  'lubd.com',
+  'visitamanta.com',
+  'riverineplace.com'
+];
+
+export const isAllowedDomain = (email?: string | null) => {
+  const domain = email?.split('@')[1]?.toLowerCase();
+  return !!domain && ALLOWED_DOMAINS.includes(domain);
+};
+
 const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{inviterName}}</strong> assigned you to item <strong>{{itemName}}</strong> under <strong>{{groupName}}</strong> in <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const NotificationPage = lazy(() => import('./pages/NotificationPage').then(m => ({ default: m.NotificationPage })));
@@ -151,10 +168,8 @@ function MainApp() {
         const { data: profile } = await supabase.from('profiles').select('system_role, is_approved, avatar_url').eq('id', session.user.id).single();
 
         const userEmail = session.user.email || '';
-        const userDomain = userEmail.split('@')[1];
-        const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
-        const shouldBeApproved = profile?.is_approved || 
-                                ALLOWED_DOMAINS.includes(userDomain) || 
+        const shouldBeApproved = profile?.is_approved ||
+                                isAllowedDomain(userEmail) ||
                                 userEmail === 'khemmarin.k@naraihospitality.com';
 
         // Auto-update database if they should be approved but aren't yet (fire and forget)
@@ -531,9 +546,7 @@ function AppContent() {
     return <ResetPasswordPage />;
   }
 
-  const ALLOWED_DOMAINS = ['naraihospitality.com', 'marasca.live', 'lubd.com'];
-  const userDomain = currentUser?.email?.split('@')[1];
-  const isAutoApproved = userDomain && ALLOWED_DOMAINS.includes(userDomain);
+  const isAutoApproved = isAllowedDomain(currentUser?.email);
 
   // Only check approval if the user isn't the super admin and not from an auto-approved domain
   if (currentUser && currentUser.is_approved === false && currentUser.email !== 'khemmarin.k@naraihospitality.com' && !isAutoApproved) {

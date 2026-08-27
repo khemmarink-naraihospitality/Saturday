@@ -29,7 +29,8 @@ const ALLOWED_DOMAINS = [
   'marasca.live',
   'lubd.com',
   'visitamanta.com',
-  'riverineplace.com'
+  'riverineplace.com',
+  'naraihotel.co.th'
 ];
 
 export const isAllowedDomain = (email?: string | null) => {

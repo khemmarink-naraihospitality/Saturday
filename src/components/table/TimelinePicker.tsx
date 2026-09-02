@@ -1,21 +1,84 @@
 import { format, setMonth, setYear } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import type { DateRange } from 'react-day-picker';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import 'react-day-picker/style.css';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, ArrowRight } from 'lucide-react';
+import { useBoardStore } from '../../store/useBoardStore';
+import { wouldCreateCycle } from '../../lib/dependencyUtils';
 
 interface TimelinePickerProps {
+    itemId: string;
     dateRange: { from: string; to: string } | null;
     onSelect: (range: { from: string; to: string } | null) => void;
     onClose: () => void;
     position: { top: number, left: number };
 }
 
-export const TimelinePicker = ({ dateRange, onSelect, onClose, position }: TimelinePickerProps) => {
+export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position }: TimelinePickerProps) => {
     const pickerRef = useRef<HTMLDivElement>(null);
     const [style, setStyle] = useState({ top: position.top, left: position.left });
+
+    // Finish to Start — lets you point this item at whatever should start once
+    // it finishes, right from the same popup where its own dates are set.
+    const activeBoardId = useBoardStore(state => state.activeBoardId);
+    const board = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
+    const itemDependencies = useBoardStore(state => state.itemDependencies);
+    const addItemDependency = useBoardStore(state => state.addItemDependency);
+    const removeItemDependency = useBoardStore(state => state.removeItemDependency);
+
+    const [isAddingSuccessor, setIsAddingSuccessor] = useState(false);
+    const [successorQuery, setSuccessorQuery] = useState('');
+    const [successorError, setSuccessorError] = useState<string | null>(null);
+    const successorBoxRef = useRef<HTMLDivElement>(null);
+
+    const boardDeps = useMemo(
+        () => itemDependencies.filter(d => d.boardId === activeBoardId),
+        [itemDependencies, activeBoardId]
+    );
+    const successors = useMemo(
+        () => boardDeps.filter(d => d.predecessorItemId === itemId),
+        [boardDeps, itemId]
+    );
+    const successorCandidates = useMemo(() => {
+        if (!board) return [];
+        const existing = new Set(successors.map(d => d.successorItemId));
+        const q = successorQuery.trim().toLowerCase();
+        return board.items
+            .filter(i =>
+                i.id !== itemId &&
+                !i.parentId &&
+                !existing.has(i.id) &&
+                !wouldCreateCycle(boardDeps, itemId, i.id) &&
+                (!q || (i.title || '').toLowerCase().includes(q))
+            )
+            .slice(0, 30);
+    }, [board, boardDeps, successors, itemId, successorQuery]);
+
+    useEffect(() => {
+        if (!isAddingSuccessor) return;
+        const onClickOutside = (e: MouseEvent) => {
+            if (successorBoxRef.current && !successorBoxRef.current.contains(e.target as Node)) {
+                setIsAddingSuccessor(false);
+                setSuccessorQuery('');
+                setSuccessorError(null);
+            }
+        };
+        document.addEventListener('mousedown', onClickOutside);
+        return () => document.removeEventListener('mousedown', onClickOutside);
+    }, [isAddingSuccessor]);
+
+    const handlePickSuccessor = async (successorId: string) => {
+        setSuccessorError(null);
+        const result = await addItemDependency(itemId, successorId);
+        if (!result.success) {
+            setSuccessorError(result.error || 'Could not link these items');
+            return;
+        }
+        setIsAddingSuccessor(false);
+        setSuccessorQuery('');
+    };
 
     // Parse initial range
     const initialRange: DateRange | undefined = dateRange?.from && dateRange?.to
@@ -46,7 +109,7 @@ export const TimelinePicker = ({ dateRange, onSelect, onClose, position }: Timel
 
             setStyle({ top: newTop, left: newLeft });
         }
-    }, [position, view, month]);
+    }, [position, view, month, successors.length, isAddingSuccessor]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -262,6 +325,151 @@ export const TimelinePicker = ({ dateRange, onSelect, onClose, position }: Timel
                     ))}
                 </div>
             )}
+
+            {/* Finish to Start */}
+            <div style={{
+                marginTop: '16px',
+                paddingTop: '12px',
+                borderTop: '1px solid hsl(var(--color-border))'
+            }}>
+                <div style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'hsl(var(--color-text-secondary))',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.4px',
+                    marginBottom: '8px'
+                }}>
+                    Finish to Start
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                    {successors.map(dep => {
+                        const successorItem = board?.items.find(i => i.id === dep.successorItemId);
+                        return (
+                            <span
+                                key={dep.id}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    padding: '3px 8px',
+                                    borderRadius: '12px',
+                                    backgroundColor: 'hsl(var(--color-bg-subtle))',
+                                    border: '1px solid hsl(var(--color-border))',
+                                    fontSize: '12px',
+                                    maxWidth: '150px'
+                                }}
+                            >
+                                <ArrowRight size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-text-tertiary))' }} />
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={successorItem?.title}>
+                                    {successorItem?.title || 'Unknown item'}
+                                </span>
+                                <button
+                                    onClick={() => removeItemDependency(dep.id)}
+                                    title="Remove dependency"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'hsl(var(--color-text-tertiary))' }}
+                                >
+                                    <X size={11} />
+                                </button>
+                            </span>
+                        );
+                    })}
+
+                    <div style={{ position: 'relative' }} ref={successorBoxRef}>
+                        <button
+                            onClick={() => setIsAddingSuccessor(open => !open)}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '3px 8px',
+                                borderRadius: '12px',
+                                border: '1px dashed hsl(var(--color-border))',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                color: 'hsl(var(--color-text-secondary))'
+                            }}
+                        >
+                            <Plus size={11} />
+                            Add item
+                        </button>
+
+                        {isAddingSuccessor && (
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 6px)',
+                                left: 0,
+                                width: '240px',
+                                backgroundColor: 'hsl(var(--color-bg-surface))',
+                                border: '1px solid hsl(var(--color-border))',
+                                borderRadius: '8px',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                zIndex: 1,
+                                overflow: 'hidden'
+                            }}>
+                                <input
+                                    autoFocus
+                                    value={successorQuery}
+                                    onChange={(e) => setSuccessorQuery(e.target.value)}
+                                    placeholder="Search items on this board…"
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 10px',
+                                        border: 'none',
+                                        borderBottom: '1px solid hsl(var(--color-border))',
+                                        outline: 'none',
+                                        fontSize: '12px',
+                                        boxSizing: 'border-box',
+                                        fontFamily: 'inherit'
+                                    }}
+                                />
+
+                                {successorError && (
+                                    <div style={{ padding: '6px 10px', fontSize: '11px', color: '#b91c1c', backgroundColor: '#fef2f2' }}>
+                                        {successorError}
+                                    </div>
+                                )}
+
+                                <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                                    {successorCandidates.length === 0 ? (
+                                        <div style={{ padding: '10px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                            No eligible items
+                                        </div>
+                                    ) : successorCandidates.map(candidate => (
+                                        <button
+                                            key={candidate.id}
+                                            onClick={() => handlePickSuccessor(candidate.id)}
+                                            style={{
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '7px 10px',
+                                                border: 'none',
+                                                background: 'transparent',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                color: 'hsl(var(--color-text-primary))',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {candidate.title || 'Untitled'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <p style={{ fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', margin: '6px 0 0' }}>
+                    When this item's dates move, the items above shift with it.
+                </p>
+            </div>
 
             {/* Footer */}
             <div style={{ 

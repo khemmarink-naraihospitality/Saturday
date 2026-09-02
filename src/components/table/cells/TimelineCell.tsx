@@ -154,6 +154,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column,
 
             {isEditing && pickerPos && (
                 <TimelinePicker
+                    itemId={itemId}
                     dateRange={value}
                     position={pickerPos}
                     onSelect={(range) => {

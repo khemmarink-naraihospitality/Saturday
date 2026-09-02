@@ -6,8 +6,9 @@ import { createGroupSlice, type GroupSlice } from './slices/groupSlice';
 import { createColumnSlice, type ColumnSlice } from './slices/columnSlice';
 import { createMemberSlice, type MemberSlice } from './slices/memberSlice';
 import { createGroupLinkSlice, type GroupLinkSlice } from './slices/groupLinkSlice';
+import { createItemDependencySlice, type ItemDependencySlice } from './slices/itemDependencySlice';
 
-export type BoardState = BoardSlice & WorkspaceSlice & ItemSlice & GroupSlice & ColumnSlice & MemberSlice & GroupLinkSlice & {};
+export type BoardState = BoardSlice & WorkspaceSlice & ItemSlice & GroupSlice & ColumnSlice & MemberSlice & GroupLinkSlice & ItemDependencySlice & {};
 
 export const useBoardStore = create<BoardState>()((...a) => ({
     ...createBoardSlice(...a),
@@ -17,4 +18,5 @@ export const useBoardStore = create<BoardState>()((...a) => ({
     ...createColumnSlice(...a),
     ...createMemberSlice(...a),
     ...createGroupLinkSlice(...a),
+    ...createItemDependencySlice(...a),
 }));

@@ -156,9 +156,14 @@ export const createItemSlice: StateCreator<
         const column = board.columns.find(c => c.id === columnId);
         const item = board.items.find(i => i.id === itemId);
 
+        // Captured before the optimistic write below overwrites it — the
+        // dependency cascade needs the previous dates to work out how far this
+        // item moved.
+        const previousValue = item?.values?.[columnId];
+
         let logMeta: any = null;
         if (column && item) {
-            const oldValue = item.values?.[columnId];
+            const oldValue = previousValue;
             const newValue = value;
             if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
                 logMeta = {
@@ -251,6 +256,13 @@ export const createItemSlice: StateCreator<
                     get().logActivity('item_value_updated', 'item', itemId, logMeta);
                 }
             }
+        }
+
+        // Finish-to-Start: if this item anchors a Timeline bar and it just moved,
+        // carry every downstream item along by the same number of days. Covers
+        // every edit path — the picker, the date cell, and the Timeline drag.
+        if (column && ['timeline', 'date', 'due_date'].includes(column.type)) {
+            await get().cascadeFromPredecessor(itemId, columnId, previousValue, value);
         }
     },
 

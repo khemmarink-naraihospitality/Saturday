@@ -64,6 +64,22 @@ export interface GroupLink {
     createdAt?: string;
 }
 
+/**
+ * A Finish-to-Start link between two items on the same board: moving the
+ * predecessor shifts the successor (and anything downstream of it) by the same
+ * number of days, keeping the gap between them.
+ */
+export interface ItemDependency {
+    id: string;
+    boardId: string;
+    predecessorItemId: string;
+    successorItemId: string;
+    type: 'FS';
+    lagDays: number;
+    createdBy?: string;
+    createdAt?: string;
+}
+
 
 export interface Comment {
     id: string;

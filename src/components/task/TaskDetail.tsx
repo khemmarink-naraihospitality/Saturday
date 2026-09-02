@@ -9,6 +9,7 @@ import { isValidGoogleDriveUrl, getGoogleDriveFileName } from '../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
+import { DependenciesSection } from './DependenciesSection';
 
 // Valid, de-duplicated updates for an item. Re-imports / Monday exports can repeat the
 // same post — sometimes as near-identical copies that differ only in length. Two updates
@@ -497,6 +498,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     <X size={24} />
                 </button>
             </div>
+
+            <DependenciesSection itemId={activeItem.id} boardId={activeItem.boardId} />
 
             {/* New Tab List (Removed Activity) */}
             <div style={{

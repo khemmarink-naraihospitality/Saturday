@@ -5,6 +5,7 @@ import type { Notification } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import type { Item } from '../../types';
 import { clearBoardUnlock } from '../../lib/boardPinUnlock';
+import { mapDbDependency } from './itemDependencySlice';
 
 // Helper to map DB item to Store type
 const parseSqlJson = (val: any, fallback: any) => {
@@ -517,6 +518,25 @@ export const createMemberSlice: StateCreator<
                             };
                         })
                     }));
+                })
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'item_dependencies'
+                }, (payload) => {
+                    // Dependency arrows appear/disappear for everyone on the board.
+                    // Only INSERT and DELETE exist — a link is never edited in place.
+                    if (payload.eventType === 'INSERT') {
+                        const row = payload.new as any;
+                        if (!get().boards.find(b => b.id === row.board_id)?.isDataLoaded) return;
+                        // Skip our own optimistic row coming back to us.
+                        if (get().itemDependencies.some(d => d.id === row.id)) return;
+                        set(state => ({ itemDependencies: [...state.itemDependencies, mapDbDependency(row)] }));
+                    } else if (payload.eventType === 'DELETE') {
+                        const removedId = (payload.old as any)?.id;
+                        if (!removedId) return;
+                        set(state => ({ itemDependencies: state.itemDependencies.filter(d => d.id !== removedId) }));
+                    }
                 })
                 .on('postgres_changes', {
                     event: '*',

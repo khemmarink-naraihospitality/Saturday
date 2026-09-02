@@ -38,6 +38,8 @@ export interface MemberSlice {
     updateMemberRole: (memberId: string, newRole: string, type: 'workspace' | 'board') => Promise<void>;
     removeMember: (memberId: string, type: 'workspace' | 'board') => Promise<void>;
     adminAddBoardMember: (boardId: string, userId: string, role: string) => Promise<void>;
+    adminGetOwnedContentCount: (userId: string) => Promise<{ workspaces: number; boards: number }>;
+    adminTransferAllOwnership: (fromUserId: string, toUserId: string) => Promise<{ workspaces: number; boards: number }>;
     
     // Person Column Assignment Helpers
     inviteAndAssignUser: (boardId: string, userId: string, role: string, itemId: string, columnId: string) => Promise<void>;
@@ -220,6 +222,23 @@ export const createMemberSlice: StateCreator<
         if (error) throw error;
 
         get().logActivity('board_member_added_by_admin', 'board', boardId, { user_id: userId, role });
+    },
+
+    adminGetOwnedContentCount: async (userId) => {
+        const [{ count: workspaces }, { count: boards }] = await Promise.all([
+            supabase.from('workspaces').select('id', { count: 'exact', head: true }).eq('owner_id', userId),
+            supabase.from('board_members').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('role', 'owner')
+        ]);
+        return { workspaces: workspaces || 0, boards: boards || 0 };
+    },
+
+    adminTransferAllOwnership: async (fromUserId, toUserId) => {
+        const { data, error } = await supabase.rpc('admin_transfer_ownership', {
+            from_user: fromUserId,
+            to_user: toUserId
+        });
+        if (error) throw error;
+        return { workspaces: data?.workspaces || 0, boards: data?.boards || 0 };
     },
 
     updateMemberRole: async (memberId, newRole, type) => {

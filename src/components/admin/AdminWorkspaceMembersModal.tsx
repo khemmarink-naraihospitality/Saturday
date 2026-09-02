@@ -24,7 +24,9 @@ export const AdminWorkspaceMembersModal = ({ workspaceId, workspaceTitle, ownerI
 
     const loadMembers = async () => {
         setIsLoading(true);
-        const data = await getWorkspaceMembers(workspaceId);
+        // Admin console shows deactivated members too — this is where you'd go to
+        // remove them, so hiding them here would make them unreachable.
+        const data = await getWorkspaceMembers(workspaceId, true);
         setMembers(data);
         setIsLoading(false);
     };

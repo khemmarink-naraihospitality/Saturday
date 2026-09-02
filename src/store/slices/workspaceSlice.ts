@@ -19,7 +19,7 @@ export interface WorkspaceSlice {
     duplicateWorkspace: (id: string) => Promise<void>;
     renameWorkspace: (id: string, newTitle: string) => Promise<void>;
     inviteToWorkspace: (workspaceId: string, email: string, role: string) => Promise<void>;
-    getWorkspaceMembers: (workspaceId: string) => Promise<any[]>;
+    getWorkspaceMembers: (workspaceId: string, includeInactive?: boolean) => Promise<any[]>;
     adminAddWorkspaceMember: (workspaceId: string, userId: string, role: string) => Promise<void>;
     reorderWorkspaces: (sourceId: string, destinationId: string) => Promise<void>;
     transferWorkspaceOwnership: (workspaceId: string, newOwnerUserId: string) => Promise<void>;
@@ -462,7 +462,7 @@ export const createWorkspaceSlice: StateCreator<
         }
     },
 
-    getWorkspaceMembers: async (workspaceId) => {
+    getWorkspaceMembers: async (workspaceId, includeInactive = false) => {
         const { data, error } = await supabase
             .from('workspace_members')
             .select('*, profiles(*)')
@@ -519,7 +519,14 @@ export const createWorkspaceSlice: StateCreator<
             });
         }
 
-        return members;
+        // Applied last so it also covers the owner row synthesized above and the
+        // board-only guests appended below — a deactivated person is hidden from the
+        // workspace no matter which of the three ways they got into this list.
+        if (includeInactive) return members;
+        return members.filter((m: any) => {
+            const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+            return profile?.is_active !== false;
+        });
     },
 
     adminAddWorkspaceMember: async (workspaceId, userId, role) => {

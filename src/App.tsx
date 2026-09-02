@@ -133,6 +133,68 @@ function PendingApprovalPage({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+// Shown instead of the app to someone an admin has switched to Inactive. Unlike the
+// pending-approval screen there is nothing to poll for — reactivation is a deliberate
+// admin action, and signing in again picks it up.
+function DeactivatedAccountPage({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <div style={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f8fafc',
+      padding: '20px',
+      textAlign: 'center'
+    }}>
+      <div style={{
+        maxWidth: '400px',
+        backgroundColor: 'white',
+        padding: '32px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        <div style={{
+          width: '64px',
+          height: '64px',
+          backgroundColor: '#fee2e2',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '20px'
+        }}>
+          <span style={{ fontSize: '32px' }}>🔒</span>
+        </div>
+        <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Account Deactivated</h2>
+        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
+          This account is no longer active. <br />
+          Please contact a <strong>Super Admin</strong> if you think this is a mistake.
+        </p>
+        <button
+          onClick={onSignOut}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'hsl(var(--color-brand-primary))',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MainApp() {
   const activeBoardId = useBoardStore(state => state.activeBoardId);
   const activePage = useBoardStore(state => state.activePage);
@@ -166,7 +228,7 @@ function MainApp() {
       
       const initUser = async () => {
         // Fetch full profile to get system_role, is_approved and a possible custom avatar
-        const { data: profile } = await supabase.from('profiles').select('system_role, is_approved, avatar_url').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('system_role, is_approved, is_active, avatar_url').eq('id', session.user.id).single();
 
         const userEmail = session.user.email || '';
         const shouldBeApproved = profile?.is_approved ||
@@ -186,7 +248,8 @@ function MainApp() {
           avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url,
           role: 'owner',
           system_role: (profile?.system_role as any) || 'user',
-          is_approved: shouldBeApproved
+          is_approved: shouldBeApproved,
+          is_active: profile?.is_active !== false
         });
 
         // 🚀 Start loading workspace data immediately — don't wait for template seeding below
@@ -548,6 +611,12 @@ function AppContent() {
   }
 
   const isAutoApproved = isAllowedDomain(currentUser?.email);
+
+  // Deactivation outranks the approval check and the auto-approved domains alike:
+  // it is how someone who has left is shut out, so no domain gets them back in.
+  if (currentUser && currentUser.is_active === false) {
+    return <DeactivatedAccountPage onSignOut={() => supabase.auth.signOut()} />;
+  }
 
   // Only check approval if the user isn't the super admin and not from an auto-approved domain
   if (currentUser && currentUser.is_approved === false && currentUser.email !== 'khemmarin.k@naraihospitality.com' && !isAutoApproved) {

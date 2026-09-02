@@ -24,7 +24,14 @@ export const PeopleCell: React.FC<PeopleCellProps> = memo(({ itemId, boardId, co
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
     const cellRef = useRef<HTMLDivElement>(null);
 
-    const selectedIds = React.useMemo(() => Array.isArray(value) ? value : (value ? [value] : []), [value]);
+    // Assignments are stored as bare user ids. Anyone who no longer resolves to a
+    // visible board member — deactivated, or removed from the board — is dropped
+    // rather than drawn as an "Unknown" avatar. The stored value is untouched, so
+    // reactivating the person brings their assignments straight back.
+    const selectedIds = React.useMemo(() => {
+        const ids: string[] = Array.isArray(value) ? value : (value ? [value] : []);
+        return ids.filter(id => activeBoardMembers.some(m => m.user_id === id));
+    }, [value, activeBoardMembers]);
 
     const startEditing = useCallback(() => {
         if (!can('edit_items')) return;

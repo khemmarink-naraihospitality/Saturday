@@ -24,11 +24,14 @@ import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown, CornerD
 import type { Item, Column } from '../../types';
 
 const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
-    if (!userIds || userIds.length === 0) return null;
+    // Same rule as the table's people cell: ids that no longer resolve to a visible
+    // member (deactivated, or off the board) are dropped instead of drawn blank.
+    const visibleIds = (userIds || []).filter(id => activeBoardMembers.some(m => m.user_id === id));
+    if (visibleIds.length === 0) return null;
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            {userIds.slice(0, 3).map((userId, idx) => {
+            {visibleIds.slice(0, 3).map((userId, idx) => {
                 const member = activeBoardMembers.find(m => m.user_id === userId);
                 const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
                 const profile = profileData || {};
@@ -60,7 +63,7 @@ const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: st
                     </div>
                 );
             })}
-            {userIds.length > 3 && (
+            {visibleIds.length > 3 && (
                 <div style={{
                     width: size,
                     height: size,
@@ -77,7 +80,7 @@ const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: st
                     zIndex: 10,
                     position: 'relative'
                 }}>
-                    +{userIds.length - 3}
+                    +{visibleIds.length - 3}
                 </div>
             )}
         </div>

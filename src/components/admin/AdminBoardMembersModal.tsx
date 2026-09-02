@@ -26,7 +26,9 @@ export const AdminBoardMembersModal = ({ boardId, boardTitle, onClose, onMembers
 
     const loadMembers = async () => {
         setIsLoading(true);
-        const data = await getBoardMembers(boardId);
+        // Admin console shows deactivated members too — this is where you'd go to
+        // remove them, so hiding them here would make them unreachable.
+        const data = await getBoardMembers(boardId, true);
         setMembers(data);
         setIsLoading(false);
     };

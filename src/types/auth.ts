@@ -8,4 +8,6 @@ export interface User {
     role: Role;
     system_role?: 'super_admin' | 'it_admin' | 'user';
     is_approved?: boolean;
+    /** Deactivated accounts are hidden from everyone else and blocked from signing in. */
+    is_active?: boolean;
 }

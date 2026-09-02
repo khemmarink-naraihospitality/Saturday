@@ -607,7 +607,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 );
                                                                             })()}
                                                                             {col.type === 'people' && (() => {
-                                                                                const uniqueIds: string[] = agg?.uniqueIds || [];
+                                                                                // Matches the cells this row summarises: ids with no visible
+                                                                                // member behind them are left out rather than counted.
+                                                                                const uniqueIds: string[] = (agg?.uniqueIds || []).filter(
+                                                                                    (id: string) => activeBoardMembers.some(m => m.user_id === id)
+                                                                                );
                                                                                 if (uniqueIds.length === 0) return null;
                                                                                 const maxVisible = 4;
                                                                                 return (

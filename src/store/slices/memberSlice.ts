@@ -34,7 +34,7 @@ export interface MemberSlice {
 
     // Member Actions
     inviteToBoard: (boardId: string, email: string, role: string) => Promise<void>;
-    getBoardMembers: (boardId: string) => Promise<any[]>;
+    getBoardMembers: (boardId: string, includeInactive?: boolean) => Promise<any[]>;
     updateMemberRole: (memberId: string, newRole: string, type: 'workspace' | 'board') => Promise<void>;
     removeMember: (memberId: string, type: 'workspace' | 'board') => Promise<void>;
     adminAddBoardMember: (boardId: string, userId: string, role: string) => Promise<void>;
@@ -76,13 +76,22 @@ export const createMemberSlice: StateCreator<
     realtimeSubscription: null,
     notifications: [],
 
-    getBoardMembers: async (boardId) => {
+    getBoardMembers: async (boardId, includeInactive = false) => {
         const { data, error } = await supabase
             .from('board_members')
-            .select('id, user_id, role, board_id, profiles(id, full_name, email, avatar_url)')
+            .select('id, user_id, role, board_id, profiles(id, full_name, email, avatar_url, is_active)')
             .eq('board_id', boardId);
         if (error) throw error;
-        return data || [];
+        const rows = data || [];
+        // Deactivated people stay in board_members — they are hidden, not removed —
+        // so the filter lives here, where every avatar stack, person picker and
+        // @mention list gets its members from. The admin console passes
+        // includeInactive so it can still see and manage them.
+        if (includeInactive) return rows;
+        return rows.filter((m: any) => {
+            const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+            return profile?.is_active !== false;
+        });
     },
 
     inviteToBoard: async (boardId, email, role) => {
@@ -266,14 +275,17 @@ export const createMemberSlice: StateCreator<
     },
 
     searchUsers: async (query) => {
+        // Deactivated accounts are excluded everywhere this feeds: @mentions, the
+        // person picker's search, and the invite/add-member forms.
         if (!query) {
             // Empty query: return first 8 users for @mention default list
-            const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').limit(8);
+            const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').eq('is_active', true).limit(8);
             return data || [];
         }
         const { data } = await supabase
             .from('profiles')
             .select('id, full_name, email, avatar_url')
+            .eq('is_active', true)
             .or(`email.ilike.%${query}%,full_name.ilike.%${query}%`)
             .limit(8);
         return data || [];

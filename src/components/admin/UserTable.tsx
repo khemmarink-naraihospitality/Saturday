@@ -15,6 +15,7 @@ interface Profile {
     last_login_at: string | null;
     auth_type?: 'google' | 'internal';
     avatar_url?: string | null;
+    is_active?: boolean;
 }
 
 const initialsFrom = (name?: string, email?: string) =>
@@ -96,6 +97,7 @@ export const UserTable = () => {
         email: string;
         role: string;
         authType: 'google' | 'internal';
+        isActive: boolean;
     } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -144,6 +146,7 @@ export const UserTable = () => {
         try {
             const targetUser = profiles.find(p => p.id === editProfileModal.userId);
             const oldRole = targetUser?.system_role;
+            const oldActive = targetUser?.is_active !== false;
 
             const { error } = await supabase
                 .from('profiles')
@@ -151,11 +154,23 @@ export const UserTable = () => {
                     full_name: editProfileModal.fullName,
                     email: editProfileModal.email,
                     system_role: editProfileModal.role,
-                    auth_type: editProfileModal.authType
+                    auth_type: editProfileModal.authType,
+                    is_active: editProfileModal.isActive
                 })
                 .eq('id', editProfileModal.userId);
 
             if (error) throw error;
+
+            // Deactivating someone revokes their access, so it belongs in the audit
+            // trail next to role changes rather than passing silently.
+            if (oldActive !== editProfileModal.isActive) {
+                await supabase.rpc('log_activity', {
+                    p_action_type: editProfileModal.isActive ? 'user_reactivated' : 'user_deactivated',
+                    p_target_type: 'user',
+                    p_target_id: editProfileModal.userId,
+                    p_metadata: { target_email: editProfileModal.email }
+                });
+            }
 
             // Log the activity if role changed
             if (oldRole !== editProfileModal.role) {
@@ -177,7 +192,8 @@ export const UserTable = () => {
                     full_name: editProfileModal.fullName,
                     email: editProfileModal.email,
                     system_role: editProfileModal.role as any,
-                    auth_type: editProfileModal.authType
+                    auth_type: editProfileModal.authType,
+                    is_active: editProfileModal.isActive
                 } : p
             ));
             setEditProfileModal(null);
@@ -302,6 +318,7 @@ export const UserTable = () => {
             Role: ROLE_LABELS[p.system_role] || p.system_role,
             Authentication: p.auth_type === 'internal' ? 'Internal' : 'Google',
             Status: p.is_approved ? 'Approved' : 'Pending',
+            Active: p.is_active === false ? 'Inactive' : 'Active',
             'Last Login': p.last_login_at
                 ? new Date(p.last_login_at).toLocaleString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric',
@@ -325,6 +342,7 @@ export const UserTable = () => {
             { wch: 15 }, // Role
             { wch: 16 }, // Authentication
             { wch: 12 }, // Status
+            { wch: 10 }, // Active
             { wch: 24 }, // Last Login
             { wch: 24 }, // Created At
         ];
@@ -571,6 +589,23 @@ export const UserTable = () => {
                                             <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }} title={profile.full_name || 'Unknown'}>
                                                 {profile.full_name || 'Unknown'}
                                             </div>
+                                            {profile.is_active === false && (
+                                                <span
+                                                    title="Deactivated — signed out of the app and hidden from every board"
+                                                    style={{
+                                                        flexShrink: 0,
+                                                        padding: '2px 8px',
+                                                        borderRadius: '10px',
+                                                        fontSize: '11px',
+                                                        fontWeight: 600,
+                                                        backgroundColor: '#fee2e2',
+                                                        color: '#b91c1c',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                >
+                                                    Inactive
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td style={{ padding: '10px 20px' }}>
@@ -702,7 +737,8 @@ export const UserTable = () => {
                                                                             fullName: profile.full_name || '', 
                                                                             email: profile.email || '', 
                                                                             role: profile.system_role,
-                                                                            authType: profile.auth_type || 'google'
+                                                                            authType: profile.auth_type || 'google',
+                                                                            isActive: profile.is_active !== false
                                                                         });
                                                                         setOpenPopoverId(null);
                                                                     }}
@@ -936,6 +972,47 @@ export const UserTable = () => {
                                     {editProfileModal.authType === 'google'
                                         ? 'Signs in with Continue with Google.'
                                         : 'Signs in with email + a password. Switching this label alone does not send a setup email or change their existing credentials.'}
+                                </p>
+                            </div>
+
+                            {/* Status */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>Status</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    {([true, false] as const).map((active) => {
+                                        const selected = editProfileModal.isActive === active;
+                                        // Deactivating yourself would lock you out of the console on the
+                                        // next load, with no way back in from inside the app.
+                                        const isSelf = editProfileModal.userId === currentUser.id;
+                                        const disabled = !active && isSelf;
+                                        return (
+                                            <button
+                                                key={String(active)}
+                                                onClick={() => !disabled && setEditProfileModal({ ...editProfileModal, isActive: active })}
+                                                disabled={disabled}
+                                                title={disabled ? "You can't deactivate your own account" : undefined}
+                                                style={{
+                                                    padding: '10px 8px',
+                                                    border: selected ? `2px solid ${active ? '#10b981' : '#ef4444'}` : '1px solid #e2e8f0',
+                                                    borderRadius: '8px',
+                                                    backgroundColor: selected ? (active ? '#ecfdf5' : '#fef2f2') : 'white',
+                                                    cursor: disabled ? 'not-allowed' : 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: 500,
+                                                    color: disabled ? '#cbd5e1' : selected ? (active ? '#047857' : '#b91c1c') : '#64748b',
+                                                    transition: 'all 0.2s',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                {active ? 'Active' : 'Inactive'}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>
+                                    {editProfileModal.isActive
+                                        ? 'Can sign in and appears in member lists, person columns and @mentions.'
+                                        : 'Blocked from signing in and hidden from every workspace, board and person column. Nothing is deleted — switching back to Active restores them.'}
                                 </p>
                             </div>
                         </div>

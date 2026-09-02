@@ -102,7 +102,10 @@ const SortableHeaderCell = ({
                 <button
                     onClick={(e) => openMenu(e, col.id)}
                     className="icon-btn"
-                    style={{ opacity: activeMenuColId === col.id ? 1 : 0.5 }}
+                    // Nudged off the column's right edge so it doesn't sit under the
+                    // 4px resize handle — clicks there were grabbing the resize drag
+                    // instead of opening this menu.
+                    style={{ opacity: activeMenuColId === col.id ? 1 : 0.5, marginRight: '6px' }}
                     title="Column Actions"
                     onMouseDown={(e) => e.stopPropagation()}
                 >

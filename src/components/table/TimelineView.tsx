@@ -8,6 +8,11 @@ import { ToastContainer } from '../ui/Toast';
 import { DependencyOverlay } from './DependencyOverlay';
 import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, ROW_HEIGHT, BAR_V_INSET, type BarGeometry } from './timelineGeometry';
 
+// Day view shows this many days from the 1st of the anchor month, rather than
+// stopping at the 30th/31st — a drag or a cascaded dependency shift needs room
+// past the month boundary to actually be visible without switching months.
+const DAY_VIEW_SPAN = 45;
+
 export const TimelineView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
@@ -50,7 +55,10 @@ export const TimelineView = () => {
     const timeGrid = useMemo(() => {
         if (viewType === 'day') {
             const start = startOfMonth(viewDate);
-            const end = endOfMonth(viewDate);
+            // 45 days instead of just the calendar month, so a dependency shift
+            // (or any drag) has enough room past the 30/31-day month boundary to
+            // actually be visible without switching months.
+            const end = addDays(start, DAY_VIEW_SPAN - 1);
             return eachDayOfInterval({ start, end });
         } else if (viewType === 'month') {
             const start = startOfYear(viewDate);

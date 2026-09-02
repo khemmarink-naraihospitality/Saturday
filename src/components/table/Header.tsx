@@ -474,13 +474,13 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                         className="icon-btn"
                         onClick={() => {
                             setShowAddMenu(true);
-                            setInsertColIndex(null); 
+                            setInsertColIndex(null);
                             setAddMenuPos(null);
                         }}
                         title="Add Column"
                         style={{ width: '100%', height: '100%', borderRadius: 0 }}
                     >
-                        <Plus size={16} />
+                        <Plus size={16} style={{ marginLeft: '6px' }} />
                     </button>
                 </div>
             )}

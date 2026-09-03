@@ -196,7 +196,14 @@ export const TimelineView = () => {
             const left = clampedStart * unitWidth;
             const width = Math.max(unitWidth, (effectiveEndIndex - clampedStart + 1) * unitWidth);
 
-            map.set(item.id, { rowIndex, left, width, colId });
+            // The two early-returns above already ruled out "entirely before" and
+            // "entirely after" the window, so a -1 index here can only mean the
+            // real edge sits just past the corresponding side of the window.
+            map.set(item.id, {
+                rowIndex, left, width, colId,
+                clippedStart: startIndex === -1,
+                clippedEnd: endIndex === -1
+            });
         });
 
         return map;
@@ -449,6 +456,49 @@ export const TimelineView = () => {
                                                 >
                                                     {item.title}
                                                 </div>
+
+                                                {/* Off-window markers: the bar's edge here is the window
+                                                    boundary, not the item's real start/end — without these
+                                                    a bar entering or leaving view as you drag it can look
+                                                    like its duration is changing, when it never has. */}
+                                                {geometry.clippedStart && (
+                                                    <div
+                                                        title="Starts before what's shown"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: `${geometry.left + 2}px`,
+                                                            top: `${BAR_V_INSET}px`,
+                                                            bottom: `${BAR_V_INSET}px`,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            color: 'rgba(255,255,255,0.85)',
+                                                            fontSize: '10px',
+                                                            zIndex: 6,
+                                                            pointerEvents: 'none'
+                                                        }}
+                                                    >
+                                                        «
+                                                    </div>
+                                                )}
+                                                {geometry.clippedEnd && (
+                                                    <div
+                                                        title="Continues past what's shown"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: `${geometry.left + geometry.width - 12}px`,
+                                                            top: `${BAR_V_INSET}px`,
+                                                            bottom: `${BAR_V_INSET}px`,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            color: 'rgba(255,255,255,0.85)',
+                                                            fontSize: '10px',
+                                                            zIndex: 6,
+                                                            pointerEvents: 'none'
+                                                        }}
+                                                    >
+                                                        »
+                                                    </div>
+                                                )}
 
                                                 {/* Connector dot — drag from here onto another row to
                                                     make that row depend on this one. */}

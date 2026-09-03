@@ -15,4 +15,11 @@ export interface BarGeometry {
     left: number;
     width: number;
     colId: string;
+    // True when the item's real start/end falls outside the visible window, so
+    // the bar's rendered edge is clipped to the window edge rather than its
+    // actual date — without a marker this reads as the bar's width (and so its
+    // duration) changing as you drag it in and out of view, when the stored
+    // dates never moved relative to each other.
+    clippedStart: boolean;
+    clippedEnd: boolean;
 }

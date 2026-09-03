@@ -27,6 +27,11 @@ export interface ItemDependencySlice {
         successorItemId: string
     ) => Promise<{ success: boolean; error?: string }>;
     removeItemDependency: (dependencyId: string) => Promise<void>;
+    updateItemDependency: (
+        dependencyId: string,
+        predecessorItemId: string,
+        successorItemId: string
+    ) => Promise<{ success: boolean; error?: string }>;
     cascadeFromPredecessor: (
         itemId: string,
         columnId: string,
@@ -147,6 +152,65 @@ export const createItemDependencySlice: StateCreator<
             predecessor_title: board?.items.find(i => i.id === dep.predecessorItemId)?.title || 'Unknown',
             successor_title: board?.items.find(i => i.id === dep.successorItemId)?.title || 'Unknown'
         });
+    },
+
+    updateItemDependency: async (dependencyId, predecessorItemId, successorItemId) => {
+        const { activeBoardId, itemDependencies } = get();
+        if (!activeBoardId) return { success: false, error: 'No board open' };
+
+        const existingDep = itemDependencies.find(d => d.id === dependencyId);
+        if (!existingDep) return { success: false, error: 'This dependency no longer exists' };
+
+        const board = get().boards.find(b => b.id === activeBoardId);
+        if (!board) return { success: false, error: 'No board open' };
+
+        if (predecessorItemId === successorItemId) {
+            return { success: false, error: "An item can't depend on itself" };
+        }
+
+        const predecessor = board.items.find(i => i.id === predecessorItemId);
+        const successor = board.items.find(i => i.id === successorItemId);
+        if (!predecessor || !successor) {
+            return { success: false, error: 'Both items must be on this board' };
+        }
+
+        // Check against the graph as it would look with this edge already
+        // removed, so re-pointing an edge doesn't fight the edge itself.
+        const otherDeps = itemDependencies.filter(d => d.boardId === activeBoardId && d.id !== dependencyId);
+
+        if (otherDeps.some(d => d.predecessorItemId === predecessorItemId && d.successorItemId === successorItemId)) {
+            return { success: false, error: 'These items are already linked' };
+        }
+
+        if (wouldCreateCycle(otherDeps, predecessorItemId, successorItemId)) {
+            return { success: false, error: `"${predecessor.title}" already depends on "${successor.title}"` };
+        }
+
+        set(state => ({
+            itemDependencies: state.itemDependencies.map(d =>
+                d.id === dependencyId ? { ...d, predecessorItemId, successorItemId } : d
+            )
+        }));
+
+        const { error } = await supabase.from('item_dependencies')
+            .update({ predecessor_item_id: predecessorItemId, successor_item_id: successorItemId })
+            .eq('id', dependencyId);
+
+        if (error) {
+            set(state => ({
+                itemDependencies: state.itemDependencies.map(d => d.id === dependencyId ? existingDep : d)
+            }));
+            return { success: false, error: error.message };
+        }
+
+        get().logActivity('dependency_updated', 'item', successorItemId, {
+            board_id: activeBoardId,
+            predecessor_id: predecessorItemId,
+            predecessor_title: predecessor.title,
+            successor_title: successor.title
+        });
+
+        return { success: true };
     },
 
     /**

@@ -51,6 +51,7 @@ export const TimelineView = () => {
     const itemDependencies = useBoardStore(state => state.itemDependencies);
     const addItemDependency = useBoardStore(state => state.addItemDependency);
     const removeItemDependency = useBoardStore(state => state.removeItemDependency);
+    const updateItemDependency = useBoardStore(state => state.updateItemDependency);
 
     const timeGrid = useMemo(() => {
         if (viewType === 'day') {
@@ -544,6 +545,8 @@ export const TimelineView = () => {
                             linkDraft={linkDraft}
                             canEdit={canEdit}
                             onRemove={removeItemDependency}
+                            items={items}
+                            onUpdate={updateItemDependency}
                         />
                     </div>
                 </div>

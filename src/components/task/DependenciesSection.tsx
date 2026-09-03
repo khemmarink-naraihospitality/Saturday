@@ -7,6 +7,10 @@ import { collectDownstream } from '../../lib/dependencyUtils';
 interface DependenciesSectionProps {
     itemId: string;
     boardId: string;
+    // Tighter padding and no trailing divider, for use inside a floating
+    // popover (the Timeline bar's double-click popup) instead of TaskDetail's
+    // full-width panel.
+    compact?: boolean;
 }
 
 /**
@@ -14,7 +18,7 @@ interface DependenciesSectionProps {
  * blocks. The picker only ever offers items that can't close a loop, so a cycle
  * is impossible to pick rather than rejected after the fact.
  */
-export const DependenciesSection = ({ itemId, boardId }: DependenciesSectionProps) => {
+export const DependenciesSection = ({ itemId, boardId, compact = false }: DependenciesSectionProps) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const itemDependencies = useBoardStore(state => state.itemDependencies);
     const addItemDependency = useBoardStore(state => state.addItemDependency);
@@ -118,8 +122,8 @@ export const DependenciesSection = ({ itemId, boardId }: DependenciesSectionProp
 
     return (
         <div style={{
-            padding: '10px 32px',
-            borderBottom: '1px solid hsl(var(--color-border))',
+            padding: compact ? '10px 12px' : '10px 32px',
+            borderBottom: compact ? 'none' : '1px solid hsl(var(--color-border))',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',

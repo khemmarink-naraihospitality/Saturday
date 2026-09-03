@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../ui/Toast';
 import { DependencyOverlay } from './DependencyOverlay';
+import { DependenciesSection } from '../task/DependenciesSection';
 import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, ROW_HEIGHT, BAR_V_INSET, type BarGeometry } from './timelineGeometry';
 
 // Day view shows this many days from the 1st of the anchor month, rather than
@@ -43,6 +44,15 @@ export const TimelineView = () => {
     const [linkDraft, setLinkDraft] = useState<{ fromItemId: string; x: number; y: number } | null>(null);
     const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
     const rowsRef = useRef<HTMLDivElement>(null);
+
+    // Custom double-click detection on the bar itself, rather than the native
+    // dblclick event: the first mousedown of a real double-click already starts
+    // a drag (setDraggingItem) and mounts the fullscreen drag overlay, which
+    // sits on top of the bar and can eat the mouseup/click that native dblclick
+    // depends on. Tracking timing ourselves sidesteps that entirely.
+    const lastBarClickRef = useRef<{ id: string; time: number } | null>(null);
+    const suppressNextBarClickRef = useRef(false);
+    const [dependencyPopupItemId, setDependencyPopupItemId] = useState<string | null>(null);
 
     const { can } = usePermission();
     const canEdit = can('edit_items');
@@ -407,9 +417,29 @@ export const TimelineView = () => {
                                         {geometry && (
                                             <>
                                                 <div
-                                                    onClick={() => setActiveItem(item.id)}
+                                                    onClick={() => {
+                                                        if (suppressNextBarClickRef.current) {
+                                                            suppressNextBarClickRef.current = false;
+                                                            return;
+                                                        }
+                                                        setActiveItem(item.id);
+                                                    }}
                                                     onMouseDown={(e) => {
                                                         if (!canEdit) return;
+
+                                                        // Double-click detected by timing, not the native dblclick
+                                                        // event — see the ref's own comment for why.
+                                                        const now = Date.now();
+                                                        const last = lastBarClickRef.current;
+                                                        if (last && last.id === item.id && now - last.time < 400) {
+                                                            lastBarClickRef.current = null;
+                                                            suppressNextBarClickRef.current = true;
+                                                            e.stopPropagation();
+                                                            setDependencyPopupItemId(item.id);
+                                                            return;
+                                                        }
+                                                        lastBarClickRef.current = { id: item.id, time: now };
+
                                                         const raw = item.values[geometry.colId];
                                                         const col = activeBoard.columns.find(c => c.id === geometry.colId);
                                                         // Carry the stored strings through untouched so the
@@ -548,6 +578,54 @@ export const TimelineView = () => {
                             items={items}
                             onUpdate={updateItemDependency}
                         />
+
+                        {/* Double-click a bar (not an arrow) to manage that item's own
+                            dependencies — what it waits on and what it blocks — without
+                            leaving the Timeline. */}
+                        {dependencyPopupItemId && activeBoardId && (() => {
+                            const geo = barGeometry.get(dependencyPopupItemId);
+                            const popupItem = items.find(i => i.id === dependencyPopupItemId);
+                            if (!geo || !popupItem) return null;
+                            const x = NAME_COL_WIDTH + geo.left + geo.width / 2;
+                            const y = geo.rowIndex * ROW_HEIGHT;
+                            return (
+                                <>
+                                    <div onClick={() => setDependencyPopupItemId(null)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${x}px`,
+                                            top: `${y}px`,
+                                            transform: 'translate(-50%, -110%)',
+                                            backgroundColor: 'white',
+                                            border: '1px solid hsl(var(--color-border))',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                                            zIndex: 41,
+                                            width: '320px',
+                                            overflow: 'hidden'
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '10px 12px', borderBottom: '1px solid hsl(var(--color-border))'
+                                        }}>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {popupItem.title}
+                                            </span>
+                                            <button
+                                                onClick={() => setDependencyPopupItemId(null)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'hsl(var(--color-text-tertiary))', flexShrink: 0 }}
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                        <DependenciesSection itemId={dependencyPopupItemId} boardId={activeBoardId} compact />
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

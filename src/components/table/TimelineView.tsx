@@ -72,6 +72,11 @@ export const TimelineView = () => {
     }, [viewDate, viewType]);
 
     const unitWidth = viewType === 'day' ? 40 : (viewType === 'month' ? 80 : 120);
+    // Drag works in every view now, not just Day — a month/year column spans many
+    // days, so the pixel-to-day rate has to shrink to match (a whole column's width
+    // ~= one average month/year), or a drag across one column would only move a
+    // couple of days.
+    const pxPerDay = viewType === 'day' ? unitWidth : viewType === 'month' ? unitWidth / 30.44 : unitWidth / 365.25;
 
     // Apply Filter/Sort/Search logic
     const items = useMemo(() => {
@@ -396,7 +401,7 @@ export const TimelineView = () => {
                                                 <div
                                                     onClick={() => setActiveItem(item.id)}
                                                     onMouseDown={(e) => {
-                                                        if (viewType !== 'day' || !canEdit) return;
+                                                        if (!canEdit) return;
                                                         const raw = item.values[geometry.colId];
                                                         const col = activeBoard.columns.find(c => c.id === geometry.colId);
                                                         // Carry the stored strings through untouched so the
@@ -420,9 +425,13 @@ export const TimelineView = () => {
                                                         bottom: `${BAR_V_INSET}px`,
                                                         left: `${geometry.left}px`,
                                                         width: `${geometry.width}px`,
+                                                        // Follows the cursor 1:1 in real pixels while dragging (not
+                                                        // rounded to a day-boundary) so the move actually reads as a
+                                                        // drag instead of only jumping on release.
+                                                        transform: draggingItem?.id === item.id ? `translateX(${draggingItem.rawPx}px)` : undefined,
                                                         backgroundColor: item.groupColor || 'hsl(var(--color-brand-primary))',
                                                         borderRadius: '12px',
-                                                        opacity: draggingItem?.id === item.id ? 0.5 : 0.8,
+                                                        opacity: draggingItem?.id === item.id ? 0.7 : 0.8,
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
@@ -433,8 +442,8 @@ export const TimelineView = () => {
                                                         whiteSpace: 'nowrap',
                                                         overflow: 'hidden',
                                                         zIndex: 5,
-                                                        cursor: viewType === 'day' && canEdit ? 'move' : 'pointer',
-                                                        transition: 'opacity 0.2s',
+                                                        cursor: canEdit ? 'move' : 'pointer',
+                                                        transition: draggingItem?.id === item.id ? 'none' : 'opacity 0.2s',
                                                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                                                     }}
                                                 >
@@ -498,7 +507,7 @@ export const TimelineView = () => {
                         setDraggingItem(prev => {
                             if (!prev) return null;
                             const rawPx = prev.rawPx + e.movementX;
-                            return { ...prev, rawPx, offsetDays: Math.round(rawPx / unitWidth) };
+                            return { ...prev, rawPx, offsetDays: Math.round(rawPx / pxPerDay) };
                         });
                     }}
                     onMouseUp={() => {

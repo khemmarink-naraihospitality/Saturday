@@ -167,6 +167,105 @@ const DraggableDashboardWidget = ({ id, children, isFullWidth = false }: { id: s
     );
 };
 
+interface StatusColumnOption {
+    key: string;
+    label: string;
+    columnIds: Set<string>;
+}
+
+/**
+ * Picks which Status column the status widgets count.
+ *
+ * A board can carry more than one Status column (a delivery status and an
+ * approval status, say). Counting them together produces a chart of two
+ * unrelated vocabularies and a "% Done" whose denominator is one row counted
+ * twice, so the column has to be selectable.
+ */
+const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClose }: {
+    options: StatusColumnOption[];
+    value: string | null;
+    onChange: (key: string | null) => void;
+    isOpen: boolean;
+    onToggle: () => void;
+    onClose: () => void;
+}) => {
+    if (options.length < 2) return null; // nothing to disambiguate
+
+    const active = options.find(o => o.key === value);
+
+    return (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+                onClick={onToggle}
+                title={active ? `Showing: ${active.label}` : 'Showing: all status columns'}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: value ? 'hsl(var(--color-brand-primary))' : '#64748b'
+                }}
+            >
+                <Filter size={16} />
+                {active && (
+                    <span style={{ fontSize: '12px', fontWeight: 500, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {active.label}
+                    </span>
+                )}
+            </button>
+
+            {isOpen && (
+                <>
+                    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+                    <div style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        left: 0,
+                        minWidth: '200px',
+                        backgroundColor: 'white',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                        zIndex: 61,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
+                            Status column
+                        </div>
+                        {[{ key: null as string | null, label: 'All status columns' }, ...options].map(option => (
+                            <button
+                                key={option.key ?? '__all__'}
+                                onClick={() => { onChange(option.key); onClose(); }}
+                                style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '8px 12px',
+                                    border: 'none',
+                                    background: option.key === value ? 'hsl(var(--color-bg-hover, #f1f5f9))' : 'transparent',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    color: '#0f172a',
+                                    fontWeight: option.key === value ? 600 : 400,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => { if (option.key !== value) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                                onMouseLeave={(e) => { if (option.key !== value) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
 export const WorkspaceDashboardPage = () => {
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspaces = useBoardStore(state => state.workspaces);
@@ -208,6 +307,72 @@ export const WorkspaceDashboardPage = () => {
     const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
+
+    // Which Status column the status widgets count; null keeps the original
+    // behaviour of counting every one of them together. Remembered per
+    // workspace, since the choice is about that workspace's own columns.
+    const statusFilterStorageKey = `dashboardStatusColumn:${activeWorkspaceId || 'none'}`;
+    const [statusColFilter, setStatusColFilter] = useState<string | null>(null);
+    const [statusMenuFor, setStatusMenuFor] = useState<string | null>(null);
+
+    useEffect(() => {
+        try {
+            setStatusColFilter(localStorage.getItem(statusFilterStorageKey));
+        } catch {
+            setStatusColFilter(null);
+        }
+    }, [statusFilterStorageKey]);
+
+    const applyStatusColFilter = (key: string | null) => {
+        setStatusColFilter(key);
+        try {
+            if (key) localStorage.setItem(statusFilterStorageKey, key);
+            else localStorage.removeItem(statusFilterStorageKey);
+        } catch { /* private mode — the choice just won't persist */ }
+    };
+
+    /**
+     * The selectable Status columns, as the reader thinks of them rather than
+     * as raw rows: the same column exists once per board, so they're grouped by
+     * title and counted together across boards. A board with two columns of the
+     * same name (the case that prompted this) disambiguates by position — the
+     * second "Status" becomes "Status (2)".
+     */
+    const statusColumnOptions = useMemo<StatusColumnOption[]>(() => {
+        const byBoard = new Map<string, any[]>();
+        workspaceData.columns
+            .filter(c => c?.type === 'status')
+            .forEach(c => {
+                const list = byBoard.get(c.board_id) || [];
+                list.push(c);
+                byBoard.set(c.board_id, list);
+            });
+
+        const identities = new Map<string, StatusColumnOption>();
+        byBoard.forEach(cols => {
+            const seen = new Map<string, number>();
+            cols.forEach(col => {
+                const title = (col.title || 'Status').trim();
+                const normalized = title.toLowerCase();
+                const occurrence = (seen.get(normalized) || 0) + 1;
+                seen.set(normalized, occurrence);
+
+                const key = `${normalized}#${occurrence}`;
+                const existing = identities.get(key);
+                if (existing) {
+                    existing.columnIds.add(col.id);
+                } else {
+                    identities.set(key, {
+                        key,
+                        label: occurrence === 1 ? title : `${title} (${occurrence})`,
+                        columnIds: new Set([col.id])
+                    });
+                }
+            });
+        });
+
+        return Array.from(identities.values());
+    }, [workspaceData.columns]);
 
     useEffect(() => {
         if (!activeWorkspaceId || workspaceBoards.length === 0) return;
@@ -324,7 +489,15 @@ export const WorkspaceDashboardPage = () => {
             return `hsl(${h}, 85%, 55%)`;
         };
 
-        const statusCols = workspaceData.columns.filter(c => c?.type === 'status');
+        // When a specific Status column is selected, every figure below — the
+        // bar, the % Done, the workload chart, the cats' colours — is computed
+        // from that column alone.
+        const selectedStatusIdentity = statusColFilter
+            ? statusColumnOptions.find(o => o.key === statusColFilter)
+            : null;
+        const statusCols = workspaceData.columns.filter(c =>
+            c?.type === 'status' && (!selectedStatusIdentity || selectedStatusIdentity.columnIds.has(c.id))
+        );
         const peopleCols = workspaceData.columns.filter(c => c?.type === 'people');
 
         // 1. Initialize statusCounts map from all status columns
@@ -501,7 +674,7 @@ export const WorkspaceDashboardPage = () => {
 
         console.log("Dashboard: Stats computed successfully", { totalTasks, cats: catsToRender.length });
         return { totalTasks, statusCounts, totalStatusValues, completionPercent, catsToRender, peopleMap };
-    }, [workspaceData, workspaceBoards, workspaceMemberProfiles]);
+    }, [workspaceData, workspaceBoards, workspaceMemberProfiles, statusColFilter, statusColumnOptions]);
 
     if (!workspace) {
         return (
@@ -562,7 +735,14 @@ export const WorkspaceDashboardPage = () => {
                         <div className="widget-header-with-space" style={{ ...headerStyle, borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', margin: '-20px -20px 16px -20px', padding: '12px 20px 12px 36px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Total Status</h3>
-                                <Filter size={16} color="#64748b" style={{ cursor: 'pointer' }} />
+                                <StatusColumnFilter
+                                    options={statusColumnOptions}
+                                    value={statusColFilter}
+                                    onChange={applyStatusColFilter}
+                                    isOpen={statusMenuFor === 'totalStatus'}
+                                    onToggle={() => setStatusMenuFor(prev => (prev === 'totalStatus' ? null : 'totalStatus'))}
+                                    onClose={() => setStatusMenuFor(null)}
+                                />
                             </div>
                             <MoreHorizontal size={18} color="#64748b" style={{ cursor: 'pointer' }} />
                         </div>
@@ -716,7 +896,14 @@ export const WorkspaceDashboardPage = () => {
                         <div className="widget-header-with-space" style={{ ...headerStyle, borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', margin: '-20px -20px 16px -20px', padding: '12px 20px 12px 36px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Work Status</h3>
-                                <Filter size={16} color="#64748b" style={{ cursor: 'pointer' }} />
+                                <StatusColumnFilter
+                                    options={statusColumnOptions}
+                                    value={statusColFilter}
+                                    onChange={applyStatusColFilter}
+                                    isOpen={statusMenuFor === 'workStatusChart'}
+                                    onToggle={() => setStatusMenuFor(prev => (prev === 'workStatusChart' ? null : 'workStatusChart'))}
+                                    onClose={() => setStatusMenuFor(null)}
+                                />
                             </div>
                             <MoreHorizontal size={18} color="#64748b" style={{ cursor: 'pointer' }} />
                         </div>

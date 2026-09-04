@@ -25,6 +25,7 @@ export interface Column {
     aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'none';
     numberFormat?: 'number' | 'percent' | 'currency'; // For Number columns - how values are displayed
     currencyCode?: string; // ISO currency code (e.g. 'USD', 'THB') when numberFormat is 'currency'
+    numberAlign?: 'left' | 'center' | 'right'; // For Number columns - undefined means Center
 }
 
 // ItemValue stores dynamic column data

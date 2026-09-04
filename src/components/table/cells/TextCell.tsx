@@ -12,6 +12,16 @@ interface TextCellProps {
     value: any;
 }
 
+// Unset reads as Center, the default for Number columns; Left/Right are only
+// ever set explicitly via the column's Number Format menu.
+const numberJustify = (column: Column): 'flex-start' | 'center' | 'flex-end' => {
+    switch (column.numberAlign) {
+        case 'left': return 'flex-start';
+        case 'right': return 'flex-end';
+        default: return 'center';
+    }
+};
+
 export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
@@ -83,6 +93,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                     fontSize: column.title === 'Champion' ? '12px' : '13px',
                     color: 'inherit',
                     outline: 'none',
+                    textAlign: column.type === 'number' ? (column.numberAlign || 'center') : 'left',
                     paddingLeft: '4px', // Same as Item column on focus
                     cursor: 'text',
                     pointerEvents: 'auto',
@@ -133,8 +144,8 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
             className="table-cell" 
             onClick={startEditing} 
             style={{ 
-                ...cellStyle, 
-                justifyContent: column.type === 'number' ? 'flex-end' : 'flex-start',
+                ...cellStyle,
+                justifyContent: column.type === 'number' ? numberJustify(column) : 'flex-start',
                 fontSize: column.title === 'Champion' ? '12px' : '13px',
                 color: column.title === 'Champion' ? 'hsl(var(--color-text-secondary))' : 'inherit',
                 transition: 'background-color 0.2s ease',

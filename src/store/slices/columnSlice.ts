@@ -20,6 +20,7 @@ export interface ColumnSlice {
     deleteColumnOption: (columnId: string, optionId: string) => void;
     setColumnAggregation: (columnId: string, type: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'none') => void;
     setColumnNumberFormat: (columnId: string, format: 'number' | 'percent' | 'currency', currencyCode?: string) => Promise<void>;
+    setColumnAlignment: (columnId: string, align: 'left' | 'center' | 'right') => Promise<void>;
     // Board View Settings
     updateBoardItemColumnTitle: (newTitle: string) => void;
     updateBoardItemColumnWidth: (width: number) => void;
@@ -215,6 +216,17 @@ export const createColumnSlice: StateCreator<
             number_format: format,
             currency_code: format === 'currency' ? (currencyCode ?? null) : null
         }).eq('id', columnId);
+    },
+
+    setColumnAlignment: async (columnId, align) => {
+        const { activeBoardId } = get();
+        if (!activeBoardId) return;
+        set(state => ({
+            boards: state.boards.map(b => b.id === activeBoardId ? {
+                ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, numberAlign: align } : c)
+            } : b)
+        }));
+        await supabase.from('columns').update({ number_align: align }).eq('id', columnId);
     },
 
     addColumnOption: async (columnId, label, color) => {

@@ -145,6 +145,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const setColumnSort = useBoardStore(state => state.setColumnSort);
     const setColumnFilter = useBoardStore(state => state.setColumnFilter);
     const setColumnNumberFormat = useBoardStore(state => state.setColumnNumberFormat);
+    const setColumnAlignment = useBoardStore(state => state.setColumnAlignment);
 
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeSort = activeBoard?.sort;
@@ -540,6 +541,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                         position={menuPos}
                         column={activeNumberFormatColumn}
                         onSetFormat={(format, currencyCode) => setColumnNumberFormat(activeNumberFormatColId, format, currencyCode)}
+                        onSetAlign={(align) => setColumnAlignment(activeNumberFormatColId, align)}
                     />
                 )}
 

@@ -56,6 +56,27 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
         setColorPicker({ optionId, ...palettePosition(swatch) });
     };
 
+    // Focus the freshly added label so the user is typing its name immediately,
+    // matching StatusPicker's edit-labels flow.
+    const labelInputs = useRef<Map<string, HTMLInputElement>>(new Map());
+    const focusNewLabel = useRef(false);
+
+    const handleAddLabel = () => {
+        focusNewLabel.current = true;
+        addColumnOption(columnId, 'New Label', nextLabelColor(options.length));
+    };
+
+    useEffect(() => {
+        if (!focusNewLabel.current) return;
+        const added = options[options.length - 1];
+        const input = added?.id && labelInputs.current.get(added.id);
+        if (!input) return;
+        focusNewLabel.current = false;
+        input.scrollIntoView({ block: 'nearest' });
+        input.focus();
+        input.select();
+    }, [options]);
+
     const handleCreateOption = () => {
         if (!searchTerm.trim()) return;
         addColumnOption(columnId, searchTerm.trim(), nextLabelColor(options.length));
@@ -224,10 +245,21 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                                     <PaintBucket size={12} />
                                 </div>
                                 <input
+                                    ref={(el) => {
+                                        if (!opt.id) return;
+                                        if (el) labelInputs.current.set(opt.id, el);
+                                        else labelInputs.current.delete(opt.id);
+                                    }}
                                     type="text"
                                     value={opt.label}
                                     onChange={(e) => {
                                         if (opt.id) updateColumnOption(columnId, opt.id, { label: e.target.value });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === 'Escape') {
+                                            e.stopPropagation();
+                                            e.currentTarget.blur();
+                                        }
                                     }}
                                     className="cell-input"
                                     style={{ flex: 1, padding: '4px 8px' }}
@@ -242,6 +274,50 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                                 </button>
                             </div>
                         ))}
+                    </div>
+
+                    <div style={{ padding: '0 8px 8px' }}>
+                        <button
+                            onClick={handleAddLabel}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                width: '100%',
+                                backgroundColor: 'transparent',
+                                border: '1px solid hsl(var(--color-border))',
+                                borderRadius: '4px',
+                                padding: '6px',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                color: 'hsl(var(--color-text-primary))'
+                            }}
+                        >
+                            <Plus size={14} />
+                            New label
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '0 8px 12px' }}>
+                        <button
+                            onClick={() => setIsEditingLabels(false)}
+                            style={{
+                                backgroundColor: 'hsl(var(--color-brand-primary))',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                padding: '8px 24px',
+                                cursor: 'pointer',
+                                color: 'white',
+                                transition: 'background-color 0.2s',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-brand-primary))'}
+                        >
+                            Apply
+                        </button>
                     </div>
 
                     {colorPicker && createPortal(

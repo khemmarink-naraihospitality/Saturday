@@ -10,6 +10,33 @@ export function slugify(text: string): string {
         .replace(/-+$/, '');      // Trim - from end
 }
 
+// The first 8 hex chars of a UUID (the segment before its first internal
+// hyphen) — short and URL-safe on its own.
+export const shortId = (id: string): string => id.slice(0, 8);
+
+// Board URLs are titles for readability, but titles collide — a re-created
+// board can reuse a deleted one's name, an import can duplicate one, a rename
+// changes the slug out from under an old bookmark. Appending the id suffix
+// makes the URL segment unique regardless of title collisions.
+//
+// The separator is a double hyphen, not a single one: slugify() collapses any
+// run of hyphens in the title down to one, so a real title can never produce
+// "--" on its own — including one that happens to end in 8 digits (a date
+// like "sprint-20260904" is all valid hex and would otherwise look exactly
+// like an id suffix). "--" is therefore an unambiguous, title-collision-proof
+// marker that this segment carries a real id, not a coincidence.
+export function buildBoardSlug(title: string, id: string): string {
+    return `${slugify(title)}--${shortId(id)}`;
+}
+
+// Reverse of buildBoardSlug: pulls the id suffix off a path segment, if one is
+// present. Returns null for a legacy (pre-suffix) slug so callers can fall
+// back to title-only matching for links shared before this existed.
+export function parseBoardSlugSuffix(segment: string): string | null {
+    const match = segment.match(/--([0-9a-f]{8})$/i);
+    return match ? match[1].toLowerCase() : null;
+}
+
 export const isValidGoogleDriveUrl = (url: string): boolean => {
     try {
         const urlStr = url.trim();

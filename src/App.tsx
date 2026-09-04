@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense, useRef } from 'react';
-import { slugify } from './lib/utils';
+import { slugify, buildBoardSlug, parseBoardSlugSuffix, shortId } from './lib/utils';
 import { Sidebar } from './components/board/Sidebar'
 // BoardHeader, Table, BatchActionsBar moved to BoardPage lazy chunk
 import { useBoardStore } from './store/useBoardStore'
@@ -438,11 +438,23 @@ function MainApp() {
     if (parts.length >= 3) {
       const targetWorkspaceSlug = parts[1];
       const targetBoardSlug = parts[2];
+      // A deleted board must never be a deep-link target — it stays in local
+      // state (is_archived, not removed) so Trash can restore it, but a stale
+      // bookmark or a fresh board reusing its old title has no business
+      // resurrecting it.
+      const liveBoards = boards.filter(b => !b.is_archived);
 
-      const matchedBoard = boards.find(b => {
-        const workspace = useBoardStore.getState().workspaces.find(w => w.id === b.workspaceId);
-        return slugify(workspace?.title || '') === targetWorkspaceSlug && slugify(b.title) === targetBoardSlug;
-      });
+      const inWorkspace = (b: typeof liveBoards[number]) =>
+        slugify(useBoardStore.getState().workspaces.find(w => w.id === b.workspaceId)?.title || '') === targetWorkspaceSlug;
+
+      // New-style slugs end in an 8-hex-char board id — unambiguous even if
+      // two boards share a title. Only when the URL has no such suffix
+      // (a link shared before this existed) do we fall back to matching by
+      // title alone, which is exactly the ambiguous behavior being replaced.
+      const targetSuffix = parseBoardSlugSuffix(targetBoardSlug);
+      const matchedBoard = targetSuffix
+        ? liveBoards.find(b => inWorkspace(b) && shortId(b.id) === targetSuffix)
+        : liveBoards.find(b => inWorkspace(b) && slugify(b.title) === targetBoardSlug);
 
       if (matchedBoard && matchedBoard.id !== activeBoardId) {
         console.log('Deep Link: Found board', matchedBoard.title);
@@ -494,7 +506,7 @@ function MainApp() {
       const currentUser = useUserStore.getState().currentUser;
       const username = currentUser ? slugify(currentUser.name) : 'u';
 
-      const boardName = slugify(activeBoard.title);
+      const boardName = buildBoardSlug(activeBoard.title, activeBoard.id);
 
       const newPath = `/${username}/${workspaceName}/${boardName}`;
 

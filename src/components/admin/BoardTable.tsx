@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Search, RefreshCw, ExternalLink, Users, Trash2 } from 'lucide-react';
 import { useUserStore } from '../../store/useUserStore';
 import { useBoardStore } from '../../store/useBoardStore';
-import { slugify } from '../../lib/utils';
+import { slugify, buildBoardSlug } from '../../lib/utils';
 import { AdminBoardMembersModal } from './AdminBoardMembersModal';
 
 interface BoardMemberSummary {
@@ -317,7 +317,7 @@ export const BoardTable = () => {
                                                 onClick={() => {
                                                     const username = slugify(currentUser.name || 'u');
                                                     const wsName = slugify(board.workspace_title);
-                                                    const bName = slugify(board.title);
+                                                    const bName = buildBoardSlug(board.title, board.id);
                                                     const url = `/${username}/${wsName}/${bName}`;
                                                     window.open(url, '_blank');
                                                 }}

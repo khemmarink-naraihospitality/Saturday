@@ -140,7 +140,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                     </div>
 
                     {/* Options List */}
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '4px' }}>
+                    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px' }}>
                         {filteredOptions.length > 0 ? (
                             filteredOptions.map((opt, idx) => {
                                 const isSelected = currentValue.includes(opt.label);
@@ -218,12 +218,22 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                 </>
             ) : (
                 // Edit Labels View (Simplified Reuse)
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div style={{ padding: '8px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                //
+                // No wrapping div here on purpose: header/list/footer need to be
+                // direct children of .dropdown-picker-menu (the maxHeight:300 +
+                // overflow:hidden flex column above) for the list's flex:1 to
+                // actually get a bounded height to scroll within. A `height:100%`
+                // wrapper in between doesn't work — percentage heights don't
+                // resolve against a max-height-only parent — so the list grew to
+                // fit every option instead of scrolling, and .dropdown-picker-menu's
+                // own overflow:hidden silently clipped whatever didn't fit,
+                // "+ New label" and "Apply" included.
+                <>
+                    <div style={{ padding: '8px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         <button onClick={() => setIsEditingLabels(false)} className="icon-btn"><X size={14} /></button>
                         <span style={{ fontWeight: 500, fontSize: '13px' }}>Edit Labels</span>
                     </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px' }}>
                         {options.map((opt, idx) => (
                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                 <div
@@ -276,7 +286,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                         ))}
                     </div>
 
-                    <div style={{ padding: '0 8px 8px' }}>
+                    <div style={{ padding: '0 8px 8px', flexShrink: 0 }}>
                         <button
                             onClick={handleAddLabel}
                             style={{
@@ -299,7 +309,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '0 8px 12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '0 8px 12px', flexShrink: 0 }}>
                         <button
                             onClick={() => setIsEditingLabels(false)}
                             style={{
@@ -362,7 +372,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                         </div>,
                         document.body
                     )}
-                </div>
+                </>
             )}
         </div>,
         document.body

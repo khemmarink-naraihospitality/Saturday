@@ -1242,7 +1242,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             />
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                         <button
                                             onClick={handleAddFile}
                                             disabled={!fileUrl.trim()}

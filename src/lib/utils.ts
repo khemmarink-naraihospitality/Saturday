@@ -37,6 +37,21 @@ export function parseBoardSlugSuffix(segment: string): string | null {
     return match ? match[1].toLowerCase() : null;
 }
 
+// Shared by any column type with a Format menu's Alignment section (Number,
+// Dropdown). `fallback` lets each cell keep its own pre-existing look when no
+// alignment has been explicitly chosen yet, since column.numberAlign is one
+// field reused across column types rather than a per-type default.
+export const columnJustify = (
+    align: 'left' | 'center' | 'right' | undefined,
+    fallback: 'left' | 'center' | 'right' = 'center'
+): 'flex-start' | 'center' | 'flex-end' => {
+    switch (align || fallback) {
+        case 'left': return 'flex-start';
+        case 'right': return 'flex-end';
+        default: return 'center';
+    }
+};
+
 export const isValidGoogleDriveUrl = (url: string): boolean => {
     try {
         const urlStr = url.trim();

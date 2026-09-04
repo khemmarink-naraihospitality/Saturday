@@ -13,6 +13,9 @@ interface NumberFormatMenuProps {
     onSetAlign: (align: 'left' | 'center' | 'right') => void;
 }
 
+// Also used for Dropdown columns — they only get the Alignment section
+// (Number/Percent/Currency are meaningless for a list of tags), sharing the
+// same numberAlign field and the same menu chrome as Number columns.
 export const NumberFormatMenu = ({
     isOpen,
     onClose,
@@ -22,10 +25,12 @@ export const NumberFormatMenu = ({
     onSetAlign
 }: NumberFormatMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
+    const isNumber = column.type === 'number';
     const currentFormat = column.numberFormat || 'number';
-    // Unset reads as Center — the new default, so an existing column with no
-    // saved preference doesn't need a migration to pick it up.
-    const currentAlign = column.numberAlign || 'center';
+    // Unset reads as Center for Number (the default since it moved off a
+    // hardcoded right-align) and as Left for Dropdown (its original,
+    // unconfigurable tag-list look) — same field, different starting point.
+    const currentAlign = column.numberAlign || (isNumber ? 'center' : 'left');
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -67,29 +72,33 @@ export const NumberFormatMenu = ({
             }}
         >
             <div style={{ padding: '8px 12px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
-                <span style={{ fontWeight: 500 }}>Number Format</span>
+                <span style={{ fontWeight: 500 }}>{isNumber ? 'Number Format' : 'Dropdown Format'}</span>
                 <button onClick={onClose} className="icon-btn" style={{ padding: 4 }}><X size={14} /></button>
             </div>
 
             <div style={{ padding: '8px', maxHeight: '320px', overflowY: 'auto' }}>
-                <div
-                    onClick={() => { onSetFormat('number'); onClose(); }}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
-                    className="hover-bg"
-                >
-                    <span>Number</span>
-                    {currentFormat === 'number' && <Check size={14} />}
-                </div>
-                <div
-                    onClick={() => { onSetFormat('percent'); onClose(); }}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
-                    className="hover-bg"
-                >
-                    <span>Percent (%)</span>
-                    {currentFormat === 'percent' && <Check size={14} />}
-                </div>
+                {isNumber && (
+                    <>
+                        <div
+                            onClick={() => { onSetFormat('number'); onClose(); }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
+                            className="hover-bg"
+                        >
+                            <span>Number</span>
+                            {currentFormat === 'number' && <Check size={14} />}
+                        </div>
+                        <div
+                            onClick={() => { onSetFormat('percent'); onClose(); }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
+                            className="hover-bg"
+                        >
+                            <span>Percent (%)</span>
+                            {currentFormat === 'percent' && <Check size={14} />}
+                        </div>
 
-                <div style={{ borderTop: '1px solid hsl(var(--color-border))', margin: '6px 0' }} />
+                        <div style={{ borderTop: '1px solid hsl(var(--color-border))', margin: '6px 0' }} />
+                    </>
+                )}
                 <div style={{ padding: '4px 8px', fontSize: '11px', color: 'hsl(var(--color-text-secondary))', textTransform: 'uppercase' }}>
                     Alignment
                 </div>
@@ -122,21 +131,25 @@ export const NumberFormatMenu = ({
                     ))}
                 </div>
 
-                <div style={{ borderTop: '1px solid hsl(var(--color-border))', margin: '6px 0' }} />
-                <div style={{ padding: '4px 8px', fontSize: '11px', color: 'hsl(var(--color-text-secondary))', textTransform: 'uppercase' }}>
-                    Currency
-                </div>
-                {CURRENCY_OPTIONS.map(opt => (
-                    <div
-                        key={opt.code}
-                        onClick={() => { onSetFormat('currency', opt.code); onClose(); }}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
-                        className="hover-bg"
-                    >
-                        <span>{opt.symbol} {opt.code} - {opt.label}</span>
-                        {currentFormat === 'currency' && column.currencyCode === opt.code && <Check size={14} />}
-                    </div>
-                ))}
+                {isNumber && (
+                    <>
+                        <div style={{ borderTop: '1px solid hsl(var(--color-border))', margin: '6px 0' }} />
+                        <div style={{ padding: '4px 8px', fontSize: '11px', color: 'hsl(var(--color-text-secondary))', textTransform: 'uppercase' }}>
+                            Currency
+                        </div>
+                        {CURRENCY_OPTIONS.map(opt => (
+                            <div
+                                key={opt.code}
+                                onClick={() => { onSetFormat('currency', opt.code); onClose(); }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}
+                                className="hover-bg"
+                            >
+                                <span>{opt.symbol} {opt.code} - {opt.label}</span>
+                                {currentFormat === 'currency' && column.currencyCode === opt.code && <Check size={14} />}
+                            </div>
+                        ))}
+                    </>
+                )}
                 <style>{`
                     .hover-bg:hover { background-color: hsl(var(--color-bg-surface-hover)) !important; }
                 `}</style>

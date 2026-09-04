@@ -4,6 +4,7 @@ import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { formatNumberValue } from '../../../utils/format';
+import { columnJustify } from '../../../lib/utils';
 import { Hash, Type, Link2 } from 'lucide-react';
 
 interface TextCellProps {
@@ -11,16 +12,6 @@ interface TextCellProps {
     column: Column;
     value: any;
 }
-
-// Unset reads as Center, the default for Number columns; Left/Right are only
-// ever set explicitly via the column's Number Format menu.
-const numberJustify = (column: Column): 'flex-start' | 'center' | 'flex-end' => {
-    switch (column.numberAlign) {
-        case 'left': return 'flex-start';
-        case 'right': return 'flex-end';
-        default: return 'center';
-    }
-};
 
 export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
@@ -145,7 +136,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
             onClick={startEditing} 
             style={{ 
                 ...cellStyle,
-                justifyContent: column.type === 'number' ? numberJustify(column) : 'flex-start',
+                justifyContent: column.type === 'number' ? columnJustify(column.numberAlign) : 'flex-start',
                 fontSize: column.title === 'Champion' ? '12px' : '13px',
                 color: column.title === 'Champion' ? 'hsl(var(--color-text-secondary))' : 'inherit',
                 transition: 'background-color 0.2s ease',

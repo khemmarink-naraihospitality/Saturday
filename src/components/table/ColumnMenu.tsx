@@ -9,6 +9,7 @@ import {
     Trash2,
     Check,
     Hash,
+    AlignLeft,
     BellRing
 } from 'lucide-react';
 import type { ColumnType } from '../../types';
@@ -161,6 +162,13 @@ export const ColumnMenu = ({
                             <MenuItem
                                 icon={<Hash size={16} />}
                                 label="Number Format"
+                                onClick={() => { onNumberFormat(); onClose(); }}
+                            />
+                        )}
+                        {columnType === 'dropdown' && onNumberFormat && (
+                            <MenuItem
+                                icon={<AlignLeft size={16} />}
+                                label="Dropdown Format"
                                 onClick={() => { onNumberFormat(); onClose(); }}
                             />
                         )}

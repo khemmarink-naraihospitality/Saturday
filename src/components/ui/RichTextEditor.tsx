@@ -948,6 +948,16 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                 onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+                        // Clicking a checkbox flips its `checked` DOM property, but
+                        // that never touches the `checked` content attribute — and
+                        // saving reads innerHTML, which only serializes attributes.
+                        // Without this, every checked box reverts to unchecked the
+                        // moment the saved HTML is rendered back.
+                        if (target.checked) {
+                            target.setAttribute('checked', 'checked');
+                        } else {
+                            target.removeAttribute('checked');
+                        }
                         handleChange();
                     }
                 }}

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Trash2, Check, Edit2 } from 'lucide-react';
+import { X, Plus, Trash2, Check, Edit2, PaintBucket } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { LABEL_COLORS, nextLabelColor, palettePosition, PALETTE_WIDTH } from '../../lib/labelColors';
 
 interface DropdownPickerProps {
     columnId: string;
@@ -26,11 +27,20 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
     const deleteColumnOption = useBoardStore(state => state.deleteColumnOption);
 
     const menuRef = useRef<HTMLDivElement>(null);
+    const colorPaletteRef = useRef<HTMLDivElement>(null);
+
+    // Which option's palette is open, and where to draw it. Portalled out of the
+    // scrolling label list so it can't be clipped by it.
+    const [colorPicker, setColorPicker] = useState<{ optionId: string; top: number; left: number } | null>(null);
 
     // Click outside to close
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            // The palette lives in its own portal, so picking a colour would
+            // otherwise read as a click outside and close the whole picker.
+            if (colorPaletteRef.current?.contains(target)) return;
+            if (menuRef.current && !menuRef.current.contains(target)) {
                 onClose();
             }
         };
@@ -38,15 +48,17 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
-    // Colors for new labels
-    const colors = [
-        '#ff5ac4', '#579bfc', '#00c875', '#fdb122', '#e2445c', '#66ccff', '#ffadad', '#a0c4ff'
-    ];
+    const openColorPicker = (optionId: string, swatch: HTMLElement) => {
+        if (colorPicker?.optionId === optionId) {
+            setColorPicker(null);
+            return;
+        }
+        setColorPicker({ optionId, ...palettePosition(swatch) });
+    };
 
     const handleCreateOption = () => {
         if (!searchTerm.trim()) return;
-        const color = colors[options.length % colors.length];
-        addColumnOption(columnId, searchTerm.trim(), color);
+        addColumnOption(columnId, searchTerm.trim(), nextLabelColor(options.length));
         setSearchTerm('');
     };
 
@@ -193,14 +205,24 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                     <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
                         {options.map((opt, idx) => (
                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <input
-                                    type="color"
-                                    value={opt.color}
-                                    onChange={(e) => {
-                                        if (opt.id) updateColumnOption(columnId, opt.id, { color: e.target.value });
+                                <div
+                                    onClick={(e) => { if (opt.id) openColorPicker(opt.id, e.currentTarget); }}
+                                    title="Change color"
+                                    style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        backgroundColor: opt.color,
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        flexShrink: 0
                                     }}
-                                    style={{ width: '20px', height: '20px', border: 'none', padding: 0, background: 'none' }}
-                                />
+                                >
+                                    <PaintBucket size={12} />
+                                </div>
                                 <input
                                     type="text"
                                     value={opt.label}
@@ -221,6 +243,49 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                             </div>
                         ))}
                     </div>
+
+                    {colorPicker && createPortal(
+                        <div
+                            ref={colorPaletteRef}
+                            style={{
+                                position: 'fixed',
+                                top: colorPicker.top,
+                                left: colorPicker.left,
+                                backgroundColor: 'white',
+                                border: '1px solid hsl(var(--color-border))',
+                                borderRadius: '6px',
+                                padding: '8px',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(10, 1fr)',
+                                gap: '4px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                zIndex: 10000,
+                                width: `${PALETTE_WIDTH}px`
+                            }}
+                        >
+                            {(() => {
+                                const current = options.find(o => o.id === colorPicker.optionId);
+                                return LABEL_COLORS.map(c => (
+                                    <div
+                                        key={c}
+                                        onClick={() => {
+                                            updateColumnOption(columnId, colorPicker.optionId, { color: c });
+                                            setColorPicker(null);
+                                        }}
+                                        style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            backgroundColor: c,
+                                            borderRadius: '3px',
+                                            cursor: 'pointer',
+                                            border: current?.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'
+                                        }}
+                                    />
+                                ));
+                            })()}
+                        </div>,
+                        document.body
+                    )}
                 </div>
             )}
         </div>,

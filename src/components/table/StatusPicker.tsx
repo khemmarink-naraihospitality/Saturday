@@ -331,11 +331,17 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
             }} />
 
             <div style={{ padding: '16px 16px 8px 16px' }}>
+                {/* Scrolls rather than overflowing: with no cap, a board with enough
+                    options pushed this grid — and the "Edit Labels" button below it —
+                    straight off the bottom of the screen with no way to reach either. */}
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: '8px',
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    paddingRight: '2px'
                 }}>
                     {safeOptions.map((opt) => (
                         <button

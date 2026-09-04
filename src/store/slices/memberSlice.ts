@@ -577,6 +577,14 @@ export const createMemberSlice: StateCreator<
                     table: 'columns'
                 }, (payload) => {
                     const column = (payload.new || payload.old) as any;
+                    const { lastOptimisticUpdate } = get();
+                    // Editing labels (e.g. typing in Edit Labels) writes on every
+                    // keystroke; its own echo can arrive after a later keystroke's
+                    // local update and stomp it, making text flash and revert
+                    // mid-typing. Same guard items already use for this reason.
+                    if (payload.eventType === 'UPDATE' && lastOptimisticUpdate[column.id] && Date.now() - lastOptimisticUpdate[column.id] < 3000) {
+                        return;
+                    }
                     set(state => ({
                         boards: state.boards.map(b => {
                             if (b.id !== column.board_id) return b;

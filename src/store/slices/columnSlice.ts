@@ -246,7 +246,8 @@ export const createColumnSlice: StateCreator<
                         return { ...c, options: finalOptions };
                     })
                 };
-            })
+            }),
+            lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [columnId]: Date.now() }
         }));
 
         if (finalOptions.length > 0) {
@@ -259,6 +260,12 @@ export const createColumnSlice: StateCreator<
         if (!activeBoardId) return;
         let finalOptions: any[] = [];
 
+        // Typing a label fires one of these per keystroke. Each write races
+        // its own realtime echo back from Postgres — without marking the
+        // column as "just written by us", an echo for an earlier keystroke
+        // could land after a later keystroke's local update and blow it
+        // away, making characters flash and disappear mid-typing before the
+        // final write's echo caught up and silently restored them.
         set(state => ({
             boards: state.boards.map(b => {
                 if (b.id !== activeBoardId) return b;
@@ -271,7 +278,8 @@ export const createColumnSlice: StateCreator<
                         return { ...c, options: finalOptions };
                     })
                 };
-            })
+            }),
+            lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [columnId]: Date.now() }
         }));
 
         if (finalOptions.length > 0) {
@@ -300,7 +308,8 @@ export const createColumnSlice: StateCreator<
                         return { ...c, options: finalOptions };
                     })
                 };
-            })
+            }),
+            lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [columnId]: Date.now() }
         }));
         await supabase.from('columns').update({ options: finalOptions }).eq('id', columnId);
 

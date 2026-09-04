@@ -90,6 +90,15 @@
     gap: 8px;
     margin-bottom: 4px;
 }
+/* This markup is rendered via dangerouslySetInnerHTML into a plain (non-
+   editable) div, but a raw <input type="checkbox"> stays a real, clickable
+   form control regardless — so a posted update's checklist could still be
+   ticked here even though nothing wires that click up to a save. Block the
+   interaction entirely; toggling a checklist item is only meant to happen
+   from inside Edit, where RichTextEditor's own handler persists it. */
+.narai-update-content .editor-checklist-item input[type="checkbox"] {
+    pointer-events: none;
+}
 
 /* Sidebar */
 .sidebar {

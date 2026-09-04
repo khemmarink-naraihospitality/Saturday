@@ -310,7 +310,7 @@ export const Row = React.memo(({
 
             {
                 columns.map((col) => (
-                    <div key={col.id} data-col-id={col.id} style={{
+                    <div key={col.id} data-col-id={col.id} className="table-col" style={{
                         width: `${col.width || 150}px`,
                         height: '100%',
                         display: 'flex',

@@ -68,6 +68,25 @@
     border-right: none;
 }
 
+/* One column's slot inside a data row. Header cells are direct siblings of
+   the header row, so :first-child/:last-child above single out the real
+   edges there — but Row.tsx wraps every body cell in its own div, which
+   makes each .table-cell both the first AND the last child of that wrapper.
+   Both rules fired on every one of them, so the vertical divider was
+   switched off across the entire table body while the header kept its own.
+   The wrapper is the element that's actually a sibling of its neighbours,
+   so it's the one that can carry the divider. */
+.table-col {
+    box-sizing: border-box;
+    border-right: 1px solid hsl(var(--color-cell-border));
+}
+
+/* Belt and braces: if a wrapper ever holds more than one child, the inner
+   cell's own border would come back and sit next to the wrapper's. */
+.table-col > .table-cell {
+    border-right: none;
+}
+
 .sticky-col {
     background-color: hsl(var(--color-bg-canvas));
     /* Ensure consistent bg */
@@ -126,15 +145,6 @@
     height: 100% !important;
     box-sizing: border-box !important;
     border-bottom: 0.5px solid hsl(var(--color-bg-canvas)) !important;
-}
-
-/* The shared .table-cell border-right is a very light gray, which reads as
-   a visible divider against a plain background but disappears completely
-   between two saturated Status/Property fills — they end up looking like
-   one merged block with no column boundary at all. A canvas-colored gap
-   works against any fill color instead of trying to out-contrast it. */
-.status-cell-full:not(:last-child) {
-    border-right: 1px solid hsl(var(--color-bg-canvas)) !important;
 }
 /* Column resize handle. Sits on the column's right edge — drag to resize,
    double-click to auto-fit to the widest cell. Widened past the 4px inline

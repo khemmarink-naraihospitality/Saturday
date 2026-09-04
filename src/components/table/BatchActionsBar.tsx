@@ -37,8 +37,11 @@ export const BatchActionsBar = () => {
         setExpandedBoards(prev => ({ ...prev, [boardId]: !prev[boardId] }));
     };
 
-    // Boards the user can write to
+    // Boards the user can write to. A deleted board is archived, not removed,
+    // so it stays in this list unless excluded explicitly — leaving it in would
+    // let a moved/copied item land in a board nobody can see anymore.
     const editableBoards = boards.filter(b => {
+        if (b.is_archived) return false;
         const boardRole = userBoardRoles[b.id];
         if (boardRole && WRITE_ROLES.includes(boardRole)) return true;
         const ws = workspaces.find(w => w.id === b.workspaceId);

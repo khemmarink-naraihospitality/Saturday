@@ -361,7 +361,10 @@ export const createWorkspaceSlice: StateCreator<
             return;
         }
 
-        const wsBoards = boards.filter(b => b.workspaceId === id);
+        // Excluding archived boards here matters more than most: without it,
+        // duplicating a workspace would resurrect every board someone had
+        // deleted from it.
+        const wsBoards = boards.filter(b => b.workspaceId === id && !b.is_archived);
         for (const board of wsBoards) {
             await get().duplicateBoardToWorkspace(board.id, newWsId);
         }

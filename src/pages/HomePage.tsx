@@ -80,9 +80,13 @@ export const HomePage = () => {
 
 
 
-    // Sort by lastViewedAt (descending) to show true recently visited
+    // Sort by lastViewedAt (descending) to show true recently visited.
+    // Deleting a board archives it rather than removing the row (so Trash can
+    // restore it), so it lingers in the store's boards array with whatever
+    // lastViewedAt/isFavorite it already had — every list below has to filter
+    // it out itself, there's no single choke point that already does it.
     const recentBoards = [...boards]
-        .filter(b => b.lastViewedAt)
+        .filter(b => b.lastViewedAt && !b.is_archived)
         .sort((a, b) => {
             const dateA = new Date(a.lastViewedAt!).getTime();
             const dateB = new Date(b.lastViewedAt!).getTime();
@@ -96,12 +100,12 @@ export const HomePage = () => {
     const recentWorkspaceId = recentBoards[0]?.workspaceId;
     const defaultWorkspaceId = activeWorkspaceId || recentWorkspaceId || workspaces[0]?.id;
     const myWorkspace = workspaces.find(w => w.id === defaultWorkspaceId) || workspaces[0];
-    const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id);
+    const myWorkspaceBoards = boards.filter(b => b.workspaceId === myWorkspace?.id && !b.is_archived);
     const displayedWorkspaceBoards = showAllWorkspace ? myWorkspaceBoards : myWorkspaceBoards.slice(0, 3);
 
 
     // Filter boards that are favorited
-    const favoritedBoards = boards.filter(b => b.isFavorite);
+    const favoritedBoards = boards.filter(b => b.isFavorite && !b.is_archived);
     const displayedFavoriteBoards = showAllFavorites ? favoritedBoards : favoritedBoards.slice(0, 3);
 
 

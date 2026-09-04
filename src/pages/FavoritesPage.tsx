@@ -7,8 +7,11 @@ export const FavoritesPage = () => {
     const { boards, workspaces, setActiveBoard, toggleFavorite } = useBoardStore();
     const [showAll, setShowAll] = useState(false);
 
-    // Filter boards that are favorited
-    const favoritedBoards = boards.filter(b => b.isFavorite);
+    // Filter boards that are favorited. Deleting a board archives the row
+    // rather than removing it (so Trash can restore it) — an archived board
+    // can still carry isFavorite from before it was deleted, so that has to be
+    // excluded explicitly here too.
+    const favoritedBoards = boards.filter(b => b.isFavorite && !b.is_archived);
     const displayedBoards = showAll ? favoritedBoards : favoritedBoards.slice(0, 3);
 
 

@@ -63,6 +63,24 @@ const NEW_LABEL_CYCLE = [
 export const nextLabelColor = (existingCount: number): string =>
     NEW_LABEL_CYCLE[existingCount % NEW_LABEL_CYCLE.length];
 
+/**
+ * Both Status and Dropdown pickers offer a one-click "+ New label" button
+ * that used to always name the result "New Label" verbatim. Clicked twice
+ * without renaming in between, that created two options sharing one label —
+ * harmless for Status (selection is by option id), but for Dropdown the
+ * selection state itself is a set of label strings, so two same-named
+ * options become indistinguishable: picking either one lit up both rows'
+ * checkmarks and there was no way to select just one of them. Suffixing a
+ * counter keeps every option's label unique from the moment it's created.
+ */
+export const nextUniqueLabel = (existingLabels: string[], base = 'New Label'): string => {
+    const taken = new Set(existingLabels);
+    if (!taken.has(base)) return base;
+    let n = 2;
+    while (taken.has(`${base} ${n}`)) n++;
+    return `${base} ${n}`;
+};
+
 export const PALETTE_WIDTH = 252;
 export const PALETTE_HEIGHT = 220;
 

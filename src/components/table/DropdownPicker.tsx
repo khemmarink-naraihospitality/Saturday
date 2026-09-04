@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Check, Edit2, PaintBucket } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { LABEL_COLORS, nextLabelColor, palettePosition, PALETTE_WIDTH } from '../../lib/labelColors';
+import { LABEL_COLORS, nextLabelColor, nextUniqueLabel, palettePosition, PALETTE_WIDTH } from '../../lib/labelColors';
 
 interface DropdownPickerProps {
     columnId: string;
@@ -63,7 +63,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
 
     const handleAddLabel = () => {
         focusNewLabel.current = true;
-        addColumnOption(columnId, 'New Label', nextLabelColor(options.length));
+        addColumnOption(columnId, nextUniqueLabel(options.map(o => o.label)), nextLabelColor(options.length));
     };
 
     useEffect(() => {

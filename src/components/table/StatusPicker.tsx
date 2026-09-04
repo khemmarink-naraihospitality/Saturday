@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Pencil, Plus, Trash2, PaintBucket } from 'lucide-react';
 import type { ColumnOption } from '../../types';
 import { useBoardStore } from '../../store/useBoardStore';
-import { LABEL_COLORS } from '../../lib/labelColors';
+import { LABEL_COLORS, nextUniqueLabel } from '../../lib/labelColors';
 
 interface StatusPickerProps {
     columnId: string; // Need this for editing
@@ -71,7 +71,7 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
 
     const handleAddLabel = () => {
         focusNewLabel.current = true;
-        addColumnOption(columnId, 'New Label', '#c4c4c4');
+        addColumnOption(columnId, nextUniqueLabel(safeOptions.map(o => o.label)), '#c4c4c4');
     };
 
     useEffect(() => {

@@ -283,6 +283,8 @@ export const createColumnSlice: StateCreator<
         const { activeBoardId } = get();
         if (!activeBoardId) return;
         let finalOptions: any[] = [];
+        let deletedOption: any = null;
+        let colType: string | undefined;
 
         set(state => ({
             boards: state.boards.map(b => {
@@ -291,7 +293,9 @@ export const createColumnSlice: StateCreator<
                     ...b,
                     columns: b.columns.map(c => {
                         if (c.id !== columnId) return c;
+                        colType = c.type;
                         const safeOptions = Array.isArray(c.options) ? c.options : [];
+                        deletedOption = safeOptions.find(o => o.id === optionId) || null;
                         finalOptions = safeOptions.filter(o => o.id !== optionId);
                         return { ...c, options: finalOptions };
                     })
@@ -299,6 +303,62 @@ export const createColumnSlice: StateCreator<
             })
         }));
         await supabase.from('columns').update({ options: finalOptions }).eq('id', columnId);
+
+        // Removing the option here doesn't touch any item that still has it
+        // selected — Dropdown stores its multi-select values as label
+        // strings and Status as the option id, and neither is derived from
+        // the options list at read time. Without this, a deleted label kept
+        // showing up forever as an orphaned tag (Dropdown) or a raw id
+        // (Status) on every item that had picked it.
+        if (deletedOption && (colType === 'status' || colType === 'dropdown')) {
+            const board = get().boards.find(b => b.id === activeBoardId);
+            if (!board) return;
+
+            const stripValue = (value: any): any => {
+                if (colType === 'dropdown') {
+                    if (!Array.isArray(value)) return value;
+                    const cleaned = value.filter(v => v !== deletedOption.label && v !== deletedOption.id);
+                    return cleaned.length === value.length ? value : cleaned;
+                }
+                return (value === deletedOption.id || value === deletedOption.label) ? null : value;
+            };
+
+            const affectedIds = new Set<string>();
+            board.items.forEach(i => {
+                const current = i.values?.[columnId];
+                if (current === undefined) return;
+                if (stripValue(current) !== current) affectedIds.add(i.id);
+            });
+            if (affectedIds.size === 0) return;
+
+            const applyStrip = <T extends { id: string; values: any }>(item: T): T =>
+                affectedIds.has(item.id)
+                    ? { ...item, values: { ...item.values, [columnId]: stripValue(item.values?.[columnId]) } }
+                    : item;
+
+            set(state => ({
+                boards: state.boards.map(b => b.id === activeBoardId
+                    ? { ...b, items: b.items.map(applyStrip), groups: b.groups.map(g => ({ ...g, items: g.items.map(applyStrip) })) }
+                    : b),
+                lastOptimisticUpdate: Array.from(affectedIds).reduce(
+                    (acc, id) => ({ ...acc, [id]: Date.now() }),
+                    state.lastOptimisticUpdate
+                )
+            }));
+
+            const updatedBoard = get().boards.find(b => b.id === activeBoardId);
+            const results = await Promise.allSettled(
+                Array.from(affectedIds).map(id => {
+                    const values = updatedBoard?.items.find(i => i.id === id)?.values;
+                    if (!values) return Promise.resolve(null);
+                    return supabase.from('items').update({ values }).eq('id', id);
+                })
+            );
+            const failed = results.filter(r => r.status === 'rejected').length;
+            if (failed > 0) {
+                console.error(`[Columns] ${failed}/${affectedIds.size} items failed to clear a deleted option`);
+            }
+        }
     },
 
     updateBoardItemColumnTitle: (newTitle) => {

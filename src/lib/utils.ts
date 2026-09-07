@@ -37,6 +37,41 @@ export function parseBoardSlugSuffix(segment: string): string | null {
     return match ? match[1].toLowerCase() : null;
 }
 
+export interface LinkValue {
+    url: string;
+    label: string;
+}
+
+// A link cell holds either a bare URL string — how every link was stored before
+// labels existed, and still how an unlabelled one is stored — or { url, label }.
+// Every reader goes through here so both shapes stay readable without a backfill.
+export const parseLinkValue = (raw: any): LinkValue => {
+    if (!raw) return { url: '', label: '' };
+    if (typeof raw === 'string') return { url: raw, label: '' };
+    if (typeof raw === 'object') return { url: raw.url || '', label: raw.label || '' };
+    return { url: String(raw), label: '' };
+};
+
+// Writes back a bare string when there's no label, so an unlabelled link keeps
+// the exact shape sorting, export and import already handle.
+export const buildLinkValue = (url: string, label: string): string | LinkValue | null => {
+    const trimmedUrl = url.trim();
+    const trimmedLabel = label.trim();
+    if (!trimmedUrl && !trimmedLabel) return null;
+    return trimmedLabel ? { url: trimmedUrl, label: trimmedLabel } : trimmedUrl;
+};
+
+// Pasted links routinely arrive without a scheme ("maps.app.goo.gl/…"), which
+// the browser would otherwise resolve against our own origin.
+export const linkHref = (url: string): string =>
+    !url ? '' : (/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : `https://${url}`);
+
+// What the link reads as: its label if it has one, otherwise the raw URL.
+export const linkDisplayText = (raw: any): string => {
+    const { url, label } = parseLinkValue(raw);
+    return label || url;
+};
+
 // Shared by any column type with a Format menu's Alignment section (Number,
 // Dropdown). `fallback` lets each cell keep its own pre-existing look when no
 // alignment has been explicitly chosen yet, since column.numberAlign is one

@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { parseLinkValue } from '../lib/utils';
 // xlsx is loaded lazily on-demand inside exportBoardData() to avoid bundling it at startup
 
 export const backupService = {
@@ -261,6 +262,14 @@ export const backupService = {
                 return arr.map((f: any) => (typeof f === 'string' ? f : f?.url)).filter(Boolean).join(' ');
             };
 
+            // A link carries a label once someone sets one, so export both rather
+            // than dumping the raw {url,label} object through JSON.stringify.
+            const formatLinkForExport = (val: any): string => {
+                const { url, label } = parseLinkValue(val);
+                if (!url) return label;
+                return label ? `${label} (${url})` : url;
+            };
+
             // Filename sanitization
             let safeTitle = '';
             if (customFilename && customFilename.trim()) {
@@ -362,6 +371,9 @@ export const backupService = {
                                 break;
                             case 'files':
                                 out.push(getFileUrls(val));
+                                break;
+                            case 'link':
+                                out.push(formatLinkForExport(val));
                                 break;
                             default:
                                 out.push(typeof val === 'object' ? JSON.stringify(val) : String(val));
@@ -466,6 +478,9 @@ export const backupService = {
                         }
                         if (col.type === 'people') {
                             return getPeopleNames(val);
+                        }
+                        if (col.type === 'link') {
+                            return formatLinkForExport(val);
                         }
                         if (col.type === 'date' || col.type === 'due_date' || col.type === 'timeline') {
                             // Assuming val is string or { from, to }

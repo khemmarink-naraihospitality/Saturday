@@ -5,7 +5,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { formatNumberValue } from '../../../utils/format';
 import { columnJustify } from '../../../lib/utils';
-import { Hash, Type, Link2 } from 'lucide-react';
+import { Hash, Type } from 'lucide-react';
 
 interface TextCellProps {
     itemId: string;
@@ -73,7 +73,6 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                 }}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                placeholder={column.type === 'link' ? "Paste link here..." : ""}
                 style={{
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -94,33 +93,6 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
             />
         </div>
     );
-
-    // Render logic based on type (Link vs others)
-    if (column.type === 'link') {
-        if (isEditing) {
-            return (
-                <div className="table-cell" style={{ ...cellStyle, padding: 0 }}>
-                    {renderEditInput()}
-                </div>
-            );
-        }
-        const url = value ? (value.startsWith('http') ? value : `https://${value}`) : '';
-        return (
-            <div className="table-cell" onClick={startEditing} style={cellStyle}>
-                {value ? (
-                    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={linkStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>
-                        {value}
-                    </a>
-                ) : (
-                    <div style={placeholderStyle}>
-                        <Link2 size={16} />
-                    </div>
-                )}
-            </div>
-        );
-    }
 
     if (isEditing) {
         return (
@@ -166,5 +138,4 @@ const cellStyle: React.CSSProperties = {
     width: '100%', height: '100%', padding: '0 8px',
     display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text'
 };
-const linkStyle: React.CSSProperties = { color: 'hsl(var(--color-brand-primary))', textDecoration: 'none', cursor: 'pointer' };
 const placeholderStyle: React.CSSProperties = { color: 'hsl(var(--color-text-tertiary))', opacity: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', cursor: 'pointer' };

@@ -9,6 +9,7 @@ import { Row } from './Row';
 import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
 import { formatNumberValue } from '../../utils/format';
+import { linkDisplayText } from '../../lib/utils';
 import {
     DndContext,
     closestCenter,
@@ -161,6 +162,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                         // Date strings usually sortable if ISO, otherwise parse
                         valA = valA || '';
                         valB = valB || '';
+                    } else if (col.type === 'link') {
+                        // A labelled link is an object; sort it the way it reads.
+                        valA = linkDisplayText(valA).toLowerCase();
+                        valB = linkDisplayText(valB).toLowerCase();
                     } else if (col.type === 'status' || col.type === 'dropdown') {
                         // Try to find option label if val maps to an option ID
                         const options = Array.isArray(col.options) ? col.options : [];

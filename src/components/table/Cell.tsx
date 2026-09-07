@@ -8,6 +8,7 @@ import { TimelineCell } from './cells/TimelineCell';
 import { FilesCell } from './cells/FilesCell';
 import { CheckboxCell } from './cells/CheckboxCell';
 import { DropdownCell } from './cells/DropdownCell';
+import { LinkCell } from './cells/LinkCell';
 
 export const Cell = memo(({ 
     itemId, 
@@ -53,10 +54,11 @@ export const Cell = memo(({
             return <CheckboxCell itemId={itemId} value={value} column={column} />;
         case 'dropdown':
             return <DropdownCell itemId={itemId} value={value} column={column} />;
+        case 'link':
+            return <LinkCell itemId={itemId} value={value} column={column} />;
         case 'text':
         case 'long_text':
         case 'number':
-        case 'link':
         default:
             return <TextCell itemId={itemId} value={value} column={column} />;
     }

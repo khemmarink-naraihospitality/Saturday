@@ -72,11 +72,15 @@ export const linkDisplayText = (raw: any): string => {
     return label || url;
 };
 
-// Where a column sits when nobody has picked an alignment: whatever that type
-// looked like before alignment was configurable, so turning the setting on
-// never moved anything on an existing board.
+// Where a column sits when nobody has picked an alignment. Centred across the
+// board, except Dropdown, whose tags read as a list and stay left. Only applies
+// while a column has no alignment of its own — an explicit choice always wins.
+const DEFAULT_COLUMN_ALIGN: Record<string, 'left' | 'center' | 'right'> = {
+    dropdown: 'left'
+};
+
 export const defaultColumnAlign = (type: string): 'left' | 'center' | 'right' =>
-    ['number', 'date', 'due_date'].includes(type) ? 'center' : 'left';
+    DEFAULT_COLUMN_ALIGN[type] || 'center';
 
 // Shared by every column type whose Format menu offers an Alignment section
 // (Number, Dropdown, Text, Date). One stored field, `column.numberAlign`, backs

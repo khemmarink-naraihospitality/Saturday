@@ -24,6 +24,10 @@ interface BoardRow {
     owner_email: string;
     workspace_title: string;
     members: BoardMemberSummary[];
+    // People who can open this board through the workspace rather than through
+    // board_members — they never appear in the Members column, but they still
+    // have access, so a search for them has to find the board.
+    workspace_members: BoardMemberSummary[];
     is_archived: boolean;
 }
 
@@ -95,6 +99,22 @@ export const BoardTable = () => {
                 });
             }
 
+            // Workspace-level access grants every board in that workspace, so these
+            // people can open a board without ever being listed on it. Fetched whole
+            // rather than filtered by id — the table is tiny next to board_members.
+            const wsMembersByWorkspace: Record<string, BoardMemberSummary[]> = {};
+            const { data: wsMemberRows } = await supabase
+                .from('workspace_members')
+                .select('workspace_id, role, profiles(id, full_name, email, avatar_url)');
+
+            (wsMemberRows || []).forEach((row: any) => {
+                if (!['member', 'admin', 'editor'].includes(row.role)) return;
+                const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+                if (!profile) return;
+                if (!wsMembersByWorkspace[row.workspace_id]) wsMembersByWorkspace[row.workspace_id] = [];
+                wsMembersByWorkspace[row.workspace_id].push(profile);
+            });
+
             const mapped: BoardRow[] = (data || []).map((board: any) => ({
                 id: board.id,
                 title: board.title,
@@ -105,6 +125,7 @@ export const BoardTable = () => {
                 owner_email: board.workspaces?.profiles?.email || 'N/A',
                 workspace_title: board.workspaces?.title || 'Unknown Workspace',
                 members: membersByBoard[board.id] || [],
+                workspace_members: wsMembersByWorkspace[board.workspace_id] || [],
                 is_archived: !!board.is_archived
             }));
 
@@ -162,21 +183,26 @@ export const BoardTable = () => {
             setFilteredBoards(boards);
         } else {
             const query = searchQuery.toLowerCase();
-            // Owner here is the *workspace* owner, so searching a person only ever
-            // found boards in a workspace they happen to own — never the boards
-            // they were actually added to. Looking someone up by the email printed
-            // in the Owner column didn't work either, since only the name was
-            // matched. Both now count, alongside the board's own members.
+            // Searching a person should surface every board they can actually open,
+            // however they got in: as the workspace owner, as a workspace member
+            // (which grants every board in it without any board_members row), or as
+            // a member of the board itself. Matching only the first of those was
+            // why a user with real boards came back "No boards found".
+            //
+            // Not covered on purpose: super admins, who can technically open every
+            // board — matching them would return the entire table and say nothing.
             const matches = (value: string | null | undefined) =>
                 !!value && value.toLowerCase().includes(query);
+            const matchesPerson = (p: BoardMemberSummary) => matches(p.full_name) || matches(p.email);
 
             setFilteredBoards(
                 boards.filter(board =>
                     matches(board.title) ||
+                    matches(board.workspace_title) ||
                     matches(board.owner_name) ||
                     matches(board.owner_email) ||
-                    matches(board.workspace_title) ||
-                    board.members.some(m => matches(m.full_name) || matches(m.email))
+                    board.members.some(matchesPerson) ||
+                    board.workspace_members.some(matchesPerson)
                 )
             );
         }
@@ -186,6 +212,19 @@ export const BoardTable = () => {
     // and can't be opened anyway, so they only get in the way of the usual job
     // of finding a live board. They stay one toggle away rather than gone,
     // because a user can own nothing but deleted boards and still need looking up.
+    // Spells out both routes into a board, so a row that a search matched on
+    // someone who isn't in the Members column still shows why it matched.
+    const membersTooltip = (board: BoardRow) => {
+        const nameOf = (p: BoardMemberSummary) => p.full_name || p.email || 'Unknown';
+        const onBoard = new Set(board.members.map(m => m.id));
+        const viaWorkspace = board.workspace_members.filter(m => !onBoard.has(m.id));
+
+        const lines = ['Manage members'];
+        if (board.members.length > 0) lines.push(`On this board: ${board.members.map(nameOf).join(', ')}`);
+        if (viaWorkspace.length > 0) lines.push(`Via workspace: ${viaWorkspace.map(nameOf).join(', ')}`);
+        return lines.join('\n');
+    };
+
     const visibleBoards = showDeleted ? filteredBoards : filteredBoards.filter(b => !b.is_archived);
     const hiddenDeletedCount = showDeleted ? 0 : filteredBoards.length - visibleBoards.length;
 
@@ -323,12 +362,7 @@ export const BoardTable = () => {
                                         <td style={{ padding: '16px 20px' }}>
                                             <button
                                                 onClick={() => setManagingBoard({ id: board.id, title: board.title })}
-                                                // Names on hover, so a row that matched a
-                                                // search on a member shows why it matched
-                                                // instead of just a row of avatars.
-                                                title={board.members.length > 0
-                                                    ? `Manage members — ${board.members.map(m => m.full_name || m.email).join(', ')}`
-                                                    : 'Manage members'}
+                                                title={membersTooltip(board)}
                                                 style={{
                                                     background: 'none',
                                                     border: 'none',

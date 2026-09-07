@@ -33,6 +33,7 @@ export const BoardTable = () => {
     const [boards, setBoards] = useState<BoardRow[]>([]);
     const [filteredBoards, setFilteredBoards] = useState<BoardRow[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showDeleted, setShowDeleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [managingBoard, setManagingBoard] = useState<{ id: string; title: string } | null>(null);
@@ -171,6 +172,13 @@ export const BoardTable = () => {
         }
     }, [searchQuery, boards]);
 
+    // Deleted boards are hidden by default — they're the majority of the table
+    // and can't be opened anyway, so they only get in the way of the usual job
+    // of finding a live board. They stay one toggle away rather than gone,
+    // because a user can own nothing but deleted boards and still need looking up.
+    const visibleBoards = showDeleted ? filteredBoards : filteredBoards.filter(b => !b.is_archived);
+    const hiddenDeletedCount = showDeleted ? 0 : filteredBoards.length - visibleBoards.length;
+
     return (
         <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             {/* Header */}
@@ -191,6 +199,31 @@ export const BoardTable = () => {
                         }}
                     />
                 </div>
+                <label
+                    title="Deleted boards live in Trash and can't be opened until restored"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginRight: '12px',
+                        fontSize: '13px',
+                        color: '#475569',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        whiteSpace: 'nowrap'
+                    }}
+                >
+                    <input
+                        type="checkbox"
+                        checked={showDeleted}
+                        onChange={(e) => setShowDeleted(e.target.checked)}
+                        style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#4f46e5' }}
+                    />
+                    Show deleted boards
+                    {hiddenDeletedCount > 0 && (
+                        <span style={{ color: '#94a3b8' }}>({hiddenDeletedCount} hidden)</span>
+                    )}
+                </label>
                 <button
                     onClick={fetchBoards}
                     style={{
@@ -230,14 +263,19 @@ export const BoardTable = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredBoards.length === 0 ? (
+                            {visibleBoards.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-                                        No boards found
+                                        {/* Without this, a search that only matches deleted boards reads
+                                            as "this user has no boards at all", which is a different and
+                                            much more alarming thing than "they're all in Trash". */}
+                                        {hiddenDeletedCount > 0
+                                            ? `No live boards found — ${hiddenDeletedCount} deleted ${hiddenDeletedCount === 1 ? 'board matches' : 'boards match'}. Tick "Show deleted boards" to see them.`
+                                            : 'No boards found'}
                                     </td>
                                 </tr>
                             ) : (
-                                filteredBoards.map((board) => (
+                                visibleBoards.map((board) => (
                                     <tr key={board.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

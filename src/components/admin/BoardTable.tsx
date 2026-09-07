@@ -24,6 +24,7 @@ interface BoardRow {
     owner_email: string;
     workspace_title: string;
     members: BoardMemberSummary[];
+    is_archived: boolean;
 }
 
 export const BoardTable = () => {
@@ -50,13 +51,12 @@ export const BoardTable = () => {
         try {
             // Fetch boards with workspace and owner info (owner comes from workspace).
             //
-            // Deleting a board archives the row rather than removing it, so without
-            // this filter the list was mostly deleted boards (over half of them) —
-            // indistinguishable from live ones, and "Access" on any of them opened a
-            // tab that resolved nothing, since a deep link deliberately refuses an
-            // archived board. Deleted boards have their own home under Trash, and
-            // handleConfirmDelete below already drops a row from this list the moment
-            // it's archived, so filtering here just makes the initial load agree.
+            // Deleting a board archives the row rather than removing it, and these
+            // stay listed on purpose: a user can own nothing but deleted boards, and
+            // an admin looking them up still needs to find them. They're marked as
+            // deleted in the row instead, because shown-as-normal made "Access" look
+            // broken — the deep link resolver deliberately refuses an archived board,
+            // so the new tab just landed somewhere else with no explanation.
             const { data, error: fetchError } = await supabase
                 .from('boards')
                 .select(`
@@ -64,6 +64,7 @@ export const BoardTable = () => {
                     title,
                     created_at,
                     workspace_id,
+                    is_archived,
                     workspaces!boards_workspace_id_fkey (
                         title,
                         owner_id,
@@ -73,7 +74,6 @@ export const BoardTable = () => {
                         )
                     )
                 `)
-                .eq('is_archived', false)
                 .order('created_at', { ascending: false });
 
             if (fetchError) throw fetchError;
@@ -103,7 +103,8 @@ export const BoardTable = () => {
                 owner_name: board.workspaces?.profiles?.full_name || 'Unknown',
                 owner_email: board.workspaces?.profiles?.email || 'N/A',
                 workspace_title: board.workspaces?.title || 'Unknown Workspace',
-                members: membersByBoard[board.id] || []
+                members: membersByBoard[board.id] || [],
+                is_archived: !!board.is_archived
             }));
 
             setBoards(mapped);
@@ -116,7 +117,7 @@ export const BoardTable = () => {
     };
 
     const handleDeleteClick = (board: BoardRow, e: React.MouseEvent) => {
-        if (!canDelete) return;
+        if (!canDelete || board.is_archived) return;
         const rect = e.currentTarget.getBoundingClientRect();
         let left = rect.right - 260;
         if (left < 10) left = 10;
@@ -140,8 +141,12 @@ export const BoardTable = () => {
                 workspace_id: workspaceId,
                 board_title: boardTitle
             });
-            setBoards(prev => prev.filter(b => b.id !== boardId));
-            setFilteredBoards(prev => prev.filter(b => b.id !== boardId));
+            // Stays in the list, now flagged as deleted, rather than vanishing —
+            // same as any other already-deleted board here.
+            const markDeleted = (rows: BoardRow[]) =>
+                rows.map(b => b.id === boardId ? { ...b, is_archived: true } : b);
+            setBoards(markDeleted);
+            setFilteredBoards(markDeleted);
         } finally {
             setDeletingId(null);
         }
@@ -235,7 +240,26 @@ export const BoardTable = () => {
                                 filteredBoards.map((board) => (
                                     <tr key={board.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '16px 20px' }}>
-                                            <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>{board.title}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ fontWeight: 500, color: board.is_archived ? '#64748b' : '#0f172a', fontSize: '14px' }}>{board.title}</div>
+                                                {board.is_archived && (
+                                                    <span
+                                                        title="This board was deleted — restore it from Trash to open it again"
+                                                        style={{
+                                                            fontSize: '11px',
+                                                            fontWeight: 600,
+                                                            color: '#b91c1c',
+                                                            backgroundColor: '#fee2e2',
+                                                            border: '1px solid #fecaca',
+                                                            borderRadius: '4px',
+                                                            padding: '1px 6px',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        Deleted
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ fontSize: '14px', color: '#64748b' }}>{board.workspace_title}</div>
@@ -330,12 +354,17 @@ export const BoardTable = () => {
                                                     const url = `/${username}/${wsName}/${bName}`;
                                                     window.open(url, '_blank');
                                                 }}
+                                                disabled={board.is_archived}
+                                                title={board.is_archived
+                                                    ? 'This board is deleted — restore it from Trash to open it'
+                                                    : 'Open board in a new tab'}
                                                 style={{
                                                     padding: '6px 12px',
                                                     backgroundColor: '#f1f5f9',
                                                     border: '1px solid #cbd5e1',
                                                     borderRadius: '6px',
-                                                    cursor: 'pointer',
+                                                    cursor: board.is_archived ? 'not-allowed' : 'pointer',
+                                                    opacity: board.is_archived ? 0.45 : 1,
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: '6px',
@@ -345,10 +374,12 @@ export const BoardTable = () => {
                                                     transition: 'all 0.2s'
                                                 }}
                                                 onMouseEnter={(e) => {
+                                                    if (board.is_archived) return;
                                                     e.currentTarget.style.backgroundColor = '#e2e8f0';
                                                     e.currentTarget.style.color = '#0f172a';
                                                 }}
                                                 onMouseLeave={(e) => {
+                                                    if (board.is_archived) return;
                                                     e.currentTarget.style.backgroundColor = '#f1f5f9';
                                                     e.currentTarget.style.color = '#334155';
                                                 }}
@@ -358,30 +389,32 @@ export const BoardTable = () => {
                                             </button>
                                             <button
                                                 onClick={(e) => handleDeleteClick(board, e)}
-                                                disabled={!canDelete || deletingId === board.id}
-                                                title={canDelete ? 'Delete board' : 'Only Super Admin can delete'}
+                                                disabled={!canDelete || board.is_archived || deletingId === board.id}
+                                                title={board.is_archived
+                                                    ? 'Already deleted — manage it under Trash'
+                                                    : (canDelete ? 'Delete board' : 'Only Super Admin can delete')}
                                                 style={{
                                                     marginLeft: '8px',
                                                     padding: '6px 12px',
-                                                    backgroundColor: canDelete ? '#fef2f2' : '#f8fafc',
-                                                    border: canDelete ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                                                    backgroundColor: canDelete && !board.is_archived ? '#fef2f2' : '#f8fafc',
+                                                    border: canDelete && !board.is_archived ? '1px solid #fecaca' : '1px solid #e2e8f0',
                                                     borderRadius: '6px',
-                                                    cursor: canDelete && deletingId !== board.id ? 'pointer' : 'not-allowed',
+                                                    cursor: canDelete && !board.is_archived && deletingId !== board.id ? 'pointer' : 'not-allowed',
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: '6px',
                                                     fontSize: '13px',
                                                     fontWeight: 500,
-                                                    color: canDelete ? '#dc2626' : '#94a3b8',
+                                                    color: canDelete && !board.is_archived ? '#dc2626' : '#94a3b8',
                                                     opacity: deletingId === board.id ? 0.6 : 1,
                                                     transition: 'all 0.2s'
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    if (!canDelete) return;
+                                                    if (!canDelete || board.is_archived) return;
                                                     e.currentTarget.style.backgroundColor = '#fee2e2';
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    if (!canDelete) return;
+                                                    if (!canDelete || board.is_archived) return;
                                                     e.currentTarget.style.backgroundColor = '#fef2f2';
                                                 }}
                                             >

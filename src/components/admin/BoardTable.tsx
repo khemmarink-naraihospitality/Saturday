@@ -48,7 +48,15 @@ export const BoardTable = () => {
         setLoading(true);
         setError(null);
         try {
-            // Fetch boards with workspace and owner info (owner comes from workspace)
+            // Fetch boards with workspace and owner info (owner comes from workspace).
+            //
+            // Deleting a board archives the row rather than removing it, so without
+            // this filter the list was mostly deleted boards (over half of them) —
+            // indistinguishable from live ones, and "Access" on any of them opened a
+            // tab that resolved nothing, since a deep link deliberately refuses an
+            // archived board. Deleted boards have their own home under Trash, and
+            // handleConfirmDelete below already drops a row from this list the moment
+            // it's archived, so filtering here just makes the initial load agree.
             const { data, error: fetchError } = await supabase
                 .from('boards')
                 .select(`
@@ -65,6 +73,7 @@ export const BoardTable = () => {
                         )
                     )
                 `)
+                .eq('is_archived', false)
                 .order('created_at', { ascending: false });
 
             if (fetchError) throw fetchError;

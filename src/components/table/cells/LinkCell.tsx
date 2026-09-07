@@ -155,27 +155,29 @@ export const LinkCell: React.FC<LinkCellProps> = memo(({ itemId, column, value }
                         gap: '10px'
                     }}
                 >
-                    <div>
-                        <label style={fieldLabelStyle}>Text to display</label>
-                        <input
-                            ref={firstInputRef}
-                            type="text"
-                            value={draftLabel}
-                            onChange={(e) => setDraftLabel(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Optional — shown instead of the link"
-                            style={inputStyle}
-                        />
-                    </div>
-
+                    {/* Link first: it's the required half, and the one you paste in
+                        before deciding what to call it. */}
                     <div>
                         <label style={fieldLabelStyle}>Link</label>
                         <input
+                            ref={firstInputRef}
                             type="text"
                             value={draftUrl}
                             onChange={(e) => setDraftUrl(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Paste link here..."
+                            style={inputStyle}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={fieldLabelStyle}>Text to display</label>
+                        <input
+                            type="text"
+                            value={draftLabel}
+                            onChange={(e) => setDraftLabel(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Optional — shown instead of the link"
                             style={inputStyle}
                         />
                     </div>

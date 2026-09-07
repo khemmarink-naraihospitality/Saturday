@@ -3,7 +3,7 @@ import React, { useRef, useState, useCallback, memo } from 'react';
 import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
-import { columnJustify } from '../../../lib/utils';
+import { columnJustify, defaultColumnAlign } from '../../../lib/utils';
 import { DropdownPicker } from '../DropdownPicker';
 
 interface DropdownCellProps {
@@ -52,10 +52,7 @@ export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column,
                     cursor: 'pointer',
                     overflow: 'hidden',
                     flexWrap: 'nowrap',
-                    // Unset stays flex-start (left) — the tag list's original,
-                    // unconfigurable look — so existing boards don't shift
-                    // until someone explicitly picks a different alignment.
-                    justifyContent: columnJustify(column.numberAlign, 'left')
+                    justifyContent: columnJustify(column.numberAlign, defaultColumnAlign(column.type))
                 }}
             >
                 {selectedLabels.length > 0 ? (

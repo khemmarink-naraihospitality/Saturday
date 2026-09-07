@@ -5,6 +5,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { Calendar, X } from 'lucide-react';
 import { DatePicker } from '../../ui/DatePicker';
+import { columnJustify, defaultColumnAlign } from '../../../lib/utils';
 
 interface DateCellProps {
     itemId: string;
@@ -84,7 +85,7 @@ export const DateCell: React.FC<DateCellProps> = memo(({ itemId, column, value, 
                     padding: '0 8px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: columnJustify(column.numberAlign, defaultColumnAlign(column.type)),
                     cursor: 'pointer',
                     color: overdue ? '#e2445c' : (value ? 'inherit' : 'hsl(var(--color-text-tertiary))'),
                     backgroundColor: isEditing ? 'hsl(var(--color-brand-light))' : 'transparent',

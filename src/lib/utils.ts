@@ -72,10 +72,16 @@ export const linkDisplayText = (raw: any): string => {
     return label || url;
 };
 
-// Shared by any column type with a Format menu's Alignment section (Number,
-// Dropdown). `fallback` lets each cell keep its own pre-existing look when no
-// alignment has been explicitly chosen yet, since column.numberAlign is one
-// field reused across column types rather than a per-type default.
+// Where a column sits when nobody has picked an alignment: whatever that type
+// looked like before alignment was configurable, so turning the setting on
+// never moved anything on an existing board.
+export const defaultColumnAlign = (type: string): 'left' | 'center' | 'right' =>
+    ['number', 'date', 'due_date'].includes(type) ? 'center' : 'left';
+
+// Shared by every column type whose Format menu offers an Alignment section
+// (Number, Dropdown, Text, Date). One stored field, `column.numberAlign`, backs
+// all of them — named for the type that had it first — so the per-type starting
+// point comes from `fallback` rather than from the field itself.
 export const columnJustify = (
     align: 'left' | 'center' | 'right' | undefined,
     fallback: 'left' | 'center' | 'right' = 'center'

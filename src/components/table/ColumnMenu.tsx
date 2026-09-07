@@ -13,6 +13,7 @@ import {
     BellRing
 } from 'lucide-react';
 import type { ColumnType } from '../../types';
+import { COLUMN_FORMAT_TITLES } from './NumberFormatMenu';
 
 interface ColumnMenuProps {
     isOpen: boolean;
@@ -158,17 +159,12 @@ export const ColumnMenu = ({
                     }} />
 
                     <div className="menu-group">
-                        {columnType === 'number' && onNumberFormat && (
+                        {COLUMN_FORMAT_TITLES[columnType] && onNumberFormat && (
                             <MenuItem
-                                icon={<Hash size={16} />}
-                                label="Number Format"
-                                onClick={() => { onNumberFormat(); onClose(); }}
-                            />
-                        )}
-                        {columnType === 'dropdown' && onNumberFormat && (
-                            <MenuItem
-                                icon={<AlignLeft size={16} />}
-                                label="Dropdown Format"
+                                // Number's menu carries formats and currency too;
+                                // every other type gets alignment alone.
+                                icon={columnType === 'number' ? <Hash size={16} /> : <AlignLeft size={16} />}
+                                label={COLUMN_FORMAT_TITLES[columnType]}
                                 onClick={() => { onNumberFormat(); onClose(); }}
                             />
                         )}

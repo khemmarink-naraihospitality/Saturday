@@ -4,7 +4,7 @@ import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { formatNumberValue } from '../../../utils/format';
-import { columnJustify } from '../../../lib/utils';
+import { columnJustify, defaultColumnAlign } from '../../../lib/utils';
 import { Hash, Type } from 'lucide-react';
 
 interface TextCellProps {
@@ -83,7 +83,9 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
                     fontSize: column.title === 'Champion' ? '12px' : '13px',
                     color: 'inherit',
                     outline: 'none',
-                    textAlign: column.type === 'number' ? (column.numberAlign || 'center') : 'left',
+                    // Matches the display alignment so text doesn't jump when the
+                    // cell flips into edit mode.
+                    textAlign: column.numberAlign || defaultColumnAlign(column.type),
                     paddingLeft: '4px', // Same as Item column on focus
                     cursor: 'text',
                     pointerEvents: 'auto',
@@ -108,7 +110,7 @@ export const TextCell: React.FC<TextCellProps> = memo(({ itemId, column, value }
             onClick={startEditing} 
             style={{ 
                 ...cellStyle,
-                justifyContent: column.type === 'number' ? columnJustify(column.numberAlign) : 'flex-start',
+                justifyContent: columnJustify(column.numberAlign, defaultColumnAlign(column.type)),
                 fontSize: column.title === 'Champion' ? '12px' : '13px',
                 color: column.title === 'Champion' ? 'hsl(var(--color-text-secondary))' : 'inherit',
                 transition: 'background-color 0.2s ease',

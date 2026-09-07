@@ -162,11 +162,21 @@ export const BoardTable = () => {
             setFilteredBoards(boards);
         } else {
             const query = searchQuery.toLowerCase();
+            // Owner here is the *workspace* owner, so searching a person only ever
+            // found boards in a workspace they happen to own — never the boards
+            // they were actually added to. Looking someone up by the email printed
+            // in the Owner column didn't work either, since only the name was
+            // matched. Both now count, alongside the board's own members.
+            const matches = (value: string | null | undefined) =>
+                !!value && value.toLowerCase().includes(query);
+
             setFilteredBoards(
                 boards.filter(board =>
-                    board.title.toLowerCase().includes(query) ||
-                    board.owner_name.toLowerCase().includes(query) ||
-                    board.workspace_title.toLowerCase().includes(query)
+                    matches(board.title) ||
+                    matches(board.owner_name) ||
+                    matches(board.owner_email) ||
+                    matches(board.workspace_title) ||
+                    board.members.some(m => matches(m.full_name) || matches(m.email))
                 )
             );
         }
@@ -256,7 +266,11 @@ export const BoardTable = () => {
                             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Board</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Workspace</th>
-                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Owner</th>
+                                {/* Says "workspace owner" because that's what it is — the
+                                    boards table has no owner of its own. Labelled plain
+                                    "Owner" it read as the person who runs the board, which
+                                    is often someone else entirely in the Members column. */}
+                                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Workspace Owner</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Members</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Created</th>
                                 <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions</th>
@@ -309,7 +323,12 @@ export const BoardTable = () => {
                                         <td style={{ padding: '16px 20px' }}>
                                             <button
                                                 onClick={() => setManagingBoard({ id: board.id, title: board.title })}
-                                                title="Manage members"
+                                                // Names on hover, so a row that matched a
+                                                // search on a member shows why it matched
+                                                // instead of just a row of avatars.
+                                                title={board.members.length > 0
+                                                    ? `Manage members — ${board.members.map(m => m.full_name || m.email).join(', ')}`
+                                                    : 'Manage members'}
                                                 style={{
                                                     background: 'none',
                                                     border: 'none',

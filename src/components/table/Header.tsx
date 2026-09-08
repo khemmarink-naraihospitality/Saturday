@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Plus, MoreHorizontal } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type PointerSensorOptions } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -13,6 +13,31 @@ import { FilterMenu } from './FilterMenu';
 import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
+
+// dnd-kit's PointerSensor activates on `pointerdown`, which fires *before* the
+// `mousedown` that the resize handle listens on — so calling stopPropagation
+// there came too late and dragging the 4px edge reordered the column instead of
+// just resizing it. Filter the event at the sensor instead: a pointerdown that
+// starts inside anything marked `data-no-dnd` never begins a column drag.
+class ColumnPointerSensor extends PointerSensor {
+    static activators = [
+        {
+            eventName: 'onPointerDown' as const,
+            handler: ({ nativeEvent: event }: React.PointerEvent, { onActivation }: PointerSensorOptions) => {
+                if (!event.isPrimary || event.button !== 0) return false;
+
+                let node = event.target as HTMLElement | null;
+                while (node) {
+                    if (node.hasAttribute?.('data-no-dnd')) return false;
+                    node = node.parentElement;
+                }
+
+                onActivation?.({ event });
+                return true;
+            },
+        },
+    ];
+}
 
 // Sortable Header Cell Component
 const SortableHeaderCell = ({
@@ -100,6 +125,7 @@ const SortableHeaderCell = ({
 
             {editingColId !== col.id && (
                 <button
+                    data-no-dnd="true"
                     onClick={(e) => openMenu(e, col.id)}
                     className="icon-btn"
                     // Nudged off the column's right edge so it doesn't sit under the
@@ -115,17 +141,25 @@ const SortableHeaderCell = ({
 
             {canManage && (
                 <div
+                    data-no-dnd="true"
+                    // The column drag starts on pointerdown, which fires before the
+                    // mousedown below — so the drag has to be stopped here, not there.
+                    onPointerDown={(e) => e.stopPropagation()}
                     onMouseDown={(e) => handleResizeStart(e, col.id, col.width || 150)}
                     onDoubleClick={(e) => handleAutoFit(e, col.id)}
                     title="Drag to resize · double-click to fit content"
                     style={{
                         position: 'absolute',
-                        right: 0,
+                        // Straddles the divider instead of sitting inside the cell:
+                        // grabbing a hair past the line used to land on the next
+                        // header cell and start a column drag instead of a resize.
+                        right: '-4px',
                         top: 0,
                         bottom: 0,
-                        width: '4px',
+                        width: '9px',
                         cursor: 'col-resize',
-                        zIndex: 10,
+                        zIndex: 20,
+                        touchAction: 'none',
                     }}
                     className="resize-handle"
                 />
@@ -168,7 +202,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const [addMenuPos, setAddMenuPos] = React.useState<{ top: number, bottom: number, left: number } | null>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(ColumnPointerSensor, {
             activationConstraint: {
                 distance: 5,
             },
@@ -179,6 +213,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     );
 
     const handleDragEnd = (event: DragEndEvent) => {
+        if (isResizingRef.current) return;
+
         const { active, over } = event;
         if (active.id !== over?.id) {
             const oldIndex = columns.findIndex((c) => c.id === active.id);
@@ -257,10 +293,14 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
     const persistColumnWidth = useBoardStore(state => state.persistColumnWidth);
     const startXRef = React.useRef(0);
     const startWidthRef = React.useRef(0);
+    // Set for the whole life of a resize drag. Even if something manages to start
+    // a column drag underneath one, the reorder is refused rather than committed.
+    const isResizingRef = React.useRef(false);
 
     const handleResizeStart = (e: React.MouseEvent, colId: string, currentWidth: number, isItemCol = false) => {
         e.preventDefault();
         e.stopPropagation();
+        isResizingRef.current = true;
         startXRef.current = e.clientX;
         startWidthRef.current = currentWidth;
         let latestWidth = currentWidth;
@@ -279,6 +319,9 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+            // pointerup (and so dnd-kit's drag end) lands before this mouseup, so
+            // the flag has to outlive the current event loop turn to cover it.
+            setTimeout(() => { isResizingRef.current = false; }, 0);
             // Persist once on release rather than on every mousemove, so the
             // width the user settled on survives a reload without spamming
             // the DB mid-drag.
@@ -423,10 +466,12 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
 
                 {can('manage_columns') && isFirstGroup && (
                     <div
+                        data-no-dnd="true"
+                        onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => handleResizeStart(e, 'item-col', itemColumnWidth, true)}
                         onDoubleClick={(e) => handleAutoFit(e, 'item-col', true)}
                         title="Drag to resize · double-click to fit content"
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
+                        style={{ position: 'absolute', right: '-4px', top: 0, bottom: 0, width: '9px', cursor: 'col-resize', zIndex: 20, touchAction: 'none' }}
                         className="resize-handle"
                     />
                 )}

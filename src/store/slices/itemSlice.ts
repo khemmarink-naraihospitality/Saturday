@@ -5,6 +5,56 @@ import { arrayMove } from '@dnd-kit/sortable';
 import type { Item, FileLink, Comment } from '../../types';
 import type { BoardState } from '../useBoardStore';
 
+// Every write to items.updates replaces the whole JSON array, so the array sent
+// has to be built on the row as it stands in the database — never on local
+// state. A board now opens with updates: [] on every item and fills the comment
+// bodies in afterwards, so building on local state would send that empty array
+// back and erase the item's entire comment history. Reading first also stops
+// two people commenting at the same moment from dropping each other's comment.
+const rewriteUpdates = async (
+    set: any,
+    activeBoardId: string | null,
+    itemId: string,
+    apply: (current: Comment[]) => Comment[]
+): Promise<Comment[] | null> => {
+    const { data, error } = await supabase
+        .from('items')
+        .select('updates')
+        .eq('id', itemId)
+        .single();
+
+    // No guessing at the current value: without it, any write would be a
+    // wholesale overwrite of comments that are still in the database.
+    if (error || !data) {
+        console.error('Could not read updates before writing — write skipped', error);
+        return null;
+    }
+
+    const current: Comment[] = Array.isArray(data.updates) ? (data.updates as Comment[]) : [];
+    const next = apply(current);
+
+    const { error: writeError } = await supabase.from('items').update({ updates: next }).eq('id', itemId);
+    if (writeError) {
+        console.error('Failed to write updates', writeError);
+        return null;
+    }
+
+    // The row was just read in full, so local state can be marked authoritative.
+    const fill = (i: Item): Item => i.id !== itemId
+        ? i
+        : { ...i, updates: next, updatesCount: next.length, updatesLoaded: true };
+
+    set((state: BoardState) => ({
+        boards: state.boards.map(b => b.id !== activeBoardId ? b : {
+            ...b,
+            items: b.items.map(fill),
+            groups: b.groups.map(g => ({ ...g, items: g.items.map(fill) }))
+        })
+    }));
+
+    return next;
+};
+
 // activeBoardMembers only holds this board's board_members rows, but a
 // people-column value can point at someone who isn't one — most commonly an
 // assignee copied over by the linked-groups mirror trigger onto a board they
@@ -478,9 +528,8 @@ export const createItemSlice: StateCreator<
 
         const board = get().boards.find(b => b.id === activeBoardId);
         const item = board?.items.find(i => i.id === itemId);
-        let updatedList = item?.updates || [];
 
-        await supabase.from('items').update({ updates: updatedList }).eq('id', itemId);
+        await rewriteUpdates(set, activeBoardId, itemId, current => [newUpdate, ...current]);
         get().logActivity('item_comment_added', 'item', itemId, { board_id: activeBoardId, item_title: item?.title || 'Unknown Task' });
 
         // Mentions Logic
@@ -581,9 +630,7 @@ export const createItemSlice: StateCreator<
             })
         }));
 
-        const board = get().boards.find(b => b.id === activeBoardId);
-        const item = board?.items.find(i => i.id === itemId);
-        await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
+        await rewriteUpdates(set, activeBoardId, itemId, current => current.filter(u => u.id !== updateId));
     },
 
     toggleUpdateLike: async (itemId, updateId, user) => {
@@ -618,9 +665,14 @@ export const createItemSlice: StateCreator<
             })
         }));
 
-        const board = get().boards.find(b => b.id === activeBoardId);
-        const item = board?.items.find(i => i.id === itemId);
-        await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
+        await rewriteUpdates(set, activeBoardId, itemId, current => current.map(u => {
+            if (u.id !== updateId) return u;
+            const likedBy = u.likedBy || [];
+            return {
+                ...u,
+                likedBy: wasLiked ? likedBy.filter(id => id !== user.id) : [...likedBy, user.id]
+            };
+        }));
 
         // Notify the update's author when someone else likes it — not on unlike,
         // and not when liking your own update.
@@ -641,7 +693,7 @@ export const createItemSlice: StateCreator<
                         email: authorEmail,
                         likerName: user.name,
                         itemName: itemTitle || 'an item',
-                        boardName: board?.title || 'a board',
+                        boardName: get().boards.find(b => b.id === activeBoardId)?.title || 'a board',
                         itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
                     }
                 }).catch((e: unknown) => console.error('Like email error:', e));
@@ -669,9 +721,12 @@ export const createItemSlice: StateCreator<
             })
         }));
 
-        const board = get().boards.find(b => b.id === activeBoardId);
-        const item = board?.items.find(i => i.id === itemId);
-        await supabase.from('items').update({ updates: item?.updates || [] }).eq('id', itemId);
+        await rewriteUpdates(set, activeBoardId, itemId, current => current.map(u => {
+            if (u.id !== updateId) return u;
+            const updated: Comment = { ...u, content: newContent };
+            if (files !== undefined) updated.files = files;
+            return updated;
+        }));
     },
 
     toggleShowHiddenItems: () => set(state => ({ showHiddenItems: !state.showHiddenItems })),

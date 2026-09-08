@@ -62,6 +62,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
     const toggleUpdateLike = useBoardStore(state => state.toggleUpdateLike);
     const loadItemUpdates = useBoardStore(state => state.loadItemUpdates);
+    const [sendError, setSendError] = useState<string | null>(null);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
 
@@ -356,15 +357,29 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         setShowUrlPanel(false);
     };
 
-    const handleSendUpdate = () => {
+    const handleSendUpdate = async () => {
         // Strip HTML tags to check if empty
         const textOnly = draftText.replace(/<[^>]*>/g, '').trim();
         if (!textOnly && !draftText.includes('<img') && draftFiles.length === 0) return;
 
-        addUpdate(itemId, draftText, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, draftFiles);
+        const sentText = draftText;
+        const sentFiles = draftFiles;
+
         setDraft(itemId, '');
         setDraftFiles([]);
         setShowUrlPanel(false);
+        setSendError(null);
+
+        const saved = await addUpdate(itemId, sentText, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, sentFiles);
+
+        // The comment never reached the database. Put it back in the box: the
+        // alternative is what used to happen — the composer cleared, the comment
+        // showed in the thread until the next reload, and the text was gone.
+        if (!saved) {
+            setDraft(itemId, sentText);
+            setDraftFiles(sentFiles);
+            setSendError('Your comment was not saved. It is back in the box — please try again.');
+        }
     };
 
     const handleDeleteClick = (updateId: string) => {
@@ -375,14 +390,26 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const setReplyDraftFor = (updateId: string, val: string) =>
         setReplyDrafts(prev => ({ ...prev, [updateId]: val }));
 
-    const handleSendReply = (parentId: string) => {
+    const handleSendReply = async (parentId: string) => {
         const draft = getReplyDraft(parentId);
         const files = replyFiles[parentId] || [];
         if (!draft.trim() && files.length === 0) return;
-        addUpdate(itemId, draft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, files, parentId);
+
         setReplyDrafts(prev => ({ ...prev, [parentId]: '' }));
         setReplyFiles(prev => ({ ...prev, [parentId]: [] }));
         setOpenReplyBoxId(null);
+        setSendError(null);
+
+        const saved = await addUpdate(itemId, draft, { name: currentUser.name, id: currentUser.id, userId: currentUser.id }, files, parentId);
+
+        // Same as the main composer: a reply that failed to save is handed back
+        // rather than dropped.
+        if (!saved) {
+            setReplyDrafts(prev => ({ ...prev, [parentId]: draft }));
+            setReplyFiles(prev => ({ ...prev, [parentId]: files }));
+            setOpenReplyBoxId(parentId);
+            setSendError('Your reply was not saved. It is back in the box — please try again.');
+        }
     };
 
     const handleReplyEmojiSelect = (updateId: string, emoji: string) => {
@@ -674,6 +701,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             </div>
 
                                             {/* Right: Update button */}
+                                            {sendError && (
+                                                <div style={{ color: 'hsl(var(--color-status-error, 0 72% 51%))', fontSize: '12px', marginRight: 'auto', paddingLeft: '4px', alignSelf: 'center' }}>
+                                                    {sendError}
+                                                </div>
+                                            )}
                                             <div style={{ display: 'flex' }}>
                                                 <button
                                                     onClick={handleSendUpdate}

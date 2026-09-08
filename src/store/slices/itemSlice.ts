@@ -11,31 +11,47 @@ import type { BoardState } from '../useBoardStore';
 // bodies in afterwards, so building on local state would send that empty array
 // back and erase the item's entire comment history. Reading first also stops
 // two people commenting at the same moment from dropping each other's comment.
+//
+// Returns null when nothing was written. Callers must treat that as a failure
+// and undo their optimistic change — a comment that only ever existed on screen
+// is worse than one that visibly failed to send, because the author walks away
+// believing it was posted.
 const rewriteUpdates = async (
     set: any,
     activeBoardId: string | null,
     itemId: string,
     apply: (current: Comment[]) => Comment[]
 ): Promise<Comment[] | null> => {
-    const { data, error } = await supabase
-        .from('items')
-        .select('updates')
-        .eq('id', itemId)
-        .single();
+    let next: Comment[];
 
-    // No guessing at the current value: without it, any write would be a
-    // wholesale overwrite of comments that are still in the database.
-    if (error || !data) {
-        console.error('Could not read updates before writing — write skipped', error);
-        return null;
-    }
+    try {
+        const { data, error } = await supabase
+            .from('items')
+            .select('updates')
+            .eq('id', itemId)
+            .single();
 
-    const current: Comment[] = Array.isArray(data.updates) ? (data.updates as Comment[]) : [];
-    const next = apply(current);
+        // No guessing at the current value: without it, any write would be a
+        // wholesale overwrite of comments that are still in the database.
+        if (error || !data) {
+            console.error('Could not read updates before writing — write skipped', error);
+            return null;
+        }
 
-    const { error: writeError } = await supabase.from('items').update({ updates: next }).eq('id', itemId);
-    if (writeError) {
-        console.error('Failed to write updates', writeError);
+        const current: Comment[] = Array.isArray(data.updates) ? (data.updates as Comment[]) : [];
+        next = apply(current);
+
+        const { error: writeError } = await supabase.from('items').update({ updates: next }).eq('id', itemId);
+        if (writeError) {
+            console.error('Failed to write updates', writeError);
+            return null;
+        }
+    } catch (e) {
+        // A rejected request (timeout, dropped connection, a payload the server
+        // refuses) throws rather than returning an error, and used to take the
+        // rest of the caller with it — no write, no activity log, and the
+        // comment left sitting on screen as though it had been saved.
+        console.error('Update write threw', e);
         return null;
     }
 
@@ -88,7 +104,9 @@ export interface ItemSlice {
     moveItem: (activeId: string, overId: string) => Promise<void>;
 
     // Update/Comment
-    addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }, files?: import('../../types').FileLink[], parentId?: string) => Promise<void>;
+    // Resolves false when the comment could not be saved, so the composer can
+    // hand the author their text back instead of dropping it.
+    addUpdate: (itemId: string, content: string, author: { name: string; id: string; userId: string }, files?: import('../../types').FileLink[], parentId?: string) => Promise<boolean>;
     deleteUpdate: (itemId: string, updateId: string) => Promise<void>;
     editUpdate: (itemId: string, updateId: string, newContent: string, files?: import('../../types').FileLink[]) => Promise<void>;
     toggleUpdateLike: (itemId: string, updateId: string, user: { id: string; name: string }) => Promise<void>;
@@ -529,7 +547,31 @@ export const createItemSlice: StateCreator<
         const board = get().boards.find(b => b.id === activeBoardId);
         const item = board?.items.find(i => i.id === itemId);
 
-        await rewriteUpdates(set, activeBoardId, itemId, current => [newUpdate, ...current]);
+        const written = await rewriteUpdates(set, activeBoardId, itemId, current => [newUpdate, ...current]);
+
+        // Nothing was saved. Take the comment back off screen rather than leaving
+        // it there looking posted, and tell the caller so the author gets their
+        // text back instead of losing it to a silent failure.
+        if (!written) {
+            set(state => ({
+                boards: state.boards.map(b => b.id !== activeBoardId ? b : {
+                    ...b,
+                    items: b.items.map(i => i.id !== itemId ? i : {
+                        ...i,
+                        updates: (i.updates || []).filter(u => u.id !== newUpdate.id)
+                    }),
+                    groups: b.groups.map(g => ({
+                        ...g,
+                        items: g.items.map(i => i.id !== itemId ? i : {
+                            ...i,
+                            updates: (i.updates || []).filter(u => u.id !== newUpdate.id)
+                        })
+                    }))
+                })
+            }));
+            return false;
+        }
+
         get().logActivity('item_comment_added', 'item', itemId, { board_id: activeBoardId, item_title: item?.title || 'Unknown Task' });
 
         // Mentions Logic
@@ -616,6 +658,8 @@ export const createItemSlice: StateCreator<
                 }).catch((e: unknown) => console.error('Comment email error:', e));
             }
         }
+
+        return true;
     },
 
     deleteUpdate: async (itemId, updateId) => {

@@ -44,6 +44,7 @@ export interface BoardSlice {
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
     loadBoardData: (boardId: string, _skipLinkedAutoLoad?: boolean) => Promise<void>;
+    loadItemUpdates: (itemId: string) => Promise<boolean>;
     loadingBoardIds: Set<string>;
 
     // Import Actions
@@ -368,6 +369,37 @@ export const createBoardSlice: StateCreator<
         }
     },
 
+    // Fetches one item's comment bodies. Opening a task asks for this directly
+    // instead of waiting on the board-wide hydrate, so a thread is never blank
+    // just because that background pass is slow or dropped this item.
+    loadItemUpdates: async (itemId: string) => {
+        const { data, error } = await supabase
+            .from('items')
+            .select('id, updates')
+            .eq('id', itemId)
+            .single();
+
+        if (error || !data) {
+            console.error('Failed to load comments for item', itemId, error);
+            return false;
+        }
+
+        const updates = parseSqlJson(data.updates, []) as Comment[];
+        const fill = <T extends Item>(item: T): T => item.id !== itemId
+            ? item
+            : { ...item, updates, updatesCount: updates.length, updatesLoaded: true };
+
+        set(state => ({
+            boards: state.boards.map(b => ({
+                ...b,
+                items: b.items.map(fill),
+                groups: b.groups.map(g => ({ ...g, items: g.items.map(fill) }))
+            }))
+        }));
+
+        return true;
+    },
+
     loadBoardData: async (boardId: string, _skipLinkedAutoLoad = false) => {
         const { boards, loadingBoardIds } = get();
         const board = boards.find(b => b.id === boardId);
@@ -386,34 +418,64 @@ export const createBoardSlice: StateCreator<
         // bodies in afterwards, off the critical path, so everything that reads
         // item.updates (Task detail, AI summary, export) still finds them there.
         // Deliberately not awaited — the board is already usable without it.
-        const hydrateUpdates = () => {
-            supabase
-                .from('items')
-                .select('id, updates')
-                .eq('board_id', boardId)
-                .eq('is_archived', false)
-                .then(({ data, error }) => {
-                    if (error || !data) return;
+        //
+        // Fetched in chunks rather than as one board-wide request: comment bodies
+        // run to 17MB on the busiest board, and asking for all of them at once
+        // made a single request that failed or timed out as a unit, leaving every
+        // thread on the board looking empty while the rows sat intact in the
+        // database. A chunk that fails now costs only its own items, gets retried,
+        // and leaves them unhydrated so opening one still fetches it on demand.
+        const hydrateUpdates = async () => {
+            const current = get().boards.find(b => b.id === boardId);
+            const ids = (current?.items || []).map(i => i.id);
+            if (ids.length === 0) return;
 
-                    const byId = new Map<string, Comment[]>(
-                        data.map(r => [r.id, parseSqlJson(r.updates, []) as Comment[]])
-                    );
-                    const fill = <T extends Item>(item: T): T => {
-                        const updates = byId.get(item.id);
-                        // An item already hydrated is left alone, so a comment
-                        // posted while this was in flight can't be rolled back.
-                        if (!updates || item.updatesLoaded) return item;
-                        return { ...item, updates, updatesCount: updates.length, updatesLoaded: true };
-                    };
+            const CHUNK_SIZE = 10;
+            const failed: string[] = [];
 
-                    set(state => ({
-                        boards: state.boards.map(b => b.id !== boardId ? b : {
-                            ...b,
-                            items: b.items.map(fill),
-                            groups: b.groups.map(g => ({ ...g, items: g.items.map(fill) }))
-                        })
-                    }));
-                });
+            for (let start = 0; start < ids.length; start += CHUNK_SIZE) {
+                const chunk = ids.slice(start, start + CHUNK_SIZE);
+                let rows: { id: string; updates: unknown }[] | null = null;
+
+                // One retry: a failure here is usually a timeout on an unlucky
+                // chunk rather than something a second attempt would hit again.
+                for (let attempt = 0; attempt < 2 && !rows; attempt++) {
+                    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 400));
+                    const res = await supabase.from('items').select('id, updates').in('id', chunk);
+                    if (res.error) {
+                        console.error('Comment bodies: chunk failed', { boardId, attempt: attempt + 1, error: res.error });
+                        continue;
+                    }
+                    rows = res.data as { id: string; updates: unknown }[];
+                }
+
+                if (!rows) { failed.push(...chunk); continue; }
+
+                const byId = new Map<string, Comment[]>(
+                    rows.map(r => [r.id, parseSqlJson(r.updates, []) as Comment[]])
+                );
+                const fill = <T extends Item>(item: T): T => {
+                    const updates = byId.get(item.id);
+                    // An item already hydrated is left alone, so a comment
+                    // posted while this was in flight can't be rolled back.
+                    if (!updates || item.updatesLoaded) return item;
+                    return { ...item, updates, updatesCount: updates.length, updatesLoaded: true };
+                };
+
+                set(state => ({
+                    boards: state.boards.map(b => b.id !== boardId ? b : {
+                        ...b,
+                        items: b.items.map(fill),
+                        groups: b.groups.map(g => ({ ...g, items: g.items.map(fill) }))
+                    })
+                }));
+            }
+
+            // Not swallowed: an item left unhydrated shows its comments only when
+            // something asks for them again, so name the ones that were missed.
+            if (failed.length > 0) {
+                console.error('Comment bodies: items not loaded', { boardId, count: failed.length, ids: failed });
+            }
         };
 
         // Already loaded: silently refresh items only when this board has linked groups,
@@ -475,7 +537,7 @@ export const createBoardSlice: StateCreator<
                 };
                 return { boards: newBoards };
             });
-            hydrateUpdates();
+            void hydrateUpdates().catch(err => console.error('Comment bodies: hydrate failed', err));
             autoLoadLinked();
             return;
         }
@@ -595,7 +657,7 @@ export const createBoardSlice: StateCreator<
 
             // After full load, auto-load each linked board in the background so that
             // realtime events from the DB trigger are wired up for both sides immediately.
-            hydrateUpdates();
+            void hydrateUpdates().catch(err => console.error('Comment bodies: hydrate failed', err));
             autoLoadLinked();
         } catch (err) {
             console.error('Failed to load board data', err);

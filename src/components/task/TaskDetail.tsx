@@ -61,6 +61,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const editUpdate = useBoardStore(state => state.editUpdate);
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
     const toggleUpdateLike = useBoardStore(state => state.toggleUpdateLike);
+    const loadItemUpdates = useBoardStore(state => state.loadItemUpdates);
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
 
@@ -134,6 +135,16 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const editEmojiButtonRef = useRef<HTMLButtonElement>(null);
     const editEmojiPickerRef = useRef<HTMLDivElement>(null);
     const editGifButtonRef = useRef<HTMLButtonElement>(null);
+
+    // The board opens on comment counts alone and fills the bodies in behind it.
+    // Waiting on that pass would leave this panel on "Loading updates…" for as
+    // long as it takes — or for good, if it failed for this item — so the open
+    // task fetches its own comments straight away.
+    useEffect(() => {
+        if (activeItem && activeItem.updatesLoaded === false) {
+            loadItemUpdates(itemId);
+        }
+    }, [itemId, activeItem?.updatesLoaded, activeItem, loadItemUpdates]);
 
     // Auto-grow the item title textarea up to 2 lines as content changes
     useEffect(() => {

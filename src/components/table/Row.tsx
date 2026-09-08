@@ -4,6 +4,7 @@ import { Cell } from './Cell';
 import { GripVertical, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useBoardStore } from '../../store/useBoardStore';
+import { itemUpdateSummary } from '../../lib/utils';
 import { Check } from 'lucide-react';
 
 const CheckboxState = ({ itemId }: { itemId: string }) => {
@@ -69,6 +70,8 @@ export const Row = React.memo(({
 
     const isSelected = useBoardStore(state => state.selectedItemIds.includes(item.id));
     // const isHighlighted = highlightedItemId === item.id; // Disabled
+
+    const updateSummary = itemUpdateSummary(item);
 
     return (
         <div ref={rowRef} className={`table-row ${isSelected ? 'selected' : ''}`} style={{
@@ -252,14 +255,11 @@ export const Row = React.memo(({
                         borderRadius: '4px',
                         // Blue if updates within 14 days, else gray
                         color: (() => {
-                            if (item.updates && item.updates.length > 0) {
-                                const latestUpdate = item.updates.reduce((latest, current) => {
-                                    return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
-                                });
-                                const daysSinceLastUpdate = Math.floor((new Date().getTime() - new Date(latestUpdate.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-                                if (daysSinceLastUpdate <= 14) return 'hsl(var(--color-brand-primary))';
-                            }
-                            return 'hsl(var(--color-text-tertiary))';
+                            if (!updateSummary.lastAt) return 'hsl(var(--color-text-tertiary))';
+                            const daysSinceLastUpdate = Math.floor((Date.now() - new Date(updateSummary.lastAt).getTime()) / (1000 * 60 * 60 * 24));
+                            return daysSinceLastUpdate <= 14
+                                ? 'hsl(var(--color-brand-primary))'
+                                : 'hsl(var(--color-text-tertiary))';
                         })(),
                         transition: 'background-color 0.2s, color 0.2s',
                         zIndex: 10,
@@ -268,18 +268,18 @@ export const Row = React.memo(({
                     }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))';
-                        if (!item.updates?.length) e.currentTarget.style.color = 'hsl(var(--color-brand-primary))';
+                        if (!updateSummary.count) e.currentTarget.style.color = 'hsl(var(--color-brand-primary))';
                     }}
                     onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        if (!item.updates?.length) e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))';
+                        if (!updateSummary.count) e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))';
                     }}
                 >
                     <div style={{ position: 'relative', display: 'flex' }}>
                         <MessageSquare size={18} />
 
                         {/* Update Count Badge */}
-                        {item.updates && item.updates.length > 0 && (
+                        {updateSummary.count > 0 && (
                             <div style={{
                                 position: 'absolute',
                                 top: '-4px', // Adjusted top
@@ -299,7 +299,7 @@ export const Row = React.memo(({
                                 zIndex: 20,
                                 lineHeight: '1' // Center vertically
                             }}>
-                                {item.updates.length}
+                                {updateSummary.count}
                             </div>
                         )}
                     </div>

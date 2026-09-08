@@ -109,6 +109,14 @@ export interface Item {
     order?: number;
     createdAt?: string;
     parentId?: string; // Link to parent Item for sub-items
+
+    // Comment bodies are by far the heaviest thing an item carries, and the
+    // board only opens with a summary of them: how many, and how recent. The
+    // bodies arrive straight after, in the background, and flip updatesLoaded.
+    // Until then `updates` is empty and these two are what the badge reads.
+    updatesCount?: number;
+    lastUpdateAt?: string;
+    updatesLoaded?: boolean;
 }
 
 export interface SortState {

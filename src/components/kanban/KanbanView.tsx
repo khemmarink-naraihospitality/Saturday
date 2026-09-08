@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useBoardStore } from '../../store/useBoardStore';
 import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown, CornerDownRight } from 'lucide-react';
 import type { Item, Column } from '../../types';
+import { itemUpdateSummary } from '../../lib/utils';
 
 const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
     // Same rule as the table's people cell: ids that no longer resolve to a visible
@@ -163,12 +164,12 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     </div>
                 )}
 
-                {item.updates && item.updates.length > 0 && (
+                {itemUpdateSummary(item).count > 0 && (
                     <div className="kanban-field-row">
                         <span className="kanban-field-label">Updates</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
                             <MessageSquare size={12} />
-                            <span>{item.updates.length}</span>
+                            <span>{itemUpdateSummary(item).count}</span>
                         </div>
                     </div>
                 )}
@@ -765,10 +766,10 @@ export const KanbanView = () => {
                                             {draggingItem.title}
                                         </span>
                                     </div>
-                                    {draggingItem.updates && draggingItem.updates.length > 0 && (
+                                    {itemUpdateSummary(draggingItem).count > 0 && (
                                         <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
                                             <MessageSquare size={12} />
-                                            <span>{draggingItem.updates.length}</span>
+                                            <span>{itemUpdateSummary(draggingItem).count}</span>
                                         </div>
                                     )}
                                 </div>

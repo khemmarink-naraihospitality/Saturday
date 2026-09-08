@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Board, ColumnType, Column } from '../../types';
+import type { Board, ColumnType, Column, Comment, Item } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { mapDbDependency } from './itemDependencySlice';
@@ -382,6 +382,40 @@ export const createBoardSlice: StateCreator<
             ids.forEach(id => get().loadBoardData(id, true));
         };
 
+        // The board renders from the item summaries above; this pulls the comment
+        // bodies in afterwards, off the critical path, so everything that reads
+        // item.updates (Task detail, AI summary, export) still finds them there.
+        // Deliberately not awaited — the board is already usable without it.
+        const hydrateUpdates = () => {
+            supabase
+                .from('items')
+                .select('id, updates')
+                .eq('board_id', boardId)
+                .eq('is_archived', false)
+                .then(({ data, error }) => {
+                    if (error || !data) return;
+
+                    const byId = new Map<string, Comment[]>(
+                        data.map(r => [r.id, parseSqlJson(r.updates, []) as Comment[]])
+                    );
+                    const fill = <T extends Item>(item: T): T => {
+                        const updates = byId.get(item.id);
+                        // An item already hydrated is left alone, so a comment
+                        // posted while this was in flight can't be rolled back.
+                        if (!updates || item.updatesLoaded) return item;
+                        return { ...item, updates, updatesCount: updates.length, updatesLoaded: true };
+                    };
+
+                    set(state => ({
+                        boards: state.boards.map(b => b.id !== boardId ? b : {
+                            ...b,
+                            items: b.items.map(fill),
+                            groups: b.groups.map(g => ({ ...g, items: g.items.map(fill) }))
+                        })
+                    }));
+                });
+        };
+
         // Already loaded: silently refresh items only when this board has linked groups,
         // so that mirror items created by the DB trigger while the user was elsewhere
         // are picked up immediately without a full page reload.
@@ -391,7 +425,7 @@ export const createBoardSlice: StateCreator<
 
             const { data: items } = await supabase
                 .from('items')
-                .select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id')
+                .select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id')
                 .eq('board_id', boardId)
                 .eq('is_archived', false)
                 .order('order');
@@ -403,12 +437,24 @@ export const createBoardSlice: StateCreator<
                 if (boardIndex === -1) return state;
 
                 const b = state.boards[boardIndex];
+                // This path re-reads a board that's already open and on screen, so
+                // comment bodies already in hand are carried over rather than
+                // blanked and re-fetched — the thread must not flicker empty under
+                // someone who is reading it.
+                const existingById = new Map(b.items.map(i => [i.id, i]));
                 const parsedItemsMap: Record<string, any[]> = {};
                 const parsedItems = items.map(i => {
+                    const existing = existingById.get(i.id);
                     const p = {
                         id: i.id, title: i.title, groupId: i.group_id, boardId,
                         values: parseSqlJson(i.values, {}), isHidden: i.is_hidden,
-                        updates: parseSqlJson(i.updates, []), files: parseSqlJson(i.files, []),
+                        updates: existing?.updates ?? [],
+                        updatesCount: existing?.updatesLoaded
+                            ? (existing.updates?.length ?? 0)
+                            : (i.updates_count ?? 0),
+                        lastUpdateAt: i.last_update_at || undefined,
+                        updatesLoaded: existing?.updatesLoaded ?? false,
+                        files: parseSqlJson(i.files, []),
                         order: i.order, parentId: i.parent_id, createdAt: i.created_at
                     };
                     if (!parsedItemsMap[i.group_id]) parsedItemsMap[i.group_id] = [];
@@ -429,6 +475,7 @@ export const createBoardSlice: StateCreator<
                 };
                 return { boards: newBoards };
             });
+            hydrateUpdates();
             autoLoadLinked();
             return;
         }
@@ -445,7 +492,7 @@ export const createBoardSlice: StateCreator<
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align').eq('board_id', boardId).order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)
             ]);
@@ -484,7 +531,10 @@ export const createBoardSlice: StateCreator<
                         boardId,
                         values: parseSqlJson(i.values, {}),
                         isHidden: i.is_hidden,
-                        updates: parseSqlJson(i.updates, []),
+                        updates: [],
+                        updatesCount: i.updates_count ?? 0,
+                        lastUpdateAt: i.last_update_at || undefined,
+                        updatesLoaded: false,
                         files: parseSqlJson(i.files, []),
                         order: i.order,
                         parentId: i.parent_id,
@@ -545,6 +595,7 @@ export const createBoardSlice: StateCreator<
 
             // After full load, auto-load each linked board in the background so that
             // realtime events from the DB trigger are wired up for both sides immediately.
+            hydrateUpdates();
             autoLoadLinked();
         } catch (err) {
             console.error('Failed to load board data', err);

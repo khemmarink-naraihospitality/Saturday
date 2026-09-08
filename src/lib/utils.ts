@@ -37,6 +37,27 @@ export function parseBoardSlugSuffix(segment: string): string | null {
     return match ? match[1].toLowerCase() : null;
 }
 
+// How many comments an item has, and when the newest one landed. Comment bodies
+// load in the background after the board opens, so until they arrive this reads
+// the summary the board was opened with; once they're in, the array is the
+// truth, and stays right as comments are added or deleted.
+export const itemUpdateSummary = (item: {
+    updates?: { createdAt: string }[];
+    updatesCount?: number;
+    lastUpdateAt?: string;
+    updatesLoaded?: boolean;
+}): { count: number; lastAt: string | null } => {
+    if (item.updatesLoaded) {
+        const updates = item.updates || [];
+        let lastAt: string | null = null;
+        for (const u of updates) {
+            if (u.createdAt && (!lastAt || u.createdAt > lastAt)) lastAt = u.createdAt;
+        }
+        return { count: updates.length, lastAt };
+    }
+    return { count: item.updatesCount ?? (item.updates?.length || 0), lastAt: item.lastUpdateAt || null };
+};
+
 export interface LinkValue {
     url: string;
     label: string;

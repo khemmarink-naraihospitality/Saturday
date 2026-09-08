@@ -236,6 +236,12 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         );
     }
 
+    // Falls back to the count the board opened with, so the tab shows the right
+    // number even in the moment before the comment bodies have arrived.
+    const updatesTabCount = activeItem.updatesLoaded === false
+        ? (activeItem.updatesCount ?? 0)
+        : getDedupedUpdates(activeItem.updates).length;
+
     const EMOJI_CATEGORIES = [
         { label: 'Smileys & People', emojis: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🤩','🥳','😢','😭','😤','😠','🤯','😳','🥺','😱','🤔','🤗','😴','🫡','😒','😏','🤭','🙄','😌'] },
         { label: 'Gestures', emojis: ['👍','👎','👋','✌️','🤞','👌','🙏','👏','🤝','💪','🤙','🫶','🤜','🤛','👊','✊','🖐️','👐','🤲','🫱'] },
@@ -529,14 +535,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     >
                         <tab.icon size={16} />
                         {tab.label}
-                        {tab.id === 'updates' && getDedupedUpdates(activeItem.updates).length > 0 && (
+                        {tab.id === 'updates' && updatesTabCount > 0 && (
                             <span style={{
                                 background: 'hsl(var(--color-brand-primary))',
                                 color: 'white',
                                 padding: '2px 6px',
                                 borderRadius: '10px',
                                 fontSize: '11px'
-                            }}>{getDedupedUpdates(activeItem.updates).length}</span>
+                            }}>{updatesTabCount}</span>
                         )}
                     </button>
                 ))}
@@ -677,7 +683,14 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                         </div>
 
                         {/* Updates List */}
-                        {(getDedupedUpdates(activeItem.updates).length === 0) ? (
+                        {/* Comment bodies land shortly after the board opens, so an item
+                            opened in that window has a count but no content yet. Saying
+                            "no updates yet" there would be wrong, not just early. */}
+                        {(activeItem.updatesLoaded === false && (activeItem.updatesCount ?? 0) > 0) ? (
+                            <div style={{ textAlign: 'center', color: '#888', padding: '40px', fontSize: '14px' }}>
+                                Loading updates…
+                            </div>
+                        ) : (getDedupedUpdates(activeItem.updates).length === 0) ? (
                             <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
                                 <div style={{ marginBottom: '16px' }}>
                                     <img src="https://cdn.monday.com/images/pulse-page-empty-state.svg" alt="No updates" style={{ width: '200px', opacity: 0.6 }} />

@@ -15,18 +15,26 @@ const parseSqlJson = (val: any, fallback: any) => {
     return val ?? fallback;
 };
 
-const mapDbItemToLocal = (i: any, existingItem?: Item): Item => ({
-    id: i.id ?? existingItem?.id,
-    title: i.title ?? existingItem?.title ?? '',
-    groupId: i.group_id ?? existingItem?.groupId ?? '',
-    boardId: i.board_id ?? existingItem?.boardId ?? '',
-    values: parseSqlJson(i.values, existingItem?.values ?? {}),
-    isHidden: i.is_hidden ?? existingItem?.isHidden ?? false,
-    updates: parseSqlJson(i.updates, existingItem?.updates ?? []),
-    files: parseSqlJson(i.files, existingItem?.files ?? []),
-    order: i.order ?? existingItem?.order ?? 0,
-    parentId: i.parent_id !== undefined ? i.parent_id : existingItem?.parentId
-});
+const mapDbItemToLocal = (i: any, existingItem?: Item): Item => {
+    const updates = parseSqlJson(i.updates, existingItem?.updates ?? []);
+    return {
+        id: i.id ?? existingItem?.id,
+        title: i.title ?? existingItem?.title ?? '',
+        groupId: i.group_id ?? existingItem?.groupId ?? '',
+        boardId: i.board_id ?? existingItem?.boardId ?? '',
+        values: parseSqlJson(i.values, existingItem?.values ?? {}),
+        isHidden: i.is_hidden ?? existingItem?.isHidden ?? false,
+        updates,
+        files: parseSqlJson(i.files, existingItem?.files ?? []),
+        order: i.order ?? existingItem?.order ?? 0,
+        parentId: i.parent_id !== undefined ? i.parent_id : existingItem?.parentId,
+        // A realtime row carries the whole updates array, so when one arrives it
+        // is the truth — say so, or the comment badge would keep reporting the
+        // count the board was opened with. Left untouched when the payload has
+        // no updates at all, so the caller's spread keeps what it already had.
+        ...(i.updates !== undefined ? { updates, updatesLoaded: true, updatesCount: updates.length } : {})
+    };
+};
 
 export interface MemberSlice {
     activeBoardMembers: any[];

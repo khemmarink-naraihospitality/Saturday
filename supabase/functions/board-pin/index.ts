@@ -129,6 +129,45 @@ Deno.serve(async (req) => {
         .single();
       if (!row) throw new Error('This board is not private');
 
+      // Break-glass access. A master PIN opens any private board without the
+      // board's own PIN. It lives in the BOARD_MASTER_PIN secret and is compared
+      // here, server-side: it is never sent to the browser and never appears in
+      // the client bundle, so it cannot be read out of the shipped JavaScript.
+      //
+      // Deliberately ahead of the lockout check below — a board that someone
+      // else has locked with wrong guesses must still be reachable.
+      const masterPin = Deno.env.get('BOARD_MASTER_PIN') ?? '';
+      if (masterPin && pin === masterPin) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('system_role')
+          .eq('id', user.id)
+          .single();
+
+        // Restricted to super admins on purpose. Ungated, the master PIN would
+        // open every private board for any account that ever learned it — a
+        // weaker position than the per-board PINs it is meant to override. To
+        // anyone else it has to look like an ordinary wrong PIN, so this returns
+        // the same shape as a failure rather than admitting a master PIN exists.
+        if (profile?.system_role !== 'super_admin') {
+          return jsonResponse({ success: false, error: 'Incorrect PIN.' });
+        }
+
+        // Break-glass use leaves a trail. The result is checked rather than
+        // thrown on: a rejected audit row must never be the reason an admin
+        // cannot get into a board.
+        const { error: auditError } = await supabaseAdmin.from('activity_logs').insert({
+          actor_id: user.id,
+          action_type: 'board_master_pin_used',
+          target_type: 'board',
+          target_id: boardId,
+          metadata: { board_title: board.title }
+        });
+        if (auditError) console.error('Master PIN audit log failed', auditError);
+
+        return jsonResponse({ success: true });
+      }
+
       if (row.locked_until && new Date(row.locked_until) > new Date()) {
         const remainingSeconds = Math.ceil((new Date(row.locked_until).getTime() - Date.now()) / 1000);
         return jsonResponse({ success: false, locked: true, remainingSeconds });

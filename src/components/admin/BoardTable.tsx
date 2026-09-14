@@ -442,7 +442,12 @@ export const BoardTable = () => {
                                                     const username = slugify(currentUser.name || 'u');
                                                     const wsName = slugify(board.workspace_title);
                                                     const bName = buildBoardSlug(board.title, board.id);
-                                                    const url = `/${username}/${wsName}/${bName}`;
+                                                    // requirePin makes the new tab re-ask for a private board's PIN.
+                                                    // Admin rights open the board; they are not the PIN, and a tab
+                                                    // opened with window.open inherits a copy of this tab's
+                                                    // sessionStorage — so without this an unlock earned here would
+                                                    // carry over and the lock screen would never appear.
+                                                    const url = `/${username}/${wsName}/${bName}?requirePin=${board.id}`;
                                                     window.open(url, '_blank');
                                                 }}
                                                 disabled={board.is_archived}

@@ -6,6 +6,7 @@ import type { Board, ColumnType, Column, Comment, Item } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { mapDbDependency } from './itemDependencySlice';
+import { isBoardUnlocked } from '../../lib/boardPinUnlock';
 
 export interface BoardSlice {
     boards: Board[];
@@ -405,6 +406,15 @@ export const createBoardSlice: StateCreator<
         const board = boards.find(b => b.id === boardId);
 
         if (!board || loadingBoardIds.has(boardId)) return;
+
+        // A private board's contents stay unfetched until its PIN has been entered
+        // in this session. BoardPage already refuses to render one while locked,
+        // but it is not the only way in: setActiveBoard calls this directly the
+        // moment a board is opened, and autoLoadLinked below calls it for every
+        // linked board — which can itself be private and was never gated at all.
+        // Without this the columns, groups and items land in the store, and in the
+        // network tab, behind the lock screen.
+        if (board.is_private && !isBoardUnlocked(boardId)) return;
 
         const autoLoadLinked = () => {
             if (_skipLinkedAutoLoad) return;

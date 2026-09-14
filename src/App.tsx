@@ -16,6 +16,7 @@ import { SetPasswordPage } from './pages/SetPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { supabase } from './lib/supabase';
 import { takePendingDeepLink, clearPendingDeepLink } from './lib/pendingDeepLink';
+import { clearBoardUnlock } from './lib/boardPinUnlock';
 
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
@@ -371,6 +372,14 @@ function MainApp() {
     const qBoardId = params.get('boardId') || stashed.boardId || null;
     const qWorkspaceId = params.get('workspaceId') || stashed.workspaceId || null;
     const qItemId = params.get('itemId') || stashed.itemId || null;
+
+    // Sent by the Admin console's "Access" button. The cached unlock is dropped
+    // here, at mount, rather than trusted to survive in the URL: the canonical
+    // path is pushed back over the query string once the board resolves. Both
+    // ways into the board — this query param and the /user/workspace/board deep
+    // link resolved later — then meet the same lock screen.
+    const qRequirePin = params.get('requirePin');
+    if (qRequirePin) clearBoardUnlock(qRequirePin);
 
     if (qBoardId) {
       useBoardStore.getState().setActiveBoard(qBoardId);

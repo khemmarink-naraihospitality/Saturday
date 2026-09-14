@@ -459,12 +459,14 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
                                                                     padding: '0 16px',
-                                                                    // Nudged up 1px so its frame lines up with the top edge
-                                                                    // of the aggregate box beside it. position/top rather
-                                                                    // than a margin: a margin on a centred flex item only
-                                                                    // moves it half as far, and this must not shift layout.
+                                                                    // Nudged up 2px so its frame lines up with the top edge
+                                                                    // of the aggregate box beside it (the row centres this
+                                                                    // 36px pill in 40px, the aggregate box sits at the top).
+                                                                    // position/top rather than a margin: a margin on a
+                                                                    // centred flex item only moves it half as far, and this
+                                                                    // must not shift layout.
                                                                     position: 'relative',
-                                                                    top: '-1px',
+                                                                    top: '-2px',
                                                                     backgroundColor: 'hsl(var(--color-bg-surface))',
                                                                     borderRadius: '8px 0 0 8px',
                                                                     border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,

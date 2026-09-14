@@ -266,11 +266,18 @@ export const Table = ({ boardId }: { boardId: string }) => {
     // }, [virtualItems.length]); // logs too often?
 
 
+    // The width of the columns alone. Shared by the header, the add-item row and
+    // the group summary row so that all three are measured from one number
+    // rather than each re-deriving its own.
+    const columnsWidth = useMemo(
+        () => (board?.columns || []).reduce((sum, col) => sum + (col.width || 150), 0),
+        [board]
+    );
+
     const totalWidth = useMemo(() => {
         if (!board) return 0;
-        const columnsWidth = board.columns.reduce((sum, col) => sum + (col.width || 150), 0);
         return itemColumnWidth + columnsWidth + 50; // Add 50 for the add column btn/last spacer
-    }, [board, itemColumnWidth]);
+    }, [board, itemColumnWidth, columnsWidth]);
 
     if (!board) return null;
 
@@ -476,7 +483,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 marginTop: '0px',
                                                                 boxSizing: 'border-box',
                                                                 flexShrink: 0,
-                                                                width: 'fit-content',
+                                                                // Pinned to the column grid rather than fit-content. The
+                                                                // box is already border-box above, so its 1px frame is
+                                                                // drawn inside this width: fit-content plus that border
+                                                                // made the row finish a pixel right of every other row.
+                                                                width: `${columnsWidth}px`,
                                                                 minWidth: '100px' // Ensure it has some width
                                                             }}>
                                                                 {board.columns.map((col, idx) => {
@@ -697,6 +708,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     );
                                                                 })}
                                                             </div>
+                                                            {/* The header and the add-item row both end with this 50px
+                                                                add-column cell, and totalWidth counts it. The summary
+                                                                row did not have it, so it stopped 50px short and its
+                                                                right edge sat inside every other row's. */}
+                                                            <div style={{ width: '50px', flexShrink: 0 }} />
                                                         </div>
                                                     </div>
                                                 ) : vItem.type === 'subitem-header' ? (

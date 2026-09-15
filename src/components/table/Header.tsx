@@ -254,7 +254,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             'timeline': 'Timeline',
             'files': 'Files',
             'link': 'Link',
-            'dropdown': 'Dropdown'
+            'dropdown': 'Dropdown',
+            'priority': 'Priority'
         };
         const newTitle = typeMap[type] || "New Column";
         addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined);

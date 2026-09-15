@@ -79,7 +79,9 @@ Core types defined in `src/types/index.ts`:
 - `Item.values: { [columnId: string]: any }` — dynamic map keyed by column UUID. **Status values are stored as the option UUID** (not the label string).
 - `Item.parentId` — links sub-items to a parent item. Groups only render top-level items; sub-items are filtered by `parentId !== null`.
 
-Column types: `text`, `long_text`, `status`, `date`, `due_date`, `number`, `dropdown`, `checkbox`, `link`, `people`, `timeline`, `files`.
+Column types: `text`, `long_text`, `status`, `date`, `due_date`, `number`, `dropdown`, `checkbox`, `link`, `people`, `timeline`, `files`, `priority`.
+
+`priority` is a 1-5 star rating stored as a plain number (`null` = unrated). It sorts with the numbers, and its group summary is the average of the rated rows only.
 
 Board views: `main_table` (default), `timeline`, `kanban`, `calendar` — switched via `Board.activeViewId`.
 

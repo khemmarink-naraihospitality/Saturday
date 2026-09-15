@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Star } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -155,7 +155,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     let valB = b.values[columnId];
 
                     // Handle different types
-                    if (col.type === 'number') {
+                    // Priority sorts with the numbers: it is a 1-5 rating, and
+                    // sorting it as text would order 10 before 2 if the scale
+                    // ever grows.
+                    if (col.type === 'number' || col.type === 'priority') {
                         valA = parseFloat(valA) || 0;
                         valB = parseFloat(valB) || 0;
                     } else if (col.type === 'date' || col.type === 'due_date') {
@@ -559,6 +562,16 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                                                 return <div style={{ background: vItem.groupColor || 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
+                                                                            })()}
+                                                                            {col.type === 'priority' && (() => {
+                                                                                if (!agg?.count) return null;
+                                                                                return (
+                                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                        <Star size={13} color="#fdab3d" fill="#fdab3d" />
+                                                                                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{agg.avg.toFixed(1)}</span>
+                                                                                        <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>avg</span>
+                                                                                    </div>
+                                                                                );
                                                                             })()}
                                                                             {col.type === 'number' && (() => {
                                                                                 const aggregation = col.aggregation || 'sum';

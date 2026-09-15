@@ -225,6 +225,23 @@ const getCellBgColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | nu
     return `#${hex}`;
 };
 
+// A status cell's fill colour, but only when the cell really has one: a fill pattern other
+// than "none" and an explicit RGB. getCellBgColor also infers colours from theme and indexed
+// palette slots — fine as a last resort, unsafe as a first choice, because an unfilled cell
+// can still carry a default theme slot and trusting that would repaint a plain "Done" blue.
+// Monday exports write explicit RGB fills, which is what lets their status palette survive.
+const getExplicitFillColor = (worksheet: XLSX.WorkSheet, cellRef: string): string | null => {
+    const s = worksheet[cellRef]?.s as any;
+    if (!s) return null;
+    const pattern = s.fill?.patternType ?? s.patternType;
+    if (!pattern || pattern === 'none') return null;
+    const rgb = s.fill?.fgColor?.rgb ?? s.fgColor?.rgb;
+    if (!rgb) return null;
+    const hex = String(rgb).length > 6 ? String(rgb).substring(2) : String(rgb);
+    if (hex.toLowerCase() === 'ffffff' || hex.toLowerCase() === '000000') return null;
+    return `#${hex}`;
+};
+
 // Escapes HTML-significant characters so raw cell text can be safely inserted into HTML.
 const escapeHtml = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -879,6 +896,16 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             groupCount++;
                         }
 
+                        // A non-empty column A makes this a main item, which ends any subitem block
+                        // above it. That has to be settled before the values are read: while
+                        // isInsideSubitems is true, dataIdx takes the subitem table's column, and that
+                        // table sits one column to the right of the main one. The flag used to be reset
+                        // only after the values were built, so the first main item after a subitem block
+                        // read its Status from the neighbouring cell, matched no option, and came in blank.
+                        if (firstVal && isInsideSubitems) {
+                            isInsideSubitems = false;
+                        }
+
                         const itemValues: Record<string, any> = {};
                         dynamicColumns.forEach((c: any) => {
                             const dataIdx = isInsideSubitems ? (c.subIndex !== undefined ? c.subIndex : -1) : c.originalIndex;
@@ -979,11 +1006,8 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         // A row is sub-item if we've seen a 'Subitems' header AND the first column is empty
                         const isSubRow = isInsideSubitems && (!firstVal || firstVal === '');
                         
-                        // 🔄 CRITICAL FIX: Reset sub-item flag if we encounter a MAIN item row (non-empty first column)
-                        if (firstVal && isInsideSubitems) {
-                            console.log(`[Import] Row ${rIdx}: Non-empty first column "${firstVal}". Resetting isInsideSubitems to false.`);
-                            isInsideSubitems = false;
-                        }
+                        // The main-row reset of isInsideSubitems happens before the values are read
+                        // (see above), so by this point the row has already been classified.
 
                         const itemData = {
                             title: (isSubRow && secondVal) ? secondVal : (firstVal || secondVal || 'Missing Title'),
@@ -1010,6 +1034,18 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                             
                             // Initialize with default Grey
                             optionsMap['Default'] = '#c4c4c4';
+
+                            // Every status label an imported item or subitem was actually given. Options
+                            // are built from this, so they can only describe values that exist. ISO dates
+                            // are left out: they come from the subitem "hybrid" status columns that render
+                            // as dates, and would otherwise surface as options in the status picker.
+                            const usedStatusLabels = new Set<string>();
+                            groups.forEach((g: any) => (g.items || []).forEach((it: any) => {
+                                [it, ...(it.subitems || [])].forEach((entry: any) => {
+                                    const v = String(entry?.values?.[c.title] || '').trim();
+                                    if (v && !/^\d{4}-\d{2}-\d{2}/.test(v)) usedStatusLabels.add(v);
+                                });
+                            }));
                             
                             rows.forEach((row, rIdx) => {
                                 const dIdx = c.originalIndex !== -1 ? c.originalIndex : c.subIndex;
@@ -1018,18 +1054,24 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 const val = String(row[dIdx] || '').trim();
                                 if (!val || val.toLowerCase() === 'subitems' || val.toLowerCase() === 'name' || val.toLowerCase() === 'item') return;
                                 
+                                // Only labels some item actually carries become options. This loop walks
+                                // every raw row at one fixed column, so it also passes over the header row
+                                // and the subitem header — which is how "Status" and "Owner" used to be
+                                // created as status options.
+                                if (!usedStatusLabels.has(val)) return;
+
                                 if (!optionsMap[val]) {
-                                    // 1. Check Standard Map first
-                                    const standardColor = standardStatusColorMap[val.toLowerCase()];
-                                    if (standardColor) {
-                                        optionsMap[val] = standardColor;
-                                    } else {
-                                        // 2. Try to extract color from Excel
-                                        const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
-                                        const excelColor = getCellBgColor(worksheet, ref);
-                                        // 3. Fallback to Black (#333333) as requested
-                                        optionsMap[val] = excelColor || '#333333';
-                                    }
+                                    const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
+                                    // 1. The colour the cell is genuinely filled with, so an export keeps its
+                                    //    own palette: Monday's "In progress" is grey, and the built-in map
+                                    //    below used to repaint it orange.
+                                    // 2. The built-in map, for sheets whose status cells carry no fill.
+                                    // 3. Whatever getCellBgColor can infer from theme/indexed palette slots.
+                                    // 4. Black.
+                                    optionsMap[val] = getExplicitFillColor(worksheet, ref)
+                                        || standardStatusColorMap[val.toLowerCase()]
+                                        || getCellBgColor(worksheet, ref)
+                                        || '#333333';
                                 }
                             });
                             

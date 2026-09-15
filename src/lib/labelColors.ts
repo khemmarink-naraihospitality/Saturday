@@ -64,6 +64,67 @@ export const nextLabelColor = (existingCount: number): string =>
     NEW_LABEL_CYCLE[existingCount % NEW_LABEL_CYCLE.length];
 
 /**
+ * Snaps an arbitrary colour — in practice a fill read out of an imported
+ * spreadsheet — onto the nearest colour the system itself uses: the picker grid
+ * plus the defaults handed to new options. Without this an import brings in
+ * whatever hex its source file used (a Monday "Testing" arrives as #66CCFF),
+ * which is exactly the unbounded vocabulary this palette exists to prevent.
+ *
+ * Distance is measured in CIELAB, where equal distances look about equally
+ * different, rather than in RGB, where they don't. Near-greys match only greys:
+ * the palette has no light grey, and without that rule a pale grey would land on
+ * a faint pastel tint rather than reading as grey.
+ */
+const SYSTEM_COLORS = Array.from(new Set([...LABEL_COLORS, ...NEW_LABEL_CYCLE].map(c => c.toUpperCase())));
+const NEUTRAL_CHROMA = 8;
+
+type Lab = [number, number, number];
+
+const hexToLab = (hex: string): Lab | null => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const linear = (c: number) => {
+        const v = c / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const r = linear((n >> 16) & 255);
+    const g = linear((n >> 8) & 255);
+    const b = linear(n & 255);
+    const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const fx = f((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047);
+    const fy = f(r * 0.2126 + g * 0.7152 + b * 0.0722);
+    const fz = f((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+};
+
+const chroma = (lab: Lab) => Math.hypot(lab[1], lab[2]);
+
+const SYSTEM_LABS = SYSTEM_COLORS.map(hex => ({ hex, lab: hexToLab(hex) as Lab }));
+
+export const nearestSystemColor = (hex: string): string => {
+    const source = hexToLab(hex);
+    if (!source) return hex;
+
+    let candidates = SYSTEM_LABS;
+    if (chroma(source) < NEUTRAL_CHROMA) {
+        const neutrals = SYSTEM_LABS.filter(c => chroma(c.lab) < NEUTRAL_CHROMA);
+        if (neutrals.length) candidates = neutrals;
+    }
+
+    let best = candidates[0];
+    let bestDistance = Infinity;
+    for (const c of candidates) {
+        const d = Math.hypot(source[0] - c.lab[0], source[1] - c.lab[1], source[2] - c.lab[2]);
+        if (d < bestDistance) {
+            bestDistance = d;
+            best = c;
+        }
+    }
+    return best.hex;
+};
+
+/**
  * Both Status and Dropdown pickers offer a one-click "+ New label" button
  * that used to always name the result "New Label" verbatim. Clicked twice
  * without renaming in between, that created two options sharing one label —

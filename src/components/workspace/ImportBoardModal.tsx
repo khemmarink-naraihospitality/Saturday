@@ -5,6 +5,7 @@ import { X, Upload, Loader2, CheckCircle2, Layers, Plus, AlertCircle } from 'luc
 import { useBoardStore } from '../../store/useBoardStore';
 import { showToast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
+import { nearestSystemColor } from '../../lib/labelColors';
 
 interface ImportBoardModalProps {
     onClose: () => void;
@@ -1062,15 +1063,20 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
 
                                 if (!optionsMap[val]) {
                                     const ref = XLSX.utils.encode_cell({ r: rIdx, c: dIdx });
-                                    // 1. The colour the cell is genuinely filled with, so an export keeps its
-                                    //    own palette: Monday's "In progress" is grey, and the built-in map
-                                    //    below used to repaint it orange.
-                                    // 2. The built-in map, for sheets whose status cells carry no fill.
-                                    // 3. Whatever getCellBgColor can infer from theme/indexed palette slots.
+                                    // 1. The colour the cell is genuinely filled with, snapped onto the
+                                    //    system palette: the export's colour intent survives (Monday's grey
+                                    //    "In progress" stays grey rather than the map's orange) without the
+                                    //    board inheriting a stray hex of its own.
+                                    // 2. The label map, for sheets whose status cells carry no fill. Not
+                                    //    snapped — those colours are already the system's, or an admin's,
+                                    //    deliberate choice.
+                                    // 3. Whatever getCellBgColor can infer from theme/indexed slots, snapped.
                                     // 4. Black.
-                                    optionsMap[val] = getExplicitFillColor(worksheet, ref)
+                                    const fill = getExplicitFillColor(worksheet, ref);
+                                    const guessed = fill ? null : getCellBgColor(worksheet, ref);
+                                    optionsMap[val] = (fill && nearestSystemColor(fill))
                                         || standardStatusColorMap[val.toLowerCase()]
-                                        || getCellBgColor(worksheet, ref)
+                                        || (guessed && nearestSystemColor(guessed))
                                         || '#333333';
                                 }
                             });

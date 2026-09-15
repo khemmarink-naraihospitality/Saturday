@@ -175,6 +175,17 @@ export const groupItems = (
                     const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
                     const uniqueIds = Array.from(new Set(allIds));
                     aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
+                } else if (col.type === 'priority') {
+                    // Kept in step with the same branch in addDynamicGroup above.
+                    // Missing it here is what white-screened every board with a
+                    // Priority column: the fallback produced an aggregate with a
+                    // count but no avg, and the summary cell read avg off it.
+                    const ratings = vals.map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v > 0);
+                    aggregates[col.id] = {
+                        values: ratings,
+                        count: ratings.length,
+                        avg: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
+                    };
                 } else if (col.type === 'files') {
                     const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
                     aggregates[col.id] = { count: totalFiles };

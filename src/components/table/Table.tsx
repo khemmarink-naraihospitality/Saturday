@@ -564,7 +564,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                                 return <div style={{ background: vItem.groupColor || 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
                                                                             })()}
                                                                             {col.type === 'priority' && (() => {
-                                                                                if (!agg?.count) return null;
+                                                                                // Reads the average defensively: this summary cell
+                                                                                // renders whatever the grouping code produced, and a
+                                                                                // shape without an avg must show nothing rather than
+                                                                                // throw and take the whole board down with it.
+                                                                                if (!agg?.count || typeof agg.avg !== 'number') return null;
                                                                                 return (
                                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                         <Star size={13} color="#fdab3d" fill="#fdab3d" />

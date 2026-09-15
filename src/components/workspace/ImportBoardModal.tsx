@@ -636,6 +636,17 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     // Row 1 (between the title and the first group) holds the board description, when present
                     const boardDescription = !hasNoDescription ? String(rows[1]?.[0] || '').trim() : '';
 
+                    // Row 0 holds the board title as its author typed it. The tab name is usually
+                    // the same words, but it makes a poor source for the name: tabs are often
+                    // lower-cased, and Excel cuts them off at 31 characters. A1 is taken only when
+                    // it is recognisably that same title — equal to the tab ignoring case, or the
+                    // full text the tab was truncated from — so a sheet whose first row is really
+                    // a header ("Name", "Status") can never produce a board called "Name".
+                    const a1Title = String(rows[0]?.[0] || '').trim();
+                    const boardTitle = a1Title && a1Title.toLowerCase().startsWith(sheetName.trim().toLowerCase())
+                        ? a1Title
+                        : sheetName;
+
                     const palette = ['#579bfc', '#00c875', '#fdab3d', '#e2445c', '#a25ddc', '#333333'];
 
                     let dynamicColumns: any[] = [];
@@ -1058,7 +1069,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     filePreviews.push({
                         id: `${file.name}-${sheetName}`,
                         fileName: file.name,
-                        title: sheetName,
+                        title: boardTitle,
                         description: boardDescription,
                         groups,
                         columns,

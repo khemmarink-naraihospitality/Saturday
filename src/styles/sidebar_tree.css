@@ -1,5 +1,86 @@
 /* Tree Sidebar Styles */
 
+/* Collapsed sidebar: an icon-only rail (Mews' left nav, collapsed). Buttons
+   use a real hover token (--color-bg-surface-hover) rather than the
+   --color-bg-hover the expanded Home/Favorites buttons reference inline —
+   that one is never defined anywhere in the app, so those buttons currently
+   have no visible hover feedback at all. Not fixed here (out of scope for
+   this change), but not worth repeating in a new component either. */
+.rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    padding: 12px 0;
+    gap: 4px;
+    box-sizing: border-box;
+    /* No background of its own — the parent .sidebar's already carries the
+       right one (--color-bg-surface), and inheriting it keeps the collapse
+       toggle from causing a visible colour flash. */
+}
+
+.rail-icon-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: hsl(var(--color-text-secondary));
+    transition: background-color 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.rail-icon-btn:hover {
+    background-color: hsl(var(--color-bg-surface-hover));
+    color: hsl(var(--color-text-primary));
+}
+
+.rail-icon-btn.active {
+    background-color: hsl(var(--color-brand-light));
+    color: hsl(var(--color-brand-primary));
+}
+
+.rail-divider {
+    width: 28px;
+    height: 1px;
+    background-color: hsl(var(--color-border));
+    margin: 6px 0;
+    flex-shrink: 0;
+}
+
+/* A small dark tooltip bubble to the right of each rail icon, since the
+   label text that would normally explain it is exactly what's hidden while
+   collapsed. */
+.rail-tooltip {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #1f2937;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 200;
+}
+
+.rail-icon-btn:hover .rail-tooltip {
+    opacity: 1;
+}
+
 .tree-container {
     padding: 4px 8px;
 }

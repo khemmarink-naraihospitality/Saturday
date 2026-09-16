@@ -18,6 +18,7 @@ import {
 
 import { useBoardStore } from '../../../store/useBoardStore';
 import { useUserStore } from '../../../store/useUserStore';
+import { useAccessibleWorkspaces } from '../../../hooks/useAccessibleWorkspaces';
 import { showToast } from '../../../utils/toast';
 import { ConfirmModal } from '../../ui/ConfirmModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
@@ -105,13 +106,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
         return wsMatch || boardMatch;
     });
 
-    const allAccessibleWorkspaces = workspaces.filter((w, index, self) => {
-        const isAccessible = w.owner_id === user?.id ||
-            (userWorkspaceRoles[w.id] !== undefined) ||
-            boards.some(b => b.workspaceId === w.id && sharedBoardIds.includes(b.id));
-
-        return isAccessible && self.findIndex(i => i.id === w.id) === index;
-    });
+    // Shared with the collapsed icon rail (Sidebar.tsx) so a workspace visible
+    // in one is never silently missing from the other.
+    const allAccessibleWorkspaces = useAccessibleWorkspaces();
 
     // Auto-expand on search
     useEffect(() => {
@@ -246,6 +243,8 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                         setActiveWorkspace(ws.id);
                     }}
                 >
+                    <WorkspaceIcon title={ws.title} isActive={isActive} />
+
                     {editingWorkspaceId === ws.id ? (
                         <input
                             autoFocus

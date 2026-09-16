@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, MoreHorizontal, Archive, Home, Star } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Archive, Home, Star, Menu } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 
 interface SidebarHeaderProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
+    onToggleCollapse: () => void;
 }
 
-export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProps) => {
+export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }: SidebarHeaderProps) => {
     const addWorkspace = useBoardStore(state => state.addWorkspace);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const activePage = useBoardStore(state => state.activePage);
@@ -50,6 +51,18 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery }: SidebarHeaderProp
 
     return (
         <div className="sidebar-header" style={{ padding: '12px 16px 0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
+            {/* Persistent hamburger toggle, matching Mews: one clearly-discoverable
+                control instead of the old collapse button that only appeared on
+                hovering the resize handle. */}
+            <button
+                className="rail-icon-btn"
+                onClick={onToggleCollapse}
+                title="Collapse sidebar"
+                style={{ marginBottom: '8px', marginLeft: '-8px' }}
+            >
+                <Menu size={20} />
+            </button>
+
             <div
                 onClick={() => navigateTo('home')}
                 style={{

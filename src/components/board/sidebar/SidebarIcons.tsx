@@ -20,19 +20,19 @@ export const BoardIcon = ({ size = 16, className = "", style = {} }: { size?: nu
     </svg>
 );
 
-export const WorkspaceIcon = ({ title, isActive }: { title: string, isActive: boolean }) => {
+export const WorkspaceIcon = ({ title, isActive, size = 20 }: { title: string, isActive: boolean, size?: number }) => {
     const initial = title.trim().charAt(0).toUpperCase() || '?';
     return (
         <div style={{
-            width: '20px',
-            height: '20px',
+            width: `${size}px`,
+            height: `${size}px`,
             borderRadius: '50%',
             backgroundColor: isActive ? 'hsl(var(--color-brand-primary))' : '#e6e9ef',
             color: isActive ? 'white' : '#676879',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '11px',
+            fontSize: `${Math.round(size * 0.55)}px`,
             fontWeight: 700,
             flexShrink: 0,
             transition: 'all 0.2s',

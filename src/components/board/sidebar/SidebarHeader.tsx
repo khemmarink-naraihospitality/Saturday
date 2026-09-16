@@ -51,50 +51,62 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
 
     return (
         <div className="sidebar-header" style={{ padding: '12px 16px 0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
-            {/* Persistent hamburger toggle, matching Mews: one clearly-discoverable
-                control instead of the old collapse button that only appeared on
-                hovering the resize handle. */}
-            <button
-                className="rail-icon-btn"
-                onClick={onToggleCollapse}
-                title="Collapse sidebar"
-                style={{ marginBottom: '8px', marginLeft: '-8px' }}
-            >
-                <Menu size={20} />
-            </button>
-
+            {/* Hamburger and logo share one row — the hamburger is a persistent
+                toggle (matching Mews: one clearly-discoverable control instead
+                of the old collapse button that only appeared on hovering the
+                resize handle), placed right beside the logo rather than on its
+                own line above it. */}
             <div
-                onClick={() => navigateTo('home')}
                 style={{
                     marginBottom: '4px',
                     marginTop: '2px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
+                    gap: '4px',
                     userSelect: 'none'
                 }}
             >
-                <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                    backgroundColor: 'white'
-                }}>
-                    <img
-                        src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
-                        alt="Logo"
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>
-                    <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px' }}>Saturday.com</span>
+                <button
+                    className="rail-icon-btn"
+                    onClick={onToggleCollapse}
+                    title="Collapse sidebar"
+                    style={{ marginLeft: '-8px', flexShrink: 0 }}
+                >
+                    <Menu size={20} />
+                </button>
+
+                <div
+                    onClick={() => navigateTo('home')}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        overflow: 'hidden'
+                    }}
+                >
+                    <div style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                        backgroundColor: 'white',
+                        flexShrink: 0
+                    }}>
+                        <img
+                            src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
+                            alt="Logo"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>
+                        <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Saturday</span>
+                    </div>
                 </div>
             </div>
 

@@ -42,7 +42,8 @@ export const createColumnSlice: StateCreator<
         if (!activeBoardId) return;
         const newColId = uuidv4();
         const board = get().boards.find(b => b.id === activeBoardId);
-        const order = index !== undefined ? index : (board ? board.columns.length : 0);
+        if (!board) return;
+        const insertAt = index !== undefined ? Math.max(0, Math.min(index, board.columns.length)) : board.columns.length;
 
         // Seed Status columns from the admin-configured Status-to-Color Mapping so a
         // column added to an existing board starts with the same vocabulary a brand new
@@ -52,15 +53,32 @@ export const createColumnSlice: StateCreator<
             options = await getDefaultStatusOptions();
         }
 
-        const newCol = { id: newColId, title, type, order, width: 140, options };
+        const newCol = { id: newColId, title, type, order: insertAt, width: 140, options };
+
+        // Spliced into the array at the target position and everyone's order
+        // re-indexed to match, rather than giving the new column the target
+        // column's own `order` and sorting: that gave the new column and the
+        // column already there an equal order, and a stable sort keeps the
+        // existing column first on a tie — so "add to the right of column N"
+        // landed the new column one slot further right than asked, after the
+        // column it was meant to sit immediately in front of.
+        const newColumns = [...board.columns];
+        newColumns.splice(insertAt, 0, newCol);
+        const reindexed = newColumns.map((c, idx) => ({ ...c, order: idx }));
 
         set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ?
-                { ...b, columns: [...b.columns, newCol].sort((a, b) => a.order - b.order) } : b
-            )
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: reindexed } : b)
         }));
         await supabase.from('columns').insert({
-            id: newColId, board_id: activeBoardId, title, type, order, width: 140, options
+            id: newColId, board_id: activeBoardId, title, type, order: insertAt, width: 140, options
+        });
+
+        // Everything from insertAt onward shifted by one; persist the full
+        // sequence rather than just the new row, the same way duplicateColumn
+        // and moveColumn do.
+        await supabase.rpc('reorder_columns', {
+            _board_id: activeBoardId,
+            _column_ids: reindexed.map(c => c.id)
         });
 
         get().logActivity('column_created', 'board', activeBoardId, {

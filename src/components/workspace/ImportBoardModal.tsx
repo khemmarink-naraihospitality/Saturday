@@ -793,6 +793,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                     if (!sh || sh.toLowerCase() === 'subitems') return;
                                     const shLower = sh.toLowerCase();
                                     if (shLower === 'name' || shLower === 'item') return;
+                                    // The main table finds its Item ID column and deliberately keeps it out
+                                    // of the board's columns: it is the key comments are attached by, not
+                                    // something anyone wants to look at. This rescan has to honour the same
+                                    // rule, or the subitem header quietly puts the column back. Matched
+                                    // narrowly — not on every title ending in "id" — so a real column such
+                                    // as "Paid" is left alone.
+                                    if (shLower.includes('item id') || shLower === 'id') return;
                                     
                                     // Find existing column by title
                                     let col = dynamicColumns.find(c => c.title.toLowerCase() === shLower);
@@ -1114,13 +1121,32 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }
 
+                    // A subitem header with no counterpart in the main table invents a board column
+                    // (originalIndex === -1). That is right when the subitems carry data for it, and
+                    // clutter when they don't: a Monday export's subitem header lists "Owner" whether
+                    // or not a single subitem has one, and it then sits as an empty column on every
+                    // row of the board. Invented columns are kept only where some row has a value, so
+                    // real subitem data is never dropped. Columns from the main table stay either way
+                    // — an empty column there is the board's own shape, not an accident of parsing.
+                    const columnHasValue = (title: string) =>
+                        groups.some((g: any) => (g.items || []).some((it: any) =>
+                            [it, ...(it.subitems || [])].some((entry: any) => {
+                                const v = entry?.values?.[title];
+                                if (Array.isArray(v)) return v.length > 0;
+                                if (typeof v === 'boolean') return v;
+                                if (v && typeof v === 'object') return Object.values(v).some(Boolean);
+                                return String(v ?? '').trim() !== '';
+                            })
+                        ));
+                    const keptColumns = columns.filter((c: any) => c.originalIndex !== -1 || columnHasValue(c.title));
+
                     filePreviews.push({
                         id: `${file.name}-${sheetName}`,
                         fileName: file.name,
                         title: boardTitle,
                         description: boardDescription,
                         groups,
-                        columns,
+                        columns: keptColumns,
                         updatesMap
                     });
                 });

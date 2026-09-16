@@ -52,7 +52,13 @@ export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column,
                     cursor: 'pointer',
                     overflow: 'hidden',
                     flexWrap: 'nowrap',
-                    justifyContent: columnJustify(column.numberAlign, defaultColumnAlign(column.type))
+                    // An empty cell has no value to align, so the "+" affordance is always
+                    // centered — the same way Person's is — regardless of the column's own
+                    // left/right alignment setting. That setting only takes effect once
+                    // there are labels to actually align.
+                    justifyContent: selectedLabels.length > 0
+                        ? columnJustify(column.numberAlign, defaultColumnAlign(column.type))
+                        : 'center'
                 }}
             >
                 {selectedLabels.length > 0 ? (
@@ -74,7 +80,9 @@ export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column,
                         );
                     })
                 ) : (
-                    <span style={{ color: 'hsl(var(--color-text-tertiary))', fontSize: '12px' }}>+</span>
+                    // Same size/weight/dimness as Person's empty-state "+", so the two
+                    // columns' placeholders read as one consistent affordance.
+                    <span style={{ color: 'hsl(var(--color-text-tertiary))', fontSize: '18px', opacity: 0.5 }}>+</span>
                 )}
             </div>
 

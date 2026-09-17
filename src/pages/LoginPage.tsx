@@ -94,14 +94,48 @@ export const LoginPage = () => {
 
     return (
         <div style={{
+            position: 'relative',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: '100vh',
-            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            overflow: 'hidden',
+            // Plain fallback while the video loads (or if it never can — an
+            // ad blocker, a flaky connection) so the page is never blank.
+            backgroundColor: '#0f172a',
             fontFamily: 'Inter, -apple-system, sans-serif'
         }}>
+            <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    zIndex: 0
+                }}
+            >
+                <source src="https://naraihospitalitygroup.com/wp-content/uploads/2024/10/narai-video-banner-compressed.webm" type="video/webm" />
+                <source src="https://naraihospitalitygroup.com/wp-content/uploads/2024/11/Narai_Header-2.mp4" type="video/mp4" />
+            </video>
+
+            {/* Darkens the video so the white card keeps the same contrast it had
+                against the old plain gradient, regardless of how bright any given
+                frame of the footage is. */}
             <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                zIndex: 1
+            }} />
+
+            <div style={{
+                position: 'relative',
+                zIndex: 2,
                 backgroundColor: 'white',
                 padding: '48px 40px',
                 borderRadius: '16px',

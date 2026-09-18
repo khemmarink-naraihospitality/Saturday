@@ -13,7 +13,11 @@ export const TopBar = () => {
         <div style={{
             height: '50px',
             width: '100%',
-            backgroundColor: 'hsl(var(--color-bg-surface))',
+            // Same reasoning as BoardHeader: this sits at the top of the floating
+            // main panel, at its rounded corner — -surface is close enough to the
+            // panel's backdrop to camouflage that corner instead of reading as
+            // part of the white card.
+            backgroundColor: 'hsl(var(--color-bg-canvas))',
             borderBottom: '1px solid hsl(var(--color-border))',
             display: 'flex',
             alignItems: 'center',

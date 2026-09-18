@@ -107,8 +107,13 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     const displayMembers = activeBoardMembers.slice(0, 7);
     const remainingMembers = activeBoardMembers.length - 7;
 
+    // --color-bg-canvas, not -subtle: this header sits at the very top of the
+    // floating main panel, right where its rounded corner is. -subtle is the
+    // same tone as the backdrop behind the panel, so the header used to
+    // camouflage that corner against the backdrop instead of reading as part
+    // of the white card.
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-subtle))' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>
             <header style={{
                 minHeight: '56px',
                 display: 'flex',

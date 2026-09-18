@@ -45,7 +45,10 @@ export const BoardViewsTabs = () => {
             padding: '0 24px',
             gap: '16px',
             borderBottom: '1px solid hsl(var(--color-border))',
-            backgroundColor: 'hsl(var(--color-bg-subtle))',
+            // -canvas, matching BoardHeader's own wrapper and <main> — this tab strip
+            // sits between two white regions (title above, table below) and used to
+            // be a leftover -subtle band sandwiched between them.
+            backgroundColor: 'hsl(var(--color-bg-canvas))',
             height: '32px',
             minHeight: '32px'
         }}>

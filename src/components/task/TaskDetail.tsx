@@ -736,7 +736,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                         ) : (getDedupedUpdates(activeItem.updates).length === 0) ? (
                             <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
                                 <div style={{ marginBottom: '16px' }}>
-                                    <img src="https://cdn.monday.com/images/pulse-page-empty-state.svg" alt="No updates" style={{ width: '200px', opacity: 0.6 }} />
+                                    {/* text-align:center on the wrapper doesn't center this — img is
+                                        display:block under the app's CSS reset, so block-level centering
+                                        needs its own margin:auto rather than relying on the parent. */}
+                                    <img src="https://cdn.monday.com/images/pulse-page-empty-state.svg" alt="No updates" style={{ width: '200px', opacity: 0.6, display: 'block', margin: '0 auto' }} />
                                 </div>
                                 <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 500 }}>No updates yet for this item</h3>
                                 <p style={{ margin: 0, fontSize: '14px' }}>Be the first one to update about progress, mention someone or upload files.</p>

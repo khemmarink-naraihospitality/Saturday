@@ -557,12 +557,20 @@ function MainApp() {
           flexDirection: 'column',
           overflow: 'hidden',
           backgroundColor: 'hsl(var(--color-bg-canvas))',
-          // Was 12px — too tight to read as a rounded corner at a glance, more
-          // of a faint notch than the sweep this is meant to be (see the
-          // Monday.com-style rounded seam this is matching).
-          borderRadius: '20px 0 0 0',
-          borderLeft: '1px solid hsl(var(--color-border))',
-          boxShadow: '-4px 0 15px rgba(0,0,0,0.03)'
+          // A rounded corner alone can't read as "floating" when the panel is
+          // flush to the browser edge on every other side — there's nothing
+          // behind it for a shadow to fall onto. A small gap on top/right/
+          // bottom exposes app-container's own background there, so all four
+          // corners are now genuinely rounded (bottom-left excepted: it still
+          // sits flush against the sidebar, margin-left is 0) and the shadow
+          // below has a surface to actually cast onto.
+          margin: '10px 10px 10px 0',
+          borderRadius: '20px 20px 20px 0',
+          // Two shadows: one resting below (the usual "raised card" cue) and
+          // one bleeding left onto the sidebar, since that edge has no gap of
+          // its own to carry a shadow. The previous 0.03-opacity version was
+          // essentially invisible.
+          boxShadow: '0 6px 24px rgba(0,0,0,0.10), -6px 0 20px rgba(0,0,0,0.05)'
       }}>
         {activePage !== 'board' && <TopBar />}
 

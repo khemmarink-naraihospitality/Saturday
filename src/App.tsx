@@ -551,13 +551,16 @@ function MainApp() {
   return (
     <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', overflow: 'hidden' }}>
       <Sidebar />
-      <main style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          overflow: 'hidden', 
+      <main style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           backgroundColor: 'hsl(var(--color-bg-canvas))',
-          borderRadius: '12px 0 0 0',
+          // Was 12px — too tight to read as a rounded corner at a glance, more
+          // of a faint notch than the sweep this is meant to be (see the
+          // Monday.com-style rounded seam this is matching).
+          borderRadius: '20px 0 0 0',
           borderLeft: '1px solid hsl(var(--color-border))',
           boxShadow: '-4px 0 15px rgba(0,0,0,0.03)'
       }}>

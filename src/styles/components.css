@@ -102,14 +102,21 @@
 
 /* Sidebar */
 .sidebar {
-    background-color: hsl(var(--color-bg-surface));
-    border-right: 1px solid hsl(var(--color-border));
+    /* --color-bg-subtle rather than -surface: the floating main panel is
+       --color-bg-canvas (pure white, 100% lightness), and -surface sits at
+       98% — a gap too small to read as two different surfaces. -subtle (95%)
+       actually shows up as a backdrop rather than a shade of the same white. */
+    background-color: hsl(var(--color-bg-subtle));
     display: flex;
     flex-direction: column;
     height: 100%;
     padding-top: var(--spacing-md);
     position: relative;
     z-index: 10;
+    /* No border-right: the floating panel now separates itself with a gap
+       and a shadow. A flat hairline running the sidebar's full height — past
+       where the gap/shadow actually are — read as a leftover seam rather
+       than part of the design. */
 }
 
 .sidebar-footer {

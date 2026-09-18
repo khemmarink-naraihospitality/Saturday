@@ -561,11 +561,12 @@ function MainApp() {
           // flush to the browser edge on every other side — there's nothing
           // behind it for a shadow to fall onto. A small gap on top/right/
           // bottom exposes app-container's own background there, so all four
-          // corners are now genuinely rounded (bottom-left excepted: it still
-          // sits flush against the sidebar, margin-left is 0) and the shadow
-          // below has a surface to actually cast onto.
+          // corners are genuinely rounded and the shadow below has a surface
+          // to actually cast onto. The left edge has no gap (it meets the
+          // sidebar directly), but both left corners still round off into the
+          // backdrop, the same way the top-left always has.
           margin: '10px 10px 10px 0',
-          borderRadius: '20px 20px 20px 0',
+          borderRadius: '20px',
           // Two shadows: one resting below (the usual "raised card" cue) and
           // one bleeding left onto the sidebar, since that edge has no gap of
           // its own to carry a shadow. The previous 0.03-opacity version was

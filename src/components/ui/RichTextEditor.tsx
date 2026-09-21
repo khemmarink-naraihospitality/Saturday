@@ -557,17 +557,69 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
         handleChange();
     };
 
-    const insertChecklist = () => {
-        const checklistHtml = `
+    // One definition of a checklist row, shared by the toolbar button and by
+    // Enter inside an existing row, so the two can't drift apart.
+    const checklistItemHtml = (text: string) => `
             <div class="editor-checklist-item" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
                 <div contenteditable="false" style="margin-top: 4px;">
                     <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
                 </div>
-                <div style="flex: 1;">Checklist item</div>
+                <div style="flex: 1;">${text}</div>
             </div>
-            <p><br></p>
         `;
-        exec('insertHTML', checklistHtml);
+
+    const insertChecklist = () => {
+        exec('insertHTML', `${checklistItemHtml('Checklist item')}<p><br></p>`);
+    };
+
+    const placeCaretAtStart = (el: HTMLElement) => {
+        const range = document.createRange();
+        range.setStart(el, 0);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    };
+
+    // Enter inside a checklist row continues the list instead of dropping a
+    // bare line break into the row's text cell — which is what contenteditable
+    // does by default, and why a new line came out as plain text with no
+    // checkbox. Returns true when it handled the key.
+    const handleChecklistEnter = (): boolean => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return false;
+
+        const anchor = selection.anchorNode;
+        if (!anchor) return false;
+
+        const startEl = anchor.nodeType === Node.TEXT_NODE ? anchor.parentElement : (anchor as HTMLElement);
+        const item = startEl?.closest('.editor-checklist-item') as HTMLElement | null;
+        if (!item || !editorRef.current?.contains(item)) return false;
+
+        const textCell = item.lastElementChild as HTMLElement | null;
+
+        // Enter on a row with no text ends the list, the way it does in every
+        // other editor, rather than stacking up empty checkboxes.
+        if (!(textCell?.textContent ?? '').trim()) {
+            const paragraph = document.createElement('p');
+            paragraph.innerHTML = '<br>';
+            item.replaceWith(paragraph);
+            placeCaretAtStart(paragraph);
+        } else {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = checklistItemHtml('');
+            const newItem = wrapper.firstElementChild as HTMLElement | null;
+            if (!newItem) return false;
+
+            item.after(newItem);
+            const newTextCell = newItem.lastElementChild as HTMLElement;
+            // An empty cell gives the caret nowhere to land, so seed a <br>.
+            newTextCell.innerHTML = '<br>';
+            placeCaretAtStart(newTextCell);
+        }
+
+        handleChange();
+        return true;
     };
 
 
@@ -943,6 +995,11 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                         e.preventDefault();
                         openLinkUI();
+                    }
+                    // Shift+Enter is left alone: that's a soft break within the
+                    // current row, same as everywhere else.
+                    if (e.key === 'Enter' && !e.shiftKey && handleChecklistEnter()) {
+                        e.preventDefault();
                     }
                 }}
                 onClick={(e) => {

@@ -51,8 +51,16 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
                 body: { action: 'set_pin', boardId, enable: false }
             });
             setIsSaving(false);
-            if (error || data?.error) {
-                showToast(data?.error || error?.message || 'Failed to disable Private Board.', 'error');
+            // On a non-2xx response the SDK throws before parsing the body, so
+            // `data` is null and the real reason only lives on error.context (the
+            // raw Response) — without this, failures showed the SDK's generic
+            // wrapper message instead of why it actually failed.
+            let errorBody: any = data;
+            if (error && (error as any).context?.json) {
+                try { errorBody = await (error as any).context.json(); } catch { /* body already consumed or not JSON */ }
+            }
+            if (error || errorBody?.error) {
+                showToast(errorBody?.error || error?.message || 'Failed to disable Private Board.', 'error');
                 return;
             }
             setBoardIsPrivateLocally(false);
@@ -67,8 +75,12 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
             body: { action: 'set_pin', boardId, enable: true, pin }
         });
         setIsSaving(false);
-        if (error || data?.error) {
-            showToast(data?.error || error?.message || 'Failed to save the PIN.', 'error');
+        let errorBody: any = data;
+        if (error && (error as any).context?.json) {
+            try { errorBody = await (error as any).context.json(); } catch { /* body already consumed or not JSON */ }
+        }
+        if (error || errorBody?.error) {
+            showToast(errorBody?.error || error?.message || 'Failed to save the PIN.', 'error');
             return;
         }
         setBoardIsPrivateLocally(true);

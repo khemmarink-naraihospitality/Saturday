@@ -64,8 +64,18 @@ export const CreateUserModal = ({ onClose, onCreated }: CreateUserModalProps) =>
 
         setSaving(false);
 
-        if (fnError || data?.error) {
-            setError(data?.error || fnError?.message || 'Failed to create user');
+        // On a non-2xx response the SDK throws before parsing the body, so `data`
+        // is null and the real reason (e.g. "A user with this email already
+        // exists") only lives on fnError.context (the raw Response) — without
+        // this, every failure showed the SDK's generic wrapper message instead
+        // of why it actually failed.
+        let errorBody: any = data;
+        if (fnError && (fnError as any).context?.json) {
+            try { errorBody = await (fnError as any).context.json(); } catch { /* body already consumed or not JSON */ }
+        }
+
+        if (fnError || errorBody?.error) {
+            setError(errorBody?.error || fnError?.message || 'Failed to create user');
             return;
         }
 

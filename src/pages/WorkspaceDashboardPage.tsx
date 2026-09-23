@@ -384,7 +384,9 @@ export const WorkspaceDashboardPage = () => {
                 // Batch fetch columns and items for all boards in the workspace
                 const [colsRes, itemsRes] = await Promise.all([
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
-                    supabase.from('items').select('id, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds)
+                    // title is what each cat's hover tooltip shows. It was missing from
+                    // this list, so every cat said "Untitled Task".
+                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds)
                 ]);
 
                 const columns = colsRes.data || [];
@@ -869,11 +871,16 @@ export const WorkspaceDashboardPage = () => {
                                         {cat.taskName}
                                     </div>
 
-                                    <div className="cat-visual" style={{ 
-                                        animation: cat.behavior === 'sleep' ? `catSleep 5s ease-in-out infinite` : 
-                                                   cat.behavior === 'walk' ? `none` :
-                                                   `catBob 1.2s ease-in-out infinite alternate`, 
-                                        filter: cat.behavior === 'sleep' ? `brightness(0.9)` : `none` 
+                                    {/* A walking cat's facing flip runs here on the graphic, in step
+                                        with catPatrol on the container (same duration and delay). It
+                                        used to run on the container itself, which mirrored the
+                                        tooltip's text for half of every patrol. */}
+                                    <div className="cat-visual" style={{
+                                        animation: cat.behavior === 'sleep' ? `catSleep 5s ease-in-out infinite` :
+                                                   cat.behavior === 'walk' ? `catFacing ${cat.duration}s linear infinite` :
+                                                   `catBob 1.2s ease-in-out infinite alternate`,
+                                        animationDelay: cat.behavior === 'walk' ? `${cat.walkOffset}s` : undefined,
+                                        filter: cat.behavior === 'sleep' ? `brightness(0.9)` : `none`
                                     }}>
                                         <SvgCat size={cat.size} color={cat.color} pose={cat.behavior} />
                                     </div>
@@ -1104,14 +1111,22 @@ export const WorkspaceDashboardPage = () => {
                     0%, 100% { transform: scale(1); opacity: 0.8; }
                     50% { transform: scale(1.05); opacity: 0.6; }
                 }
+                /* Position only. The facing flip lives in catFacing, on the cat
+                   graphic, so the container (and the tooltip inside it) is never
+                   mirrored. Same timeline as before, split in two. */
                 @keyframes catPatrol {
-                    0% { left: -10%; transform: scaleX(-1); }
-                    35% { left: 100%; transform: scaleX(-1); }
-                    49.9% { left: 100%; transform: scaleX(-1); }
-                    50% { left: 100%; transform: scaleX(1); }
-                    85% { left: -10%; transform: scaleX(1); }
-                    99.9% { left: -10%; transform: scaleX(1); }
-                    100% { left: -10%; transform: scaleX(-1); }
+                    0% { left: -10%; }
+                    35% { left: 100%; }
+                    50% { left: 100%; }
+                    85% { left: -10%; }
+                    100% { left: -10%; }
+                }
+                @keyframes catFacing {
+                    0% { transform: scaleX(-1); }
+                    49.9% { transform: scaleX(-1); }
+                    50% { transform: scaleX(1); }
+                    99.9% { transform: scaleX(1); }
+                    100% { transform: scaleX(-1); }
                 }
                 @keyframes catBob {
                     0% { transform: translateY(0) rotate(0deg); }

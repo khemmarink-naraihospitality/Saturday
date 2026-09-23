@@ -21,6 +21,7 @@ import { useUserStore } from '../../../store/useUserStore';
 import { useAccessibleWorkspaces } from '../../../hooks/useAccessibleWorkspaces';
 import { showToast } from '../../../utils/toast';
 import { ConfirmModal } from '../../ui/ConfirmModal';
+import { PermissionDeniedModal } from '../../ui/PermissionDeniedModal';
 import { ShareWorkspaceModal } from '../../workspace/ShareWorkspaceModal';
 import { ShareBoardModal } from '../../workspace/ShareBoardModal';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
@@ -51,6 +52,10 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
     // Deletion State
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
     const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null);
+
+    // Shown when a non-owner tries an owner-only action (e.g. renaming a
+    // workspace they were only shared into).
+    const [permissionDeniedMessage, setPermissionDeniedMessage] = useState<string | null>(null);
 
     // Drag and Drop Workspace State
     const [draggedWorkspaceId, setDraggedWorkspaceId] = useState<string | null>(null);
@@ -676,11 +681,14 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             <Users size={14} /> Share
                         </div>
                         <div className="menu-item" onClick={() => {
-                            if (ws) {
-                                setEditingWorkspaceId(ws.id);
-                                setEditWorkspaceTitle(ws.title);
-                            }
                             setActiveWorkspaceMenu(null);
+                            if (!ws) return;
+                            if (ws.owner_id !== user?.id) {
+                                setPermissionDeniedMessage("Only the workspace owner can rename it. Ask the owner to make this change.");
+                                return;
+                            }
+                            setEditingWorkspaceId(ws.id);
+                            setEditWorkspaceTitle(ws.title);
                         }} >
                             <Edit2 size={14} /> Rename
                         </div>
@@ -767,6 +775,12 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                     onClose={() => setArchiveTrashBoardId(null)}
                 />
             )}
+
+            <PermissionDeniedModal
+                isOpen={!!permissionDeniedMessage}
+                message={permissionDeniedMessage || ''}
+                onClose={() => setPermissionDeniedMessage(null)}
+            />
 
             <style>{`
                 .workspace-item-row:hover .action-icon {

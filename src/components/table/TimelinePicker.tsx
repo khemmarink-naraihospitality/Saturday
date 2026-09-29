@@ -288,6 +288,7 @@ export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position 
                 type="FF"
                 label="Finish to Finish"
                 hint="Same shift, but the items above are tied to this one's end date rather than its start."
+                endDate={selectedRange?.to ? format(selectedRange.to, 'yyyy-MM-dd') : null}
             />
 
             {/* Footer */}

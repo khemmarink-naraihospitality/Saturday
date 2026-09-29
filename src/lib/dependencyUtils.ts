@@ -49,6 +49,25 @@ export const resolveTimelineColumn = (columns: Column[], item: Item): ResolvedTi
 };
 
 /**
+ * The day an item's bar ends, as "YYYY-MM-DD", or null when it has no dates.
+ *
+ * Normalised through the same parse/format pair the rest of this module uses,
+ * so a legacy ISO timestamp compares equal to the bare calendar day written for
+ * the same date — comparing the stored strings directly would not.
+ */
+export const resolveEndDate = (columns: Column[], item: Item): string | null => {
+    const resolved = resolveTimelineColumn(columns, item);
+    if (!resolved) return null;
+
+    const raw = resolved.type === 'timeline'
+        ? (resolved.value?.to ?? resolved.value?.from)
+        : resolved.value;
+
+    const parsed = parseStoredDate(raw);
+    return parsed ? toDateString(parsed) : null;
+};
+
+/**
  * How far a value moved, in calendar days. Null when either side is missing or
  * unparseable — the caller treats that as "nothing to cascade" rather than
  * guessing a delta (clearing a date shouldn't drag successors to 1970).

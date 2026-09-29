@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { Plus, X, ArrowRight } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { wouldCreateCycle } from '../../lib/dependencyUtils';
+import { wouldCreateCycle, resolveEndDate } from '../../lib/dependencyUtils';
 import type { DependencyType } from '../../types';
 
 interface DependencyLinkSectionProps {
@@ -9,6 +9,11 @@ interface DependencyLinkSectionProps {
     type: DependencyType;
     label: string;
     hint: string;
+    // The end date this item is about to be saved with, "YYYY-MM-DD". Finish to
+    // Finish only links items that already end on the same day, and this is the
+    // day it matches against — taken from the popup's own To field rather than
+    // the stored value, so the list agrees with what the user is looking at.
+    endDate?: string | null;
 }
 
 /**
@@ -21,7 +26,7 @@ interface DependencyLinkSectionProps {
  * points at under *either* type rather than offering a pick that would be
  * rejected on insert.
  */
-export const DependencyLinkSection = ({ itemId, type, label, hint }: DependencyLinkSectionProps) => {
+export const DependencyLinkSection = ({ itemId, type, label, hint, endDate }: DependencyLinkSectionProps) => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const board = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
     const itemDependencies = useBoardStore(state => state.itemDependencies);
@@ -43,6 +48,11 @@ export const DependencyLinkSection = ({ itemId, type, label, hint }: DependencyL
     );
     const candidates = useMemo(() => {
         if (!board) return [];
+        // Finish to Finish means the two end together, so it can only be pointed
+        // at something that already ends on the same day. Without a date of its
+        // own there is nothing to finish alongside, hence no candidates at all.
+        if (type === 'FF' && !endDate) return [];
+
         const alreadyLinked = new Set(
             boardDeps.filter(d => d.predecessorItemId === itemId).map(d => d.successorItemId)
         );
@@ -53,10 +63,11 @@ export const DependencyLinkSection = ({ itemId, type, label, hint }: DependencyL
                 !i.parentId &&
                 !alreadyLinked.has(i.id) &&
                 !wouldCreateCycle(boardDeps, itemId, i.id) &&
+                (type !== 'FF' || resolveEndDate(board.columns, i) === endDate) &&
                 (!q || (i.title || '').toLowerCase().includes(q))
             )
             .slice(0, 30);
-    }, [board, boardDeps, itemId, query]);
+    }, [board, boardDeps, itemId, query, type, endDate]);
 
     useEffect(() => {
         if (!isAdding) return;
@@ -190,8 +201,12 @@ export const DependencyLinkSection = ({ itemId, type, label, hint }: DependencyL
 
                             <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
                                 {candidates.length === 0 ? (
-                                    <div style={{ padding: '10px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                        No eligible items
+                                    <div style={{ padding: '10px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', lineHeight: 1.5 }}>
+                                        {type !== 'FF'
+                                            ? 'No eligible items'
+                                            : !endDate
+                                                ? 'Give this item an end date first — Finish to Finish links items that end on the same day.'
+                                                : `No other item ends on ${endDate}.`}
                                     </div>
                                 ) : candidates.map(candidate => (
                                     <button

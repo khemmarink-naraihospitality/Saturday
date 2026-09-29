@@ -28,7 +28,10 @@ export const TimelineView = () => {
 
     // Navigation and View state
     const [viewDate, setViewDate] = useState(new Date());
-    const [viewType, setViewType] = useState<'day' | 'month' | 'year'>('day');
+    // Month by default: a whole year fits on screen, which is the zoom most
+    // boards are read at. Day only covers a 45-day window, so opening there
+    // hid anything scheduled outside the next few weeks.
+    const [viewType, setViewType] = useState<'day' | 'month' | 'year'>('month');
 
     // Drag move state (Local state for better perf).
     // originalFrom/originalTo hold the RAW stored strings, so the commit can

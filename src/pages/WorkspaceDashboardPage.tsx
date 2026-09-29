@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { BarChart2, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
 import { 
@@ -308,26 +308,50 @@ export const WorkspaceDashboardPage = () => {
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
 
-    // Which Status column the status widgets count; null keeps the original
-    // behaviour of counting every one of them together. Remembered per
-    // workspace, since the choice is about that workspace's own columns.
-    const statusFilterStorageKey = `dashboardStatusColumn:${activeWorkspaceId || 'none'}`;
-    const [statusColFilter, setStatusColFilter] = useState<string | null>(null);
+    // Which Status column each widget counts; null keeps the original behaviour
+    // of counting every one of them together. Held per widget, not per board:
+    // one shared choice meant picking a column for the Work Status chart
+    // silently re-scoped Total Status and the cats along with it. Remembered
+    // per workspace, since the choice is about that workspace's own columns.
+    const STATUS_FILTER_WIDGETS = ['totalStatus', 'workStatusChart', 'catFarm'];
+    const statusFilterKey = (widgetId: string) =>
+        `dashboardStatusColumn:${activeWorkspaceId || 'none'}:${widgetId}`;
+    const legacyStatusFilterKey = `dashboardStatusColumn:${activeWorkspaceId || 'none'}`;
+
+    const [statusColFilters, setStatusColFilters] = useState<Record<string, string | null>>({});
     const [statusMenuFor, setStatusMenuFor] = useState<string | null>(null);
 
     useEffect(() => {
         try {
-            setStatusColFilter(localStorage.getItem(statusFilterStorageKey));
-        } catch {
-            setStatusColFilter(null);
-        }
-    }, [statusFilterStorageKey]);
+            // One-time migration of the old shared key: whatever was selected
+            // becomes each widget's own starting point, so nobody's dashboard
+            // silently resets. Removed afterwards so clearing a widget's filter
+            // later isn't undone by the old value reappearing on reload.
+            const legacy = localStorage.getItem(legacyStatusFilterKey);
+            if (legacy !== null) {
+                STATUS_FILTER_WIDGETS.forEach(id => {
+                    if (localStorage.getItem(statusFilterKey(id)) === null) {
+                        localStorage.setItem(statusFilterKey(id), legacy);
+                    }
+                });
+                localStorage.removeItem(legacyStatusFilterKey);
+            }
 
-    const applyStatusColFilter = (key: string | null) => {
-        setStatusColFilter(key);
+            const stored: Record<string, string | null> = {};
+            STATUS_FILTER_WIDGETS.forEach(id => {
+                stored[id] = localStorage.getItem(statusFilterKey(id));
+            });
+            setStatusColFilters(stored);
+        } catch {
+            setStatusColFilters({});
+        }
+    }, [activeWorkspaceId]);
+
+    const applyStatusColFilter = (widgetId: string, key: string | null) => {
+        setStatusColFilters(prev => ({ ...prev, [widgetId]: key }));
         try {
-            if (key) localStorage.setItem(statusFilterStorageKey, key);
-            else localStorage.removeItem(statusFilterStorageKey);
+            if (key) localStorage.setItem(statusFilterKey(widgetId), key);
+            else localStorage.removeItem(statusFilterKey(widgetId));
         } catch { /* private mode — the choice just won't persist */ }
     };
 
@@ -465,7 +489,9 @@ export const WorkspaceDashboardPage = () => {
         // Only load data if specifically requested by other components or store actions
     }, []);
 
-    const stats = useMemo(() => {
+    // Parameterised by the filter rather than closing over one shared value, so
+    // each widget can be costed for its own selection.
+    const computeStats = useCallback((statusColFilter: string | null) => {
         // Defensive check for missing or empty data
         if (!workspaceData?.items || !workspaceData?.columns || workspaceData.columns.length === 0) {
             console.log("Dashboard: No data to render stats", { items: workspaceData?.items?.length, cols: workspaceData?.columns?.length });
@@ -676,7 +702,23 @@ export const WorkspaceDashboardPage = () => {
 
         console.log("Dashboard: Stats computed successfully", { totalTasks, cats: catsToRender.length });
         return { totalTasks, statusCounts, totalStatusValues, completionPercent, catsToRender, peopleMap };
-    }, [workspaceData, workspaceBoards, workspaceMemberProfiles, statusColFilter, statusColumnOptions]);
+    }, [workspaceData, workspaceBoards, workspaceMemberProfiles, statusColumnOptions]);
+
+    // Cached per distinct selection, so two widgets showing the same column
+    // still cost one pass, and the cats keep their positions between renders
+    // instead of being re-scattered.
+    const statsFor = useMemo(() => {
+        const cache = new Map<string, ReturnType<typeof computeStats>>();
+        return (filterKey: string | null) => {
+            const k = filterKey ?? '';
+            let hit = cache.get(k);
+            if (!hit) {
+                hit = computeStats(filterKey);
+                cache.set(k, hit);
+            }
+            return hit;
+        };
+    }, [computeStats]);
 
     if (!workspace) {
         return (
@@ -694,6 +736,11 @@ export const WorkspaceDashboardPage = () => {
     }
 
     const renderWidget = (id: string) => {
+        // Every widget reads the figures for its own filter. Ones without a
+        // filter control fall through to null, i.e. all status columns counted
+        // together, which is what they showed before filters existed.
+        const stats = statsFor(statusColFilters[id] ?? null);
+
         const headerStyle: React.CSSProperties = { 
             display: 'flex', 
             alignItems: 'center', 
@@ -739,8 +786,8 @@ export const WorkspaceDashboardPage = () => {
                                 <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Total Status</h3>
                                 <StatusColumnFilter
                                     options={statusColumnOptions}
-                                    value={statusColFilter}
-                                    onChange={applyStatusColFilter}
+                                    value={statusColFilters['totalStatus'] ?? null}
+                                    onChange={(key) => applyStatusColFilter('totalStatus', key)}
                                     isOpen={statusMenuFor === 'totalStatus'}
                                     onToggle={() => setStatusMenuFor(prev => (prev === 'totalStatus' ? null : 'totalStatus'))}
                                     onClose={() => setStatusMenuFor(null)}
@@ -905,8 +952,8 @@ export const WorkspaceDashboardPage = () => {
                                 <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Work Status</h3>
                                 <StatusColumnFilter
                                     options={statusColumnOptions}
-                                    value={statusColFilter}
-                                    onChange={applyStatusColFilter}
+                                    value={statusColFilters['workStatusChart'] ?? null}
+                                    onChange={(key) => applyStatusColFilter('workStatusChart', key)}
                                     isOpen={statusMenuFor === 'workStatusChart'}
                                     onToggle={() => setStatusMenuFor(prev => (prev === 'workStatusChart' ? null : 'workStatusChart'))}
                                     onClose={() => setStatusMenuFor(null)}

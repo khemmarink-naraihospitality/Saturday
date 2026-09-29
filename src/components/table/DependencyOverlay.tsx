@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ItemDependency } from '../../types';
-import { buildDependencyPath, buildFinishToFinishPath, wouldCreateCycle } from '../../lib/dependencyUtils';
+import { buildDependencyPath, buildFinishToFinishPath, buildStartToStartPath, wouldCreateCycle } from '../../lib/dependencyUtils';
 import { NAME_COL_WIDTH, ROW_HEIGHT, type BarGeometry } from './timelineGeometry';
 
 const ARROW_COLOR = '#5b5b7b';
@@ -47,20 +47,24 @@ export const DependencyOverlay = ({
         if (!from || !to) return null;
         return {
             start: {
-                x: NAME_COL_WIDTH + from.left + from.width,
+                // SS leaves the predecessor's start; FS and FF both leave its finish.
+                x: NAME_COL_WIDTH + from.left + (dep.type === 'SS' ? 0 : from.width),
                 y: from.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2
             },
             end: {
-                // FF ties the two finishes together, so it lands on the far edge
-                // of the successor instead of its start.
+                // Only FF lands on the successor's far edge — the other two land
+                // on its start.
                 x: NAME_COL_WIDTH + to.left + (dep.type === 'FF' ? to.width : 0),
                 y: to.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2
             }
         };
     };
 
-    const pathFor = (dep: ItemDependency, start: { x: number; y: number }, end: { x: number; y: number }) =>
-        dep.type === 'FF' ? buildFinishToFinishPath(start, end) : buildDependencyPath(start, end);
+    const pathFor = (dep: ItemDependency, start: { x: number; y: number }, end: { x: number; y: number }) => {
+        if (dep.type === 'FF') return buildFinishToFinishPath(start, end);
+        if (dep.type === 'SS') return buildStartToStartPath(start, end);
+        return buildDependencyPath(start, end);
+    };
 
     const draftAnchor = linkDraft ? barGeometry.get(linkDraft.fromItemId) : null;
 
@@ -338,12 +342,18 @@ const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRem
                 onClick={(e) => e.stopPropagation()}
             >
                 <div style={{ fontSize: '10px', fontWeight: 600, color: 'hsl(var(--color-text-secondary))', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '10px' }}>
-                    {dep.type === 'FF' ? 'Finish to Finish' : 'Finish to Start'}
+                    {dep.type === 'FF' ? 'Finish to Finish' : dep.type === 'SS' ? 'Start to Start' : 'Finish to Start'}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {fieldRow('Predecessor (finishes)', 'predecessor', predecessorId)}
-                    {fieldRow(dep.type === 'FF' ? 'Successor (finishes with it)' : 'Successor (then starts)', 'successor', successorId)}
+                    {fieldRow(dep.type === 'SS' ? 'Predecessor (starts)' : 'Predecessor (finishes)', 'predecessor', predecessorId)}
+                    {fieldRow(
+                        dep.type === 'FF' ? 'Successor (finishes with it)'
+                            : dep.type === 'SS' ? 'Successor (starts with it)'
+                                : 'Successor (then starts)',
+                        'successor',
+                        successorId
+                    )}
                 </div>
 
                 {error && (

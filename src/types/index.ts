@@ -71,10 +71,11 @@ export interface GroupLink {
  * number of days, keeping the gap between them.
  */
 // FS: the successor starts after the predecessor finishes.
-// FF: the two finish together — the successor's *end* is what's tied to the
-// predecessor's end. Both shift the successor by the same delta when the
-// predecessor moves; they differ in which edge the arrow is anchored to.
-export type DependencyType = 'FS' | 'FF';
+// FF: the two finish together — tied end to end.
+// SS: the two start together — tied start to start.
+// All three shift the successor by the same delta when the predecessor moves;
+// they differ only in which edge the arrow is anchored to.
+export type DependencyType = 'FS' | 'FF' | 'SS';
 
 export interface ItemDependency {
     id: string;

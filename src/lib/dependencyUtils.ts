@@ -49,6 +49,20 @@ export const resolveTimelineColumn = (columns: Column[], item: Item): ResolvedTi
 };
 
 /**
+ * The day an item's bar starts, as "YYYY-MM-DD", or null when it has no dates.
+ * Normalised the same way as resolveEndDate, for the same reason.
+ */
+export const resolveStartDate = (columns: Column[], item: Item): string | null => {
+    const resolved = resolveTimelineColumn(columns, item);
+    if (!resolved) return null;
+
+    const raw = resolved.type === 'timeline' ? resolved.value?.from : resolved.value;
+
+    const parsed = parseStoredDate(raw);
+    return parsed ? toDateString(parsed) : null;
+};
+
+/**
  * The day an item's bar ends, as "YYYY-MM-DD", or null when it has no dates.
  *
  * Normalised through the same parse/format pair the rest of this module uses,
@@ -137,6 +151,26 @@ export const collectDownstream = (deps: ItemDependency[], startId: string, maxNo
 export const wouldCreateCycle = (deps: ItemDependency[], predecessorId: string, successorId: string): boolean => {
     if (predecessorId === successorId) return true;
     return collectDownstream(deps, successorId).has(predecessorId);
+};
+
+/**
+ * Elbow connector from a predecessor bar's *left* edge into a successor bar's
+ * left edge — the Start-to-Start shape, the mirror of the Finish-to-Finish one.
+ *
+ * Both ends are starts, so the line runs out past whichever bar begins earlier,
+ * crosses to the successor's row, then comes back right into its start. Turning
+ * in from the left is what makes it read as landing on the start rather than
+ * the end.
+ */
+export const buildStartToStartPath = (
+    from: { x: number; y: number },
+    to: { x: number; y: number }
+): string => {
+    const STUB = 12;
+    const ARROW_GAP = 6;
+    const target = to.x - ARROW_GAP;
+    const outX = Math.min(from.x, target) - STUB;
+    return `M ${from.x} ${from.y} H ${outX} V ${to.y} H ${target}`;
 };
 
 /**

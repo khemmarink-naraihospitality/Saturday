@@ -288,7 +288,15 @@ export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position 
                 type="FF"
                 label="Finish to Finish"
                 hint="Same shift, but the items above are tied to this one's end date rather than its start."
-                endDate={selectedRange?.to ? format(selectedRange.to, 'yyyy-MM-dd') : null}
+                matchDate={selectedRange?.to ? format(selectedRange.to, 'yyyy-MM-dd') : null}
+            />
+
+            <DependencyLinkSection
+                itemId={itemId}
+                type="SS"
+                label="Start to Start"
+                hint="Same shift again, but tied to this one's start date — the items above begin when it begins."
+                matchDate={selectedRange?.from ? format(selectedRange.from, 'yyyy-MM-dd') : null}
             />
 
             {/* Footer */}

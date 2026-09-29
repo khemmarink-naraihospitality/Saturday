@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
@@ -29,13 +29,14 @@ export const TimelineView = () => {
     // Drag move state (Local state for better perf).
     // originalFrom/originalTo hold the RAW stored strings, so the commit can
     // re-emit them in the same "YYYY-MM-DD" shape every other reader expects.
-    // rawPx accumulates the pointer delta and offsetDays is derived from the
+    // rawPx accumulates the pointer delta and offsetUnits is derived from the
     // total — rounding each mousemove instead loses sub-unit motion on slow drags.
+    // The offset counts *columns*, not days: see the commit handler for why.
     const [draggingItem, setDraggingItem] = useState<{
         id: string;
         colId: string;
         rawPx: number;
-        offsetDays: number;
+        offsetUnits: number;
         originalFrom: string;
         originalTo: string;
     } | null>(null);
@@ -83,11 +84,6 @@ export const TimelineView = () => {
     }, [viewDate, viewType]);
 
     const unitWidth = viewType === 'day' ? 40 : (viewType === 'month' ? 80 : 120);
-    // Drag works in every view now, not just Day — a month/year column spans many
-    // days, so the pixel-to-day rate has to shrink to match (a whole column's width
-    // ~= one average month/year), or a drag across one column would only move a
-    // couple of days.
-    const pxPerDay = viewType === 'day' ? unitWidth : viewType === 'month' ? unitWidth / 30.44 : unitWidth / 365.25;
 
     // Apply Filter/Sort/Search logic
     const items = useMemo(() => {
@@ -452,7 +448,7 @@ export const TimelineView = () => {
                                                             id: item.id,
                                                             colId: geometry.colId,
                                                             rawPx: 0,
-                                                            offsetDays: 0,
+                                                            offsetUnits: 0,
                                                             originalFrom: from,
                                                             originalTo: to
                                                         });
@@ -463,10 +459,11 @@ export const TimelineView = () => {
                                                         bottom: `${BAR_V_INSET}px`,
                                                         left: `${geometry.left}px`,
                                                         width: `${geometry.width}px`,
-                                                        // Follows the cursor 1:1 in real pixels while dragging (not
-                                                        // rounded to a day-boundary) so the move actually reads as a
-                                                        // drag instead of only jumping on release.
-                                                        transform: draggingItem?.id === item.id ? `translateX(${draggingItem.rawPx}px)` : undefined,
+                                                        // Snaps to the same whole columns the commit uses, so the bar
+                                                        // previews exactly where it will land. Following the cursor 1:1
+                                                        // here instead made the release look like a correction, since
+                                                        // the drop always rounds to a column anyway.
+                                                        transform: draggingItem?.id === item.id ? `translateX(${draggingItem.offsetUnits * unitWidth}px)` : undefined,
                                                         backgroundColor: item.groupColor || 'hsl(var(--color-brand-primary))',
                                                         borderRadius: '12px',
                                                         opacity: draggingItem?.id === item.id ? 0.7 : 0.8,
@@ -638,26 +635,43 @@ export const TimelineView = () => {
                         setDraggingItem(prev => {
                             if (!prev) return null;
                             const rawPx = prev.rawPx + e.movementX;
-                            return { ...prev, rawPx, offsetDays: Math.round(rawPx / pxPerDay) };
+                            return { ...prev, rawPx, offsetUnits: Math.round(rawPx / unitWidth) };
                         });
                     }}
                     onMouseUp={() => {
-                        if (draggingItem.offsetDays !== 0) {
+                        if (draggingItem.offsetUnits !== 0) {
+                            // Move by whole columns, in the unit the column actually
+                            // represents. Converting the drag to an *average* number of
+                            // days instead (30.44 per month) landed the bar mid-month
+                            // on all but a ~5px sliver of the drag: a Sep 1-30 bar
+                            // became Sep 29 - Oct 28, which still spans 30 days but
+                            // straddles two month columns, so the bar rendered twice as
+                            // wide and read as the duration having doubled.
+                            const originalStart = parseISO(draggingItem.originalFrom);
+                            const newStart =
+                                viewType === 'day' ? addDays(originalStart, draggingItem.offsetUnits)
+                                : viewType === 'month' ? addMonths(originalStart, draggingItem.offsetUnits)
+                                : addYears(originalStart, draggingItem.offsetUnits);
+
                             // Emit "YYYY-MM-DD": every reader (TimelineCell, DateCell,
                             // the due-date reminder SQL) parses that shape, and an ISO
                             // timestamp here silently breaks all three.
-                            const shift = (stored: string) =>
-                                format(addDays(parseISO(stored), draggingItem.offsetDays), 'yyyy-MM-dd');
+                            const asStored = (d: Date) => format(d, 'yyyy-MM-dd');
                             const col = activeBoard.columns.find(c => c.id === draggingItem.colId);
                             if (col?.type === 'timeline') {
+                                // Derive the end from the *original* span rather than
+                                // shifting it independently, so a move can never change
+                                // the duration — addMonths alone would stretch a 30-day
+                                // bar to 31 whenever it landed on a longer month.
+                                const span = differenceInCalendarDays(parseISO(draggingItem.originalTo), originalStart);
                                 const existing = activeBoard.items.find(i => i.id === draggingItem.id)?.values?.[draggingItem.colId];
                                 updateItemValue(draggingItem.id, draggingItem.colId, {
                                     ...existing,
-                                    from: shift(draggingItem.originalFrom),
-                                    to: shift(draggingItem.originalTo)
+                                    from: asStored(newStart),
+                                    to: asStored(addDays(newStart, span))
                                 });
                             } else {
-                                updateItemValue(draggingItem.id, draggingItem.colId, shift(draggingItem.originalFrom));
+                                updateItemValue(draggingItem.id, draggingItem.colId, asStored(newStart));
                             }
                         }
                         setDraggingItem(null);

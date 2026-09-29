@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useBoardStore } from '../store/useBoardStore';
 import { BarChart2, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
 import { 
@@ -189,13 +190,31 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
     onToggle: () => void;
     onClose: () => void;
 }) => {
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
     if (options.length < 2) return null; // nothing to disambiguate
 
     const active = options.find(o => o.key === value);
 
+    // Fixed to the viewport and hung off the button's rect rather than absolutely
+    // positioned inside it: the cat widget clips its own overflow, which would
+    // otherwise cut the menu off at the edge of the card.
+    const menuPosition = () => {
+        const rect = buttonRef.current?.getBoundingClientRect();
+        if (!rect) return { top: 0, left: 0 };
+        const WIDTH = 220;
+        const HEIGHT = 260;
+        const top = rect.bottom + HEIGHT > window.innerHeight
+            ? Math.max(8, rect.top - HEIGHT - 6)
+            : rect.bottom + 6;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - WIDTH - 8));
+        return { top, left };
+    };
+
     return (
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <button
+                ref={buttonRef}
                 onClick={onToggle}
                 title={active ? `Showing: ${active.label}` : 'Showing: all status columns'}
                 style={{
@@ -217,14 +236,13 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
                 )}
             </button>
 
-            {isOpen && (
+            {isOpen && createPortal(
                 <>
                     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
                     <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 6px)',
-                        left: 0,
-                        minWidth: '200px',
+                        position: 'fixed',
+                        ...menuPosition(),
+                        minWidth: '220px',
                         backgroundColor: 'white',
                         border: '1px solid hsl(var(--color-border))',
                         borderRadius: '8px',
@@ -260,7 +278,8 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
                             </button>
                         ))}
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );
@@ -859,6 +878,16 @@ export const WorkspaceDashboardPage = () => {
                                 <h3 style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#7e22ce', whiteSpace: 'nowrap' }}>
                                     {workspace.title} {stats.catsToRender.length === 1 ? '1 Cat' : `${stats.catsToRender.length} Cats`}
                                 </h3>
+                                <div style={{ marginLeft: '10px', display: 'flex', alignItems: 'center' }}>
+                                    <StatusColumnFilter
+                                        options={statusColumnOptions}
+                                        value={statusColFilters['catFarm'] ?? null}
+                                        onChange={(key) => applyStatusColFilter('catFarm', key)}
+                                        isOpen={statusMenuFor === 'catFarm'}
+                                        onToggle={() => setStatusMenuFor(prev => (prev === 'catFarm' ? null : 'catFarm'))}
+                                        onClose={() => setStatusMenuFor(null)}
+                                    />
+                                </div>
                             </div>
                         </div>
 

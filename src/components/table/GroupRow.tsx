@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { supabase } from '../../lib/supabase';
+import { GROUP_COLORS, PALETTE_WIDTH, palettePosition } from '../../lib/labelColors';
 
 export const GroupRow = ({ 
     data, 
@@ -56,12 +57,6 @@ export const GroupRow = ({
             });
         }
     };
-
-    const GROUP_COLORS = [
-        '#7C3FE4', '#3F6FE4', '#C03FE4', '#92BF0A', '#279966',
-        '#F0960A', '#E03333', '#8B85A8', '#1A1728', '#B89BFF',
-        '#06B6D4', '#F472B6', '#FBBF24', '#14B8A6', '#84CC16'
-    ];
 
     const handleSave = () => {
         if (editValue.trim() && editValue !== data.title) {
@@ -187,18 +182,22 @@ export const GroupRow = ({
                             />
                             <div style={{
                                 position: 'fixed',
-                                top: colorBtnRef.current.getBoundingClientRect().bottom + 4,
-                                left: colorBtnRef.current.getBoundingClientRect().left,
+                                // Ten to a row keeps 50 swatches to five rows; at the
+                                // old five-wide it would have been a ten-row column.
+                                // Positioned through the shared helper so the wider
+                                // grid still can't run off the bottom or right edge.
+                                ...palettePosition(colorBtnRef.current),
                                 backgroundColor: 'white',
                                 border: '1px solid hsl(var(--color-border))',
                                 borderRadius: '8px',
                                 padding: '12px',
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(5, 1fr)',
-                                gap: '8px',
+                                gridTemplateColumns: 'repeat(10, 1fr)',
+                                gap: '4px',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                 zIndex: 9999,
-                                width: '180px'
+                                width: `${PALETTE_WIDTH}px`,
+                                boxSizing: 'border-box'
                             }}>
                                 {GROUP_COLORS.map(c => (
                                     <div
@@ -209,10 +208,10 @@ export const GroupRow = ({
                                             setShowColorPicker(false);
                                         }}
                                         style={{
-                                            width: '24px',
-                                            height: '24px',
+                                            width: '18px',
+                                            height: '18px',
                                             backgroundColor: c,
-                                            borderRadius: '6px',
+                                            borderRadius: '4px',
                                             cursor: 'pointer',
                                             border: data.color === c ? '2px solid #000' : '1px solid rgba(0,0,0,0.1)',
                                             transition: 'transform 0.1s'

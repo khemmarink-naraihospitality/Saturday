@@ -142,6 +142,39 @@ export const nextUniqueLabel = (existingLabels: string[], base = 'New Label'): s
     return `${base} ${n}`;
 };
 
+/**
+ * Group header colours. Kept apart from LABEL_COLORS because a group colour is
+ * chrome — it tints a whole band of the board — rather than a value someone
+ * reads off a cell, so it wants fewer, calmer steps per hue.
+ *
+ * Laid out as 10 hue families of 5. Every colour from the original 15 is still
+ * here, and in the same order within its family, so a group coloured before
+ * this list grew still shows as selected rather than silently falling off the
+ * end of the palette.
+ */
+export const GROUP_COLORS = [
+    // Reds
+    '#E03333', '#FF1744', '#C62828', '#FF6B6B', '#FFCDD2',
+    // Pinks / Magentas
+    '#F472B6', '#C03FE4', '#E91E63', '#FF4081', '#F8BBD9',
+    // Oranges
+    '#F0960A', '#FF5722', '#E64A19', '#FF7043', '#FFCCBC',
+    // Ambers / Yellows
+    '#FBBF24', '#FFC107', '#F57F17', '#FFD740', '#FFF176',
+    // Limes
+    '#92BF0A', '#84CC16', '#CDDC39', '#9E9D24', '#D4E157',
+    // Greens
+    '#279966', '#4CAF50', '#2E7D32', '#00C853', '#A5D6A7',
+    // Teals / Cyans
+    '#14B8A6', '#06B6D4', '#009688', '#00695C', '#B2EBF2',
+    // Blues
+    '#3F6FE4', '#2196F3', '#1565C0', '#82B1FF', '#BBDEFB',
+    // Purples / Violets
+    '#7C3FE4', '#B89BFF', '#9C27B0', '#6A1B9A', '#EDE7F6',
+    // Neutrals
+    '#8B85A8', '#1A1728', '#607D8B', '#9E9E9E', '#424242'
+];
+
 export const PALETTE_WIDTH = 252;
 export const PALETTE_HEIGHT = 220;
 

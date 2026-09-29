@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ItemDependency } from '../../types';
-import { buildDependencyPath, wouldCreateCycle } from '../../lib/dependencyUtils';
+import { buildDependencyPath, buildFinishToFinishPath, wouldCreateCycle } from '../../lib/dependencyUtils';
 import { NAME_COL_WIDTH, ROW_HEIGHT, type BarGeometry } from './timelineGeometry';
 
 const ARROW_COLOR = '#5b5b7b';
@@ -17,7 +17,11 @@ interface DependencyOverlayProps {
 }
 
 /**
- * Finish-to-Start arrows drawn over the Timeline rows.
+ * Dependency arrows drawn over the Timeline rows.
+ *
+ * Both link types leave the predecessor's finish; where they land is the whole
+ * difference. Finish-to-Start points at the successor's start (its left edge),
+ * Finish-to-Finish at its end (its right edge).
  *
  * The SVG itself ignores the pointer so bars stay draggable; only the invisible
  * fat stroke on each arrow accepts clicks, which is what makes a 1.5px line
@@ -47,11 +51,16 @@ export const DependencyOverlay = ({
                 y: from.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2
             },
             end: {
-                x: NAME_COL_WIDTH + to.left,
+                // FF ties the two finishes together, so it lands on the far edge
+                // of the successor instead of its start.
+                x: NAME_COL_WIDTH + to.left + (dep.type === 'FF' ? to.width : 0),
                 y: to.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2
             }
         };
     };
+
+    const pathFor = (dep: ItemDependency, start: { x: number; y: number }, end: { x: number; y: number }) =>
+        dep.type === 'FF' ? buildFinishToFinishPath(start, end) : buildDependencyPath(start, end);
 
     const draftAnchor = linkDraft ? barGeometry.get(linkDraft.fromItemId) : null;
 
@@ -86,7 +95,7 @@ export const DependencyOverlay = ({
                 {dependencies.map(dep => {
                     const anchors = anchorsFor(dep);
                     if (!anchors) return null;
-                    const path = buildDependencyPath(anchors.start, anchors.end);
+                    const path = pathFor(dep, anchors.start, anchors.end);
 
                     return (
                         <g key={dep.id}>
@@ -328,9 +337,13 @@ const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRem
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'hsl(var(--color-text-secondary))', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '10px' }}>
+                    {dep.type === 'FF' ? 'Finish to Finish' : 'Finish to Start'}
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {fieldRow('Predecessor (finishes)', 'predecessor', predecessorId)}
-                    {fieldRow('Successor (then starts)', 'successor', successorId)}
+                    {fieldRow(dep.type === 'FF' ? 'Successor (finishes with it)' : 'Successor (then starts)', 'successor', successorId)}
                 </div>
 
                 {error && (

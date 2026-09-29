@@ -122,6 +122,27 @@ export const wouldCreateCycle = (deps: ItemDependency[], predecessorId: string, 
 
 /**
  * Elbow connector from a predecessor bar's right edge into a successor bar's
+ * *right* edge — the Finish-to-Finish shape.
+ *
+ * Both ends are finishes, so the line always approaches the target from the
+ * outside: it runs out past whichever bar ends later, crosses to the successor's
+ * row, then comes back left into its end. Turning in from the right is what
+ * makes it read as landing on the finish rather than the start, and it keeps the
+ * arrowhead (orient="auto") pointing back at the bar.
+ */
+export const buildFinishToFinishPath = (
+    from: { x: number; y: number },
+    to: { x: number; y: number }
+): string => {
+    const STUB = 12;
+    const ARROW_GAP = 6;
+    const target = to.x + ARROW_GAP;
+    const outX = Math.max(from.x, target) + STUB;
+    return `M ${from.x} ${from.y} H ${outX} V ${to.y} H ${target}`;
+};
+
+/**
+ * Elbow connector from a predecessor bar's right edge into a successor bar's
  * left edge. When the successor starts left of where the predecessor ends there
  * is no room to go straight across, so the path detours around the rows.
  */

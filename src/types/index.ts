@@ -70,12 +70,18 @@ export interface GroupLink {
  * predecessor shifts the successor (and anything downstream of it) by the same
  * number of days, keeping the gap between them.
  */
+// FS: the successor starts after the predecessor finishes.
+// FF: the two finish together — the successor's *end* is what's tied to the
+// predecessor's end. Both shift the successor by the same delta when the
+// predecessor moves; they differ in which edge the arrow is anchored to.
+export type DependencyType = 'FS' | 'FF';
+
 export interface ItemDependency {
     id: string;
     boardId: string;
     predecessorItemId: string;
     successorItemId: string;
-    type: 'FS';
+    type: DependencyType;
     lagDays: number;
     createdBy?: string;
     createdAt?: string;

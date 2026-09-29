@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import type { BoardState } from '../useBoardStore';
-import type { ItemDependency } from '../../types';
+import type { ItemDependency, DependencyType } from '../../types';
 import {
     resolveTimelineColumn,
     deltaDays,
@@ -24,7 +24,8 @@ export interface ItemDependencySlice {
     setBoardDependencies: (boardId: string, deps: ItemDependency[]) => void;
     addItemDependency: (
         predecessorItemId: string,
-        successorItemId: string
+        successorItemId: string,
+        type?: DependencyType
     ) => Promise<{ success: boolean; error?: string }>;
     removeItemDependency: (dependencyId: string) => Promise<void>;
     updateItemDependency: (
@@ -68,7 +69,7 @@ export const createItemDependencySlice: StateCreator<
         }));
     },
 
-    addItemDependency: async (predecessorItemId, successorItemId) => {
+    addItemDependency: async (predecessorItemId, successorItemId, type = 'FS') => {
         const { activeBoardId, itemDependencies } = get();
         if (!activeBoardId) return { success: false, error: 'No board open' };
 
@@ -100,7 +101,7 @@ export const createItemDependencySlice: StateCreator<
             boardId: activeBoardId,
             predecessorItemId,
             successorItemId,
-            type: 'FS',
+            type,
             lagDays: 0
         };
         set(state => ({ itemDependencies: [...state.itemDependencies, optimistic] }));
@@ -111,6 +112,7 @@ export const createItemDependencySlice: StateCreator<
             board_id: activeBoardId,
             predecessor_item_id: predecessorItemId,
             successor_item_id: successorItemId,
+            type,
             created_by: user?.id ?? null
         });
 

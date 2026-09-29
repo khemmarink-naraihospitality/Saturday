@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO, differenceInCalendarDays, getDate, getDaysInMonth, getDayOfYear, getDaysInYear } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
@@ -13,6 +13,10 @@ import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, ROW_HEIGHT, BAR_V_INSET, type BarGeom
 // stopping at the 30th/31st — a drag or a cascaded dependency shift needs room
 // past the month boundary to actually be visible without switching months.
 const DAY_VIEW_SPAN = 45;
+
+// A one-day bar is only ~2.7px wide at month zoom and ~0.3px at year zoom.
+// Floor it so short items stay visible and clickable instead of vanishing.
+const MIN_BAR_WIDTH = 8;
 
 export const TimelineView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -162,6 +166,37 @@ export const TimelineView = () => {
 
         const cols = activeBoard.columns.filter(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date');
 
+        const lastUnit = timeGrid[timeGrid.length - 1];
+        const windowStart = timeGrid[0];
+        const windowEnd = viewType === 'day' ? lastUnit
+            : viewType === 'month' ? endOfMonth(lastUnit)
+                : endOfYear(lastUnit);
+
+        // Where a day sits, measured in columns from the left edge of the grid.
+        // The whole part is which column it falls in, the fraction how far
+        // through it — which is what lets a bar begin and end partway along a
+        // month or a year rather than on a column boundary.
+        const columnOffset = (date: Date): number | null => {
+            if (viewType === 'day') {
+                const i = timeGrid.findIndex(u => isSameDay(u, date));
+                return i === -1 ? null : i;
+            }
+            if (viewType === 'month') {
+                const i = timeGrid.findIndex(u => isSameMonth(u, date));
+                return i === -1 ? null : i + (getDate(date) - 1) / getDaysInMonth(date);
+            }
+            const i = timeGrid.findIndex(u => isSameYear(u, date));
+            return i === -1 ? null : i + (getDayOfYear(date) - 1) / getDaysInYear(date);
+        };
+
+        // How much of one column a single day takes up at this zoom, so an
+        // end date can be drawn inclusive of the whole day.
+        const dayWidthInColumns = (date: Date): number => {
+            if (viewType === 'day') return 1;
+            if (viewType === 'month') return 1 / getDaysInMonth(date);
+            return 1 / getDaysInYear(date);
+        };
+
         items.forEach((item, rowIndex) => {
             let startDate: Date | null = null;
             let endDate: Date | null = null;
@@ -184,32 +219,33 @@ export const TimelineView = () => {
 
             if (!startDate || !endDate) return;
 
-            const startIndex = timeGrid.findIndex(u => {
-                if (viewType === 'day') return isSameDay(u, startDate!);
-                if (viewType === 'month') return isSameMonth(u, startDate!);
-                return isSameYear(u, startDate!);
-            });
-            const endIndex = timeGrid.findIndex(u => {
-                if (viewType === 'day') return isSameDay(u, endDate!);
-                if (viewType === 'month') return isSameMonth(u, endDate!);
-                return isSameYear(u, endDate!);
-            });
+            // Drop anything wholly outside the window. Compared against the last
+            // unit's *end*, not its start — in Month view the final grid entry is
+            // December 1st, so measuring from there hid every bar starting later
+            // in December whose end ran past the year.
+            if (endDate < windowStart || startDate > windowEnd) return;
 
-            if (startIndex === -1 && endDate < timeGrid[0]) return;
-            if (endIndex === -1 && startDate > timeGrid[timeGrid.length - 1]) return;
+            const clippedStart = startDate < windowStart;
+            const clippedEnd = endDate > windowEnd;
 
-            const clampedStart = startIndex === -1 ? 0 : startIndex;
-            const effectiveEndIndex = endIndex === -1 ? timeGrid.length - 1 : endIndex;
-            const left = clampedStart * unitWidth;
-            const width = Math.max(unitWidth, (effectiveEndIndex - clampedStart + 1) * unitWidth);
+            // Measured in columns, fraction included: a month column covers ~30
+            // days, so a 15-day bar has to be half of one. Snapping each edge to
+            // a whole column instead made every bar shorter than its column fill
+            // the entire thing, reading as a month-long task.
+            const from = clippedStart ? 0 : columnOffset(startDate) ?? 0;
+            const to = clippedEnd
+                ? timeGrid.length
+                : (columnOffset(endDate) ?? timeGrid.length) + dayWidthInColumns(endDate);
 
-            // The two early-returns above already ruled out "entirely before" and
-            // "entirely after" the window, so a -1 index here can only mean the
-            // real edge sits just past the corresponding side of the window.
+            const left = from * unitWidth;
+            // A single day is ~2.7px wide at month zoom, so it needs a floor to
+            // stay visible and clickable at all.
+            const width = Math.max(MIN_BAR_WIDTH, (to - from) * unitWidth);
+
             map.set(item.id, {
                 rowIndex, left, width, colId,
-                clippedStart: startIndex === -1,
-                clippedEnd: endIndex === -1
+                clippedStart,
+                clippedEnd
             });
         });
 

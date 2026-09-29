@@ -232,7 +232,13 @@ export const createBoardSlice: StateCreator<
             const fullBoards: Board[] = boards.map((b: any) => {
                 // Determine if we should preserve existing groups/columns/items from local state cache
                 const existingBoard = get().boards.find(eb => eb.id === b.id);
-                
+
+                // Everything below that reads from existingBoard is state this
+                // refresh has no source for: it lives only in the store, so
+                // rebuilding the board object without it silently resets the
+                // user's view. The 5-minute background poll calls this, which is
+                // why a board would jump back to Main table, re-expand collapsed
+                // groups or drop a sort while someone sat reading it.
                 return {
                     id: b.id,
                     workspaceId: b.workspace_id,
@@ -246,7 +252,13 @@ export const createBoardSlice: StateCreator<
                     groups: existingBoard?.groups || [],
                     items: existingBoard?.items || [],
                     isDataLoaded: existingBoard?.isDataLoaded || false,
-                    itemColumnTitle: 'Item',
+                    activeViewId: existingBoard?.activeViewId,
+                    groupByColumnId: existingBoard?.groupByColumnId,
+                    collapsedGroups: existingBoard?.collapsedGroups,
+                    expandedItemIds: existingBoard?.expandedItemIds,
+                    sort: existingBoard?.sort,
+                    filters: existingBoard?.filters,
+                    itemColumnTitle: existingBoard?.itemColumnTitle || 'Item',
                     itemColumnWidth: boardSettingsMap[b.id]?.itemColumnWidth || 350
                 };
             });

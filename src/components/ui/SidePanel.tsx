@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 
 const STORAGE_KEY = 'saturday-side-panel-width';
 const MIN_WIDTH = 420;
+// Long enough to read as a slide rather than a jump, short enough that the
+// board underneath is usable again almost at once.
+const CLOSE_MS = 280;
 const maxAllowedWidth = () => Math.round(window.innerWidth * 0.9);
 
 interface SidePanelProps {
@@ -25,6 +28,31 @@ export const SidePanel = ({ isOpen, onClose, children, width = '800px' }: SidePa
     // which would otherwise be read as "clicked outside" and close the panel
     // the moment the user finishes resizing.
     const justResizedRef = useRef(false);
+
+    // The panel stays mounted for the length of the exit animation. Closing
+    // used to unmount it on the spot, so it vanished instead of sliding away.
+    // The last children are held too: the parent usually passes nothing once
+    // closed (App renders TaskDetail only while an item is active), and the
+    // panel would otherwise slide out empty.
+    const [isMounted, setIsMounted] = useState(isOpen);
+    const [isClosing, setIsClosing] = useState(false);
+    const lastChildrenRef = useRef<React.ReactNode>(children);
+    if (isOpen) lastChildrenRef.current = children;
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+            setIsClosing(false);
+            return;
+        }
+        if (!isMounted) return;
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+            setIsMounted(false);
+            setIsClosing(false);
+        }, CLOSE_MS);
+        return () => clearTimeout(timer);
+    }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Close on Escape
     useEffect(() => {
@@ -77,7 +105,7 @@ export const SidePanel = ({ isOpen, onClose, children, width = '800px' }: SidePa
         localStorage.setItem(STORAGE_KEY, String(defaultWidth));
     };
 
-    if (!isOpen) return null;
+    if (!isMounted) return null;
 
     return createPortal(
         <div className="side-panel-overlay" style={{
@@ -91,9 +119,13 @@ export const SidePanel = ({ isOpen, onClose, children, width = '800px' }: SidePa
             justifyContent: 'flex-end',
             backgroundColor: 'rgba(0,0,0,0.5)', // Dim background
             backdropFilter: 'blur(2px)',
-            transition: 'opacity 0.2s ease-in-out'
+            animation: isClosing
+                ? `sidePanelFadeOut ${CLOSE_MS}ms ease forwards`
+                : 'sidePanelFadeIn 0.3s ease',
+            // Clicks fall through to the board while it's on its way out.
+            pointerEvents: isClosing ? 'none' : 'auto'
         }} onClick={(e) => {
-            if (justResizedRef.current) return;
+            if (justResizedRef.current || isClosing) return;
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className="side-panel-content" style={{
@@ -106,7 +138,9 @@ export const SidePanel = ({ isOpen, onClose, children, width = '800px' }: SidePa
                 position: 'relative',
                 // Suppressed mid-drag: the entry animation uses a transform and
                 // would fight the width changes on every mousemove frame.
-                animation: isResizing ? 'none' : 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                animation: isClosing
+                    ? `slideOut ${CLOSE_MS}ms cubic-bezier(0.4, 0, 1, 1) forwards`
+                    : isResizing ? 'none' : 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 maxWidth: '90vw'
             }}>
                 <div
@@ -124,13 +158,25 @@ export const SidePanel = ({ isOpen, onClose, children, width = '800px' }: SidePa
                         zIndex: 5
                     }}
                 />
-                {children}
+                {isOpen ? children : lastChildrenRef.current}
             </div>
 
             <style>{`
                 @keyframes slideIn {
                     from { transform: translateX(100%); }
                     to { transform: translateX(0); }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(100%); }
+                }
+                @keyframes sidePanelFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes sidePanelFadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
                 }
                 .side-panel-resize-handle::after {
                     content: '';

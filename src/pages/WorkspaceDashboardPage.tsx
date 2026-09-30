@@ -419,6 +419,169 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
     );
 };
 
+/**
+ * Picks which of the workspace's boards a widget counts. Multi-select, starting
+ * on every board.
+ *
+ * `null` means "all boards" and is kept distinct from a list that happens to
+ * contain every board: a board created later then joins an untouched widget
+ * automatically, instead of being left out of an "all" the user never narrowed.
+ */
+const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
+    boards: { id: string; title: string }[];
+    value: string[] | null;
+    onChange: (ids: string[] | null) => void;
+    isOpen: boolean;
+    onToggle: () => void;
+    onClose: () => void;
+}) => {
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
+    if (boards.length < 2) return null; // nothing to choose between
+
+    const selected = value ? new Set(value) : null;
+    const summary = !value ? null
+        : value.length === 1 ? (boards.find(b => b.id === value[0])?.title ?? '1 board')
+            : `${value.length} boards`;
+
+    const toggleBoard = (id: string) => {
+        const next = new Set(selected ?? boards.map(b => b.id));
+        if (next.has(id)) {
+            // At least one board stays ticked: an empty selection would only ever
+            // show 0, which reads as broken rather than filtered.
+            if (next.size === 1) return;
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        // Back to "all" once every board is ticked, so new boards are picked up.
+        onChange(next.size === boards.length ? null : Array.from(next));
+    };
+
+    // Fixed and hung off the button, like the status-column menu, so a card
+    // that clips its overflow can't cut it off.
+    const menuPosition = () => {
+        const rect = buttonRef.current?.getBoundingClientRect();
+        if (!rect) return { top: 0, left: 0 };
+        const WIDTH = 240;
+        const HEIGHT = Math.min(360, 76 + boards.length * 34);
+        const top = rect.bottom + HEIGHT > window.innerHeight
+            ? Math.max(8, rect.top - HEIGHT - 6)
+            : rect.bottom + 6;
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - WIDTH - 8));
+        return { top, left };
+    };
+
+    const checkbox = (checked: boolean) => (
+        <span style={{
+            width: '14px',
+            height: '14px',
+            flexShrink: 0,
+            borderRadius: '3px',
+            border: checked ? 'none' : '1.5px solid #cbd5e1',
+            backgroundColor: checked ? 'hsl(var(--color-brand-primary))' : 'white',
+            color: 'white',
+            fontSize: '10px',
+            lineHeight: '14px',
+            textAlign: 'center',
+            fontWeight: 700
+        }}>
+            {checked ? '✓' : ''}
+        </span>
+    );
+
+    const rowStyle = (active: boolean): React.CSSProperties => ({
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        textAlign: 'left',
+        padding: '8px 12px',
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+        fontSize: '13px',
+        color: '#0f172a',
+        fontWeight: active ? 600 : 400
+    });
+
+    return (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+                ref={buttonRef}
+                onClick={onToggle}
+                title={value ? `Showing: ${summary}` : 'Showing: all boards'}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: value ? 'hsl(var(--color-brand-primary))' : '#64748b'
+                }}
+            >
+                <Filter size={16} />
+                {summary && (
+                    <span style={{ fontSize: '12px', fontWeight: 500, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {summary}
+                    </span>
+                )}
+            </button>
+
+            {isOpen && createPortal(
+                <>
+                    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+                    <div style={{
+                        position: 'fixed',
+                        ...menuPosition(),
+                        width: '240px',
+                        backgroundColor: 'white',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                        zIndex: 61,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
+                            Boards
+                        </div>
+                        <button
+                            onClick={() => onChange(null)}
+                            style={{ ...rowStyle(!value), borderBottom: '1px solid #f1f5f9' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                            {checkbox(!value)}
+                            All boards
+                        </button>
+                        {/* Scrolls: a workspace can hold dozens of boards. */}
+                        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                            {boards.map(board => {
+                                const checked = !selected || selected.has(board.id);
+                                return (
+                                    <button
+                                        key={board.id}
+                                        onClick={() => toggleBoard(board.id)}
+                                        style={rowStyle(false)}
+                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                    >
+                                        {checkbox(checked)}
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{board.title}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+        </div>
+    );
+};
+
 export const WorkspaceDashboardPage = () => {
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspaces = useBoardStore(state => state.workspaces);
@@ -472,6 +635,16 @@ export const WorkspaceDashboardPage = () => {
         [workspaceBoards]
     );
 
+    // A saved board selection can outlive its boards (deleted, archived, moved
+    // to another workspace). Those ids are dropped, and a selection with none
+    // left falls back to every board rather than an empty widget.
+    const boardSelectionFor = (widgetId: string): string[] | null => {
+        const saved = boardFilters[widgetId];
+        if (!saved) return null;
+        const live = saved.filter(id => boardTitleById.has(id));
+        return live.length > 0 ? live : null;
+    };
+
     // Optimization: Fetch all needed data for the workspace in bulk
     const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
     const [recentLogs, setRecentLogs] = useState<ActivityLog[]>([]);
@@ -492,6 +665,13 @@ export const WorkspaceDashboardPage = () => {
 
     const [statusColFilters, setStatusColFilters] = useState<Record<string, string | null>>({});
     const [statusMenuFor, setStatusMenuFor] = useState<string | null>(null);
+
+    // Which boards each widget counts; null = every board in the workspace.
+    // Per widget and per workspace, the same as the status-column choice.
+    const BOARD_FILTER_WIDGETS = ['totalTasks'];
+    const boardFilterKey = (widgetId: string) =>
+        `dashboardBoardFilter:${activeWorkspaceId || 'none'}:${widgetId}`;
+    const [boardFilters, setBoardFilters] = useState<Record<string, string[] | null>>({});
 
     useEffect(() => {
         try {
@@ -514,10 +694,27 @@ export const WorkspaceDashboardPage = () => {
                 stored[id] = localStorage.getItem(statusFilterKey(id));
             });
             setStatusColFilters(stored);
+
+            const storedBoards: Record<string, string[] | null> = {};
+            BOARD_FILTER_WIDGETS.forEach(id => {
+                const raw = localStorage.getItem(boardFilterKey(id));
+                const parsed = raw ? JSON.parse(raw) : null;
+                storedBoards[id] = Array.isArray(parsed) ? parsed : null;
+            });
+            setBoardFilters(storedBoards);
         } catch {
             setStatusColFilters({});
+            setBoardFilters({});
         }
     }, [activeWorkspaceId]);
+
+    const applyBoardFilter = (widgetId: string, ids: string[] | null) => {
+        setBoardFilters(prev => ({ ...prev, [widgetId]: ids }));
+        try {
+            if (ids) localStorage.setItem(boardFilterKey(widgetId), JSON.stringify(ids));
+            else localStorage.removeItem(boardFilterKey(widgetId));
+        } catch { /* private mode — the choice just won't persist */ }
+    };
 
     const applyStatusColFilter = (widgetId: string, key: string | null) => {
         setStatusColFilters(prev => ({ ...prev, [widgetId]: key }));
@@ -582,7 +779,10 @@ export const WorkspaceDashboardPage = () => {
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
                     // title is what each cat's hover tooltip shows. It was missing from
                     // this list, so every cat said "Untitled Task".
-                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds)
+                    // Deleted tasks sit in items with is_archived set until they're
+                    // purged. The board view already leaves them out; without the
+                    // same filter here every dashboard figure counted them too.
+                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds).eq('is_archived', false)
                 ]);
 
                 const columns = colsRes.data || [];
@@ -937,7 +1137,15 @@ export const WorkspaceDashboardPage = () => {
         };
 
         switch (id) {
-            case 'totalTasks':
+            case 'totalTasks': {
+                const boardSelection = boardSelectionFor('totalTasks');
+                const selectedBoards = boardSelection ? new Set(boardSelection) : null;
+                // Same counting rule as before — every row on the boards in scope —
+                // just narrowed to the chosen boards.
+                const taskCount = selectedBoards
+                    ? workspaceData.items.filter(item => selectedBoards.has(item.board_id)).length
+                    : stats.totalTasks;
+
                 return (
                     <div style={{
                         backgroundColor: 'hsl(var(--color-bg-surface, white))',
@@ -948,14 +1156,25 @@ export const WorkspaceDashboardPage = () => {
                         height: '100%'
                     }}>
                         <div className="widget-header-with-space" style={headerStyle}>
-                            <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>Total Work Task</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                                <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>Total Work Task</h3>
+                                <BoardFilter
+                                    boards={workspaceBoards}
+                                    value={boardSelection}
+                                    onChange={(ids) => applyBoardFilter('totalTasks', ids)}
+                                    isOpen={statusMenuFor === 'totalTasks:boards'}
+                                    onToggle={() => setStatusMenuFor(prev => (prev === 'totalTasks:boards' ? null : 'totalTasks:boards'))}
+                                    onClose={() => setStatusMenuFor(null)}
+                                />
+                            </div>
                             <BarChart2 size={16} color="hsl(var(--color-text-tertiary))" />
                         </div>
                         <div style={{ fontSize: '64px', fontWeight: '700', color: 'hsl(var(--color-text-primary))', textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
-                            {stats.totalTasks}
+                            {taskCount}
                         </div>
                     </div>
                 );
+            }
             case 'totalStatus':
                 return (
                     <div className="dashboard-widget" style={{

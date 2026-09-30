@@ -420,51 +420,161 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
 };
 
 /**
- * Picks which of the workspace's boards a widget counts. Multi-select, starting
- * on every board.
+ * Which part of the workspace a widget counts.
  *
- * `null` means "all boards" and is kept distinct from a list that happens to
- * contain every board: a board created later then joins an untouched widget
- * automatically, instead of being left out of an "all" the user never narrowed.
+ * `null` means everything. Otherwise there is one entry per board in scope:
+ * `null` for the whole board, or the specific group ids picked inside it.
+ *
+ * "Whole board" is kept distinct from a list that happens to name all of its
+ * groups, and "everything" from a map naming every board. That way a group or
+ * board created later joins an untouched filter automatically, instead of
+ * being left out of an "all" the user never narrowed.
  */
-const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
+type ScopeSelection = Record<string, string[] | null> | null;
+
+interface ScopeGroup {
+    id: string;
+    title: string;
+    color?: string;
+}
+
+const itemInScope = (item: { board_id: string; group_id?: string | null }, scope: ScopeSelection) => {
+    if (!scope) return true;
+    if (!(item.board_id in scope)) return false;
+    const groups = scope[item.board_id];
+    return groups === null || (!!item.group_id && groups.includes(item.group_id));
+};
+
+// Reads both the current format and the board-only one it replaced (a plain
+// array of board ids), so a filter saved before groups existed still loads —
+// as those boards, whole.
+const parseStoredScope = (raw: string | null): ScopeSelection => {
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+        return parsed.length > 0 ? Object.fromEntries(parsed.map((id: string) => [id, null])) : null;
+    }
+    return parsed && typeof parsed === 'object' ? parsed : null;
+};
+
+// A saved scope can outlive what it names: boards deleted or archived, groups
+// removed. Those are dropped; a board left with no live groups drops out, and a
+// scope left empty falls back to everything rather than an empty widget.
+// Groups are only checked once they've loaded — before that, they're kept as-is.
+const sanitizeScope = (
+    scope: ScopeSelection,
+    boardIds: Set<string>,
+    groupIdsByBoard: Map<string, Set<string>> | null
+): ScopeSelection => {
+    if (!scope) return null;
+    const out: Record<string, string[] | null> = {};
+    for (const [boardId, groups] of Object.entries(scope)) {
+        if (!boardIds.has(boardId)) continue;
+        if (groups === null || !groupIdsByBoard) {
+            out[boardId] = groups;
+            continue;
+        }
+        const known = groupIdsByBoard.get(boardId);
+        const live = known ? groups.filter(id => known.has(id)) : groups;
+        if (live.length > 0) out[boardId] = live;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+};
+
+/**
+ * A board → group tree for picking a widget's scope. A board's checkbox takes
+ * the whole board; its chevron opens the groups underneath to pick some of
+ * them instead, and the board then shows a dash. Starts on everything.
+ */
+const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onToggle, onClose }: {
     boards: { id: string; title: string }[];
-    value: string[] | null;
-    onChange: (ids: string[] | null) => void;
+    groupsByBoard: Map<string, ScopeGroup[]>;
+    value: ScopeSelection;
+    onChange: (next: ScopeSelection) => void;
     isOpen: boolean;
     onToggle: () => void;
     onClose: () => void;
 }) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-    if (boards.length < 2) return null; // nothing to choose between
+    // Opening the menu unfolds any board that's only partly picked, so it's
+    // visible which of its groups are in.
+    useEffect(() => {
+        if (!isOpen || !value) return;
+        setExpanded(new Set(Object.entries(value).filter(([, groups]) => groups !== null).map(([boardId]) => boardId)));
+    }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const selected = value ? new Set(value) : null;
-    const summary = !value ? null
-        : value.length === 1 ? (boards.find(b => b.id === value[0])?.title ?? '1 board')
-            : `${value.length} boards`;
+    const onlyBoardGroups = boards.length === 1 ? (groupsByBoard.get(boards[0].id)?.length ?? 0) : 0;
+    if (boards.length === 0 || (boards.length === 1 && onlyBoardGroups < 2)) return null; // nothing to choose between
 
-    const toggleBoard = (id: string) => {
-        const next = new Set(selected ?? boards.map(b => b.id));
-        if (next.has(id)) {
-            // At least one board stays ticked: an empty selection would only ever
-            // show 0, which reads as broken rather than filtered.
-            if (next.size === 1) return;
-            next.delete(id);
-        } else {
-            next.add(id);
-        }
-        // Back to "all" once every board is ticked, so new boards are picked up.
-        onChange(next.size === boards.length ? null : Array.from(next));
+    const everything = (): Record<string, string[] | null> => Object.fromEntries(boards.map(b => [b.id, null]));
+    const boardState = (boardId: string): 'all' | 'some' | 'none' => {
+        if (!value) return 'all';
+        if (!(boardId in value)) return 'none';
+        return value[boardId] === null ? 'all' : 'some';
+    };
+    const groupChecked = (boardId: string, groupId: string) => {
+        if (!value) return true;
+        if (!(boardId in value)) return false;
+        const groups = value[boardId];
+        return groups === null || groups.includes(groupId);
     };
 
-    // Fixed and hung off the button, like the status-column menu, so a card
-    // that clips its overflow can't cut it off.
+    const commit = (next: Record<string, string[] | null>) => {
+        // Something always stays in scope: an empty one could only ever show 0,
+        // which reads as broken rather than filtered.
+        if (Object.keys(next).length === 0) return;
+        // Every board whole again means back to "everything", so new boards count.
+        const allWhole = boards.every(b => b.id in next && next[b.id] === null);
+        onChange(allWhole ? null : next);
+    };
+
+    const toggleBoard = (boardId: string) => {
+        const next = { ...(value ?? everything()) };
+        if (boardState(boardId) === 'all') delete next[boardId];
+        else next[boardId] = null;
+        commit(next);
+    };
+
+    const toggleGroup = (boardId: string, groupId: string) => {
+        const next = { ...(value ?? everything()) };
+        const allGroupIds = (groupsByBoard.get(boardId) || []).map(g => g.id);
+        const current = !(boardId in next) ? [] : (next[boardId] ?? allGroupIds);
+        const updated = current.includes(groupId) ? current.filter(id => id !== groupId) : [...current, groupId];
+
+        if (updated.length === 0) delete next[boardId];
+        // Every group picked again is the whole board, which also picks up
+        // groups added later.
+        else if (allGroupIds.length > 0 && allGroupIds.every(id => updated.includes(id))) next[boardId] = null;
+        else next[boardId] = updated;
+        commit(next);
+    };
+
+    const toggleExpanded = (boardId: string) => {
+        setExpanded(prev => {
+            const next = new Set(prev);
+            if (next.has(boardId)) next.delete(boardId); else next.add(boardId);
+            return next;
+        });
+    };
+
+    const summary = (() => {
+        if (!value) return null;
+        const entries = Object.entries(value);
+        if (entries.length > 1) return `${entries.length} boards`;
+        const [boardId, groups] = entries[0];
+        const boardTitle = boards.find(b => b.id === boardId)?.title ?? '1 board';
+        if (groups === null) return boardTitle;
+        if (groups.length === 1) return groupsByBoard.get(boardId)?.find(g => g.id === groups[0])?.title ?? `${boardTitle} · 1 group`;
+        return `${boardTitle} · ${groups.length} groups`;
+    })();
+
     const menuPosition = () => {
         const rect = buttonRef.current?.getBoundingClientRect();
         if (!rect) return { top: 0, left: 0 };
-        const WIDTH = 240;
-        const HEIGHT = Math.min(360, 76 + boards.length * 34);
+        const WIDTH = 260;
+        const HEIGHT = 420;
         const top = rect.bottom + HEIGHT > window.innerHeight
             ? Math.max(8, rect.top - HEIGHT - 6)
             : rect.bottom + 6;
@@ -472,31 +582,33 @@ const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
         return { top, left };
     };
 
-    const checkbox = (checked: boolean) => (
+    const checkbox = (state: 'all' | 'some' | 'none') => (
         <span style={{
             width: '14px',
             height: '14px',
             flexShrink: 0,
             borderRadius: '3px',
-            border: checked ? 'none' : '1.5px solid #cbd5e1',
-            backgroundColor: checked ? 'hsl(var(--color-brand-primary))' : 'white',
+            border: state === 'none' ? '1.5px solid #cbd5e1' : 'none',
+            backgroundColor: state === 'all' ? 'hsl(var(--color-brand-primary))'
+                : state === 'some' ? 'hsl(var(--color-brand-primary) / 0.55)'
+                    : 'white',
             color: 'white',
             fontSize: '10px',
             lineHeight: '14px',
             textAlign: 'center',
             fontWeight: 700
         }}>
-            {checked ? '✓' : ''}
+            {state === 'all' ? '✓' : state === 'some' ? '–' : ''}
         </span>
     );
 
-    const rowStyle = (active: boolean): React.CSSProperties => ({
+    const rowStyle = (indent: number, active = false): React.CSSProperties => ({
         width: '100%',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         textAlign: 'left',
-        padding: '8px 12px',
+        padding: `7px 12px 7px ${indent}px`,
         border: 'none',
         background: 'transparent',
         cursor: 'pointer',
@@ -504,6 +616,11 @@ const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
         color: '#0f172a',
         fontWeight: active ? 600 : 400
     });
+    const hover = {
+        onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = '#f8fafc'; },
+        onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = 'transparent'; }
+    };
+    const truncate: React.CSSProperties = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
     return (
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -524,7 +641,7 @@ const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
             >
                 <Filter size={16} />
                 {summary && (
-                    <span style={{ fontSize: '12px', fontWeight: 500, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 500, maxWidth: '130px', ...truncate }}>
                         {summary}
                     </span>
                 )}
@@ -536,7 +653,7 @@ const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
                     <div style={{
                         position: 'fixed',
                         ...menuPosition(),
-                        width: '240px',
+                        width: '260px',
                         backgroundColor: 'white',
                         border: '1px solid hsl(var(--color-border))',
                         borderRadius: '8px',
@@ -545,32 +662,54 @@ const BoardFilter = ({ boards, value, onChange, isOpen, onToggle, onClose }: {
                         overflow: 'hidden'
                     }}>
                         <div style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
-                            Boards
+                            Boards &amp; groups
                         </div>
-                        <button
-                            onClick={() => onChange(null)}
-                            style={{ ...rowStyle(!value), borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        >
-                            {checkbox(!value)}
+                        <button onClick={() => onChange(null)} style={{ ...rowStyle(12, !value), borderBottom: '1px solid #f1f5f9' }} {...hover}>
+                            {checkbox(value ? 'none' : 'all')}
                             All boards
                         </button>
-                        {/* Scrolls: a workspace can hold dozens of boards. */}
-                        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+
+                        {/* Scrolls: a workspace can hold dozens of boards and groups. */}
+                        <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
                             {boards.map(board => {
-                                const checked = !selected || selected.has(board.id);
+                                const groups = groupsByBoard.get(board.id) || [];
+                                const isExpanded = expanded.has(board.id);
                                 return (
-                                    <button
-                                        key={board.id}
-                                        onClick={() => toggleBoard(board.id)}
-                                        style={rowStyle(false)}
-                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                    >
-                                        {checkbox(checked)}
-                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{board.title}</span>
-                                    </button>
+                                    <div key={board.id}>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            {/* Own button, so unfolding a board never ticks it. */}
+                                            <button
+                                                onClick={() => toggleExpanded(board.id)}
+                                                disabled={groups.length === 0}
+                                                title={groups.length === 0 ? 'No groups' : isExpanded ? 'Hide groups' : 'Show groups'}
+                                                style={{
+                                                    width: '24px',
+                                                    alignSelf: 'stretch',
+                                                    flexShrink: 0,
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    cursor: groups.length === 0 ? 'default' : 'pointer',
+                                                    color: groups.length === 0 ? 'transparent' : '#94a3b8',
+                                                    fontSize: '10px',
+                                                    padding: '0 0 0 8px'
+                                                }}
+                                            >
+                                                {isExpanded ? '▼' : '▶'}
+                                            </button>
+                                            <button onClick={() => toggleBoard(board.id)} style={{ ...rowStyle(4), flex: 1, minWidth: 0 }} {...hover}>
+                                                {checkbox(boardState(board.id))}
+                                                <span style={truncate}>{board.title}</span>
+                                            </button>
+                                        </div>
+
+                                        {isExpanded && groups.map(group => (
+                                            <button key={group.id} onClick={() => toggleGroup(board.id, group.id)} style={rowStyle(40)} {...hover}>
+                                                {checkbox(groupChecked(board.id, group.id) ? 'all' : 'none')}
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '2px', flexShrink: 0, backgroundColor: group.color || '#cbd5e1' }} />
+                                                <span style={truncate}>{group.title}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -635,18 +774,27 @@ export const WorkspaceDashboardPage = () => {
         [workspaceBoards]
     );
 
-    // A saved board selection can outlive its boards (deleted, archived, moved
-    // to another workspace). Those ids are dropped, and a selection with none
-    // left falls back to every board rather than an empty widget.
-    const boardSelectionFor = (widgetId: string): string[] | null => {
-        const saved = boardFilters[widgetId];
-        if (!saved) return null;
-        const live = saved.filter(id => boardTitleById.has(id));
-        return live.length > 0 ? live : null;
-    };
 
     // Optimization: Fetch all needed data for the workspace in bulk
-    const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
+    const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[], groups: any[] | null }>({ items: [], columns: [], groups: null });
+
+    // Each board's groups, in board order, for the board → group filter.
+    const groupsByBoard = useMemo(() => {
+        const map = new Map<string, ScopeGroup[]>();
+        (workspaceData.groups || []).forEach((g: any) => {
+            const list = map.get(g.board_id) || [];
+            list.push({ id: g.id, title: g.title, color: g.color });
+            map.set(g.board_id, list);
+        });
+        return map;
+    }, [workspaceData.groups]);
+
+    const scopeFor = (widgetId: string): ScopeSelection => {
+        const groupIds = workspaceData.groups
+            ? new Map(Array.from(groupsByBoard, ([boardId, groups]) => [boardId, new Set(groups.map(g => g.id))]))
+            : null;
+        return sanitizeScope(scopeFilters[widgetId] ?? null, new Set(boardTitleById.keys()), groupIds);
+    };
     const [recentLogs, setRecentLogs] = useState<ActivityLog[]>([]);
     const [logsLoading, setLogsLoading] = useState(true);
     // Which workspace the rows in recentLogs belong to.
@@ -666,12 +814,12 @@ export const WorkspaceDashboardPage = () => {
     const [statusColFilters, setStatusColFilters] = useState<Record<string, string | null>>({});
     const [statusMenuFor, setStatusMenuFor] = useState<string | null>(null);
 
-    // Which boards each widget counts; null = every board in the workspace.
+    // Which boards and groups each widget counts; null = the whole workspace.
     // Per widget and per workspace, the same as the status-column choice.
-    const BOARD_FILTER_WIDGETS = ['totalTasks'];
-    const boardFilterKey = (widgetId: string) =>
+    const SCOPE_FILTER_WIDGETS = ['totalTasks'];
+    const scopeFilterKey = (widgetId: string) =>
         `dashboardBoardFilter:${activeWorkspaceId || 'none'}:${widgetId}`;
-    const [boardFilters, setBoardFilters] = useState<Record<string, string[] | null>>({});
+    const [scopeFilters, setScopeFilters] = useState<Record<string, ScopeSelection>>({});
 
     useEffect(() => {
         try {
@@ -695,24 +843,22 @@ export const WorkspaceDashboardPage = () => {
             });
             setStatusColFilters(stored);
 
-            const storedBoards: Record<string, string[] | null> = {};
-            BOARD_FILTER_WIDGETS.forEach(id => {
-                const raw = localStorage.getItem(boardFilterKey(id));
-                const parsed = raw ? JSON.parse(raw) : null;
-                storedBoards[id] = Array.isArray(parsed) ? parsed : null;
+            const storedScopes: Record<string, ScopeSelection> = {};
+            SCOPE_FILTER_WIDGETS.forEach(id => {
+                storedScopes[id] = parseStoredScope(localStorage.getItem(scopeFilterKey(id)));
             });
-            setBoardFilters(storedBoards);
+            setScopeFilters(storedScopes);
         } catch {
             setStatusColFilters({});
-            setBoardFilters({});
+            setScopeFilters({});
         }
     }, [activeWorkspaceId]);
 
-    const applyBoardFilter = (widgetId: string, ids: string[] | null) => {
-        setBoardFilters(prev => ({ ...prev, [widgetId]: ids }));
+    const applyScopeFilter = (widgetId: string, scope: ScopeSelection) => {
+        setScopeFilters(prev => ({ ...prev, [widgetId]: scope }));
         try {
-            if (ids) localStorage.setItem(boardFilterKey(widgetId), JSON.stringify(ids));
-            else localStorage.removeItem(boardFilterKey(widgetId));
+            if (scope) localStorage.setItem(scopeFilterKey(widgetId), JSON.stringify(scope));
+            else localStorage.removeItem(scopeFilterKey(widgetId));
         } catch { /* private mode — the choice just won't persist */ }
     };
 
@@ -775,14 +921,17 @@ export const WorkspaceDashboardPage = () => {
 
             try {
                 // Batch fetch columns and items for all boards in the workspace
-                const [colsRes, itemsRes] = await Promise.all([
+                const [colsRes, itemsRes, groupsRes] = await Promise.all([
                     supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
                     // title is what each cat's hover tooltip shows. It was missing from
                     // this list, so every cat said "Untitled Task".
                     // Deleted tasks sit in items with is_archived set until they're
                     // purged. The board view already leaves them out; without the
                     // same filter here every dashboard figure counted them too.
-                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds).eq('is_archived', false)
+                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds).eq('is_archived', false),
+                    // For the board → group filter. Boards opened on the dashboard
+                    // aren't loaded into the store, so their groups aren't there.
+                    supabase.from('groups').select('id, title, color, board_id, order').in('board_id', boardIds).eq('is_archived', false).order('order')
                 ]);
 
                 const columns = colsRes.data || [];
@@ -794,7 +943,7 @@ export const WorkspaceDashboardPage = () => {
                     sampleItem: items[0] ? { ...items[0], values: '...' } : null 
                 });
 
-                setWorkspaceData({ items, columns });
+                setWorkspaceData({ items, columns, groups: groupsRes.data || [] });
 
                 // Optimize Profile Fetching using the newly loaded items
                 const userIds = new Set<string>();
@@ -1138,12 +1287,11 @@ export const WorkspaceDashboardPage = () => {
 
         switch (id) {
             case 'totalTasks': {
-                const boardSelection = boardSelectionFor('totalTasks');
-                const selectedBoards = boardSelection ? new Set(boardSelection) : null;
-                // Same counting rule as before — every row on the boards in scope —
-                // just narrowed to the chosen boards.
-                const taskCount = selectedBoards
-                    ? workspaceData.items.filter(item => selectedBoards.has(item.board_id)).length
+                const scope = scopeFor('totalTasks');
+                // Same counting rule as before — every row in scope — just narrowed
+                // to the chosen boards and groups.
+                const taskCount = scope
+                    ? workspaceData.items.filter(item => itemInScope(item, scope)).length
                     : stats.totalTasks;
 
                 return (
@@ -1158,10 +1306,11 @@ export const WorkspaceDashboardPage = () => {
                         <div className="widget-header-with-space" style={headerStyle}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                                 <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>Total Work Task</h3>
-                                <BoardFilter
+                                <BoardGroupFilter
                                     boards={workspaceBoards}
-                                    value={boardSelection}
-                                    onChange={(ids) => applyBoardFilter('totalTasks', ids)}
+                                    groupsByBoard={groupsByBoard}
+                                    value={scope}
+                                    onChange={(next) => applyScopeFilter('totalTasks', next)}
                                     isOpen={statusMenuFor === 'totalTasks:boards'}
                                     onToggle={() => setStatusMenuFor(prev => (prev === 'totalTasks:boards' ? null : 'totalTasks:boards'))}
                                     onClose={() => setStatusMenuFor(null)}

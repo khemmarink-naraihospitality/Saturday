@@ -456,6 +456,16 @@ export const WorkspaceDashboardPage = () => {
         allBoards.filter(b => b.workspaceId === activeWorkspaceId && !b.is_archived),
     [allBoards, activeWorkspaceId]);
 
+    // What the dashboard's fetches actually depend on: which boards, not the
+    // board objects. `boards` is replaced on every store write (a realtime edit
+    // anywhere, the 5-minute poll), and keying the fetches on workspaceBoards
+    // itself re-ran them all each time — the feed blanked to "Loading…" and
+    // came back, and the cats re-shuffled, whenever anything changed anywhere.
+    const workspaceBoardIdsKey = useMemo(
+        () => workspaceBoards.map(b => b.id).sort().join(','),
+        [workspaceBoards]
+    );
+
     // The feed spans every board in the workspace, so each entry names its board.
     const boardTitleById = useMemo(
         () => new Map(workspaceBoards.map(b => [b.id, b.title])),
@@ -466,6 +476,8 @@ export const WorkspaceDashboardPage = () => {
     const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
     const [recentLogs, setRecentLogs] = useState<ActivityLog[]>([]);
     const [logsLoading, setLogsLoading] = useState(true);
+    // Which workspace the rows in recentLogs belong to.
+    const logsWorkspaceRef = useRef<string | null>(null);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
 
     // Which Status column each widget counts; null keeps the original behaviour
@@ -622,7 +634,8 @@ export const WorkspaceDashboardPage = () => {
         }
 
         fetchWorkspaceData();
-    }, [activeWorkspaceId, workspaceBoards]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the board ids on purpose, see workspaceBoardIdsKey
+    }, [activeWorkspaceId, workspaceBoardIdsKey]);
 
     useEffect(() => {
         if (!activeWorkspaceId) return;
@@ -634,41 +647,39 @@ export const WorkspaceDashboardPage = () => {
 
         let cancelled = false;
         async function fetchLogs() {
-            setLogsLoading(true);
-            const ids = workspaceBoards.map(b => b.id).join(',');
+            // Only blank the list when switching workspace. A refresh of the one
+            // already on screen keeps showing it until the new rows land.
+            if (logsWorkspaceRef.current !== activeWorkspaceId) {
+                setRecentLogs([]);
+                setLogsLoading(true);
+            }
 
-            // Filtered in the query, not after it. This used to take the 100
-            // newest logs in the whole system and then keep this workspace's —
-            // but the whole org fills 100 logs in a few hours, so a workspace
-            // nobody had touched that morning got none of them and the widget
-            // sat empty despite thousands of logs of its own. Same match the
-            // board's own activity panel uses: the board as target, or named in
-            // metadata (item-level events), plus events on the workspace itself.
-            const { data, error } = await supabase
-                .from('activity_logs')
-                .select(`*, profiles!activity_logs_actor_id_fkey(full_name, email, avatar_url)`)
-                .or(`target_id.in.(${ids}),metadata->>board_id.in.(${ids}),target_id.eq.${activeWorkspaceId}`)
-                .order('created_at', { ascending: false })
-                .limit(30);
+            // Server-side, through get_workspace_activity: it narrows to this
+            // workspace's rows with indexes and only then applies the RLS rule,
+            // where querying the table directly made Postgres check the rule on
+            // every log in the system first (1 s for an admin, 6 s for a member).
+            const { data, error } = await supabase.rpc('get_workspace_activity', {
+                p_workspace_id: activeWorkspaceId,
+                p_limit: 30
+            });
 
             if (cancelled) return;
             if (error) {
                 console.error('Dashboard: failed to load workspace activity', error);
-                setRecentLogs([]);
             } else {
-                setRecentLogs((data || []).map((log: any) => ({
-                    ...log,
-                    actor_name: log.profiles?.full_name || log.profiles?.email?.split('@')[0] || 'System',
-                    actor_email: log.profiles?.email,
-                    actor_avatar: log.profiles?.avatar_url
+                setRecentLogs((data || []).map((row: any) => ({
+                    ...row,
+                    actor_name: row.actor_name || row.actor_email?.split('@')[0] || 'System'
                 })));
+                logsWorkspaceRef.current = activeWorkspaceId;
             }
             setLogsLoading(false);
         }
 
         fetchLogs();
         return () => { cancelled = true; };
-    }, [activeWorkspaceId, workspaceBoards]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the board ids on purpose, see workspaceBoardIdsKey
+    }, [activeWorkspaceId, workspaceBoardIdsKey]);
 
     // The board activity panel only highlights a row, because a board is already
     // open there. From the dashboard nothing is, so a click opens the task on its

@@ -11,7 +11,7 @@ export interface ActivityLogListProps {
     onClose?: () => void;
 }
 
-interface ActivityLog {
+export interface ActivityLog {
     id: string;
     created_at: string;
     actor_id: string | null;
@@ -69,7 +69,11 @@ const ACTION_LABELS: Record<string, string> = {
     item_assigned: 'Task Assigned',
 };
 
-const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: (id: string) => void }) => {
+// Exported so the workspace dashboard's feed renders entries exactly as the
+// board's activity panel does, rather than keeping a second, thinner copy.
+// boardName is for feeds that span boards, where "which board" is the missing
+// context; the board's own panel doesn't need it.
+export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: ActivityLog; onClickTask: (id: string) => void; boardName?: string }) => {
     const [imgError, setImgError] = useState(false);
 
     const { action_type, metadata, actor_name, actor_email, actor_avatar, created_at } = log;
@@ -277,6 +281,12 @@ const ActivityLogItem = ({ log, onClickTask }: { log: ActivityLog; onClickTask: 
                 <div style={{ color: 'hsl(var(--color-text-secondary))', lineHeight: '1.5' }}>
                     {renderDescription()}
                 </div>
+
+                {boardName && (
+                    <div style={{ marginTop: '4px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))' }}>
+                        in {boardName}
+                    </div>
+                )}
             </div>
         </div>
     );

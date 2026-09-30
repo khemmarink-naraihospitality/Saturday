@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ActivityLogItem, type ActivityLog } from '../components/common/ActivityLogList';
 import { buildCatCushions, NO_STATUS_KEY, NEUTRAL_CUSHION_COLOR, type CatFarmGroup } from '../lib/catFarmLayout';
 import { useBoardStore } from '../store/useBoardStore';
 import { BarChart2, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
@@ -455,9 +456,16 @@ export const WorkspaceDashboardPage = () => {
         allBoards.filter(b => b.workspaceId === activeWorkspaceId && !b.is_archived),
     [allBoards, activeWorkspaceId]);
 
+    // The feed spans every board in the workspace, so each entry names its board.
+    const boardTitleById = useMemo(
+        () => new Map(workspaceBoards.map(b => [b.id, b.title])),
+        [workspaceBoards]
+    );
+
     // Optimization: Fetch all needed data for the workspace in bulk
     const [workspaceData, setWorkspaceData] = useState<{ items: any[], columns: any[] }>({ items: [], columns: [] });
-    const [recentLogs, setRecentLogs] = useState<any[]>([]);
+    const [recentLogs, setRecentLogs] = useState<ActivityLog[]>([]);
+    const [logsLoading, setLogsLoading] = useState(true);
     const [workspaceMemberProfiles, setWorkspaceMemberProfiles] = useState<Record<string, string>>({});
 
     // Which Status column each widget counts; null keeps the original behaviour
@@ -617,23 +625,61 @@ export const WorkspaceDashboardPage = () => {
     }, [activeWorkspaceId, workspaceBoards]);
 
     useEffect(() => {
-        if (!activeWorkspaceId || workspaceBoards.length === 0) return;
-        
-        async function fetchLogs() {
-            const boardIds = workspaceBoards.map(b => b.id);
-            const { data } = await supabase
-                .from('activity_logs')
-                .select(`*, profiles!activity_logs_actor_id_fkey(full_name, avatar_url)`)
-                .order('created_at', { ascending: false })
-                .limit(100);
-                
-            if (data) {
-                const filtered = data.filter(log => boardIds.includes(log.target_id) || boardIds.includes(log.metadata?.board_id));
-                setRecentLogs(filtered.slice(0, 5));
-            }
+        if (!activeWorkspaceId) return;
+        if (workspaceBoards.length === 0) {
+            setRecentLogs([]);
+            setLogsLoading(false);
+            return;
         }
+
+        let cancelled = false;
+        async function fetchLogs() {
+            setLogsLoading(true);
+            const ids = workspaceBoards.map(b => b.id).join(',');
+
+            // Filtered in the query, not after it. This used to take the 100
+            // newest logs in the whole system and then keep this workspace's —
+            // but the whole org fills 100 logs in a few hours, so a workspace
+            // nobody had touched that morning got none of them and the widget
+            // sat empty despite thousands of logs of its own. Same match the
+            // board's own activity panel uses: the board as target, or named in
+            // metadata (item-level events), plus events on the workspace itself.
+            const { data, error } = await supabase
+                .from('activity_logs')
+                .select(`*, profiles!activity_logs_actor_id_fkey(full_name, email, avatar_url)`)
+                .or(`target_id.in.(${ids}),metadata->>board_id.in.(${ids}),target_id.eq.${activeWorkspaceId}`)
+                .order('created_at', { ascending: false })
+                .limit(30);
+
+            if (cancelled) return;
+            if (error) {
+                console.error('Dashboard: failed to load workspace activity', error);
+                setRecentLogs([]);
+            } else {
+                setRecentLogs((data || []).map((log: any) => ({
+                    ...log,
+                    actor_name: log.profiles?.full_name || log.profiles?.email?.split('@')[0] || 'System',
+                    actor_email: log.profiles?.email,
+                    actor_avatar: log.profiles?.avatar_url
+                })));
+            }
+            setLogsLoading(false);
+        }
+
         fetchLogs();
+        return () => { cancelled = true; };
     }, [activeWorkspaceId, workspaceBoards]);
+
+    // The board activity panel only highlights a row, because a board is already
+    // open there. From the dashboard nothing is, so a click opens the task on its
+    // own board instead — the same board + item route notifications take.
+    const openTaskFromActivity = (itemId: string) => {
+        const boardId = workspaceData.items.find(i => i.id === itemId)?.board_id;
+        if (!boardId) return;
+        const store = useBoardStore.getState();
+        store.setActiveBoard(boardId);
+        store.setActiveItem(itemId);
+    };
 
     // Note: loadBoardData is no longer needed here as we use workspaceData for stats
     // This dramatically improves performance in the dashboard view.
@@ -1168,24 +1214,37 @@ export const WorkspaceDashboardPage = () => {
                         border: '1px solid hsl(var(--color-border))',
                         padding: '20px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        height: '100%'
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxSizing: 'border-box'
                     }}>
                         <div className="widget-header-with-space" style={headerStyle}>
                             <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Board Updates</h3>
                             <Clock size={16} color="hsl(var(--color-text-tertiary))" />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {recentLogs.slice(0, 4).map((log) => (
-                                <div key={log.id} style={{ display: 'flex', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid hsl(var(--color-border))' }}>
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                        {(log.profiles?.full_name || 'U').substring(0, 1).toUpperCase()}
-                                    </div>
-                                    <div style={{ fontSize: '13px' }}>
-                                        <strong>{log.profiles?.full_name}</strong>
-                                        <div style={{ color: 'hsl(var(--color-text-tertiary))' }}>{log.metadata?.item_title || 'Update'}</div>
-                                    </div>
+                        {/* Capped and scrolled rather than left to grow: grid rows size to
+                            their tallest widget, so an unbounded feed would stretch the
+                            Work Status chart beside it to match. */}
+                        <div style={{ flex: 1, minHeight: 0, maxHeight: '400px', overflowY: 'auto', margin: '0 -4px', padding: '0 4px' }}>
+                            {logsLoading ? (
+                                <div style={{ padding: '24px 0', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                    Loading activity…
                                 </div>
-                            ))}
+                            ) : recentLogs.length === 0 ? (
+                                <div style={{ padding: '24px 0', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
+                                    No activity in this workspace yet.
+                                </div>
+                            ) : (
+                                recentLogs.map(log => (
+                                    <ActivityLogItem
+                                        key={log.id}
+                                        log={log}
+                                        onClickTask={openTaskFromActivity}
+                                        boardName={boardTitleById.get(log.metadata?.board_id || log.target_id || '')}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
                 );

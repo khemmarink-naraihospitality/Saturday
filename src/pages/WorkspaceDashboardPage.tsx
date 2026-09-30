@@ -1197,19 +1197,8 @@ export const WorkspaceDashboardPage = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'hsl(var(--color-bg-base, #f8fafc))' }}>
             
-            {/* Header */}
-            <header style={{ 
-                padding: '24px 32px', 
-                borderBottom: '1px solid hsl(var(--color-border))',
-                backgroundColor: 'hsl(var(--color-bg-surface, #ffffff))',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-            }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>
-                    {workspace.title} Dashboard
-                </h1>
-            </header>
+            {/* No page heading here: the top bar already shows "{workspace} Dashboard",
+                so repeating it above the widgets only pushed them down. */}
 
             {/* Content Scrollable Area with DnD Context */}
             <DndContext 

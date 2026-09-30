@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { buildCatCushions, NO_STATUS_KEY, NEUTRAL_CUSHION_COLOR, type CatFarmGroup } from '../lib/catFarmLayout';
 import { useBoardStore } from '../store/useBoardStore';
 import { BarChart2, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
 import { 
@@ -94,6 +95,138 @@ const SvgCat = ({ size, color, pose = 'walk' }: { size: number, color: string, p
             <path d={`M 32 ${isSitting ? 41 : 44} Q 35 ${isSitting ? 44 : 47}, 38 ${isSitting ? 41 : 44}`} stroke="#1e1e1e" strokeWidth="2" strokeLinecap="round" fill="none" />
             <path d={`M 33 ${isSitting ? 39 : 42} Q 35 ${isSitting ? 40 : 43}, 37 ${isSitting ? 39 : 42}`} stroke="#1e1e1e" strokeWidth="1" fill="none" />
         </svg>
+    );
+};
+
+/**
+ * The Cat Farm's contents: a cushion per status with that status's cats piled
+ * on top, each cushion as wide as its share of the tasks.
+ *
+ * A component of its own rather than part of renderWidget because it has to
+ * measure itself: how many cushions fit, and how many cats each can seat,
+ * depends on the card's real width, which varies with the dashboard layout.
+ */
+const CatCushionFarm = ({ groups }: { groups: CatFarmGroup[] }) => {
+    const rowRef = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    const hasTasks = groups.some(group => group.items.length > 0);
+
+    // Keyed on hasTasks: while the farm is empty the row isn't rendered, so the
+    // observer has to attach again once the first task shows up.
+    useEffect(() => {
+        const row = rowRef.current;
+        if (!row) return;
+        const observer = new ResizeObserver(entries => {
+            setWidth(Math.floor(entries[0].contentRect.width));
+        });
+        observer.observe(row);
+        return () => observer.disconnect();
+    }, [hasTasks]);
+
+    const { cushions } = useMemo(() => buildCatCushions(groups, { width }), [groups, width]);
+
+    if (!hasTasks) {
+        return (
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: '24px', zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                <div style={{ animation: 'catSleep 5s ease-in-out infinite' }}>
+                    <SvgCat size={40} color={NEUTRAL_CUSHION_COLOR} pose="sleep" />
+                </div>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>No tasks yet</span>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            ref={rowRef}
+            style={{ position: 'absolute', left: '16px', right: '16px', bottom: '12px', height: '116px', zIndex: 3, display: 'flex', alignItems: 'stretch', gap: '6px' }}
+        >
+            {cushions.map((cushion, index) => {
+                // The outer tooltips hug their own edge so a wide one isn't cut
+                // off by the card, which clips its overflow.
+                const edge = cushions.length > 1 && index === 0 ? ' edge-left'
+                    : cushions.length > 1 && index === cushions.length - 1 ? ' edge-right'
+                        : '';
+
+                return (
+                    <div key={cushion.key} style={{ width: `${cushion.width}px`, flex: 'none', position: 'relative' }}>
+                        {/* The pile, sitting on the cushion's top edge */}
+                        <div style={{ position: 'absolute', left: 0, right: 0, bottom: '34px', height: '64px' }}>
+                            {cushion.cats.map(cat => (
+                                <div
+                                    key={cat.id}
+                                    className="cat-container"
+                                    style={{
+                                        position: 'absolute',
+                                        // Centred with calc rather than a transform:
+                                        // .cat-container:hover sets transform to scale
+                                        // it up, which would wipe out a translateX.
+                                        left: `calc(${cat.leftPct}% - ${cat.size / 2}px)`,
+                                        bottom: `${cat.bottomPx}px`,
+                                        width: `${cat.size}px`,
+                                        height: `${cat.size}px`,
+                                        zIndex: cat.zIndex,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <div className="cat-tooltip">{cat.taskName}</div>
+                                    <div className="cat-visual" style={{
+                                        animation: cat.pose === 'sleep'
+                                            ? 'catSleep 5s ease-in-out infinite'
+                                            : 'catBob 1.2s ease-in-out infinite alternate',
+                                        animationDelay: `${cat.delay}s`
+                                    }}>
+                                        {/* Own element, since the animation above
+                                            already drives this one's transform.
+                                            SvgCat's sleep pose only shuts the eyes,
+                                            so sleepers are squashed a little to read
+                                            as lying on the cushion rather than
+                                            dozing on their feet. */}
+                                        <div style={{
+                                            transform: `scaleX(${cat.flip ? -1 : 1})${cat.pose === 'sleep' ? ' scaleY(0.82)' : ''}`,
+                                            transformOrigin: 'center bottom'
+                                        }}>
+                                            <SvgCat size={cat.size} color={cat.color} pose={cat.pose} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Cushion and label — hovering either explains the cushion */}
+                        <div className="cushion-hit" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '34px' }}>
+                            <div className={`cat-tooltip${edge}`}>
+                                {cushion.members ? (
+                                    <>
+                                        <div style={{ fontWeight: 600, marginBottom: '2px' }}>
+                                            {cushion.count} tasks · {cushion.percent}%
+                                        </div>
+                                        {cushion.members.map(member => (
+                                            <div key={member.label}>{member.label} · {member.count}</div>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <>{cushion.label} · {cushion.count} {cushion.count === 1 ? 'task' : 'tasks'} · {cushion.percent}%</>
+                                )}
+                            </div>
+                            <div style={{
+                                height: '14px',
+                                borderRadius: '999px',
+                                // A pastel tint of the status colour, so the cats,
+                                // drawn in the full colour, stand out on it rather
+                                // than melting into it.
+                                background: `linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.3)), ${cushion.color}`,
+                                boxShadow: 'inset 0 -3px 0 rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.10)'
+                            }} />
+                            <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{cushion.label}</span>
+                                <strong style={{ color: '#1e293b', flexShrink: 0 }}>{cushion.count}</strong>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
     );
 };
 
@@ -519,7 +652,7 @@ export const WorkspaceDashboardPage = () => {
                 statusCounts: {}, 
                 totalStatusValues: 0, 
                 completionPercent: "0", 
-                catsToRender: [], 
+                catGroups: [] as CatFarmGroup[], 
                 peopleMap: {} 
             };
         }
@@ -586,6 +719,11 @@ export const WorkspaceDashboardPage = () => {
         // Filter out Subitems (items that have a parent_id)
         const mainItems = workspaceData.items.filter(item => !item.parent_id);
 
+        // Which status each main item shows under in the Cat Farm: its first
+        // matched status, same precedence the old cat loop used. Keyed by option
+        // id here, merged by label once the loop is done.
+        const firstStatusKeyByItem = new Map<string, string>();
+
         // 2. Count statuses and workload (Only for main items)
         mainItems.forEach(item => {
             if (!item || !item.values) return;
@@ -607,6 +745,9 @@ export const WorkspaceDashboardPage = () => {
                 }
 
                 if (matchedKey) {
+                    if (item.id && !firstStatusKeyByItem.has(item.id)) {
+                        firstStatusKeyByItem.set(item.id, matchedKey);
+                    }
                     const status = statusCounts[matchedKey];
                     status.count++;
                     status.workloadCount++;
@@ -654,73 +795,43 @@ export const WorkspaceDashboardPage = () => {
 
         const completionPercent = totalStatusValues > 0 ? ((doneCount / totalStatusValues) * 100).toFixed(1) : "0";
         
-        // 3. Generate Cats for the farm
-        const catsToRender: any[] = [];
-        
-        // Limit cats for visuals & performance
-        const maxCats = 30;
-        const shuffledItems = [...mainItems].sort(() => Math.random() - 0.5);
-        const limitedItems = shuffledItems.slice(0, maxCats);
-
-        limitedItems.forEach((item, index) => {
+        // 3. Cat Farm: one cushion per status. Grouped by label rather than by
+        // option id: every board has its own copy of a column's options, so
+        // "Done" on three boards is three ids — as separate cushions that would
+        // read as three different statuses. Items with no status get their own
+        // "No status" cushion instead of borrowing the first status's colour,
+        // which made them look like a real status they weren't.
+        const catGroups = new Map<string, CatFarmGroup>();
+        mainItems.forEach(item => {
             if (!item) return;
+            const statusKey = item.id ? firstStatusKeyByItem.get(item.id) : undefined;
+            const status = statusKey ? statusCounts[statusKey] : undefined;
 
-            // Find primary status for this cat's color
-            let itemStatus = null;
-            for (const sCol of statusCols) {
-                const val = item.values?.[sCol.id];
-                if (!val) continue;
-
-                let matchedKey = null;
-                if (typeof val === 'string' && statusCounts[val]) {
-                    matchedKey = val;
-                } else {
-                    const labelText = typeof val === 'string' ? val : (val.label || val.text || '');
-                    if (labelText) {
-                        matchedKey = Object.keys(statusCounts).find(k => statusCounts[k].label === labelText);
-                    }
-                }
-
-                if (matchedKey) {
-                    itemStatus = statusCounts[matchedKey];
-                    break;
-                }
+            const groupKey = status ? status.label.trim().toLowerCase() : NO_STATUS_KEY;
+            let group = catGroups.get(groupKey);
+            if (!group) {
+                group = status
+                    ? { key: groupKey, label: status.label, color: status.color || NEUTRAL_CUSHION_COLOR, items: [] }
+                    : { key: NO_STATUS_KEY, label: 'No status', color: NEUTRAL_CUSHION_COLOR, items: [] };
+                catGroups.set(groupKey, group);
             }
-
-            if (!itemStatus) {
-                 const firstStatusKey = Object.keys(statusCounts)[0];
-                 itemStatus = statusCounts[firstStatusKey] || { color: '#cbd5e1' };
-            }
-
-            const behaviorChance = Math.random();
-            let behavior = 'walk';
-            if (behaviorChance < 0.3) behavior = 'sit';
-            else if (behaviorChance < 0.6) behavior = 'sleep';
-
-            // Item names are now fetched directly from the 'title' column in the database
-            const taskName = item.title || 'Untitled Task';
-
-            catsToRender.push({
-                id: item.id || `cat-${index}`,
-                color: itemStatus.color || '#cbd5e1',
-                behavior,
-                taskName,
-                left: 5 + Math.random() * 85,
-                bottom: Math.random() * 55,
-                delay: Math.random() * -20,
-                duration: behavior === 'walk' ? 25 + Math.random() * 35 : 5 + Math.random() * 5,
-                size: behavior === 'sleep' ? 24 + Math.random() * 10 : 28 + Math.random() * 14,
-                zIndex: 0,
-                flip: Math.random() > 0.5,
-                walkOffset: Math.random() * -60
-            });
+            group.items.push({ id: item.id, taskName: item.title || 'Untitled Task' });
         });
-        
-        catsToRender.sort((a, b) => b.bottom - a.bottom);
-        catsToRender.forEach((cat, index) => cat.zIndex = index);
 
-        console.log("Dashboard: Stats computed successfully", { totalTasks, cats: catsToRender.length });
-        return { totalTasks, statusCounts, totalStatusValues, completionPercent, catsToRender, peopleMap };
+        // Shuffled once here, where the result is cached per filter selection, so
+        // a big status shows a fair sample of its tasks and the same ones keep
+        // showing across re-renders. Which of them fit is decided at render
+        // time, once the card's width is known.
+        const catFarmGroups = Array.from(catGroups.values()).map(group => {
+            const items = [...group.items];
+            for (let i = items.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [items[i], items[j]] = [items[j], items[i]];
+            }
+            return { ...group, items };
+        });
+
+        return { totalTasks, statusCounts, totalStatusValues, completionPercent, catGroups: catFarmGroups, peopleMap };
     }, [workspaceData, workspaceBoards, workspaceMemberProfiles, statusColumnOptions]);
 
     // Cached per distinct selection, so two widgets showing the same column
@@ -876,7 +987,7 @@ export const WorkspaceDashboardPage = () => {
                          <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
                             <div className="widget-header-with-space" style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '6px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid rgba(126, 34, 206, 0.2)', display: 'flex', alignItems: 'center' }}>
                                 <h3 style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#7e22ce', whiteSpace: 'nowrap' }}>
-                                    {workspace.title} {stats.catsToRender.length === 1 ? '1 Cat' : `${stats.catsToRender.length} Cats`}
+                                    {stats.totalTasks} tasks · {stats.completionPercent}% Done
                                 </h3>
                                 <div style={{ marginLeft: '10px', display: 'flex', alignItems: 'center' }}>
                                     <StatusColumnFilter
@@ -916,53 +1027,7 @@ export const WorkspaceDashboardPage = () => {
                             </div>
                         </div>
 
-                        {/* Cat Toys / Play Equipment */}
-                        <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '40px', height: '80px', pointerEvents: 'none', zIndex: 2 }}>
-                            {/* Scratching Post */}
-                            <div style={{ position: 'absolute', bottom: 0, left: '10px', width: '20px', height: '60px', backgroundColor: '#92400e', borderRadius: '4px' }} />
-                            <div style={{ position: 'absolute', bottom: '60px', left: 0, width: '40px', height: '10px', backgroundColor: '#b45309', borderRadius: '4px' }} />
-                        </div>
-                        <div style={{ position: 'absolute', bottom: '30px', left: '30px', width: '25px', height: '25px', backgroundColor: '#f87171', borderRadius: '50%', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} /> {/* Red Ball */}
-                        <div style={{ position: 'absolute', bottom: '50px', left: '60px', width: '20px', height: '20px', backgroundColor: '#60a5fa', borderRadius: '50%', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} /> {/* Blue Ball */}
-
-                        <div style={{ position: 'absolute', top: '30%', left: 0, right: 0, bottom: '10px', zIndex: 3 }}>
-                            {stats.catsToRender.map(cat => (
-                                <div 
-                                    key={cat.id} 
-                                    className="cat-container"
-                                    style={{ 
-                                        position: 'absolute', 
-                                        bottom: `${cat.bottom}%`, 
-                                        zIndex: cat.zIndex, 
-                                        width: '60px', 
-                                        height: '60px', 
-                                        animation: cat.behavior === 'walk' ? `catPatrol ${cat.duration}s linear infinite` : 'none', 
-                                        animationDelay: `${cat.walkOffset}s`, 
-                                        left: cat.behavior !== 'walk' ? `${cat.left}%` : 'auto',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {/* Tooltip */}
-                                    <div className="cat-tooltip">
-                                        {cat.taskName}
-                                    </div>
-
-                                    {/* A walking cat's facing flip runs here on the graphic, in step
-                                        with catPatrol on the container (same duration and delay). It
-                                        used to run on the container itself, which mirrored the
-                                        tooltip's text for half of every patrol. */}
-                                    <div className="cat-visual" style={{
-                                        animation: cat.behavior === 'sleep' ? `catSleep 5s ease-in-out infinite` :
-                                                   cat.behavior === 'walk' ? `catFacing ${cat.duration}s linear infinite` :
-                                                   `catBob 1.2s ease-in-out infinite alternate`,
-                                        animationDelay: cat.behavior === 'walk' ? `${cat.walkOffset}s` : undefined,
-                                        filter: cat.behavior === 'sleep' ? `brightness(0.9)` : `none`
-                                    }}>
-                                        <SvgCat size={cat.size} color={cat.color} pose={cat.behavior} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <CatCushionFarm groups={stats.catGroups} />
                     </div>
                 );
             case 'workStatusChart':
@@ -1187,35 +1252,10 @@ export const WorkspaceDashboardPage = () => {
                     0%, 100% { transform: scale(1); opacity: 0.8; }
                     50% { transform: scale(1.05); opacity: 0.6; }
                 }
-                /* Position only. The facing flip lives in catFacing, on the cat
-                   graphic, so the container (and the tooltip inside it) is never
-                   mirrored. Same timeline as before, split in two. */
-                @keyframes catPatrol {
-                    0% { left: -10%; }
-                    35% { left: 100%; }
-                    50% { left: 100%; }
-                    85% { left: -10%; }
-                    100% { left: -10%; }
-                }
-                @keyframes catFacing {
-                    0% { transform: scaleX(-1); }
-                    49.9% { transform: scaleX(-1); }
-                    50% { transform: scaleX(1); }
-                    99.9% { transform: scaleX(1); }
-                    100% { transform: scaleX(-1); }
-                }
                 @keyframes catBob {
                     0% { transform: translateY(0) rotate(0deg); }
                     100% { transform: translateY(-4px) rotate(2deg); }
                 }
-                @keyframes walkStep {
-                    0% { transform: translateY(0); }
-                    25% { transform: translateY(-8px); }
-                    50% { transform: translateY(0); }
-                    75% { transform: translateY(-8px); }
-                    100% { transform: translateY(0); }
-                }
-
                 @keyframes wiggleLeg {
                     0% { transform: rotate(0deg); }
                     50% { transform: rotate(25deg); }
@@ -1275,6 +1315,40 @@ export const WorkspaceDashboardPage = () => {
                 .cat-container:hover .cat-tooltip {
                     opacity: 1;
                     transform: translateX(-50%) translateY(-5px);
+                }
+                /* Cushion tooltips reuse the cat tooltip's look, but wrap (the
+                   "+N more" one lists several statuses) and are raised above the
+                   pile on hover so the cats sitting on top don't cover them. */
+                .cushion-hit .cat-tooltip {
+                    white-space: normal;
+                    width: max-content;
+                    max-width: 200px;
+                    line-height: 1.5;
+                    text-align: left;
+                }
+                .cushion-hit:hover {
+                    z-index: 50;
+                }
+                .cushion-hit:hover .cat-tooltip {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(-5px);
+                }
+                .cushion-hit .cat-tooltip.edge-left {
+                    left: 0;
+                    transform: none;
+                }
+                .cushion-hit .cat-tooltip.edge-right {
+                    left: auto;
+                    right: 0;
+                    transform: none;
+                }
+                .cushion-hit:hover .cat-tooltip.edge-left,
+                .cushion-hit:hover .cat-tooltip.edge-right {
+                    transform: translateY(-5px);
+                }
+                .cat-tooltip.edge-left::after,
+                .cat-tooltip.edge-right::after {
+                    display: none;
                 }
                 .cat-tooltip::after {
                     content: '';

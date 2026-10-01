@@ -169,6 +169,11 @@ const SortableHeaderCell = ({
     );
 };
 
+// Names the rows a header covers ("items" / "subitems") or, with `own`, the ones
+// it heads — for wording about a shared column. `side` is the header's scope.
+const otherSideName = (side: 'item' | 'subitem', own = false) =>
+    (side === 'subitem') === own ? 'subitems' : 'items';
+
 /**
  * The column header row. `scope` says which rows it heads: the main header
  * (default) for top-level items, 'subitem' for the header above a parent's
@@ -203,6 +208,23 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
     const [showNotificationSettings, setShowNotificationSettings] = React.useState(false);
     const [menuPos, setMenuPos] = React.useState<{ top: number, left: number } | null>(null);
     const [confirmDeleteColId, setConfirmDeleteColId] = React.useState<string | null>(null);
+
+    // A column shared by items and sub-items isn't this header's to delete: the
+    // other side still shows it. Deleting from a header removes it from that
+    // header's rows only, by narrowing its scope to the other side, and the
+    // column and its data are only really deleted once nothing shows it. Before
+    // this, deleting a shared column from the sub-item header deleted it from the
+    // items too.
+    const confirmingShared = !!confirmDeleteColId &&
+        (columns.find(c => c.id === confirmDeleteColId)?.scope ?? 'both') === 'both';
+    const removeColumnFromHeader = (columnId: string) => {
+        const col = columns.find(c => c.id === columnId);
+        if (col && (col.scope ?? 'both') === 'both') {
+            setColumnScope(columnId, scope === 'subitem' ? 'item' : 'subitem');
+        } else {
+            deleteColumn(columnId);
+        }
+    };
     const [showAddMenu, setShowAddMenu] = React.useState(false);
     const addBtnRef = React.useRef<HTMLButtonElement>(null);
 
@@ -576,6 +598,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                         }}
                         onRename={() => startEditing(activeMenuColumn)}
                         onDelete={() => setConfirmDeleteColId(activeMenuColId!)}
+                        deleteLabel={(activeMenuColumn.scope ?? 'both') === 'both' ? `Remove from ${otherSideName(scope, true)}` : undefined}
                         onNumberFormat={() => {
                             setActiveNumberFormatColId(activeMenuColId);
                             setActiveMenuColId(null);
@@ -632,14 +655,16 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
 
                 <ConfirmModal
                     isOpen={!!confirmDeleteColId}
-                    title="Delete Column"
-                    message="Are you sure you want to delete this column?"
+                    title={confirmingShared ? `Remove from ${otherSideName(scope, true)}` : 'Delete Column'}
+                    message={confirmingShared
+                        ? `This column is shared with ${otherSideName(scope)}. It will be removed from ${otherSideName(scope, true)} only; ${otherSideName(scope)} keep it, and nothing is deleted.`
+                        : 'Are you sure you want to delete this column?'}
                     onConfirm={() => {
-                        if (confirmDeleteColId) deleteColumn(confirmDeleteColId);
+                        if (confirmDeleteColId) removeColumnFromHeader(confirmDeleteColId);
                         setConfirmDeleteColId(null);
                     }}
                     onCancel={() => setConfirmDeleteColId(null)}
-                    confirmText="Delete Column"
+                    confirmText={confirmingShared ? `Remove from ${otherSideName(scope, true)}` : 'Delete Column'}
                 />
             </DndContext>
         );

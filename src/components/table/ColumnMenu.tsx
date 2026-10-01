@@ -27,6 +27,9 @@ interface ColumnMenuProps {
     onAddRight: () => void;
     onRename: () => void;
     onDelete: () => void;
+    // Wording for the delete entry when it doesn't really delete (a shared column
+    // is only removed from the header's own rows).
+    deleteLabel?: string;
     onNumberFormat?: () => void;
     onNotificationSettings?: () => void;
     // Which rows the column is shown on, and the way to change it.
@@ -48,6 +51,7 @@ export const ColumnMenu = ({
     onAddRight,
     onRename,
     onDelete,
+    deleteLabel,
     onNumberFormat,
     onNotificationSettings,
     scope,
@@ -227,7 +231,7 @@ export const ColumnMenu = ({
                         />
                         <MenuItem
                             icon={<Trash2 size={16} />}
-                            label="Delete"
+                            label={deleteLabel ?? "Delete"}
                             onClick={() => { onDelete(); onClose(); }}
                             danger
                         />

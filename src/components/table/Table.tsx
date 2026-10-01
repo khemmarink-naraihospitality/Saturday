@@ -10,6 +10,7 @@ import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
 import { formatNumberValue } from '../../utils/format';
 import { linkDisplayText } from '../../lib/utils';
+import { itemColumns, subitemColumns } from '../../lib/columnScope';
 import {
     DndContext,
     closestCenter,
@@ -189,7 +190,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             }
         }
 
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], board.columns);
+        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns));
     }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, board?.columns, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({
@@ -272,9 +273,19 @@ export const Table = ({ boardId }: { boardId: string }) => {
     // The width of the columns alone. Shared by the header, the add-item row and
     // the group summary row so that all three are measured from one number
     // rather than each re-deriving its own.
-    const columnsWidth = useMemo(
-        () => (board?.columns || []).reduce((sum, col) => sum + (col.width || 150), 0),
-        [board]
+    // Items and sub-items can now show different columns, so the two sets are
+    // sized separately. The table is as wide as the wider of them, so the
+    // narrower rows simply end earlier instead of the page scrolling short.
+    const itemCols = useMemo(() => itemColumns(board?.columns || []), [board?.columns]);
+    const subCols = useMemo(() => subitemColumns(board?.columns || []), [board?.columns]);
+    const columnsWidth = useMemo(() => {
+        const sum = (cols: typeof itemCols) => cols.reduce((total, col) => total + (col.width || 150), 0);
+        return Math.max(sum(itemCols), sum(subCols));
+    }, [itemCols, subCols]);
+    // The summary/footer rows belong to the items, so they use the item set's own width.
+    const itemColumnsWidth = useMemo(
+        () => itemCols.reduce((total, col) => total + (col.width || 150), 0),
+        [itemCols]
     );
 
     const totalWidth = useMemo(() => {
@@ -362,7 +373,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         />
                                                     </div>
                                                 ) : isHeader ? (
-                                                    <Header columns={board.columns} groupColor={vItem.groupColor} groupId={vItem.data.groupId} />
+                                                    <Header columns={itemCols} groupColor={vItem.groupColor} groupId={vItem.data.groupId} />
                                                 ) : isFooter ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                         <div style={{
@@ -424,7 +435,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            {board.columns.map(col => (
+                                                            {itemCols.map(col => (
                                                                 <div key={col.id} style={{
                                                                     width: `${col.width || 150}px`,
                                                                     borderRight: 'none',
@@ -498,10 +509,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                 // box is already border-box above, so its 1px frame is
                                                                 // drawn inside this width: fit-content plus that border
                                                                 // made the row finish a pixel right of every other row.
-                                                                width: `${columnsWidth}px`,
+                                                                width: `${itemColumnsWidth}px`,
                                                                 minWidth: '100px' // Ensure it has some width
                                                             }}>
-                                                                {board.columns.map((col, idx) => {
+                                                                {itemCols.map((col, idx) => {
                                                                     const agg = vItem.data.aggregates?.[col.id];
                                                                     const totalCount = vItem.data.count || 0;
                                                                     return (
@@ -511,7 +522,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
                                                                             padding: '0 8px',
-                                                                            borderRight: idx < board.columns.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
+                                                                            borderRight: idx < itemCols.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
                                                                             height: '100%',
                                                                             boxSizing: 'border-box',
                                                                             flexShrink: 0
@@ -741,61 +752,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         </div>
                                                     </div>
                                                 ) : vItem.type === 'subitem-header' ? (
-                                                    <div className="table-row subitem-header" style={{
-                                                        height: '36px',
-                                                        display: 'flex',
-                                                        paddingLeft: 0, // Indentation moved to cell level for alignment
-                                                        backgroundColor: 'hsl(var(--color-bg-canvas))',
-                                                        borderBottom: '1px solid hsl(var(--color-border))',
-                                                        fontSize: '11px',
-                                                        fontWeight: 500,
-                                                        color: 'hsl(var(--color-text-secondary))',
-                                                        position: 'relative'
-                                                    }}>
-                                                        {vItem.groupColor && (
-                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1, zIndex: 80 }} />
-                                                        )}
-                                                        <div className="table-cell sticky-col" style={{ 
-                                                            width: `${itemColumnWidth}px`, 
-                                                            position: 'sticky', 
-                                                            left: 0, 
-                                                            zIndex: 70, 
-                                                            backgroundColor: 'hsl(var(--color-bg-canvas))', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            justifyContent: 'center',
-                                                            paddingLeft: 0,
-                                                            fontWeight: 400,
-                                                            fontSize: '11px',
-                                                            borderRight: 'none',
-                                                            boxShadow: 'none'
-                                                        }}>
-                                                            {vItem.type === 'subitem-header' ? 'Sub-Items' : board.itemColumnTitle}
-                                                        </div>
-                                                        {board.columns.map(col => (
-                                                            <div key={col.id} className="table-cell" style={{ 
-                                                                width: `${col.width || 150}px`, 
-                                                                display: 'flex', 
-                                                                alignItems: 'center', 
-                                                                justifyContent: 'center', 
-                                                                borderRight: '1px solid hsl(var(--color-border-subtle))',
-                                                                fontSize: '11px',
-                                                                color: 'hsl(var(--color-text-secondary))',
-                                                                fontWeight: 400
-                                                            }}>
-                                                                {(() => {
-                                                                    const mapping: Record<string, string> = {
-                                                                        'SOR Complete': 'Date',
-                                                                        'SOR File': 'ST Files',
-                                                                        'Stakeholders': 'Remark',
-                                                                        'Numbers': 'Dropdown',
-                                                                        'RFI Sent': 'Item ID (auto generated)'
-                                                                    };
-                                                                    return mapping[col.title] || col.title;
-                                                                })()}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    // The sub-items' own header: their columns, editable like the
+                                                    // main one. Previously this re-drew the item columns with a
+                                                    // hard-coded title mapping to fake different labels.
+                                                    <Header scope="subitem" columns={subCols} groupColor={vItem.groupColor} />
                                                 ) : vItem.type === 'subitem-footer' ? (
                                                     <div className="table-row subitem-footer" style={{
                                                         height: '40px',
@@ -830,7 +790,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                 ) : (
                                                     <Row
                                                         item={vItem.data as any}
-                                                        columns={board.columns}
+                                                        columns={vItem.type === 'subitem' ? subCols : itemCols}
                                                         groupColor={vItem.groupColor}
                                                         itemColumnWidth={itemColumnWidth}
                                                         dragHandleProps={listeners}

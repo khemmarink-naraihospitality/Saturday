@@ -607,7 +607,8 @@ export const createMemberSlice: StateCreator<
                                         type: column.type,
                                         order: column.order,
                                         width: column.width,
-                                        options
+                                        options,
+                                        scope: column.scope || 'both'
                                     });
                                 }
                             } else if (payload.eventType === 'UPDATE') {
@@ -617,7 +618,8 @@ export const createMemberSlice: StateCreator<
                                     type: column.type,
                                     order: column.order,
                                     width: column.width,
-                                    options
+                                    options,
+                                    scope: column.scope || 'both'
                                 } : c);
                             } else if (payload.eventType === 'DELETE') {
                                 newColumns = newColumns.filter(c => c.id !== column.id);

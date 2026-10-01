@@ -934,7 +934,10 @@ export const WorkspaceDashboardPage = () => {
                     supabase.from('groups').select('id, title, color, board_id, order').in('board_id', boardIds).eq('is_archived', false).order('order')
                 ]);
 
-                const columns = colsRes.data || [];
+                // Sub-item-only columns hold nothing the dashboard counts (it counts
+                // top-level items), and a Status among them would otherwise show up
+                // as a second, always-empty "Status" in the column pickers.
+                const columns = (colsRes.data || []).filter((c: any) => c.scope !== 'subitem');
                 const items = itemsRes.data || [];
 
                 console.log("Dashboard: Data Fetched", { 

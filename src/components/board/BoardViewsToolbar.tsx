@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { itemColumns } from '../../lib/columnScope';
 import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff, Link2 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
@@ -253,7 +254,7 @@ export const BoardViewsToolbar = () => {
                                     </div>
                                 </div>
                                 {/* Column Filters */}
-                                {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
+                                {itemColumns(useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns || []).filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
                                     <div key={col.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 500 }}>{col.title}</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -376,7 +377,7 @@ export const BoardViewsToolbar = () => {
                             >
                                 <span style={{ fontSize: '13px' }}>None</span>
                             </div>
-                            {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.map(col => (
+                            {itemColumns(useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns || []).map(col => (
                                 <div 
                                     key={col.id}
                                     onClick={() => {
@@ -444,7 +445,7 @@ export const BoardViewsToolbar = () => {
                             >
                                 <span style={{ fontSize: '13px' }}>Default (Groups)</span>
                             </div>
-                            {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns.filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
+                            {itemColumns(useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns || []).filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
                                 <div 
                                     key={col.id}
                                     onClick={() => {

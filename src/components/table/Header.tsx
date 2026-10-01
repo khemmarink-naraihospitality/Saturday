@@ -13,6 +13,7 @@ import { FilterMenu } from './FilterMenu';
 import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
+import { insertIndexAfter } from '../../lib/columnScope';
 
 // dnd-kit's PointerSensor activates on `pointerdown`, which fires *before* the
 // `mousedown` that the resize handle listens on — so calling stopPropagation
@@ -168,12 +169,19 @@ const SortableHeaderCell = ({
     );
 };
 
-export const Header = ({ columns, groupColor, groupId }: { columns: Column[], groupColor?: string, groupId?: string }) => {
+/**
+ * The column header row. `scope` says which rows it heads: the main header
+ * (default) for top-level items, 'subitem' for the header above a parent's
+ * sub-items. `columns` is already limited to that scope. Both are fully
+ * editable, and a column added from a header belongs to that header's scope.
+ */
+export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { columns: Column[], groupColor?: string, groupId?: string, scope?: 'item' | 'subitem' }) => {
     const addColumn = useBoardStore(state => state.addColumn);
     const deleteColumn = useBoardStore(state => state.deleteColumn);
     const updateColumnTitle = useBoardStore(state => state.updateColumnTitle);
     const moveColumn = useBoardStore(state => state.moveColumn);
     const duplicateColumn = useBoardStore(state => state.duplicateColumn);
+    const setColumnScope = useBoardStore(state => state.setColumnScope);
     const { can } = usePermission();
 
     const setColumnSort = useBoardStore(state => state.setColumnSort);
@@ -216,12 +224,8 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         if (isResizingRef.current) return;
 
         const { active, over } = event;
-        if (active.id !== over?.id) {
-            const oldIndex = columns.findIndex((c) => c.id === active.id);
-            const newIndex = columns.findIndex((c) => c.id === over?.id);
-            if (oldIndex !== -1 && newIndex !== -1) {
-                moveColumn(oldIndex, newIndex);
-            }
+        if (over && active.id !== over.id) {
+            moveColumn(String(active.id), String(over.id));
         }
     };
 
@@ -258,7 +262,7 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
             'priority': 'Priority'
         };
         const newTitle = typeMap[type] || "New Column";
-        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined);
+        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined, scope);
         setShowAddMenu(false);
         setInsertColIndex(null);
         setAddMenuPos(null);
@@ -413,7 +417,9 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
         return filter?.values || [];
     }, [activeFilters, activeFilterColumn]);
 
-    const isFirstGroup = !groupId || (activeBoard?.groups[0]?.id === groupId);
+    // Every sub-item header is live; of the group headers only the first is.
+    const isFirstGroup = scope === 'subitem' || !groupId || (activeBoard?.groups[0]?.id === groupId);
+    const isSubitemHeader = scope === 'subitem';
 
     const content = (
         <div className="table-header-row" style={{
@@ -442,7 +448,9 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                 boxShadow: 'none',
                 fontSize: '13px'
             }}>
-                {isEditingItemCol ? (
+                {isSubitemHeader ? (
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Subitem</span>
+                ) : isEditingItemCol ? (
                     <input
                         autoFocus
                         value={itemColValue}
@@ -555,10 +563,13 @@ export const Header = ({ columns, groupColor, groupId }: { columns: Column[], gr
                             setActiveFilterColId(activeMenuColId);
                             setActiveMenuColId(null);
                         }}
+                        scope={activeMenuColumn.scope ?? 'both'}
+                        onChangeScope={(next) => setColumnScope(activeMenuColId!, next)}
                         onDuplicate={() => duplicateColumn(activeMenuColId!)}
                         onAddRight={() => {
-                            const idx = columns.findIndex(c => c.id === activeMenuColId);
-                            setInsertColIndex(idx + 1);
+                            // An index into the board's full list, not into this
+                            // header's: the other scope's columns sit in between.
+                            setInsertColIndex(insertIndexAfter(activeBoard?.columns || [], activeMenuColId) ?? null);
                             setAddMenuPos({ top: menuPos.top, bottom: menuPos.top, left: menuPos.left });
                             setShowAddMenu(true);
                             setActiveMenuColId(null);

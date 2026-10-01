@@ -15,6 +15,9 @@ export interface FileLink {
     mimeType?: string;
 }
 
+// Which rows a column is shown on: top-level items, sub-items, or both.
+export type ColumnScope = 'item' | 'subitem' | 'both';
+
 export interface Column {
     id: string;
     title: string;
@@ -26,6 +29,7 @@ export interface Column {
     numberFormat?: 'number' | 'percent' | 'currency'; // For Number columns - how values are displayed
     currencyCode?: string; // ISO currency code (e.g. 'USD', 'THB') when numberFormat is 'currency'
     numberAlign?: 'left' | 'center' | 'right'; // For Number columns - undefined means Center
+    scope?: ColumnScope; // undefined = 'both' (columns from before sub-items had their own)
 }
 
 // ItemValue stores dynamic column data

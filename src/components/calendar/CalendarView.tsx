@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { itemColumns } from '../../lib/columnScope';
 import { 
     format, 
     startOfMonth, 
@@ -63,7 +64,7 @@ export const CalendarView = () => {
         return items;
     }, [activeBoard, searchQuery, showHiddenItems]);
     
-    const timeColumn = useMemo(() => activeBoard?.columns.find(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date'), [activeBoard]);
+    const timeColumn = useMemo(() => itemColumns(activeBoard?.columns || []).find(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date'), [activeBoard]);
 
     const getItemsForDay = (day: Date) => {
         if (!activeBoard || !timeColumn) return [];

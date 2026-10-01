@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { itemColumns } from '../../lib/columnScope';
 import { useBoardStore } from '../../store/useBoardStore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO, differenceInCalendarDays, getDate, getDaysInMonth, getDayOfYear, getDaysInYear } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -167,7 +168,7 @@ export const TimelineView = () => {
         const map = new Map<string, BarGeometry>();
         if (!activeBoard) return map;
 
-        const cols = activeBoard.columns.filter(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date');
+        const cols = itemColumns(activeBoard.columns).filter(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date');
 
         const lastUnit = timeGrid[timeGrid.length - 1];
         const windowStart = timeGrid[0];

@@ -68,7 +68,7 @@ export const createGroupLinkSlice: StateCreator<
         // values translate correctly even though the option ids differ.
         const { data: sourceColumns, error: sourceColumnsError } = await supabase
             .from('columns')
-            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align')
+            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope')
             .eq('board_id', sourceBoardId)
             .order('order');
 
@@ -122,7 +122,8 @@ export const createGroupLinkSlice: StateCreator<
                 aggregation: sc.aggregation,
                 number_format: sc.number_format,
                 currency_code: sc.currency_code,
-                number_align: sc.number_align
+                number_align: sc.number_align,
+                scope: sc.scope
             };
         });
 
@@ -269,7 +270,8 @@ export const createGroupLinkSlice: StateCreator<
             aggregation: c.aggregation,
             numberFormat: c.number_format,
             currencyCode: c.currency_code,
-            numberAlign: c.number_align || undefined
+            numberAlign: c.number_align || undefined,
+            scope: c.scope || 'both'
         }));
         const allNewItems = [...newTopLevelItems, ...newSubItems];
         const newItemIds = new Set(allNewItems.map(i => i.id));

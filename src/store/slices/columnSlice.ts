@@ -2,18 +2,23 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { ColumnType } from '../../types';
+import type { ColumnType, ColumnScope } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 
 export interface ColumnSlice {
     // Column Actions
-    addColumn: (title: string, type: ColumnType, index?: number) => Promise<void>;
+    // scope: which rows show it — the main header adds 'item' columns, the
+    // sub-item header 'subitem' ones.
+    addColumn: (title: string, type: ColumnType, index?: number, scope?: ColumnScope) => Promise<void>;
+    setColumnScope: (columnId: string, scope: ColumnScope) => Promise<void>;
     deleteColumn: (columnId: string) => Promise<void>;
     updateColumnTitle: (columnId: string, newTitle: string) => Promise<void>;
     updateColumnWidth: (columnId: string, width: number) => void;
     persistColumnWidth: (columnId: string, width: number) => Promise<void>;
-    moveColumn: (fromIndex: number, toIndex: number) => void;
+    // By id, not index: a header only shows its own scope's columns, so a position
+    // on screen isn't a position in the board's full list.
+    moveColumn: (fromColumnId: string, toColumnId: string) => void;
     // Options
     addColumnOption: (columnId: string, label: string, color: string) => void;
     updateColumnOption: (columnId: string, optionId: string, updates: Partial<{ label: string; color: string }>) => void;
@@ -37,7 +42,7 @@ export const createColumnSlice: StateCreator<
     [],
     ColumnSlice
 > = (set, get) => ({
-    addColumn: async (title, type, index) => {
+    addColumn: async (title, type, index, scope = 'item') => {
         const { activeBoardId } = get();
         if (!activeBoardId) return;
         const newColId = uuidv4();
@@ -53,7 +58,7 @@ export const createColumnSlice: StateCreator<
             options = await getDefaultStatusOptions();
         }
 
-        const newCol = { id: newColId, title, type, order: insertAt, width: 140, options };
+        const newCol = { id: newColId, title, type, order: insertAt, width: 140, options, scope };
 
         // Spliced into the array at the target position and everyone's order
         // re-indexed to match, rather than giving the new column the target
@@ -70,7 +75,7 @@ export const createColumnSlice: StateCreator<
             boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: reindexed } : b)
         }));
         await supabase.from('columns').insert({
-            id: newColId, board_id: activeBoardId, title, type, order: insertAt, width: 140, options
+            id: newColId, board_id: activeBoardId, title, type, order: insertAt, width: 140, options, scope
         });
 
         // Everything from insertAt onward shifted by one; persist the full
@@ -134,12 +139,16 @@ export const createColumnSlice: StateCreator<
         await supabase.from('columns').update({ width }).eq('id', columnId);
     },
 
-    moveColumn: async (fromIndex, toIndex) => {
+    moveColumn: async (fromColumnId, toColumnId) => {
         const { activeBoardId, boards } = get();
         if (!activeBoardId) return;
 
         const board = boards.find(b => b.id === activeBoardId);
         if (!board) return;
+
+        const fromIndex = board.columns.findIndex(c => c.id === fromColumnId);
+        const toIndex = board.columns.findIndex(c => c.id === toColumnId);
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
 
         const newColumns = arrayMove(board.columns, fromIndex, toIndex);
         set(state => ({
@@ -151,6 +160,22 @@ export const createColumnSlice: StateCreator<
             _board_id: activeBoardId,
             _column_ids: columnIds
         });
+    },
+
+    setColumnScope: async (columnId, scope) => {
+        const { activeBoardId } = get();
+        if (!activeBoardId) return;
+        const column = get().boards.find(b => b.id === activeBoardId)?.columns.find(c => c.id === columnId);
+        if (!column || (column.scope ?? 'both') === scope) return;
+
+        set(state => ({
+            boards: state.boards.map(b => b.id === activeBoardId
+                ? { ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, scope } : c) }
+                : b)
+        }));
+        // Only changes where the column is shown. Values stay in items.values,
+        // so moving a column back brings its data with it.
+        await supabase.from('columns').update({ scope }).eq('id', columnId);
     },
 
     duplicateColumn: async (columnId) => {
@@ -198,7 +223,8 @@ export const createColumnSlice: StateCreator<
             type: newCol.type,
             order: sourceIndex + 1, // We should probably re-save all orders if we want to be safe, but insertion is okay for now
             width: newCol.width,
-            options: newOptions
+            options: newOptions,
+            scope: newCol.scope ?? 'both'
         });
 
         // We technically should update all subsequent column orders in DB to be safe, 

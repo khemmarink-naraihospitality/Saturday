@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { itemColumns } from '../../lib/columnScope';
 import { createPortal } from 'react-dom';
 import {
     DndContext,
@@ -542,12 +543,12 @@ export const KanbanView = () => {
 
     // The "Person" column shown as avatars on each card
     const peopleColumn = useMemo(() => {
-        return activeBoard?.columns.find(c => c.type === 'people');
+        return itemColumns(activeBoard?.columns || []).find(c => c.type === 'people');
     }, [activeBoard]);
 
     // The "Status" column shown as a colored bar on each card (skip if it's already the grouping column)
     const statusColumn = useMemo(() => {
-        return activeBoard?.columns.find(c => c.type === 'status' && c.id !== activeBoard.groupByColumnId);
+        return itemColumns(activeBoard?.columns || []).find(c => c.type === 'status' && c.id !== activeBoard?.groupByColumnId);
     }, [activeBoard]);
 
     // Map of parentId -> visible sub-items, for the "Sub-items" expand toggle on each card

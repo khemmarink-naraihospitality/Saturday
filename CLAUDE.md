@@ -98,6 +98,8 @@ Column types: `text`, `long_text`, `status`, `date`, `due_date`, `number`, `drop
 
 Board views: `main_table` (default), `timeline`, `kanban`, `calendar` — switched via `Board.activeViewId`.
 
+**Column scope.** Each column has a `scope` (`columns.scope`): `item`, `subitem` or `both` (missing = `both`, which is what every column predating the field got, so older boards look unchanged). Items and sub-items can therefore show different columns, as in Monday. Values still live in `items.values[columnId]` for both kinds of row, so changing a column's scope moves no data. Use `itemColumns()` / `subitemColumns()` from `src/lib/columnScope.ts` rather than filtering `board.columns` by hand; item-level views (Kanban, Calendar, Timeline, the toolbar menus, the dashboard) read `itemColumns`. `Header` takes a `scope` prop and is also the sub-item header. A header only shows its own scope's columns, so `moveColumn` takes column ids and "add to the right" goes through `insertIndexAfter()` — an index on screen is not an index into `board.columns`.
+
 ### Item Dependencies (Timeline)
 
 Finish-to-Start dependencies between items on the same board (`item_dependencies` table, `itemDependencySlice.ts`, `supabase/migrations/20260903_item_dependencies.sql`). One row is one edge, predecessor → successor; only the `FS` type exists today (the `type` column is reserved for `SS`/`FF`/`SF`). A Postgres trigger rejects an edge whose two items aren't on the same `board_id`; RLS gates read/insert/delete the same way `group_links` does.

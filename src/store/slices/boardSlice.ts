@@ -575,7 +575,7 @@ export const createBoardSlice: StateCreator<
                 { data: dependencies }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
-                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope').eq('board_id', boardId).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)
@@ -648,7 +648,8 @@ export const createBoardSlice: StateCreator<
                         aggregation: c.aggregation,
                         numberFormat: c.number_format,
                         currencyCode: c.currency_code,
-                        numberAlign: c.number_align || undefined
+                        numberAlign: c.number_align || undefined,
+                        scope: c.scope || 'both'
                     })),
                     groups: bGroups.map(g => {
                         const groupItems = (parsedItemsMap[g.id] || [])
@@ -941,7 +942,8 @@ export const createBoardSlice: StateCreator<
                     type: c.type,
                     order: c.order,
                     width: c.width || 140,
-                    options: c.options ? JSON.stringify(c.options) : '{}'
+                    options: c.options ? JSON.stringify(c.options) : '{}',
+                    scope: c.scope || 'both'
                 })));
             }
 

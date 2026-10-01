@@ -1,7 +1,7 @@
 import type { Item, Group } from '../types';
 
 // 1. Add 'header', 'footer', and sub-item types to type
-export type VirtualItemType = 'group' | 'header' | 'item' | 'footer' | 'subitem-header' | 'subitem' | 'subitem-footer';
+export type VirtualItemType = 'group' | 'header' | 'item' | 'footer' | 'subitem-header' | 'subitem' | 'subitem-footer' | 'subitem-summary';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface VirtualItemData {
@@ -15,13 +15,62 @@ export interface VirtualItemData {
     count?: number;
 }
 
+/** Column types whose group summary shows something; the rest have no summary cell. */
+export const SUMMARIZABLE_TYPES = ['number', 'status', 'date', 'due_date', 'timeline', 'priority', 'people', 'files'];
+
+/**
+ * Per-column roll-up of a set of rows — what the summary rows under a group and
+ * under a parent's sub-items display. One definition for both, and for the
+ * dynamic and static grouping paths: a column type handled in one copy but not
+ * another is what once white-screened boards with a Priority column.
+ */
+export const computeAggregates = (columns: any[], rows: Item[]): Record<string, any> => {
+    const aggregates: Record<string, any> = {};
+    columns.forEach(col => {
+        const vals = rows.map(i => i.values[col.id]);
+        if (col.type === 'number') {
+            const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
+            aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
+        } else if (col.type === 'date' || col.type === 'due_date') {
+            const dateValues = vals.filter(Boolean).sort();
+            aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
+        } else if (col.type === 'timeline') {
+            const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
+            const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
+            aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
+        } else if (col.type === 'people') {
+            const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
+            const uniqueIds = Array.from(new Set(allIds));
+            aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
+        } else if (col.type === 'priority') {
+            // Unrated rows are left out of the average rather than counted as
+            // zero, which would drag every group down. Always carries an avg: the
+            // summary cell reads it, and a shape without one used to throw.
+            const ratings = vals.map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v > 0);
+            aggregates[col.id] = {
+                values: ratings,
+                count: ratings.length,
+                avg: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
+            };
+        } else if (col.type === 'files') {
+            const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
+            aggregates[col.id] = { count: totalFiles };
+        } else {
+            aggregates[col.id] = { values: vals, count: vals.length };
+        }
+    });
+    return aggregates;
+};
+
 export const groupItems = (
     items: Item[],
     groups: Group[],
     groupByColumnId: string | null,
     collapsedGroups: string[] = [],
     expandedItemIds: string[] = [],
-    columns?: any[]
+    columns?: any[],
+    // The columns sub-items show, for the summary row under a parent's sub-items.
+    subitemColumns?: any[]
 ): VirtualItemData[] => {
     // Pre-calculate sub-items map and group items map
     const subItemsMap = new Map<string, Item[]>();
@@ -53,6 +102,20 @@ export const groupItems = (
 
     const result: VirtualItemData[] = [];
 
+    // Totals for one parent's sub-items, drawn under them. Only when there are
+    // sub-items and at least one of their columns has something to total.
+    const pushSubitemSummary = (parentId: string, subItems: Item[], color?: string) => {
+        if (!subitemColumns || subItems.length === 0) return;
+        if (!subitemColumns.some(c => SUMMARIZABLE_TYPES.includes(c.type))) return;
+        result.push({
+            type: 'subitem-summary',
+            id: `${parentId}-sub-summary`,
+            data: { parentId, aggregates: computeAggregates(subitemColumns, subItems), count: subItems.length },
+            depth: 1,
+            groupColor: color
+        });
+    };
+
     // 1. Dynamic Grouping (Status, Dropdown, Person, etc.)
     if (groupByColumnId) {
         const valuesMap: Record<string, Item[]> = {};
@@ -73,41 +136,7 @@ export const groupItems = (
 
         const addDynamicGroup = (title: string, gItems: Item[], gId: string, color: string = '#c4c4c4') => {
             const isCollapsed = collapsedGroups.includes(gId);
-            const aggregates: Record<string, any> = {};
-            if (columns) {
-                columns.forEach(col => {
-                    const vals = gItems.map(i => i.values[col.id]);
-                    if (col.type === 'number') {
-                        const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
-                        aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
-                    } else if (col.type === 'date' || col.type === 'due_date') {
-                        const dateValues = vals.filter(Boolean).sort();
-                        aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
-                    } else if (col.type === 'timeline') {
-                        const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
-                        const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
-                        aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
-                    } else if (col.type === 'people') {
-                        const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
-                        const uniqueIds = Array.from(new Set(allIds));
-                        aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
-                    } else if (col.type === 'priority') {
-                        // Unrated rows are left out of the average rather than
-                        // counted as zero, which would drag every group down.
-                        const ratings = vals.map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v > 0);
-                        aggregates[col.id] = {
-                            values: ratings,
-                            count: ratings.length,
-                            avg: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
-                        };
-                    } else if (col.type === 'files') {
-                        const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
-                        aggregates[col.id] = { count: totalFiles };
-                    } else {
-                        aggregates[col.id] = { values: vals, count: vals.length };
-                    }
-                });
-            }
+            const aggregates = columns ? computeAggregates(columns, gItems) : {};
 
             result.push({ 
                 type: 'group', 
@@ -126,6 +155,7 @@ export const groupItems = (
                         result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: color });
                         subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: color }));
                         result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: gId }, depth: 1, groupColor: color });
+                        pushSubitemSummary(item.id, subItems, color);
                     }
                 });
                 result.push({ 
@@ -157,43 +187,7 @@ export const groupItems = (
         const groupItemsList = itemsByGroupMap.get(group.id) || [];
         const isCollapsed = collapsedGroups.includes(group.id);
 
-        const aggregates: Record<string, any> = {};
-        if (columns) {
-            columns.forEach(col => {
-                const vals = groupItemsList.map(i => i.values[col.id]);
-                if (col.type === 'number') {
-                    const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
-                    aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
-                } else if (col.type === 'date' || col.type === 'due_date') {
-                    const dateValues = vals.filter(Boolean).sort();
-                    aggregates[col.id] = { min: dateValues[0], max: dateValues[dateValues.length - 1], values: dateValues, count: dateValues.length };
-                } else if (col.type === 'timeline') {
-                    const froms = vals.filter((v): v is { from: string; to: string } => !!v?.from).map(v => v.from).sort();
-                    const tos = vals.filter((v): v is { from: string; to: string } => !!v?.to).map(v => v.to).sort();
-                    aggregates[col.id] = { min: froms[0], max: tos[tos.length - 1], count: froms.length };
-                } else if (col.type === 'people') {
-                    const allIds = vals.flatMap(v => Array.isArray(v) ? v : (v ? [v] : []));
-                    const uniqueIds = Array.from(new Set(allIds));
-                    aggregates[col.id] = { values: vals, uniqueIds, count: uniqueIds.length };
-                } else if (col.type === 'priority') {
-                    // Kept in step with the same branch in addDynamicGroup above.
-                    // Missing it here is what white-screened every board with a
-                    // Priority column: the fallback produced an aggregate with a
-                    // count but no avg, and the summary cell read avg off it.
-                    const ratings = vals.map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v > 0);
-                    aggregates[col.id] = {
-                        values: ratings,
-                        count: ratings.length,
-                        avg: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
-                    };
-                } else if (col.type === 'files') {
-                    const totalFiles = vals.reduce((sum, v) => sum + (Array.isArray(v) ? v.length : 0), 0);
-                    aggregates[col.id] = { count: totalFiles };
-                } else {
-                    aggregates[col.id] = { values: vals, count: vals.length };
-                }
-            });
-        }
+        const aggregates = columns ? computeAggregates(columns, groupItemsList) : {};
 
         result.push({ 
             type: 'group', 
@@ -212,6 +206,7 @@ export const groupItems = (
                     result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: group.color });
                     subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: group.color }));
                     result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: group.id }, depth: 1, groupColor: group.color });
+                    pushSubitemSummary(item.id, subItems, group.color);
                 }
             });
             result.push({ 

@@ -1121,6 +1121,35 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }
 
+                    // Which rows each column belongs to. A Monday export lists the subitems
+                    // in their own table with their own headers, and until columns could be
+                    // scoped the two were merged into one set that every row showed. A column
+                    // seen only in the main table is the items'; one seen only in the subitem
+                    // table is the subitems'; one in both stays shared. A file with no subitem
+                    // table at all keeps every column shared, as before, so subitems added
+                    // later aren't left with nothing but a name.
+                    const hasSubitemTable = columns.some((c: any) => c.subIndex !== undefined || c.subIndices);
+                    const subitemsCarryValue = (title: string) =>
+                        groups.some((g: any) => (g.items || []).some((it: any) =>
+                            (it.subitems || []).some((sub: any) => {
+                                const v = sub?.values?.[title];
+                                if (Array.isArray(v)) return v.length > 0;
+                                if (typeof v === 'boolean') return v;
+                                if (v && typeof v === 'object') return Object.values(v).some(Boolean);
+                                return String(v ?? '').trim() !== '';
+                            })
+                        ));
+                    const importScopeOf = (c: any): 'item' | 'subitem' | 'both' => {
+                        if (!hasSubitemTable) return 'both';
+                        const inMain = (c.originalIndex !== undefined && c.originalIndex !== -1)
+                            || (Array.isArray(c.originalIndices) && c.originalIndices.some((i: number) => i !== -1));
+                        // A main-table column the subitems also carry values for (they read it
+                        // by position when their table lacks it) is shared, not the items' alone.
+                        const inSub = c.subIndex !== undefined || !!c.subIndices || subitemsCarryValue(c.title);
+                        if (inMain && inSub) return 'both';
+                        return inSub ? 'subitem' : 'item';
+                    };
+
                     // A subitem header with no counterpart in the main table invents a board column
                     // (originalIndex === -1). That is right when the subitems carry data for it, and
                     // clutter when they don't: a Monday export's subitem header lists "Owner" whether
@@ -1138,7 +1167,9 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 return String(v ?? '').trim() !== '';
                             })
                         ));
-                    const keptColumns = columns.filter((c: any) => c.originalIndex !== -1 || columnHasValue(c.title));
+                    const keptColumns = columns
+                        .filter((c: any) => c.originalIndex !== -1 || columnHasValue(c.title))
+                        .map((c: any) => ({ ...c, scope: importScopeOf(c) }));
 
                     filePreviews.push({
                         id: `${file.name}-${sheetName}`,

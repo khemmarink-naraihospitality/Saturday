@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Board, ColumnType, Column, Comment, Item } from '../../types';
+import type { Board, ColumnType, ColumnScope, Column, Comment, Item } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { mapDbDependency } from './itemDependencySlice';
@@ -54,7 +54,7 @@ export interface BoardSlice {
             title: string;
             description?: string;
             groups: { title: string; color: string; items: any[] }[];
-            columns: { title: string; type: ColumnType; options?: any[] }[];
+            columns: { title: string; type: ColumnType; options?: any[]; scope?: ColumnScope }[];
         }
     ) => Promise<void>;
 }
@@ -1070,7 +1070,8 @@ export const createBoardSlice: StateCreator<
             type: c.type,
             order: idx,
             width: c.type === 'status' ? 140 : 200,
-            options: c.options || []
+            options: c.options || [],
+            scope: c.scope ?? 'both'
         }));
         const { error: cErr } = await supabase.from('columns').insert(dbColumns);
         if (cErr) throw new Error(`Columns creation failed: ${cErr.message}`);

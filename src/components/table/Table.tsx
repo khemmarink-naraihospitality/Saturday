@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus, Star } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -8,9 +8,9 @@ import { Header } from './Header';
 import { Row } from './Row';
 import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
-import { formatNumberValue } from '../../utils/format';
 import { linkDisplayText } from '../../lib/utils';
 import { itemColumns, subitemColumns } from '../../lib/columnScope';
+import { SummaryCell } from './SummaryCell';
 import {
     DndContext,
     closestCenter,
@@ -84,7 +84,6 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
-    const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const itemColumnWidth = board?.itemColumnWidth || 350;
 
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -190,7 +189,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             }
         }
 
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns));
+        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns), subitemColumns(board.columns));
     }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, board?.columns, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({
@@ -201,7 +200,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             const gap = 32; // var(--spacing-group-gap)
             if (type === 'group') return (index === 0 ? 44 : 44 + gap); 
             if (type === 'header' || type === 'subitem-header') return 34;
-            if (type === 'subitem-footer') return 40;
+            if (type === 'subitem-footer' || type === 'subitem-summary') return 40;
             if (type === 'footer') return 80;
             return 30;
         },
@@ -283,6 +282,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
         return Math.max(sum(itemCols), sum(subCols));
     }, [itemCols, subCols]);
     // The summary/footer rows belong to the items, so they use the item set's own width.
+    const subColumnsWidth = useMemo(
+        () => subCols.reduce((total, col) => total + (col.width || 150), 0),
+        [subCols]
+    );
     const itemColumnsWidth = useMemo(
         () => itemCols.reduce((total, col) => total + (col.width || 150), 0),
         [itemCols]
@@ -527,219 +530,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                             boxSizing: 'border-box',
                                                                             flexShrink: 0
                                                                         }}>
-                                                                            {col.type === 'status' && (
-                                                                                <div style={{
-                                                                                    width: '100%',
-                                                                                    height: '24px',
-                                                                                    display: 'flex',
-                                                                                    borderRadius: '6px',
-                                                                                    overflow: 'hidden',
-                                                                                    position: 'relative'
-                                                                                }}>
-                                                                                    {(() => {
-                                                                                        if (!agg || totalCount === 0) return <div style={{ width: '100%', background: '#eee' }} />;
-                                                                                        const values = agg.values as any[];
-                                                                                        const counts: Record<string, number> = {};
-                                                                                        values.forEach(v => {
-                                                                                            const val = v || 'default';
-                                                                                            counts[val] = (counts[val] || 0) + 1;
-                                                                                        });
-                                                                                        const options = Array.isArray(col.options) ? col.options : [];
-                                                                                        return options.map(opt => {
-                                                                                            const count = counts[opt.id] || counts[opt.label] || 0;
-                                                                                            if (count === 0) return null;
-                                                                                            const widthPct = (count / totalCount) * 100;
-                                                                                            return (
-                                                                                                <div key={opt.id} style={{
-                                                                                                    width: `${widthPct}%`,
-                                                                                                    height: '100%',
-                                                                                                    backgroundColor: opt.color,
-                                                                                                }} title={`${opt.label}: ${Math.round(widthPct)}%`} />
-                                                                                            );
-                                                                                        }).concat(
-                                                                                            counts['default'] ? (
-                                                                                                <div key="default" style={{
-                                                                                                    width: `${(counts['default'] / totalCount) * 100}%`,
-                                                                                                    height: '100%',
-                                                                                                    backgroundColor: '#c4c4c4',
-                                                                                                }} title="Empty" />
-                                                                                            ) : null
-                                                                                        );
-                                                                                    })()}
-                                                                                </div>
-                                                                            )}
-                                                                            {(col.type === 'date' || col.type === 'due_date' || col.type === 'timeline') && (() => {
-                                                                                if (!agg || !agg.min) return null;
-                                                                                const d1 = new Date(agg.min).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                                                const d2 = new Date(agg.max).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                                                return <div style={{ background: vItem.groupColor || 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '12px' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>
-                                                                            })()}
-                                                                            {col.type === 'priority' && (() => {
-                                                                                // Reads the average defensively: this summary cell
-                                                                                // renders whatever the grouping code produced, and a
-                                                                                // shape without an avg must show nothing rather than
-                                                                                // throw and take the whole board down with it.
-                                                                                if (!agg?.count || typeof agg.avg !== 'number') return null;
-                                                                                return (
-                                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                        <Star size={13} color="#fdab3d" fill="#fdab3d" />
-                                                                                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{agg.avg.toFixed(1)}</span>
-                                                                                        <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>avg</span>
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                            {col.type === 'number' && (() => {
-                                                                                const aggregation = col.aggregation || 'sum';
-                                                                                
-                                                                                let result: number | string = 0;
-                                                                                let label = aggregation;
-
-                                                                                if (aggregation === 'none' || !agg || agg.count === 0) {
-                                                                                    if (aggregation === 'none') {
-                                                                                        return (
-                                                                                            <div
-                                                                                                onClick={() => useBoardStore.getState().setColumnAggregation(col.id, 'sum')}
-                                                                                                style={{ width: '100%', height: '100%', cursor: 'pointer' }}
-                                                                                            />
-                                                                                        );
-                                                                                    }
-                                                                                    // If empty but has aggregation
-                                                                                    result = '-';
-                                                                                } else {
-                                                                                    switch (aggregation) {
-                                                                                        case 'sum':
-                                                                                            result = agg.sum || 0;
-                                                                                            break;
-                                                                                        case 'avg':
-                                                                                            result = parseFloat(((agg.sum || 0) / agg.count).toFixed(2));
-                                                                                            break;
-                                                                                        case 'min':
-                                                                                            result = Math.min(...agg.values);
-                                                                                            break;
-                                                                                        case 'max':
-                                                                                            result = Math.max(...agg.values);
-                                                                                            break;
-                                                                                        case 'count':
-                                                                                            result = agg.count;
-                                                                                            break;
-                                                                                    }
-                                                                                }
-
-                                                                                const nextAggregation = {
-                                                                                    'sum': 'avg',
-                                                                                    'avg': 'min',
-                                                                                    'min': 'max',
-                                                                                    'max': 'count',
-                                                                                    'count': 'sum',
-                                                                                    'none': 'sum'
-                                                                                } as const;
-
-                                                                                const displayResult = (typeof result === 'number' && aggregation !== 'count')
-                                                                                    ? formatNumberValue(result, col)
-                                                                                    : result;
-
-                                                                                return (
-                                                                                    <div
-                                                                                        onClick={() => useBoardStore.getState().setColumnAggregation(col.id, nextAggregation[aggregation] as any)}
-                                                                                        style={{
-                                                                                            display: 'flex',
-                                                                                            flexDirection: 'column',
-                                                                                            alignItems: 'center',
-                                                                                            cursor: 'pointer',
-                                                                                            padding: '4px',
-                                                                                            borderRadius: '4px'
-                                                                                        }}
-                                                                                        title="Click to change aggregation"
-                                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f6f8'}
-                                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                                    >
-                                                                                        <span>{displayResult}</span>
-                                                                                        <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>{label}</span>
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                            {col.type === 'people' && (() => {
-                                                                                // Matches the cells this row summarises: ids with no visible
-                                                                                // member behind them are left out rather than counted.
-                                                                                const uniqueIds: string[] = (agg?.uniqueIds || []).filter(
-                                                                                    (id: string) => activeBoardMembers.some(m => m.user_id === id)
-                                                                                );
-                                                                                if (uniqueIds.length === 0) return null;
-                                                                                const maxVisible = 4;
-                                                                                return (
-                                                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                                                        {uniqueIds.slice(0, maxVisible).map((userId, idx) => {
-                                                                                            const member = activeBoardMembers.find(m => m.user_id === userId);
-                                                                                            const profileData = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
-                                                                                            const profile = profileData || {};
-                                                                                            const name = profile.full_name || profile.email || 'Unknown';
-                                                                                            const initial = name[0]?.toUpperCase() || '?';
-
-                                                                                            return (
-                                                                                                <div key={userId} title={name} style={{
-                                                                                                    width: '24px',
-                                                                                                    height: '24px',
-                                                                                                    borderRadius: '50%',
-                                                                                                    backgroundColor: profile?.avatar_url ? 'transparent' : '#0073ea',
-                                                                                                    color: 'white',
-                                                                                                    display: 'flex',
-                                                                                                    alignItems: 'center',
-                                                                                                    justifyContent: 'center',
-                                                                                                    fontSize: '10px',
-                                                                                                    fontWeight: 600,
-                                                                                                    border: '2px solid white',
-                                                                                                    marginLeft: idx > 0 ? '-10px' : '0',
-                                                                                                    zIndex: idx + 1,
-                                                                                                    overflow: 'hidden',
-                                                                                                    position: 'relative',
-                                                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                                                                                                }}>
-                                                                                                    {profile?.avatar_url ? (
-                                                                                                        <img
-                                                                                                            src={profile.avatar_url}
-                                                                                                            alt=""
-                                                                                                            referrerPolicy="no-referrer"
-                                                                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                                                                        />
-                                                                                                    ) : (
-                                                                                                        initial
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            );
-                                                                                        })}
-                                                                                        {uniqueIds.length > maxVisible && (
-                                                                                            <div style={{
-                                                                                                width: '24px',
-                                                                                                height: '24px',
-                                                                                                borderRadius: '50%',
-                                                                                                backgroundColor: '#e5e7eb',
-                                                                                                color: '#6b7280',
-                                                                                                display: 'flex',
-                                                                                                alignItems: 'center',
-                                                                                                justifyContent: 'center',
-                                                                                                fontSize: '10px',
-                                                                                                fontWeight: 600,
-                                                                                                border: '2px solid white',
-                                                                                                marginLeft: '-10px',
-                                                                                                zIndex: maxVisible + 1,
-                                                                                                position: 'relative'
-                                                                                            }}>
-                                                                                                +{uniqueIds.length - maxVisible}
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                            {col.type === 'files' && (() => {
-                                                                                const fileCount = agg?.count || 0;
-                                                                                if (fileCount === 0) return null;
-                                                                                return (
-                                                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px' }}>
-                                                                                        <span>{fileCount}</span>
-                                                                                        <span style={{ fontSize: 10, color: '#888', textTransform: 'uppercase' }}>files</span>
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
+                                                                            <SummaryCell col={col} agg={agg} totalCount={totalCount} color={vItem.groupColor} />
                                                                         </div>
                                                                     );
                                                                 })}
@@ -756,6 +547,59 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                     // main one. Previously this re-drew the item columns with a
                                                     // hard-coded title mapping to fake different labels.
                                                     <Header scope="subitem" columns={subCols} groupColor={vItem.groupColor} />
+                                                ) : vItem.type === 'subitem-summary' ? (
+                                                    // Totals for this parent's sub-items, over the sub-item columns.
+                                                    <div className="table-row subitem-summary" style={{ display: 'flex', height: '40px', position: 'relative', alignItems: 'center' }}>
+                                                        {vItem.groupColor && (
+                                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, zIndex: 80 }} />
+                                                        )}
+                                                        <div className="sticky-col" style={{
+                                                            width: `${itemColumnWidth}px`,
+                                                            position: 'sticky',
+                                                            left: 0,
+                                                            zIndex: 55,
+                                                            backgroundColor: 'hsl(var(--color-bg-canvas))',
+                                                            flexShrink: 0,
+                                                            height: '100%',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'flex-end',
+                                                            paddingRight: '12px',
+                                                            boxSizing: 'border-box',
+                                                            fontSize: '11px',
+                                                            color: 'hsl(var(--color-text-tertiary))'
+                                                        }}>
+                                                            {vItem.data.count} {vItem.data.count === 1 ? 'subitem' : 'subitems'}
+                                                        </div>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            height: '32px',
+                                                            width: `${subColumnsWidth}px`,
+                                                            flexShrink: 0,
+                                                            boxSizing: 'border-box',
+                                                            overflow: 'hidden',
+                                                            border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                            borderRadius: '8px',
+                                                            backgroundColor: 'hsl(var(--color-bg-surface))'
+                                                        }}>
+                                                            {subCols.map((col, idx) => (
+                                                                <div key={col.id} style={{
+                                                                    width: `${col.width || 150}px`,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    padding: '0 8px',
+                                                                    borderRight: idx < subCols.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
+                                                                    height: '100%',
+                                                                    boxSizing: 'border-box',
+                                                                    flexShrink: 0,
+                                                                    fontSize: '12px'
+                                                                }}>
+                                                                    <SummaryCell col={col} agg={vItem.data.aggregates?.[col.id]} totalCount={vItem.data.count || 0} color={vItem.groupColor} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 ) : vItem.type === 'subitem-footer' ? (
                                                     <div className="table-row subitem-footer" style={{
                                                         height: '40px',

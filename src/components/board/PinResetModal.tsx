@@ -101,7 +101,7 @@ export const PinResetModal = ({ boardId, ownerEmail, onClose, onResetSuccess }: 
                             Enter the code sent to <strong>{maskedEmail}</strong> (expires in 10 minutes)
                         </div>
 
-                        <PinDigitInput value={otp} onChange={setOtp} autoFocus />
+                        <PinDigitInput value={otp} onChange={setOtp} autoFocus masked={false} />
 
                         <div style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: '20px 0 8px', textAlign: 'left' }}>
                             New 6-digit PIN

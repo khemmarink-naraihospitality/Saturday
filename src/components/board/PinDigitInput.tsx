@@ -8,9 +8,13 @@ interface PinDigitInputProps {
     disabled?: boolean;
     error?: boolean;
     onComplete?: (value: string) => void;
+    // Shows each digit as * so nobody reading over a shoulder sees the PIN.
+    // On by default, since this is a secret-entry box; pass false for a code
+    // that's copied from an email and worth checking by eye.
+    masked?: boolean;
 }
 
-export const PinDigitInput = ({ value, onChange, length = 6, autoFocus, disabled, error, onComplete }: PinDigitInputProps) => {
+export const PinDigitInput = ({ value, onChange, length = 6, autoFocus, disabled, error, onComplete, masked = true }: PinDigitInputProps) => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const setDigit = (index: number, digit: string) => {
@@ -58,10 +62,14 @@ export const PinDigitInput = ({ value, onChange, length = 6, autoFocus, disabled
                     ref={(el) => { inputRefs.current[i] = el; }}
                     type="text"
                     inputMode="numeric"
+                    aria-label={`Digit ${i + 1} of ${length}`}
                     maxLength={1}
                     autoFocus={autoFocus && i === 0}
                     disabled={disabled}
-                    value={value[i] || ''}
+                    // Literal asterisks rather than type="password" (whose bullets
+                    // vary by browser). The real digit stays in `value`.
+                    value={value[i] ? (masked ? '*' : value[i]) : ''}
+                    autoComplete="off"
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
                     style={{

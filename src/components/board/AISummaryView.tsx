@@ -3,6 +3,7 @@ import { Sparkles, RefreshCw, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { supabase } from '../../lib/supabase';
 import type { Column, Item } from '../../types';
+import { itemColumns } from '../../lib/columnScope';
 
 type Period = '1w' | '1m' | '1y' | 'all';
 
@@ -51,7 +52,7 @@ function buildPayload(
             title: group.title,
             items: filteredItems.map(item => ({
                 title: item.title,
-                statusLabel: resolveStatusLabel(item, activeBoard.columns),
+                statusLabel: resolveStatusLabel(item, itemColumns(activeBoard.columns)),
                 updates: (item.updates ?? [])
                     .filter(u => cutoff === null || new Date(u.createdAt).getTime() >= cutoff)
                     .map(u => u.content)
@@ -63,7 +64,8 @@ function buildPayload(
     return {
         boardTitle: activeBoard.title,
         period: periodLabel(period),
-        columns: activeBoard.columns.map(c => ({ title: c.title, type: c.type })),
+        // The board's own columns; each group's sub-item columns would list the same names many times over.
+        columns: itemColumns(activeBoard.columns).map(c => ({ title: c.title, type: c.type })),
         groups,
     };
 }

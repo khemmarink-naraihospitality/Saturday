@@ -608,7 +608,8 @@ export const createMemberSlice: StateCreator<
                                         order: column.order,
                                         width: column.width,
                                         options,
-                                        scope: column.scope || 'both'
+                                        scope: column.scope === 'subitem' ? 'subitem' : 'item',
+                                        groupId: column.group_id || undefined
                                     });
                                 }
                             } else if (payload.eventType === 'UPDATE') {
@@ -619,7 +620,8 @@ export const createMemberSlice: StateCreator<
                                     order: column.order,
                                     width: column.width,
                                     options,
-                                    scope: column.scope || 'both'
+                                    scope: column.scope === 'subitem' ? 'subitem' : 'item',
+                                    groupId: column.group_id || undefined
                                 } : c);
                             } else if (payload.eventType === 'DELETE') {
                                 newColumns = newColumns.filter(c => c.id !== column.id);

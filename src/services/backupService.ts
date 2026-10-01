@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { parseLinkValue } from '../lib/utils';
+import { splitSharedColumns } from '../lib/columnScope';
 // xlsx is loaded lazily on-demand inside exportBoardData() to avoid bundling it at startup
 
 export const backupService = {
@@ -18,7 +19,10 @@ export const backupService = {
             if (boardError) throw boardError;
 
             // 2. Fetch Groups, Columns, Items
-            const { data: groups } = await supabase.from('groups').select('*').eq('board_id', boardId).order('position');
+            // Groups are ordered by `order`. This used to ask for `position`, which
+            // doesn't exist, so the query failed and backups went out with no groups.
+            const { data: groups, error: groupsError } = await supabase.from('groups').select('*').eq('board_id', boardId).order('order');
+            if (groupsError) throw groupsError;
             const { data: columns } = await supabase.from('columns').select('*').eq('board_id', boardId).order('order');
             const { data: items } = await supabase.from('items').select('*').eq('board_id', boardId);
 
@@ -87,13 +91,19 @@ export const backupService = {
                         return { ...g, id: newId, board_id: newBoardId };
                     });
 
-                    const columnsToInsert = json.columns.map((c: any) => {
+                    const mappedColumns = json.columns.map((c: any) => {
                         const newId = uuidv4();
                         columnIdMap.set(c.id, newId);
-                        return { ...c, id: newId, board_id: newBoardId };
+                        return { ...c, id: newId, board_id: newBoardId, group_id: c.group_id ? (groupIdMap.get(c.group_id) ?? null) : null };
                     });
 
-                    const itemsToInsert = json.items.map((i: any) => {
+                    // Sub-items point at their parent by id, and every item gets a new
+                    // one, so the parent link is translated too (it used to be copied
+                    // as is, pointing the restored sub-items at the original board).
+                    const itemIdMap = new Map<string, string>();
+                    json.items.forEach((i: any) => itemIdMap.set(i.id, uuidv4()));
+
+                    const mappedItems = json.items.map((i: any) => {
                         // Remap values keys if they use column IDs
                         const newValues: any = {};
                         Object.keys(i.values || {}).forEach(key => {
@@ -107,13 +117,20 @@ export const backupService = {
 
                         return {
                             ...i,
-                            id: uuidv4(),
+                            id: itemIdMap.get(i.id),
                             board_id: newBoardId,
                             group_id: groupIdMap.get(i.group_id) || i.group_id, // Fallback if no match (shouldn't happen)
+                            parent_id: i.parent_id ? (itemIdMap.get(i.parent_id) ?? null) : null,
                             values: newValues,
                             created_at: new Date().toISOString()
                         };
                     });
+
+                    // A backup from before items and sub-items had separate columns
+                    // (scope 'both' or none) is brought into the current shape; a newer
+                    // one passes through unchanged.
+                    const { columns: columnsToInsert, items: itemsToInsert } =
+                        splitSharedColumns(mappedColumns, mappedItems, groupsToInsert, uuidv4);
 
                     // 4. Execute Inserts (Sequential for safety)
                     const { error: bError } = await supabase.from('boards').insert(newBoard);
@@ -296,47 +313,61 @@ export const backupService = {
                     headerEnd?: string;
                 }
 
-                let usedStatus = false;
-                let usedPeople = false;
-                let usedFiles = false;
-                let usedTimeline = false;
+                // Items have their own columns and so do the sub-items of each group:
+                // the main table uses the items', a sub-item table its group's.
+                const metasFor = (cols: any[], guaranteeStatus: boolean): ColMeta[] => {
+                    let usedStatus = false;
+                    let usedPeople = false;
+                    let usedFiles = false;
+                    let usedTimeline = false;
 
-                const colMetas: ColMeta[] = columns.map((col: any): ColMeta => {
-                    switch (col.type) {
-                        case 'status':
-                        case 'dropdown':
-                        case 'priority':
-                            if (!usedStatus) { usedStatus = true; return { column: col, isTimeline: false, header: 'Status' }; }
-                            return { column: col, isTimeline: false, header: col.title };
-                        case 'people':
-                            if (!usedPeople) { usedPeople = true; return { column: col, isTimeline: false, header: 'Responsible' }; }
-                            return { column: col, isTimeline: false, header: col.title };
-                        case 'files':
-                            if (!usedFiles) { usedFiles = true; return { column: col, isTimeline: false, header: 'Files' }; }
-                            return { column: col, isTimeline: false, header: `${col.title} Files` };
-                        case 'timeline':
-                            if (!usedTimeline) {
-                                usedTimeline = true;
-                                return { column: col, isTimeline: true, headerStart: 'Timeline Start', headerEnd: 'Timeline End' };
+                    const colMetas: ColMeta[] = cols.map((col: any): ColMeta => {
+                        switch (col.type) {
+                            case 'status':
+                            case 'dropdown':
+                            case 'priority':
+                                if (!usedStatus) { usedStatus = true; return { column: col, isTimeline: false, header: 'Status' }; }
+                                return { column: col, isTimeline: false, header: col.title };
+                            case 'people':
+                                if (!usedPeople) { usedPeople = true; return { column: col, isTimeline: false, header: 'Responsible' }; }
+                                return { column: col, isTimeline: false, header: col.title };
+                            case 'files':
+                                if (!usedFiles) { usedFiles = true; return { column: col, isTimeline: false, header: 'Files' }; }
+                                return { column: col, isTimeline: false, header: `${col.title} Files` };
+                            case 'timeline':
+                                if (!usedTimeline) {
+                                    usedTimeline = true;
+                                    return { column: col, isTimeline: true, headerStart: 'Timeline Start', headerEnd: 'Timeline End' };
+                                }
+                                return { column: col, isTimeline: true, headerStart: `${col.title} Timeline Start`, headerEnd: `${col.title} Timeline End` };
+                            case 'date': {
+                                const t = String(col.title || '').toLowerCase();
+                                return { column: col, isTimeline: false, header: t.includes('date') ? col.title : `${col.title} Date` };
                             }
-                            return { column: col, isTimeline: true, headerStart: `${col.title} Timeline Start`, headerEnd: `${col.title} Timeline End` };
-                        case 'date': {
-                            const t = String(col.title || '').toLowerCase();
-                            return { column: col, isTimeline: false, header: t.includes('date') ? col.title : `${col.title} Date` };
+                            default:
+                                return { column: col, isTimeline: false, header: col.title };
                         }
-                        default:
-                            return { column: col, isTimeline: false, header: col.title };
+                    });
+
+                    // The Import parser locates the header row by looking for a literal
+                    // "Status"/"Champion"/"Owner"/"Person"/"Subitems" cell. Guarantee one
+                    // exists even if the board has no status/dropdown column.
+                    if (!usedStatus && guaranteeStatus) {
+                        colMetas.push({ column: null, isTimeline: false, header: 'Status' });
                     }
-                });
+                    return colMetas;
+                };
 
-                // The Import parser locates the header row by looking for a literal
-                // "Status"/"Champion"/"Owner"/"Person"/"Subitems" cell. Guarantee one
-                // exists even if the board has no status/dropdown column.
-                if (!usedStatus) {
-                    colMetas.push({ column: null, isTimeline: false, header: 'Status' });
-                }
+                const itemMetas = metasFor(columns.filter((c: any) => c.scope !== 'subitem'), true);
+                const subitemMetas = new Map<string, ColMeta[]>();
+                const subitemMetasFor = (groupId: string) => {
+                    if (!subitemMetas.has(groupId)) {
+                        subitemMetas.set(groupId, metasFor(columns.filter((c: any) => c.scope === 'subitem' && c.group_id === groupId), false));
+                    }
+                    return subitemMetas.get(groupId)!;
+                };
 
-                const buildColumnHeaders = (): any[] => {
+                const buildColumnHeaders = (colMetas: ColMeta[]): any[] => {
                     const out: any[] = [];
                     colMetas.forEach(m => {
                         if (m.isTimeline) out.push(m.headerStart, m.headerEnd);
@@ -345,7 +376,7 @@ export const backupService = {
                     return out;
                 };
 
-                const buildColumnValues = (item: any): any[] => {
+                const buildColumnValues = (colMetas: ColMeta[], item: any): any[] => {
                     const out: any[] = [];
                     const values = item.values || {};
                     colMetas.forEach(m => {
@@ -390,7 +421,7 @@ export const backupService = {
                 // space keeps the row at 2 cells so it's correctly skipped as the
                 // description row instead.
                 aoa.push([board?.description || '', board?.description ? '​' : '']);
-                aoa.push(['Name', 'Item ID', ...buildColumnHeaders()]);
+                aoa.push(['Name', 'Item ID', ...buildColumnHeaders(itemMetas)]);
 
                 const subItemsByParent = new Map<string, any[]>();
                 items.forEach((i: any) => {
@@ -405,13 +436,14 @@ export const backupService = {
                     aoa.push([group.title]);
 
                     topLevelItems.filter((i: any) => i.group_id === group.id).forEach((item: any) => {
-                        aoa.push([item.title || '', item.id, ...buildColumnValues(item)]);
+                        aoa.push([item.title || '', item.id, ...buildColumnValues(itemMetas, item)]);
 
                         const subs = subItemsByParent.get(item.id) || [];
                         if (subs.length > 0) {
-                            aoa.push(['Subitems', 'Name', ...buildColumnHeaders()]);
+                            const subMetas = subitemMetasFor(group.id);
+                            aoa.push(['Subitems', 'Name', ...buildColumnHeaders(subMetas)]);
                             subs.forEach(sub => {
-                                aoa.push(['', sub.title || '', ...buildColumnValues(sub)]);
+                                aoa.push(['', sub.title || '', ...buildColumnValues(subMetas, sub)]);
                             });
                         }
                     });
@@ -460,14 +492,29 @@ export const backupService = {
             // CSV: Flat one-row-per-item table
             // ------------------------------------------------------------
             console.log('Building content array...');
-            const headers = ['Task Name', 'Group', ...columns.map(c => c.title), 'Created At'];
+            // Items and each group's sub-items have their own columns. The CSV has
+            // the item columns, then one "Subitem: …" column per sub-item column
+            // name (and type), filled from the sub-item's own group's column.
+            const csvItemColumns = columns.filter((c: any) => c.scope !== 'subitem');
+            const csvSubColumns: { title: string; type: string }[] = [];
+            columns.filter((c: any) => c.scope === 'subitem').forEach((c: any) => {
+                if (!csvSubColumns.some(k => k.title === c.title && k.type === c.type)) csvSubColumns.push({ title: c.title, type: c.type });
+            });
+            const parentGroup = new Map<string, string>(items.map((i: any) => [i.id, i.group_id]));
+            const headers = ['Task Name', 'Group', ...csvItemColumns.map((c: any) => c.title), ...csvSubColumns.map(k => `Subitem: ${k.title}`), 'Created At'];
             const aoa: any[][] = [headers];
 
             items.forEach((item: any) => {
                 const groupName = groupMap.get(item.group_id) || 'Unknown Group';
+                const subGroup = item.parent_id ? (parentGroup.get(item.parent_id) || item.group_id) : null;
+                const rowColumns: (any | null)[] = item.parent_id
+                    ? [...csvItemColumns.map(() => null), ...csvSubColumns.map(k => columns.find((c: any) =>
+                        c.scope === 'subitem' && c.group_id === subGroup && c.title === k.title && c.type === k.type) || null)]
+                    : [...csvItemColumns, ...csvSubColumns.map(() => null)];
 
                 // Map dynamic column values
-                const colValues = columns.map(col => {
+                const colValues = rowColumns.map(col => {
+                    if (!col) return '';
                     const val = (item.values || item.column_values || {})[col.id];
 
                     if (val === null || val === undefined) return '';

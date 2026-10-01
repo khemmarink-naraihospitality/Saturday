@@ -2,8 +2,76 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Item, FileLink, Comment } from '../../types';
+import type { Item, FileLink, Comment, Column, ColumnScope } from '../../types';
 import type { BoardState } from '../useBoardStore';
+import { itemColumns, subitemColumns, planCarry } from '../../lib/columnScope';
+
+// Rows changing place: `rows` leave the columns `from` for the item columns
+// (scope 'item') or a group's sub-item columns, and with `regroup` their
+// group_id changes too (sub-items following a parent to another group).
+interface CarryMove {
+    rows: Item[];
+    from: Column[];
+    scope: ColumnScope;
+    groupId?: string;
+    createMissing: boolean;
+    regroup?: string;
+}
+
+// Takes moved rows' values along to the columns of where they went, adding the
+// columns that takes (see planCarry). Items and each group's sub-items have
+// separate columns, so a value keyed by the old place's column would otherwise
+// still be stored but no longer shown anywhere.
+const carryValues = async (set: any, get: () => BoardState, boardId: string, moves: CarryMove[]) => {
+    const board = get().boards.find(b => b.id === boardId);
+    if (!board || moves.length === 0) return;
+
+    let working = board.columns;
+    const added: Column[] = [];
+    const changed = new Map<string, Column>();
+    const rowUpdates = new Map<string, { values: Record<string, any>; groupId?: string }>();
+
+    for (const move of moves) {
+        const to = move.scope === 'subitem' ? subitemColumns(working, move.groupId) : itemColumns(working);
+        const plan = planCarry(move.rows, move.from, to, { scope: move.scope, groupId: move.groupId }, uuidv4, move.createMissing);
+        plan.updated.forEach(c => changed.set(c.id, c));
+        added.push(...plan.created);
+        working = [...working.map(c => changed.get(c.id) || c), ...plan.created];
+        move.rows.forEach(row => {
+            const values = plan.remap(rowUpdates.get(row.id)?.values || row.values || {});
+            rowUpdates.set(row.id, { values, groupId: move.regroup ?? rowUpdates.get(row.id)?.groupId });
+        });
+    }
+
+    const apply = (item: Item): Item => {
+        const u = rowUpdates.get(item.id);
+        return u ? { ...item, values: u.values, groupId: u.groupId ?? item.groupId } : item;
+    };
+    const now = Date.now();
+    set((state: BoardState) => ({
+        boards: state.boards.map(b => b.id === boardId ? {
+            ...b,
+            columns: [...b.columns.map(c => changed.get(c.id) || c), ...added.filter(a => !b.columns.some(c => c.id === a.id))],
+            items: b.items.map(apply),
+            groups: b.groups.map(g => ({ ...g, items: g.items.map(apply) }))
+        } : b),
+        lastOptimisticUpdate: [...rowUpdates.keys()].reduce((acc, id) => ({ ...acc, [id]: now }), state.lastOptimisticUpdate)
+    }));
+
+    if (added.length > 0) {
+        const { error } = await supabase.from('columns').insert(added.map(c => ({
+            id: c.id, board_id: boardId, title: c.title, type: c.type, order: c.order, width: c.width,
+            options: c.options || [], aggregation: c.aggregation, number_format: c.numberFormat,
+            currency_code: c.currencyCode, number_align: c.numberAlign,
+            scope: c.scope === 'subitem' ? 'subitem' : 'item', group_id: c.scope === 'subitem' ? c.groupId : null
+        })));
+        if (error) console.error('[carryValues] Failed to add columns:', error);
+    }
+    await Promise.all([...changed.values()].map(c => supabase.from('columns').update({ options: c.options }).eq('id', c.id)));
+    await Promise.all([...rowUpdates.entries()].map(([id, u]) =>
+        supabase.from('items').update(u.groupId ? { values: u.values, group_id: u.groupId } : { values: u.values }).eq('id', id)
+    ));
+};
 
 // Every write to items.updates replaces the whole JSON array, so the array sent
 // has to be built on the row as it stands in the database — never on local
@@ -515,6 +583,18 @@ export const createItemSlice: StateCreator<
         try {
             if (activeItem.groupId !== newGroupId) {
                 await supabase.from('items').update({ group_id: newGroupId }).eq('id', activeId);
+                // Its sub-items go with it, onto the new group's sub-item columns.
+                const subItems = board.items.filter(i => i.parentId === activeId);
+                if (!activeItem.parentId && subItems.length > 0) {
+                    await carryValues(set, get, activeBoardId, [{
+                        rows: subItems,
+                        from: subitemColumns(board.columns, activeItem.groupId),
+                        scope: 'subitem',
+                        groupId: newGroupId,
+                        createMissing: true,
+                        regroup: newGroupId
+                    }]);
+                }
             }
             await supabase.rpc('reorder_items', { _board_id: activeBoardId, _item_ids: newItems.map(i => i.id) });
         } catch (err) {
@@ -896,6 +976,39 @@ export const createItemSlice: StateCreator<
 
         const isCrossBoard = targetBoardId !== activeBoardId;
 
+        // Within the board, work out where each moving row's values have to go
+        // before anything moves: a parent changing group takes its sub-items to
+        // that group's sub-item columns; a row becoming a sub-item goes to its new
+        // parent's group's; a sub-item becoming an item goes to the item columns,
+        // matched by name only (adding board-wide columns for one row would be a
+        // surprise; an unmatched value stays stored, just not shown).
+        const carry: CarryMove[] = [];
+        const sourceBoard = boards.find(b => b.id === activeBoardId);
+        if (!isCrossBoard && sourceBoard) {
+            const byId = new Map(sourceBoard.items.map(i => [i.id, i]));
+            const selected = new Set(selectedItemIds);
+            const newParent = parentId ? byId.get(parentId) : undefined;
+            selectedItemIds.forEach(id => {
+                const item = byId.get(id);
+                if (!item) return;
+                const columnGroup = item.parentId ? (byId.get(item.parentId)?.groupId || item.groupId) : item.groupId;
+                const from = item.parentId ? subitemColumns(sourceBoard.columns, columnGroup) : itemColumns(sourceBoard.columns);
+                if (parentId) {
+                    const targetGroup = newParent?.groupId || groupId;
+                    if (!item.parentId || columnGroup !== targetGroup) {
+                        carry.push({ rows: [item], from, scope: 'subitem', groupId: targetGroup, createMissing: true });
+                    }
+                } else if (item.parentId) {
+                    carry.push({ rows: [item], from, scope: 'item', createMissing: false });
+                } else if (item.groupId !== groupId) {
+                    const subItems = sourceBoard.items.filter(i => i.parentId === item.id && !selected.has(i.id));
+                    if (subItems.length > 0) {
+                        carry.push({ rows: subItems, from: subitemColumns(sourceBoard.columns, item.groupId), scope: 'subitem', groupId, createMissing: true, regroup: groupId });
+                    }
+                }
+            });
+        }
+
         if (isCrossBoard) {
             const movingItems = boards
                 .find(bd => bd.id === activeBoardId)?.items
@@ -950,6 +1063,7 @@ export const createItemSlice: StateCreator<
             }));
 
             await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
+            await carryValues(set, get, activeBoardId, carry);
         }
     },
 

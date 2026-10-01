@@ -68,7 +68,7 @@ export const createGroupLinkSlice: StateCreator<
         // values translate correctly even though the option ids differ.
         const { data: sourceColumns, error: sourceColumnsError } = await supabase
             .from('columns')
-            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope')
+            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope, group_id')
             .eq('board_id', sourceBoardId)
             .order('order');
 
@@ -78,7 +78,7 @@ export const createGroupLinkSlice: StateCreator<
 
         const { data: currentColumns, error: currentColumnsError } = await supabase
             .from('columns')
-            .select('id, title, type, options')
+            .select('id, title, type, options, scope')
             .eq('board_id', activeBoardId);
 
         if (currentColumnsError) {
@@ -88,8 +88,14 @@ export const createGroupLinkSlice: StateCreator<
         const columnMapSourceToCurrent: Record<string, ColumnMapEntry> = {};
         const columnsToCreate: typeof sourceColumns = [];
 
-        (sourceColumns || []).forEach(sc => {
-            const existingMatch = (currentColumns || []).find(cc => cc.type === sc.type && normalize(cc.title) === normalize(sc.title));
+        // Item columns are matched against this board's item columns. The source
+        // group's sub-item columns are its own, as the new group's will be, so
+        // they're cloned outright (step 2) rather than matched; other groups'
+        // sub-item columns don't come along.
+        const currentItemColumns = (currentColumns || []).filter(cc => cc.scope !== 'subitem');
+        const sourceSubitemColumns = (sourceColumns || []).filter(sc => sc.scope === 'subitem' && sc.group_id === sourceGroupId);
+        (sourceColumns || []).filter(sc => sc.scope !== 'subitem').forEach(sc => {
+            const existingMatch = currentItemColumns.find(cc => cc.type === sc.type && normalize(cc.title) === normalize(sc.title));
             if (!existingMatch) {
                 columnsToCreate.push(sc);
                 return;
@@ -123,7 +129,30 @@ export const createGroupLinkSlice: StateCreator<
                 number_format: sc.number_format,
                 currency_code: sc.currency_code,
                 number_align: sc.number_align,
-                scope: sc.scope
+                scope: 'item'
+            };
+        });
+
+        // The new group's sub-item columns: exact clones of the source group's,
+        // written once the group exists.
+        const newGroupId = uuidv4();
+        const newSubitemColumnRows = sourceSubitemColumns.map(sc => {
+            const newColumnId = uuidv4();
+            columnMapSourceToCurrent[sc.id] = { targetColumnId: newColumnId };
+            return {
+                id: newColumnId,
+                board_id: activeBoardId,
+                title: sc.title,
+                type: sc.type,
+                width: sc.width,
+                order: sc.order,
+                options: sc.options,
+                aggregation: sc.aggregation,
+                number_format: sc.number_format,
+                currency_code: sc.currency_code,
+                number_align: sc.number_align,
+                scope: 'subitem',
+                group_id: newGroupId
             };
         });
 
@@ -147,7 +176,6 @@ export const createGroupLinkSlice: StateCreator<
         });
 
         // 2. Create the new (empty) group in the current board.
-        const newGroupId = uuidv4();
         const color = '#7C3FE4';
         const board = get().boards.find(b => b.id === activeBoardId);
         const minOrder = board && board.groups.length > 0
@@ -159,6 +187,13 @@ export const createGroupLinkSlice: StateCreator<
         if (groupError) {
             console.error('linkGroupToOther: failed to create new group', groupError);
             return { success: false, error: `Failed to create the new group: ${groupError.message}` };
+        }
+        if (newSubitemColumnRows.length > 0) {
+            const { error: subColumnsError } = await supabase.from('columns').insert(newSubitemColumnRows);
+            if (subColumnsError) {
+                await supabase.from('groups').delete().eq('id', newGroupId);
+                return { success: false, error: `Failed to add the group's subitem columns: ${subColumnsError.message}` };
+            }
         }
 
         // 3. Fetch the source group's items directly from Supabase.
@@ -260,7 +295,7 @@ export const createGroupLinkSlice: StateCreator<
         // items (it has no filter and reacts to every write) — de-dupe by id
         // rather than blindly prepending, so we don't end up with two entries
         // sharing the same id.
-        const newColumns = newColumnRows.map(c => ({
+        const newColumns = [...newColumnRows, ...newSubitemColumnRows].map(c => ({
             id: c.id,
             title: c.title,
             type: c.type,
@@ -271,14 +306,16 @@ export const createGroupLinkSlice: StateCreator<
             numberFormat: c.number_format,
             currencyCode: c.currency_code,
             numberAlign: c.number_align || undefined,
-            scope: c.scope || 'both'
+            scope: c.scope as 'item' | 'subitem',
+            groupId: 'group_id' in c ? c.group_id : undefined
         }));
+        const newColumnIds = new Set(newColumns.map(c => c.id));
         const allNewItems = [...newTopLevelItems, ...newSubItems];
         const newItemIds = new Set(allNewItems.map(i => i.id));
         set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? {
                 ...b,
-                columns: [...b.columns, ...(newColumns as any[])],
+                columns: [...b.columns.filter(c => !newColumnIds.has(c.id)), ...(newColumns as any[])],
                 items: [...b.items.filter(i => !newItemIds.has(i.id)), ...allNewItems],
                 groups: [
                     {

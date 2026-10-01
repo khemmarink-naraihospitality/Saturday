@@ -1121,13 +1121,13 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                         setParseWarnings((prev: string[]) => [...prev, `"${sheetName}" in ${file.name}: 0 items detected — check if header row contains 'Status' or 'Champion'`]);
                     }
 
-                    // Which rows each column belongs to. A Monday export lists the subitems
-                    // in their own table with their own headers, and until columns could be
-                    // scoped the two were merged into one set that every row showed. A column
-                    // seen only in the main table is the items'; one seen only in the subitem
-                    // table is the subitems'; one in both stays shared. A file with no subitem
-                    // table at all keeps every column shared, as before, so subitems added
-                    // later aren't left with nothing but a name.
+                    // Which table(s) of the export each column came from. A Monday export
+                    // lists the subitems in their own table with their own headers. A column
+                    // seen only in the main table is the items'; one only in the subitem table
+                    // is the subitems'; one in both is marked 'both', and importExcelBoard
+                    // splits it into the items' column and a copy for each group whose
+                    // subitems use it (splitSharedColumns). A file with no subitem table
+                    // marks everything 'both', which lands as item columns.
                     const hasSubitemTable = columns.some((c: any) => c.subIndex !== undefined || c.subIndices);
                     const subitemsCarryValue = (title: string) =>
                         groups.some((g: any) => (g.items || []).some((it: any) =>

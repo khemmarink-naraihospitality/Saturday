@@ -12,7 +12,7 @@ import {
     AlignLeft,
     BellRing
 } from 'lucide-react';
-import type { ColumnType, ColumnScope } from '../../types';
+import type { ColumnType } from '../../types';
 import { COLUMN_FORMAT_TITLES } from './NumberFormatMenu';
 
 interface ColumnMenuProps {
@@ -27,14 +27,8 @@ interface ColumnMenuProps {
     onAddRight: () => void;
     onRename: () => void;
     onDelete: () => void;
-    // Wording for the delete entry when it doesn't really delete (a shared column
-    // is only removed from the header's own rows).
-    deleteLabel?: string;
     onNumberFormat?: () => void;
     onNotificationSettings?: () => void;
-    // Which rows the column is shown on, and the way to change it.
-    scope?: ColumnScope;
-    onChangeScope?: (scope: ColumnScope) => void;
 }
 
 import { usePermission } from '../../hooks/usePermission';
@@ -51,11 +45,8 @@ export const ColumnMenu = ({
     onAddRight,
     onRename,
     onDelete,
-    deleteLabel,
     onNumberFormat,
     onNotificationSettings,
-    scope,
-    onChangeScope
 }: ColumnMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
@@ -189,33 +180,6 @@ export const ColumnMenu = ({
                         />
                     </div>
 
-                    {scope && onChangeScope && (
-                        <>
-                            <div className="menu-divider" style={{
-                                height: '1px',
-                                backgroundColor: '#e1e4e8',
-                                margin: '8px 0'
-                            }} />
-                            <div className="menu-group">
-                                <div style={{ padding: '4px 12px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#94a3b8' }}>
-                                    Show on
-                                </div>
-                                {([
-                                    ['item', 'Items only'],
-                                    ['subitem', 'Subitems only'],
-                                    ['both', 'Items and subitems']
-                                ] as [ColumnScope, string][]).map(([value, label]) => (
-                                    <MenuItem
-                                        key={value}
-                                        icon={scope === value ? <Check size={16} /> : <span style={{ width: 16, display: 'inline-block' }} />}
-                                        label={label}
-                                        active={scope === value}
-                                        onClick={() => { onChangeScope(value); onClose(); }}
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
 
                     <div className="menu-divider" style={{
                         height: '1px',
@@ -231,7 +195,7 @@ export const ColumnMenu = ({
                         />
                         <MenuItem
                             icon={<Trash2 size={16} />}
-                            label={deleteLabel ?? "Delete"}
+                            label="Delete"
                             onClick={() => { onDelete(); onClose(); }}
                             danger
                         />

@@ -15,8 +15,10 @@ export interface FileLink {
     mimeType?: string;
 }
 
-// Which rows a column is shown on: top-level items, sub-items, or both.
-export type ColumnScope = 'item' | 'subitem' | 'both';
+// Which rows a column is shown on. Items and sub-items never share a column,
+// and a sub-item column belongs to one group (Column.groupId): the sub-items
+// under that group's items.
+export type ColumnScope = 'item' | 'subitem';
 
 export interface Column {
     id: string;
@@ -29,7 +31,8 @@ export interface Column {
     numberFormat?: 'number' | 'percent' | 'currency'; // For Number columns - how values are displayed
     currencyCode?: string; // ISO currency code (e.g. 'USD', 'THB') when numberFormat is 'currency'
     numberAlign?: 'left' | 'center' | 'right'; // For Number columns - undefined means Center
-    scope?: ColumnScope; // undefined = 'both' (columns from before sub-items had their own)
+    scope?: ColumnScope; // undefined = 'item'
+    groupId?: string; // set exactly when scope is 'subitem': the group whose sub-items it heads
 }
 
 // ItemValue stores dynamic column data

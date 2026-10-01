@@ -2,22 +2,22 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { ColumnType, ColumnScope } from '../../types';
+import type { Column, ColumnType, ColumnScope } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
+import { itemColumns, subitemColumns, siblingColumns, replaceSet } from '../../lib/columnScope';
 
 export interface ColumnSlice {
     // Column Actions
-    // scope: which rows show it — the main header adds 'item' columns, the
-    // sub-item header 'subitem' ones.
-    addColumn: (title: string, type: ColumnType, index?: number, scope?: ColumnScope) => Promise<void>;
-    setColumnScope: (columnId: string, scope: ColumnScope) => Promise<void>;
+    // scope: which rows show it — the main header adds 'item' columns, a sub-item
+    // header 'subitem' ones for its group (groupId). index is a position within
+    // that set (the columns under the same header); omitted, it goes last.
+    addColumn: (title: string, type: ColumnType, index?: number, scope?: ColumnScope, groupId?: string) => Promise<void>;
     deleteColumn: (columnId: string) => Promise<void>;
     updateColumnTitle: (columnId: string, newTitle: string) => Promise<void>;
     updateColumnWidth: (columnId: string, width: number) => void;
     persistColumnWidth: (columnId: string, width: number) => Promise<void>;
-    // By id, not index: a header only shows its own scope's columns, so a position
-    // on screen isn't a position in the board's full list.
+    // By id, within the set the two columns belong to.
     moveColumn: (fromColumnId: string, toColumnId: string) => void;
     // Options
     addColumnOption: (columnId: string, label: string, color: string) => void;
@@ -42,13 +42,17 @@ export const createColumnSlice: StateCreator<
     [],
     ColumnSlice
 > = (set, get) => ({
-    addColumn: async (title, type, index, scope = 'item') => {
+    addColumn: async (title, type, index, scope = 'item', groupId) => {
         const { activeBoardId } = get();
         if (!activeBoardId) return;
-        const newColId = uuidv4();
         const board = get().boards.find(b => b.id === activeBoardId);
         if (!board) return;
-        const insertAt = index !== undefined ? Math.max(0, Math.min(index, board.columns.length)) : board.columns.length;
+        // A sub-item column always belongs to a group; without one there is
+        // nowhere it could be shown.
+        if (scope === 'subitem' && !groupId) return;
+        const newColId = uuidv4();
+        const siblings = scope === 'subitem' ? subitemColumns(board.columns, groupId) : itemColumns(board.columns);
+        const insertAt = index !== undefined ? Math.max(0, Math.min(index, siblings.length)) : siblings.length;
 
         // Seed Status columns from the admin-configured Status-to-Color Mapping so a
         // column added to an existing board starts with the same vocabulary a brand new
@@ -58,32 +62,36 @@ export const createColumnSlice: StateCreator<
             options = await getDefaultStatusOptions();
         }
 
-        const newCol = { id: newColId, title, type, order: insertAt, width: 140, options, scope };
+        const newCol: Column = { id: newColId, title, type, order: insertAt + 1, width: 140, options, scope, groupId: scope === 'subitem' ? groupId : undefined };
 
-        // Spliced into the array at the target position and everyone's order
-        // re-indexed to match, rather than giving the new column the target
-        // column's own `order` and sorting: that gave the new column and the
-        // column already there an equal order, and a stable sort keeps the
-        // existing column first on a tie — so "add to the right of column N"
-        // landed the new column one slot further right than asked, after the
-        // column it was meant to sit immediately in front of.
-        const newColumns = [...board.columns];
-        newColumns.splice(insertAt, 0, newCol);
-        const reindexed = newColumns.map((c, idx) => ({ ...c, order: idx }));
+        // Spliced into its set at the target position and the set renumbered,
+        // rather than giving the new column the target column's own `order` and
+        // sorting: that gave the new column and the column already there an
+        // equal order, and a stable sort keeps the existing column first on a
+        // tie — so "add to the right of column N" landed one slot further right
+        // than asked. Only this set is renumbered: the others are ordered apart.
+        const newSet = [...siblings];
+        newSet.splice(insertAt, 0, newCol);
+        const columns = replaceSet(board.columns, newSet);
 
         set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: reindexed } : b)
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns } : b)
         }));
-        await supabase.from('columns').insert({
-            id: newColId, board_id: activeBoardId, title, type, order: insertAt, width: 140, options, scope
+        const { error } = await supabase.from('columns').insert({
+            id: newColId, board_id: activeBoardId, title, type, order: insertAt + 1, width: 140, options,
+            scope, group_id: newCol.groupId ?? null
         });
+        if (error) {
+            console.error('[addColumn] Failed to add column:', error);
+            set(state => ({
+                boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.filter(c => c.id !== newColId) } : b)
+            }));
+            return;
+        }
 
-        // Everything from insertAt onward shifted by one; persist the full
-        // sequence rather than just the new row, the same way duplicateColumn
-        // and moveColumn do.
         await supabase.rpc('reorder_columns', {
             _board_id: activeBoardId,
-            _column_ids: reindexed.map(c => c.id)
+            _column_ids: newSet.map(c => c.id)
         });
 
         get().logActivity('column_created', 'board', activeBoardId, {
@@ -146,36 +154,23 @@ export const createColumnSlice: StateCreator<
         const board = boards.find(b => b.id === activeBoardId);
         if (!board) return;
 
-        const fromIndex = board.columns.findIndex(c => c.id === fromColumnId);
-        const toIndex = board.columns.findIndex(c => c.id === toColumnId);
+        const from = board.columns.find(c => c.id === fromColumnId);
+        if (!from) return;
+        // Dragging only ever happens within one header, i.e. one set.
+        const siblings = siblingColumns(board.columns, from);
+        const fromIndex = siblings.findIndex(c => c.id === fromColumnId);
+        const toIndex = siblings.findIndex(c => c.id === toColumnId);
         if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
 
-        const newColumns = arrayMove(board.columns, fromIndex, toIndex);
+        const newSet = arrayMove(siblings, fromIndex, toIndex);
         set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: newColumns } : b)
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: replaceSet(b.columns, newSet) } : b)
         }));
 
-        const columnIds = newColumns.map(c => c.id);
         await supabase.rpc('reorder_columns', {
             _board_id: activeBoardId,
-            _column_ids: columnIds
+            _column_ids: newSet.map(c => c.id)
         });
-    },
-
-    setColumnScope: async (columnId, scope) => {
-        const { activeBoardId } = get();
-        if (!activeBoardId) return;
-        const column = get().boards.find(b => b.id === activeBoardId)?.columns.find(c => c.id === columnId);
-        if (!column || (column.scope ?? 'both') === scope) return;
-
-        set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId
-                ? { ...b, columns: b.columns.map(c => c.id === columnId ? { ...c, scope } : c) }
-                : b)
-        }));
-        // Only changes where the column is shown. Values stay in items.values,
-        // so moving a column back brings its data with it.
-        await supabase.from('columns').update({ scope }).eq('id', columnId);
     },
 
     duplicateColumn: async (columnId) => {
@@ -195,25 +190,21 @@ export const createColumnSlice: StateCreator<
             id: uuidv4()
         }));
 
-        const sourceIndex = board.columns.findIndex(c => c.id === columnId);
-        const newOrder = sourceCol.order + 0.5; // Temporary order, will normalize later or simple insert
-
-        const newCol = {
+        // The copy joins the source's own set (same scope and group), right after it.
+        const siblings = siblingColumns(board.columns, sourceCol);
+        const sourceIndex = siblings.findIndex(c => c.id === columnId);
+        const newCol: Column = {
             ...sourceCol,
             id: newColId,
             title: `Copy of ${sourceCol.title}`,
             options: newOptions,
-            order: newOrder
+            order: sourceIndex + 2
         };
-
-        const newColumns = [...board.columns];
-        newColumns.splice(sourceIndex + 1, 0, newCol);
-
-        // Re-index orders
-        newColumns.forEach((c, idx) => c.order = idx);
+        const newSet = [...siblings];
+        newSet.splice(sourceIndex + 1, 0, newCol);
 
         set(state => ({
-            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: newColumns } : b)
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: replaceSet(b.columns, newSet) } : b)
         }));
 
         await supabase.from('columns').insert({
@@ -221,19 +212,16 @@ export const createColumnSlice: StateCreator<
             board_id: activeBoardId,
             title: newCol.title,
             type: newCol.type,
-            order: sourceIndex + 1, // We should probably re-save all orders if we want to be safe, but insertion is okay for now
+            order: sourceIndex + 2,
             width: newCol.width,
             options: newOptions,
-            scope: newCol.scope ?? 'both'
+            scope: newCol.scope === 'subitem' ? 'subitem' : 'item',
+            group_id: newCol.scope === 'subitem' ? newCol.groupId : null
         });
 
-        // We technically should update all subsequent column orders in DB to be safe, 
-        // but for now let's just insert. If drag-drop relies on strict integer orders, we might need a reorder RPC.
-        // Let's call reorder RPC to be safe.
-        const columnIds = newColumns.map(c => c.id);
         await supabase.rpc('reorder_columns', {
             _board_id: activeBoardId,
-            _column_ids: columnIds
+            _column_ids: newSet.map(c => c.id)
         });
 
         get().logActivity('column_created', 'board', activeBoardId, {

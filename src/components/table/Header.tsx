@@ -13,7 +13,6 @@ import { FilterMenu } from './FilterMenu';
 import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
-import { insertIndexAfter } from '../../lib/columnScope';
 
 // dnd-kit's PointerSensor activates on `pointerdown`, which fires *before* the
 // `mousedown` that the resize handle listens on — so calling stopPropagation
@@ -169,16 +168,13 @@ const SortableHeaderCell = ({
     );
 };
 
-// Names the rows a header covers ("items" / "subitems") or, with `own`, the ones
-// it heads — for wording about a shared column. `side` is the header's scope.
-const otherSideName = (side: 'item' | 'subitem', own = false) =>
-    (side === 'subitem') === own ? 'subitems' : 'items';
-
 /**
  * The column header row. `scope` says which rows it heads: the main header
  * (default) for top-level items, 'subitem' for the header above a parent's
- * sub-items. `columns` is already limited to that scope. Both are fully
- * editable, and a column added from a header belongs to that header's scope.
+ * sub-items, where `groupId` is the group whose sub-item columns they are.
+ * `columns` is that one set. Adding, moving, renaming and deleting all act on
+ * this set alone: items and sub-items never share a column, and neither do the
+ * sub-items of different groups.
  */
 export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { columns: Column[], groupColor?: string, groupId?: string, scope?: 'item' | 'subitem' }) => {
     const addColumn = useBoardStore(state => state.addColumn);
@@ -186,7 +182,6 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
     const updateColumnTitle = useBoardStore(state => state.updateColumnTitle);
     const moveColumn = useBoardStore(state => state.moveColumn);
     const duplicateColumn = useBoardStore(state => state.duplicateColumn);
-    const setColumnScope = useBoardStore(state => state.setColumnScope);
     const { can } = usePermission();
 
     const setColumnSort = useBoardStore(state => state.setColumnSort);
@@ -208,23 +203,6 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
     const [showNotificationSettings, setShowNotificationSettings] = React.useState(false);
     const [menuPos, setMenuPos] = React.useState<{ top: number, left: number } | null>(null);
     const [confirmDeleteColId, setConfirmDeleteColId] = React.useState<string | null>(null);
-
-    // A column shared by items and sub-items isn't this header's to delete: the
-    // other side still shows it. Deleting from a header removes it from that
-    // header's rows only, by narrowing its scope to the other side, and the
-    // column and its data are only really deleted once nothing shows it. Before
-    // this, deleting a shared column from the sub-item header deleted it from the
-    // items too.
-    const confirmingShared = !!confirmDeleteColId &&
-        (columns.find(c => c.id === confirmDeleteColId)?.scope ?? 'both') === 'both';
-    const removeColumnFromHeader = (columnId: string) => {
-        const col = columns.find(c => c.id === columnId);
-        if (col && (col.scope ?? 'both') === 'both') {
-            setColumnScope(columnId, scope === 'subitem' ? 'item' : 'subitem');
-        } else {
-            deleteColumn(columnId);
-        }
-    };
     const [showAddMenu, setShowAddMenu] = React.useState(false);
     const addBtnRef = React.useRef<HTMLButtonElement>(null);
 
@@ -284,7 +262,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
             'priority': 'Priority'
         };
         const newTitle = typeMap[type] || "New Column";
-        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined, scope);
+        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined, scope, scope === 'subitem' ? groupId : undefined);
         setShowAddMenu(false);
         setInsertColIndex(null);
         setAddMenuPos(null);
@@ -585,20 +563,17 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                             setActiveFilterColId(activeMenuColId);
                             setActiveMenuColId(null);
                         }}
-                        scope={activeMenuColumn.scope ?? 'both'}
-                        onChangeScope={(next) => setColumnScope(activeMenuColId!, next)}
                         onDuplicate={() => duplicateColumn(activeMenuColId!)}
                         onAddRight={() => {
-                            // An index into the board's full list, not into this
-                            // header's: the other scope's columns sit in between.
-                            setInsertColIndex(insertIndexAfter(activeBoard?.columns || [], activeMenuColId) ?? null);
+                            // A position in this header's own set, which is what addColumn takes.
+                            const at = columns.findIndex(c => c.id === activeMenuColId);
+                            setInsertColIndex(at === -1 ? null : at + 1);
                             setAddMenuPos({ top: menuPos.top, bottom: menuPos.top, left: menuPos.left });
                             setShowAddMenu(true);
                             setActiveMenuColId(null);
                         }}
                         onRename={() => startEditing(activeMenuColumn)}
                         onDelete={() => setConfirmDeleteColId(activeMenuColId!)}
-                        deleteLabel={(activeMenuColumn.scope ?? 'both') === 'both' ? `Remove from ${otherSideName(scope, true)}` : undefined}
                         onNumberFormat={() => {
                             setActiveNumberFormatColId(activeMenuColId);
                             setActiveMenuColId(null);
@@ -655,16 +630,16 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
 
                 <ConfirmModal
                     isOpen={!!confirmDeleteColId}
-                    title={confirmingShared ? `Remove from ${otherSideName(scope, true)}` : 'Delete Column'}
-                    message={confirmingShared
-                        ? `This column is shared with ${otherSideName(scope)}. It will be removed from ${otherSideName(scope, true)} only; ${otherSideName(scope)} keep it, and nothing is deleted.`
+                    title="Delete Column"
+                    message={scope === 'subitem'
+                        ? "Delete this column from this group's subitems? Items, and subitems in other groups, are not affected."
                         : 'Are you sure you want to delete this column?'}
                     onConfirm={() => {
-                        if (confirmDeleteColId) removeColumnFromHeader(confirmDeleteColId);
+                        if (confirmDeleteColId) deleteColumn(confirmDeleteColId);
                         setConfirmDeleteColId(null);
                     }}
                     onCancel={() => setConfirmDeleteColId(null)}
-                    confirmText={confirmingShared ? `Remove from ${otherSideName(scope, true)}` : 'Delete Column'}
+                    confirmText="Delete Column"
                 />
             </DndContext>
         );

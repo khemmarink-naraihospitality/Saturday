@@ -11,6 +11,10 @@ export interface VirtualItemData {
     data: any;
     depth: number;
     groupColor?: string; // For the left border branding
+    // On sub-item rows (header, rows, add row, summary): the group whose sub-item
+    // columns they show — the parent's own group, which under "group by" isn't
+    // the group the rows are drawn under.
+    columnGroupId?: string;
     aggregates?: Record<string, any>;
     count?: number;
 }
@@ -69,8 +73,9 @@ export const groupItems = (
     collapsedGroups: string[] = [],
     expandedItemIds: string[] = [],
     columns?: any[],
-    // The columns sub-items show, for the summary row under a parent's sub-items.
-    subitemColumns?: any[]
+    // The columns the sub-items under a group's items show, for the summary row
+    // under a parent's sub-items.
+    subitemColumnsFor?: (groupId: string) => any[]
 ): VirtualItemData[] => {
     // Pre-calculate sub-items map and group items map
     const subItemsMap = new Map<string, Item[]>();
@@ -104,16 +109,29 @@ export const groupItems = (
 
     // Totals for one parent's sub-items, drawn under them. Only when there are
     // sub-items and at least one of their columns has something to total.
-    const pushSubitemSummary = (parentId: string, subItems: Item[], color?: string) => {
-        if (!subitemColumns || subItems.length === 0) return;
+    const pushSubitemSummary = (parentId: string, columnGroupId: string, subItems: Item[], color?: string) => {
+        const subitemColumns = subitemColumnsFor?.(columnGroupId) || [];
+        if (subItems.length === 0) return;
         if (!subitemColumns.some(c => SUMMARIZABLE_TYPES.includes(c.type))) return;
         result.push({
             type: 'subitem-summary',
             id: `${parentId}-sub-summary`,
             data: { parentId, aggregates: computeAggregates(subitemColumns, subItems), count: subItems.length },
             depth: 1,
-            groupColor: color
+            groupColor: color,
+            columnGroupId
         });
+    };
+
+    // A parent's sub-item rows: header, sub-items, add row, summary. `columnGroupId`
+    // is the parent's group, whose sub-item columns they show, and the group a
+    // sub-item added from here is created in.
+    const pushSubitems = (item: Item, columnGroupId: string, color?: string) => {
+        const subItems = subItemsMap.get(item.id) || [];
+        result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: color, columnGroupId });
+        subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: color, columnGroupId }));
+        result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: columnGroupId }, depth: 1, groupColor: color, columnGroupId });
+        pushSubitemSummary(item.id, columnGroupId, subItems, color);
     };
 
     // 1. Dynamic Grouping (Status, Dropdown, Person, etc.)
@@ -151,11 +169,9 @@ export const groupItems = (
                 gItems.forEach(item => {
                     result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: color });
                     if (expandedItemIds.includes(item.id)) {
-                        const subItems = subItemsMap.get(item.id) || [];
-                        result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: color });
-                        subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: color }));
-                        result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: gId }, depth: 1, groupColor: color });
-                        pushSubitemSummary(item.id, subItems, color);
+                        // Drawn under a "group by" bucket, but the parent still belongs to
+                        // a real group, and that is whose sub-item columns these are.
+                        pushSubitems(item, groupIds.has(item.groupId) ? item.groupId : effectiveGroups[0].id, color);
                     }
                 });
                 result.push({ 
@@ -202,11 +218,7 @@ export const groupItems = (
             groupItemsList.forEach(item => {
                 result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: group.color });
                 if (expandedItemIds.includes(item.id)) {
-                    const subItems = subItemsMap.get(item.id) || [];
-                    result.push({ type: 'subitem-header', id: `${item.id}-sub-header`, data: { parentId: item.id }, depth: 1, groupColor: group.color });
-                    subItems.forEach(si => result.push({ type: 'subitem', id: si.id, data: si, depth: 1, groupColor: group.color }));
-                    result.push({ type: 'subitem-footer', id: `${item.id}-sub-footer`, data: { parentId: item.id, groupId: group.id }, depth: 1, groupColor: group.color });
-                    pushSubitemSummary(item.id, subItems, group.color);
+                    pushSubitems(item, group.id, group.color);
                 }
             });
             result.push({ 

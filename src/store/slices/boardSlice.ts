@@ -7,6 +7,7 @@ import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { mapDbDependency } from './itemDependencySlice';
 import { isBoardUnlocked } from '../../lib/boardPinUnlock';
+import { splitSharedColumns } from '../../lib/columnScope';
 
 export interface BoardSlice {
     boards: Board[];
@@ -54,7 +55,9 @@ export interface BoardSlice {
             title: string;
             description?: string;
             groups: { title: string; color: string; items: any[] }[];
-            columns: { title: string; type: ColumnType; options?: any[]; scope?: ColumnScope }[];
+            // scope: the table(s) of the export a column came from — 'both' when it
+            // was in the main table and the sub-item table alike.
+            columns: { title: string; type: ColumnType; options?: any[]; scope?: ColumnScope | 'both' }[];
         }
     ) => Promise<void>;
 }
@@ -575,7 +578,7 @@ export const createBoardSlice: StateCreator<
                 { data: dependencies }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
-                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id').eq('board_id', boardId).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)
@@ -649,7 +652,8 @@ export const createBoardSlice: StateCreator<
                         numberFormat: c.number_format,
                         currencyCode: c.currency_code,
                         numberAlign: c.number_align || undefined,
-                        scope: c.scope || 'both'
+                        scope: c.scope === 'subitem' ? 'subitem' : 'item',
+                        groupId: c.group_id || undefined
                     })),
                     groups: bGroups.map(g => {
                         const groupItems = (parsedItemsMap[g.id] || [])
@@ -848,15 +852,7 @@ export const createBoardSlice: StateCreator<
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // 1. Prepare Columns Mapping
-        const columnIdMap: Record<string, string> = {};
-        const newColumns = sourceBoard.columns.map(c => {
-            const newId = uuidv4();
-            columnIdMap[c.id] = newId;
-            return { ...c, id: newId, board_id: newBoardId };
-        });
-
-        // 2. Prepare Groups Mapping
+        // 1. Prepare Groups Mapping
         const groupIdMap: Record<string, string> = {};
         const newGroups = sourceBoard.groups.map(g => {
             const newId = uuidv4();
@@ -864,9 +860,27 @@ export const createBoardSlice: StateCreator<
             return { ...g, id: newId, board_id: newBoardId };
         });
 
+        // 2. Prepare Columns Mapping. A sub-item column moves with its group; one
+        // whose group isn't being copied (an archived group) is left behind.
+        const columnIdMap: Record<string, string> = {};
+        const newColumns = sourceBoard.columns
+            .filter(c => c.scope !== 'subitem' || (c.groupId && groupIdMap[c.groupId]))
+            .map(c => {
+                const newId = uuidv4();
+                columnIdMap[c.id] = newId;
+                return { ...c, id: newId, board_id: newBoardId, groupId: c.scope === 'subitem' ? groupIdMap[c.groupId!] : undefined };
+            });
+
+        // Sub-items point at their parent by id, and every item gets a new one, so
+        // the parent link has to be translated too. Copying it as it was left the
+        // copy's sub-items pointing at the original board's items, where the copy
+        // never shows them.
+        const itemIdMap: Record<string, string> = {};
+        sourceBoard.items.forEach(item => { itemIdMap[item.id] = uuidv4(); });
+
         // 3. Prepare Items (Correcting value keys and group links)
         const newItems = sourceBoard.items.map((item, idx) => {
-            const newId = uuidv4();
+            const newId = itemIdMap[item.id];
             const newValues: Record<string, any> = {};
             Object.keys(item.values || {}).forEach(oldColId => {
                 const newColId = columnIdMap[oldColId] || oldColId;
@@ -880,7 +894,7 @@ export const createBoardSlice: StateCreator<
                 groupId: groupIdMap[item.groupId] || item.groupId,
                 values: newValues,
                 order: item.order ?? idx,
-                parentId: item.parentId
+                parentId: item.parentId ? (itemIdMap[item.parentId] || undefined) : undefined
             };
         });
 
@@ -897,7 +911,9 @@ export const createBoardSlice: StateCreator<
                 options: c.options,
                 order: c.order,
                 width: c.width,
-                aggregation: c.aggregation
+                aggregation: c.aggregation,
+                scope: c.scope,
+                groupId: c.groupId
             })),
             groups: newGroups.map(g => ({
                 id: g.id,
@@ -943,7 +959,8 @@ export const createBoardSlice: StateCreator<
                     order: c.order,
                     width: c.width || 140,
                     options: c.options ? JSON.stringify(c.options) : '{}',
-                    scope: c.scope || 'both'
+                    scope: c.scope === 'subitem' ? 'subitem' : 'item',
+                    group_id: c.scope === 'subitem' ? c.groupId : null
                 })));
             }
 
@@ -1062,19 +1079,20 @@ export const createBoardSlice: StateCreator<
         // 2. Add current user as owner
         await supabase.from('board_members').insert({ board_id: boardId, user_id: user.id, role: 'owner' });
 
-        // 3. Insert columns
+        // 3. Columns, one per title for now: values below are matched to them by
+        // title. They're split into the items' and each group's sub-items' columns
+        // once the rows exist (step 5), and only then written.
         const dbColumns = data.columns.map((c, idx) => ({
             id: uuidv4(),
             board_id: boardId,
             title: c.title,
             type: c.type,
-            order: idx,
+            order: idx + 1,
             width: c.type === 'status' ? 140 : 200,
             options: c.options || [],
-            scope: c.scope ?? 'both'
+            scope: (c.scope ?? 'both') as string,
+            group_id: null as string | null
         }));
-        const { error: cErr } = await supabase.from('columns').insert(dbColumns);
-        if (cErr) throw new Error(`Columns creation failed: ${cErr.message}`);
 
         // 4. Prepare groups and items
         const dbGroups: any[] = [];
@@ -1153,13 +1171,23 @@ export const createBoardSlice: StateCreator<
             });
         });
 
-        // 5. Insert groups then items
+        // 5. Give items and each group's sub-items their own columns: a column from
+        // the export's main table is the items', one from its sub-item table goes
+        // to each group with sub-items, one from both is split between them (the
+        // same rules the 20261002 migration applied to existing boards).
+        const split = splitSharedColumns(dbColumns, dbItems, dbGroups, uuidv4);
+
+        // Insert groups, then columns (a sub-item column references its group), then items
         if (dbGroups.length > 0) {
             const { error: gErr } = await supabase.from('groups').insert(dbGroups);
             if (gErr) throw new Error(`Groups creation failed: ${gErr.message}`);
         }
-        if (dbItems.length > 0) {
-            const { error: iErr } = await supabase.from('items').insert(dbItems);
+        if (split.columns.length > 0) {
+            const { error: cErr } = await supabase.from('columns').insert(split.columns);
+            if (cErr) throw new Error(`Columns creation failed: ${cErr.message}`);
+        }
+        if (split.items.length > 0) {
+            const { error: iErr } = await supabase.from('items').insert(split.items);
             if (iErr) throw new Error(`Items creation failed: ${iErr.message}`);
         }
 

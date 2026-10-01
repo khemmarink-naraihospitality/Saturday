@@ -9,7 +9,8 @@ import { Row } from './Row';
 import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
 import { linkDisplayText } from '../../lib/utils';
-import { itemColumns, subitemColumns } from '../../lib/columnScope';
+import { itemColumns, subitemColumns, scopeOf } from '../../lib/columnScope';
+import type { Column } from '../../types';
 import { SummaryCell } from './SummaryCell';
 import {
     DndContext,
@@ -73,6 +74,8 @@ const SortableItemWrapper = ({
         </div>
     );
 };
+
+const NO_COLUMNS: Column[] = [];
 
 export const Table = ({ boardId }: { boardId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
@@ -189,7 +192,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             }
         }
 
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns), subitemColumns(board.columns));
+        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns), groupId => subitemColumns(board.columns, groupId));
     }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, board?.columns, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({
@@ -272,20 +275,32 @@ export const Table = ({ boardId }: { boardId: string }) => {
     // The width of the columns alone. Shared by the header, the add-item row and
     // the group summary row so that all three are measured from one number
     // rather than each re-deriving its own.
-    // Items and sub-items can now show different columns, so the two sets are
-    // sized separately. The table is as wide as the wider of them, so the
-    // narrower rows simply end earlier instead of the page scrolling short.
+    // Items have one set of columns, and the sub-items under each group's items
+    // another, so every set is sized on its own. The table is as wide as the
+    // widest of them, so narrower rows simply end earlier instead of the page
+    // scrolling short.
     const itemCols = useMemo(() => itemColumns(board?.columns || []), [board?.columns]);
-    const subCols = useMemo(() => subitemColumns(board?.columns || []), [board?.columns]);
+    // One array per group, built once per change to the columns, so a sub-item
+    // row gets the same array every render and its memoised cells stay put.
+    const subColsByGroup = useMemo(() => {
+        const byGroup = new Map<string, Column[]>();
+        (board?.columns || []).forEach(c => {
+            if (scopeOf(c) !== 'subitem' || !c.groupId) return;
+            const list = byGroup.get(c.groupId);
+            if (list) list.push(c); else byGroup.set(c.groupId, [c]);
+        });
+        return byGroup;
+    }, [board?.columns]);
+    const subColsFor = (groupId?: string): Column[] => (groupId && subColsByGroup.get(groupId)) || NO_COLUMNS;
+    const widthOf = (cols: Column[]) => cols.reduce((total, col) => total + (col.width || 150), 0);
     const columnsWidth = useMemo(() => {
-        const sum = (cols: typeof itemCols) => cols.reduce((total, col) => total + (col.width || 150), 0);
-        return Math.max(sum(itemCols), sum(subCols));
-    }, [itemCols, subCols]);
+        // Only groups on screen: archived groups keep their columns for a restore.
+        const shown = new Set((board?.groups || []).map(g => g.id));
+        let widest = widthOf(itemCols);
+        subColsByGroup.forEach((cols, groupId) => { if (shown.has(groupId)) widest = Math.max(widest, widthOf(cols)); });
+        return widest;
+    }, [itemCols, subColsByGroup, board?.groups]);
     // The summary/footer rows belong to the items, so they use the item set's own width.
-    const subColumnsWidth = useMemo(
-        () => subCols.reduce((total, col) => total + (col.width || 150), 0),
-        [subCols]
-    );
     const itemColumnsWidth = useMemo(
         () => itemCols.reduce((total, col) => total + (col.width || 150), 0),
         [itemCols]
@@ -546,7 +561,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                     // The sub-items' own header: their columns, editable like the
                                                     // main one. Previously this re-drew the item columns with a
                                                     // hard-coded title mapping to fake different labels.
-                                                    <Header scope="subitem" columns={subCols} groupColor={vItem.groupColor} />
+                                                    <Header scope="subitem" columns={subColsFor(vItem.columnGroupId)} groupId={vItem.columnGroupId} groupColor={vItem.groupColor} />
                                                 ) : vItem.type === 'subitem-summary' ? (
                                                     // Totals for this parent's sub-items, over the sub-item columns.
                                                     <div className="table-row subitem-summary" style={{ display: 'flex', height: '40px', position: 'relative', alignItems: 'center' }}>
@@ -574,7 +589,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         <div style={{
                                                             display: 'flex',
                                                             height: '32px',
-                                                            width: `${subColumnsWidth}px`,
+                                                            width: `${widthOf(subColsFor(vItem.columnGroupId))}px`,
                                                             flexShrink: 0,
                                                             boxSizing: 'border-box',
                                                             overflow: 'hidden',
@@ -582,14 +597,14 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             borderRadius: '8px',
                                                             backgroundColor: 'hsl(var(--color-bg-surface))'
                                                         }}>
-                                                            {subCols.map((col, idx) => (
+                                                            {subColsFor(vItem.columnGroupId).map((col, idx, cols) => (
                                                                 <div key={col.id} style={{
                                                                     width: `${col.width || 150}px`,
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
                                                                     padding: '0 8px',
-                                                                    borderRight: idx < subCols.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
+                                                                    borderRight: idx < cols.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
                                                                     height: '100%',
                                                                     boxSizing: 'border-box',
                                                                     flexShrink: 0,
@@ -634,7 +649,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                 ) : (
                                                     <Row
                                                         item={vItem.data as any}
-                                                        columns={vItem.type === 'subitem' ? subCols : itemCols}
+                                                        columns={vItem.type === 'subitem' ? subColsFor(vItem.columnGroupId) : itemCols}
                                                         groupColor={vItem.groupColor}
                                                         itemColumnWidth={itemColumnWidth}
                                                         dragHandleProps={listeners}

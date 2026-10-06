@@ -34,7 +34,7 @@ const all = [parent, item('s1', { cost: '100' }, 'p1'), item('s2', { cost: '50' 
 const groups = [{ id: 'g1', title: 'G', color: '#f00', items: [] }] as any;
 const list = groupItems(all, groups, null, [], ['p1'], itemColumns(columns), subFor);
 const types = list.map(v => v.type);
-check('order: header, sub-header, sub-items, add row, summary', types.slice(2), ['item', 'subitem-header', 'subitem', 'subitem', 'subitem-footer', 'subitem-summary', 'footer']);
+check('order: item, sub-header, sub-items, add row, summary', types.slice(1), ['item', 'subitem-header', 'subitem', 'subitem', 'subitem-footer', 'subitem-summary', 'footer']);
 const summary = list.find(v => v.type === 'subitem-summary')!;
 check('summary totals the parent\'s sub-items over sub-item columns', [summary.data.count, summary.data.aggregates.cost.sum], [2, 150]);
 check('it leaves out item-only columns', 'name2' in summary.data.aggregates, false);

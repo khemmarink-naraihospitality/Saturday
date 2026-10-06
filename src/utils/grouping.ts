@@ -1,7 +1,9 @@
 import type { Item, Group } from '../types';
 
-// 1. Add 'header', 'footer', and sub-item types to type
-export type VirtualItemType = 'group' | 'header' | 'item' | 'footer' | 'subitem-header' | 'subitem' | 'subitem-footer' | 'subitem-summary';
+// The item columns' header is one frozen bar drawn once above the whole table
+// (Table.tsx), not a virtual row repeated per group, so there's no 'header' type
+// here — only the sub-item header, which does vary (by group).
+export type VirtualItemType = 'group' | 'item' | 'footer' | 'subitem-header' | 'subitem' | 'subitem-footer' | 'subitem-summary';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface VirtualItemData {
@@ -165,7 +167,6 @@ export const groupItems = (
             });
 
             if (!isCollapsed) {
-                result.push({ type: 'header', id: `${gId}-header`, data: { groupId: gId }, depth: 0, groupColor: color });
                 gItems.forEach(item => {
                     result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: color });
                     if (expandedItemIds.includes(item.id)) {
@@ -214,7 +215,6 @@ export const groupItems = (
         });
 
         if (!isCollapsed) {
-            result.push({ type: 'header', id: `${group.id}-header`, data: { groupId: group.id }, depth: 0, groupColor: group.color });
             groupItemsList.forEach(item => {
                 result.push({ type: 'item', id: item.id, data: item, depth: 0, groupColor: group.color });
                 if (expandedItemIds.includes(item.id)) {

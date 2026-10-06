@@ -77,6 +77,11 @@ const SortableItemWrapper = ({
 
 const NO_COLUMNS: Column[] = [];
 
+// Header.tsx's row height. The item header lives outside the virtualizer (it's
+// one frozen bar now, not one per group — see the scrollMargin/translateY note
+// below), so this has to be known up front rather than read off a measured row.
+const ITEM_HEADER_HEIGHT = 34;
+
 export const Table = ({ boardId }: { boardId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const toggleGroup = useBoardStore(state => state.toggleGroup);
@@ -202,12 +207,18 @@ export const Table = ({ boardId }: { boardId: string }) => {
             const type = virtualItems[index]?.type;
             const gap = 32; // var(--spacing-group-gap)
             if (type === 'group') return (index === 0 ? 44 : 44 + gap); 
-            if (type === 'header' || type === 'subitem-header') return 34;
+            if (type === 'subitem-header') return 34;
             if (type === 'subitem-footer' || type === 'subitem-summary') return 40;
             if (type === 'footer') return 80;
             return 30;
         },
         overscan: 5,
+        // The frozen header above sits in normal flow, pushing the virtualized
+        // rows down by its own height; this tells the virtualizer about that
+        // offset so it maps scrollTop to the right rows. Row positions below are
+        // then shifted back by the same amount (virtualRow.start is margin-relative,
+        // the rows div they're drawn in isn't).
+        scrollMargin: ITEM_HEADER_HEIGHT,
     });
 
     // Force remeasure after items change to prevent gaps
@@ -327,6 +338,18 @@ export const Table = ({ boardId }: { boardId: string }) => {
                 className="table-container"
                 style={{ height: '100%', overflow: 'auto', width: '100%' }}
             >
+                {/* The item columns' header. One bar for the whole table rather than one
+                    per group — item columns are the same set everywhere — pinned to the
+                    top of the scroll container so it stays visible past every group. */}
+                <div style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 100,
+                    backgroundColor: 'hsl(var(--color-table-header-bg))'
+                }}>
+                    <Header columns={itemCols} />
+                </div>
+
                 <div
                     className="table-content"
                     style={{
@@ -343,7 +366,6 @@ export const Table = ({ boardId }: { boardId: string }) => {
                         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                             const vItem = virtualItems[virtualRow.index];
                             const isGroup = vItem.type === 'group';
-                            const isHeader = vItem.type === 'header';
                             const isFooter = vItem.type === 'footer';
 
                             const isDragging = activeId === vItem.id;
@@ -356,7 +378,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                         left: 0,
                                         width: `${totalWidth}px`, // Ensure row wrapper spans full content width
                                         height: `${virtualRow.size}px`,
-                                        transform: `translateY(${virtualRow.start}px)`,
+                                        transform: `translateY(${virtualRow.start - ITEM_HEADER_HEIGHT}px)`,
                                         zIndex: isDragging ? 99 : 1
                                     }}
                                 >
@@ -390,8 +412,6 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             dragHandleProps={listeners}
                                                         />
                                                     </div>
-                                                ) : isHeader ? (
-                                                    <Header columns={itemCols} groupColor={vItem.groupColor} groupId={vItem.data.groupId} />
                                                 ) : isFooter ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                         <div style={{

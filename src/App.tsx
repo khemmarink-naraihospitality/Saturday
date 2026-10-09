@@ -536,9 +536,28 @@ function MainApp() {
         }
       }, 300000);
 
+      // A tab left in the background (or a laptop closed overnight) can come back
+      // to a board other people have changed in the meantime, and the realtime
+      // events for those changes may never have arrived. Coming back after a
+      // minute or more re-reads the open board, so nobody edits on top of a stale
+      // copy — the way a group someone had just renamed got renamed over again
+      // from a screen still showing its old name.
+      let hiddenAt: number | null = document.hidden ? Date.now() : null;
+      const onVisibilityChange = () => {
+        if (document.hidden) { hiddenAt = Date.now(); return; }
+        const away = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (away < 60000) return;
+        loadUserData(true);
+        const { activeBoardId: openBoardId, loadBoardData } = useBoardStore.getState();
+        if (openBoardId) void loadBoardData(openBoardId, false, true);
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
       return () => {
         unsubscribeFromRealtime();
         clearInterval(intervalId);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
       };
     }
     return () => unsubscribeFromRealtime();

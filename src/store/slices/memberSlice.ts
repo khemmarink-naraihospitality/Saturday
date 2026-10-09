@@ -457,6 +457,8 @@ export const createMemberSlice: StateCreator<
         supabase.auth.getUser().then(({ data: { user } }) => {
             if (!user) return;
 
+            let hasSubscribed = false;
+            let droppedSinceSubscribed = false;
             const channel = supabase.channel('app-realtime')
                 .on('postgres_changes', {
                     event: 'INSERT',
@@ -704,7 +706,23 @@ export const createMemberSlice: StateCreator<
                         return { workspaces: newWorkspaces.sort((a,b) => a.order - b.order) };
                     });
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    // A dropped channel (laptop asleep, network blip) rejoins on its
+                    // own, but changes made while it was down are not replayed. The
+                    // open board would stay as it was — someone else's new group
+                    // still showing its old name, say, until they renamed it over
+                    // the top. So once it's back, re-read the board in full.
+                    if (status === 'SUBSCRIBED') {
+                        if (hasSubscribed && droppedSinceSubscribed) {
+                            const { activeBoardId } = get();
+                            if (activeBoardId) void get().loadBoardData(activeBoardId, false, true);
+                        }
+                        hasSubscribed = true;
+                        droppedSinceSubscribed = false;
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        droppedSinceSubscribed = true;
+                    }
+                });
 
             set({ realtimeSubscription: channel });
         });

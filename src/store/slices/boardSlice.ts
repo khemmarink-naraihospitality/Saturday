@@ -45,7 +45,10 @@ export interface BoardSlice {
 
     // Data Loading
     loadUserData: (isSilent?: boolean) => Promise<void>;
-    loadBoardData: (boardId: string, _skipLinkedAutoLoad?: boolean) => Promise<void>;
+    // refresh: re-read an already-open board in full (groups, columns, items),
+    // silently — no spinner, comment threads already loaded are kept. For a tab
+    // that may have missed changes: woken from sleep, realtime reconnected.
+    loadBoardData: (boardId: string, _skipLinkedAutoLoad?: boolean, refresh?: boolean) => Promise<void>;
     loadItemUpdates: (itemId: string) => Promise<boolean>;
     loadingBoardIds: Set<string>;
 
@@ -416,7 +419,7 @@ export const createBoardSlice: StateCreator<
         return true;
     },
 
-    loadBoardData: async (boardId: string, _skipLinkedAutoLoad = false) => {
+    loadBoardData: async (boardId: string, _skipLinkedAutoLoad = false, refresh = false) => {
         const { boards, loadingBoardIds } = get();
         const board = boards.find(b => b.id === boardId);
 
@@ -452,7 +455,8 @@ export const createBoardSlice: StateCreator<
         // and leaves them unhydrated so opening one still fetches it on demand.
         const hydrateUpdates = async () => {
             const current = get().boards.find(b => b.id === boardId);
-            const ids = (current?.items || []).map(i => i.id);
+            // Only threads not already in hand: after a refresh most are.
+            const ids = (current?.items || []).filter(i => !i.updatesLoaded).map(i => i.id);
             if (ids.length === 0) return;
 
             const CHUNK_SIZE = 10;
@@ -506,7 +510,7 @@ export const createBoardSlice: StateCreator<
         // Already loaded: silently refresh items only when this board has linked groups,
         // so that mirror items created by the DB trigger while the user was elsewhere
         // are picked up immediately without a full page reload.
-        if (board.isDataLoaded) {
+        if (board.isDataLoaded && !refresh) {
             const hasLinkedGroups = board.groups.some(g => g.linkedGroupId);
             if (!hasLinkedGroups) return;
 
@@ -609,19 +613,31 @@ export const createBoardSlice: StateCreator<
                 });
 
                 const parsedItemsMap: Record<string, any[]> = {};
-                
+
+                // A refresh re-reads a board that's open on screen: comment threads
+                // already loaded are kept rather than blanked and re-fetched, and a
+                // row edited in the last few seconds keeps its local values — that
+                // write may still be on its way, and the copy just read predates it.
+                const existingById = refresh
+                    ? new Map(state.boards[boardIndex].items.map(i => [i.id, i]))
+                    : new Map<string, Item>();
+                const { lastOptimisticUpdate } = state;
+                const editedJustNow = (id: string) => Date.now() - (lastOptimisticUpdate[id] || 0) < 5000;
+
                 const parsedItems = bItems.map(i => {
+                    const existing = existingById.get(i.id);
+                    const keepLocal = !!existing && editedJustNow(i.id);
                     const parsedItem = {
                         id: i.id,
-                        title: i.title,
+                        title: keepLocal ? existing!.title : i.title,
                         groupId: i.group_id,
                         boardId,
-                        values: parseSqlJson(i.values, {}),
+                        values: keepLocal ? existing!.values : parseSqlJson(i.values, {}),
                         isHidden: i.is_hidden,
-                        updates: [],
-                        updatesCount: i.updates_count ?? 0,
+                        updates: existing?.updatesLoaded ? existing.updates ?? [] : [],
+                        updatesCount: existing?.updatesLoaded ? (existing.updates?.length ?? 0) : (i.updates_count ?? 0),
                         lastUpdateAt: i.last_update_at || undefined,
-                        updatesLoaded: false,
+                        updatesLoaded: existing?.updatesLoaded ?? false,
                         files: parseSqlJson(i.files, []),
                         order: i.order,
                         parentId: i.parent_id,
@@ -641,20 +657,26 @@ export const createBoardSlice: StateCreator<
                     isDataLoaded: true,
                     itemColumnTitle: state.boards[boardIndex].itemColumnTitle || 'Item',
                     itemColumnWidth: state.boards[boardIndex].itemColumnWidth || 350,
-                    columns: bColumns.map(c => ({
-                        id: c.id,
-                        title: c.title,
-                        type: c.type as ColumnType,
-                        width: c.width,
-                        order: c.order,
-                        options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
-                        aggregation: c.aggregation,
-                        numberFormat: c.number_format,
-                        currencyCode: c.currency_code,
-                        numberAlign: c.number_align || undefined,
-                        scope: c.scope === 'subitem' ? 'subitem' : 'item',
-                        groupId: c.group_id || undefined
-                    })),
+                    columns: bColumns.map(c => {
+                        // Same rule as items: a label being typed right now stays as typed.
+                        const local = refresh && editedJustNow(c.id)
+                            ? state.boards[boardIndex].columns.find(x => x.id === c.id)
+                            : undefined;
+                        return local ?? {
+                            id: c.id,
+                            title: c.title,
+                            type: c.type as ColumnType,
+                            width: c.width,
+                            order: c.order,
+                            options: typeof c.options === 'string' ? JSON.parse(c.options) : (c.options || []),
+                            aggregation: c.aggregation,
+                            numberFormat: c.number_format,
+                            currencyCode: c.currency_code,
+                            numberAlign: c.number_align || undefined,
+                            scope: c.scope === 'subitem' ? 'subitem' as const : 'item' as const,
+                            groupId: c.group_id || undefined
+                        };
+                    }),
                     groups: bGroups.map(g => {
                         const groupItems = (parsedItemsMap[g.id] || [])
                             .filter(i => !i.parentId) // Only top-level items in the main group list

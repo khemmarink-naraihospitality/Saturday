@@ -5,6 +5,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import type { Item, FileLink, Comment, Column, ColumnScope } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { itemColumns, subitemColumns, planCarry } from '../../lib/columnScope';
+import { showToast } from '../../utils/toast';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -906,30 +907,84 @@ export const createItemSlice: StateCreator<
         const board = boards.find(b => b.id === activeBoardId);
         if (!board) return;
 
-        const itemsToDuplicate = board.items.filter(i => selectedItemIds.includes(i.id));
-        const newItems: Item[] = itemsToDuplicate.map(item => ({
-            ...item,
-            id: uuidv4(),
-            title: `${item.title} (Copy)`,
-            createdAt: new Date().toISOString(),
-            order: (item.order || 0) + 0.5 // crude way to push logic, refined later
-        }));
+        const selected = new Set(selectedItemIds);
+        if (!board.items.some(i => selected.has(i.id))) return;
 
-        set(state => ({
+        // Copies used to be inserted as the client-side Item objects themselves —
+        // groupId, boardId, parentId, updatesCount… none of which are columns on
+        // `items` — with `order: source.order + 0.5` into an integer column. Every
+        // insert was rejected, the error only went to the console, and the copy
+        // that was already on screen vanished on the next load. Nothing anyone
+        // duplicated (or renamed, or attached files to afterwards) was ever saved.
+        //
+        // Each copy now goes right after its source, and the board's order is
+        // renumbered and saved the way a drag does (reorder_items).
+        const now = new Date().toISOString();
+        const copies: Item[] = [];
+        const ordered = [...board.items].sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id));
+        const withCopies: Item[] = [];
+        ordered.forEach(item => {
+            withCopies.push(item);
+            if (!selected.has(item.id)) return;
+            const copy: Item = {
+                ...item,
+                id: uuidv4(),
+                title: `${item.title} (Copy)`,
+                createdAt: now,
+                // A copy starts its own conversation; the source keeps its comments.
+                updates: [],
+                updatesCount: 0,
+                lastUpdateAt: undefined,
+                updatesLoaded: true
+            };
+            copies.push(copy);
+            withCopies.push(copy);
+        });
+        const renumbered = withCopies.map((item, index) => ({ ...item, order: index }));
+        const copyIds = new Set(copies.map(c => c.id));
+
+        const previous = { items: board.items, groups: board.groups };
+        const applyItems = (items: Item[]) => set(state => ({
             boards: state.boards.map(b => b.id === activeBoardId ? {
                 ...b,
-                items: [...b.items, ...newItems],
-                groups: b.groups.map(g => ({
-                    ...g,
-                    // Simply append to group for now
-                    items: [...g.items, ...newItems.filter(ni => ni.groupId === g.id)]
-                }))
-            } : b),
-            selectedItemIds: [] // Clear selection after duplicate?
+                items,
+                groups: b.groups.map(g => ({ ...g, items: items.filter(i => i.groupId === g.id && !i.parentId) }))
+            } : b)
         }));
 
-        const { error } = await supabase.from('items').insert(newItems);
-        if (error) console.error('Failed to duplicate items:', error);
+        applyItems(renumbered);
+        set({ selectedItemIds: [] });
+
+        const { error } = await supabase.from('items').insert(renumbered.filter(i => copyIds.has(i.id)).map(c => ({
+            id: c.id,
+            board_id: activeBoardId,
+            group_id: c.groupId,
+            parent_id: c.parentId ?? null,
+            title: c.title,
+            values: c.values ?? {},
+            files: c.files ?? [],
+            is_hidden: c.isHidden ?? false,
+            order: c.order
+        })));
+
+        if (error) {
+            console.error('Failed to duplicate items:', error);
+            set(state => ({
+                boards: state.boards.map(b => b.id === activeBoardId ? { ...b, items: previous.items, groups: previous.groups } : b)
+            }));
+            showToast('Could not duplicate. Nothing was copied — please try again.', 'error');
+            return;
+        }
+
+        await supabase.rpc('reorder_items', { _board_id: activeBoardId, _item_ids: renumbered.map(i => i.id) });
+
+        copies.forEach(c => {
+            get().logActivity('item_created', 'item', c.id, {
+                board_id: activeBoardId,
+                item_title: c.title,
+                group_title: board.groups.find(g => g.id === c.groupId)?.title
+            });
+        });
     },
 
     hideSelectedItems: async () => {

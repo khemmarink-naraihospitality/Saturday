@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { Row } from './Row';
 import { GroupRow } from './GroupRow';
 import { groupItems } from '../../utils/grouping';
+import type { VirtualItemData } from '../../utils/grouping';
 import { linkDisplayText } from '../../lib/utils';
 import { itemColumns, subitemColumns, scopeOf } from '../../lib/columnScope';
 import type { Column } from '../../types';
@@ -76,6 +77,29 @@ const SortableItemWrapper = ({
 };
 
 const NO_COLUMNS: Column[] = [];
+
+// The real group a dropped-on row belongs to, for reordering groups by drag — a
+// group row is itself, everything else falls under the group its own data
+// carries (an item or footer's `groupId`, or a sub-item row's `columnGroupId`,
+// since a sub-item's group is its parent's — see columnScope in CLAUDE.md).
+// Dropping a dragged group onto anything this doesn't recognise returns null and
+// the caller no-ops, which is exactly how a group used to silently snap back to
+// its old spot when released on its own footer row or on any sub-item row (the
+// "+ Add subitem" row, a sub-item, its header or its summary) — only 'group' and
+// 'item' targets were ever resolved.
+const groupIdOfRow = (vi: VirtualItemData | undefined): string | null => {
+    if (!vi) return null;
+    switch (vi.type) {
+        case 'group': return vi.id;
+        case 'item':
+        case 'footer': return (vi.data as { groupId?: string })?.groupId ?? null;
+        case 'subitem-header':
+        case 'subitem':
+        case 'subitem-footer':
+        case 'subitem-summary': return vi.columnGroupId ?? null;
+        default: return null;
+    }
+};
 
 // Header.tsx's row height. The item header lives outside the virtualizer (it's
 // one frozen bar now, not one per group — see the scrollMargin/translateY note
@@ -264,10 +288,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             const overVItem = virtualItems.find(i => i.id === over.id);
 
             if (activeVItem?.type === 'group') {
-                const targetGroupId = overVItem?.type === 'group' 
-                    ? overVItem.id 
-                    : (overVItem?.type === 'item' ? (overVItem.data as any).groupId : null);
-                
+                const targetGroupId = groupIdOfRow(overVItem);
                 if (targetGroupId && active.id !== targetGroupId) {
                     reorderGroups(active.id as string, targetGroupId);
                 }

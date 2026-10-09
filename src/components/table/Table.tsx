@@ -357,7 +357,14 @@ export const Table = ({ boardId }: { boardId: string }) => {
             <div
                 ref={parentRef}
                 className="table-container"
-                style={{ height: '100%', overflow: 'auto', width: '100%' }}
+                // A stacking context of its own, so the z-indexes inside the table
+                // (the frozen header's 100, a dragged row's 99, sticky columns) only
+                // order things within the table and can't lift any of it above the
+                // rest of the page. Without it the frozen header rose above modal
+                // backdrops and dropdowns opened elsewhere: dimmed page, bright bar.
+                // Every menu the table opens is portaled to <body>, so nothing
+                // inside needs to escape.
+                style={{ height: '100%', overflow: 'auto', width: '100%', isolation: 'isolate' }}
             >
                 {/* The item columns' header. One bar for the whole table rather than one
                     per group — item columns are the same set everywhere — pinned to the

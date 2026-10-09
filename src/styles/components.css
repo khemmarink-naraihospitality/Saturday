@@ -280,6 +280,13 @@
 }
 
 /* Rich Text / Prose overrides for headings */
+/* Placeholder for an empty RichTextEditor (data-placeholder on the editable div). */
+.rich-text-content[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--color-text-tertiary));
+    pointer-events: none;
+}
+
 .prose h1, .rich-text-content h1 {
     font-size: 24px;
     font-weight: 700;

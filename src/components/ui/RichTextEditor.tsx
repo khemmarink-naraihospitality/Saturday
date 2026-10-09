@@ -13,6 +13,14 @@ interface RichTextEditorProps {
     value: string; // HTML string
     onChange: (html: string) => void;
     footer?: React.ReactNode;
+    // The editable area's id, so a caller can focus it (e.g. "Reply" opening its box).
+    id?: string;
+    // Shown while the editor is empty.
+    placeholder?: string;
+    // Editable area's minimum height; the comment composer's 120px is a lot for a reply.
+    minHeight?: number;
+    // Ctrl/Cmd+Enter. Plain Enter stays a new line — lists and checklists need it.
+    onSubmit?: () => void;
 }
 
 const TEXT_COLORS = [
@@ -65,7 +73,7 @@ const FONTS = [
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 
-export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps) => {
+export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHeight = 120, onSubmit }: RichTextEditorProps) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -989,12 +997,19 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
             {/* Editor Area */}
             <div
                 ref={editorRef}
+                id={id}
                 contentEditable
+                data-placeholder={placeholder}
                 onInput={handleChange}
                 onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                         e.preventDefault();
                         openLinkUI();
+                    }
+                    if (onSubmit && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        onSubmit();
+                        return;
                     }
                     // Shift+Enter is left alone: that's a soft break within the
                     // current row, same as everywhere else.
@@ -1035,7 +1050,7 @@ export const RichTextEditor = ({ value, onChange, footer }: RichTextEditorProps)
                     setTimeout(() => setMentionQuery(null), 200);
                 }}
                 style={{
-                    minHeight: '120px',
+                    minHeight: `${minHeight}px`,
                     padding: '16px',
                     fontSize: '15px',
                     outline: 'none',

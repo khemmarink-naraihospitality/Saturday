@@ -1149,7 +1149,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 10px 0' }}>
                                                                             {(replyFiles[update.id] || []).map(file => (
                                                                                 <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
-                                                                                    <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                                                    {file.type === 'google-drive' ? (
+                                                                                        <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                                                    ) : (
+                                                                                        <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
+                                                                                    )}
                                                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                                                                                     <button onClick={() => removeReplyFile(update.id, file.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, lineHeight: 1, fontSize: '11px', flexShrink: 0 }}>✕</button>
                                                                                 </div>
@@ -1195,6 +1199,22 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = replyActiveEmojiId === update.id ? 'hsl(var(--color-bg-hover))' : 'transparent'}
                                                                             >😊</button>
+
+                                                                            {/* Google Drive */}
+                                                                            <button
+                                                                                onClick={() => openPicker((result) => {
+                                                                                    setReplyFiles(prev => ({
+                                                                                        ...prev,
+                                                                                        [update.id]: [...(prev[update.id] || []), { id: uuidv4(), name: result.name, url: result.url, type: 'google-drive', iconUrl: result.iconUrl, mimeType: result.mimeType }]
+                                                                                    }));
+                                                                                })}
+                                                                                title="Attach from Google Drive"
+                                                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
+                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                            >
+                                                                                <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '17px', height: '17px' }} />
+                                                                            </button>
                                                                         </div>
 
                                                                         <button

@@ -675,24 +675,43 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         {vItem.groupColor && (
                                                             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1, zIndex: 80 }} />
                                                         )}
-                                                        <div
-                                                            onClick={() => useBoardStore.getState().addItem('New Sub-item', vItem.data.groupId, vItem.data.parentId)}
-                                                            style={{
-                                                                cursor: 'pointer',
-                                                                fontSize: '13px',
-                                                                color: 'hsl(var(--color-text-tertiary))',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '8px',
-                                                                padding: '4px 8px',
-                                                                borderRadius: '4px',
-                                                                marginLeft: vItem.groupColor ? '116px' : '106px' // Indent further to match new Row.tsx (86px/76px + base margin)
-                                                            }}
-                                                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; e.currentTarget.style.color = 'hsl(var(--color-text-secondary))'; }}
-                                                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))'; }}
-                                                        >
-                                                            <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span> Add subitem
-                                                        </div>
+                                                        {/* Typed straight in, like "+ Add Item" under a group: click, type the
+                                                            name, Enter. It used to create a sub-item called "New Sub-item"
+                                                            that then had to be renamed. The box stays focused after Enter so
+                                                            several can be added in a row; Escape leaves it. */}
+                                                        {can('edit_items') && (
+                                                            <input
+                                                                type="text"
+                                                                placeholder="+ Add subitem"
+                                                                className="cell-input"
+                                                                onKeyDown={(e) => {
+                                                                    const input = e.currentTarget;
+                                                                    if (e.key === 'Enter') {
+                                                                        const title = input.value.trim();
+                                                                        if (!title) return;
+                                                                        useBoardStore.getState().addItem(title, vItem.data.groupId, vItem.data.parentId);
+                                                                        input.value = '';
+                                                                    } else if (e.key === 'Escape') {
+                                                                        input.value = '';
+                                                                        input.blur();
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    fontSize: '13px',
+                                                                    color: 'hsl(var(--color-text-primary))',
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    outline: 'none',
+                                                                    height: '28px',
+                                                                    padding: '4px 8px',
+                                                                    borderRadius: '4px',
+                                                                    marginLeft: vItem.groupColor ? '116px' : '106px', // Indent further to match new Row.tsx (86px/76px + base margin)
+                                                                    width: `${Math.max(160, itemColumnWidth - (vItem.groupColor ? 116 : 106) - 16)}px`
+                                                                }}
+                                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; }}
+                                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                            />
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <Row

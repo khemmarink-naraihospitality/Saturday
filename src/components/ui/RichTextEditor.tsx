@@ -567,17 +567,27 @@ export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHe
 
     // One definition of a checklist row, shared by the toolbar button and by
     // Enter inside an existing row, so the two can't drift apart.
-    const checklistItemHtml = (text: string) => `
+    // `markNew` tags the text cell so the caret can be put in it once inserted.
+    const checklistItemHtml = (text: string, markNew = false) => `
             <div class="editor-checklist-item" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
                 <div contenteditable="false" style="margin-top: 4px;">
                     <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
                 </div>
-                <div style="flex: 1;">${text}</div>
+                <div style="flex: 1;"${markNew ? ' data-checklist-new="1"' : ''}>${text}</div>
             </div>
         `;
 
+    // An empty row with the caret already in it, ready to type. It used to come
+    // with "Checklist item" written in it and the caret on the line below, so
+    // every new checklist started with selecting and deleting that text.
     const insertChecklist = () => {
-        exec('insertHTML', `${checklistItemHtml('Checklist item')}<p><br></p>`);
+        // The <br> gives an empty cell somewhere for the caret to land.
+        exec('insertHTML', `${checklistItemHtml('<br>', true)}<p><br></p>`);
+        const cell = editorRef.current?.querySelector<HTMLElement>('[data-checklist-new]');
+        if (!cell) return;
+        cell.removeAttribute('data-checklist-new');
+        placeCaretAtStart(cell);
+        handleChange();
     };
 
     const placeCaretAtStart = (el: HTMLElement) => {

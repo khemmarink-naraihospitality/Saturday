@@ -21,10 +21,12 @@ import { clearBoardUnlock } from './lib/boardPinUnlock';
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
 
-// Signing in with an address at one of these domains approves the account on the
-// spot, instead of parking it on the pending-approval screen for an admin. Checked
-// in two places — when the session is first synced, and again by the approval gate
-// below — so it lives here rather than being re-declared at each call site.
+// Accounts at these domains never wait for an admin. The database approves them
+// when the account is created (public.is_auto_approved_email, used by
+// handle_new_user — migration 20261011), so an invited user who hasn't signed in
+// yet no longer shows as "Pending"; this copy lets the session sync and the
+// approval gate below treat them as approved without a round trip. Keep the two
+// lists the same.
 const ALLOWED_DOMAINS = [
   'naraihospitality.com',
   'marasca.live',

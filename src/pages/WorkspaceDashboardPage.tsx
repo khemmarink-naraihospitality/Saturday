@@ -845,22 +845,65 @@ export const WorkspaceDashboardPage = () => {
     const allBoards = useBoardStore(state => state.boards);
     
     // Track widget order
-    // Order, width (grid columns) and height of each widget, remembered per
-    // workspace in this browser. Saved from the setter rather than an effect, so
-    // switching workspace can never write one workspace's layout over another's.
+    // Order, width (grid columns) and height of each widget, per workspace.
+    // Kept on the account (profiles.dashboard_layouts) so it follows the user to
+    // any browser, with localStorage as the instant copy shown before that
+    // arrives. Saved from the setter rather than an effect, so switching
+    // workspace can never write one workspace's layout over another's.
     const layoutKey = `dashboardLayout:${activeWorkspaceId || 'none'}`;
     const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+    const [remoteReady, setRemoteReady] = useState(false);
+    const remoteLayouts = useRef<Record<string, unknown> | null>(null); // every workspace's saved layout; null until fetched
+    const userIdRef = useRef<string | null>(null);
+    const touchedLayout = useRef(false); // changed before the account copy arrived
+    const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+
     useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const { data: auth } = await supabase.auth.getUser();
+            if (!auth.user || cancelled) return;
+            userIdRef.current = auth.user.id;
+            const { data } = await supabase.from('profiles').select('dashboard_layouts').eq('id', auth.user.id).single();
+            if (cancelled || !data) return;
+            remoteLayouts.current = (data.dashboard_layouts && typeof data.dashboard_layouts === 'object') ? data.dashboard_layouts : {};
+            setRemoteReady(true);
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    useEffect(() => {
+        const remote = remoteLayouts.current?.[activeWorkspaceId || 'none'];
+        if (remote && !touchedLayout.current) {
+            setLayout(parseStoredLayout(JSON.stringify(remote)));
+            return;
+        }
         try {
             setLayout(parseStoredLayout(localStorage.getItem(layoutKey)));
         } catch {
             setLayout(DEFAULT_LAYOUT);
         }
-    }, [layoutKey]);
+        touchedLayout.current = false;
+    }, [layoutKey, remoteReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const updateLayout = (change: (current: DashboardLayout) => DashboardLayout) => {
         const next = change(layout);
         setLayout(next);
-        try { localStorage.setItem(layoutKey, JSON.stringify(next)); } catch { /* private mode — it just won't persist */ }
+        touchedLayout.current = true;
+        try { localStorage.setItem(layoutKey, JSON.stringify(next)); } catch { /* private mode */ }
+
+        // A resize fires on every pointer move, so the account copy waits for it to settle.
+        const workspaceKey = activeWorkspaceId || 'none';
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+            const all = remoteLayouts.current;
+            const userId = userIdRef.current;
+            if (!all || !userId) return; // not fetched yet: saving now would erase the other workspaces' layouts
+            all[workspaceKey] = next;
+            supabase.from('profiles').update({ dashboard_layouts: all }).eq('id', userId).then(({ error }) => {
+                if (error) console.error('Failed to save dashboard layout:', error);
+            });
+        }, 600);
     };
     const widgetOrder = layout.order;
 

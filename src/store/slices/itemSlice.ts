@@ -1065,29 +1065,44 @@ export const createItemSlice: StateCreator<
         }
 
         if (isCrossBoard) {
-            const movingItems = boards
-                .find(bd => bd.id === activeBoardId)?.items
+            const sourceItems = boards.find(bd => bd.id === activeBoardId)?.items || [];
+            const movingItems = sourceItems
                 .filter(i => selectedItemIds.includes(i.id))
-                .map(i => ({ ...i, groupId, boardId: targetBoardId, parentId: parentId || undefined })) || [];
+                .map(i => ({ ...i, groupId, boardId: targetBoardId, parentId: parentId || undefined }));
+
+            // A parent's sub-items travel with it. Rows are loaded per board, so a
+            // sub-item left behind has a parent that isn't on its board: it
+            // disappears from the old board (no parent there any more) and never
+            // shows on the new one (its board_id is still the old one). Only when
+            // the rows stay top-level — one that becomes a sub-item has nothing
+            // under it to bring.
+            const selected = new Set(selectedItemIds);
+            const followers = parentId
+                ? []
+                : sourceItems
+                    .filter(i => i.parentId && selected.has(i.parentId) && !selected.has(i.id))
+                    .map(i => ({ ...i, groupId, boardId: targetBoardId }));
+            const leaving = new Set([...selectedItemIds, ...followers.map(i => i.id)]);
+            const arriving = [...movingItems, ...followers];
 
             set(state => ({
                 boards: state.boards.map(b => {
                     if (b.id === activeBoardId) {
                         return {
                             ...b,
-                            items: b.items.filter(i => !selectedItemIds.includes(i.id)),
+                            items: b.items.filter(i => !leaving.has(i.id)),
                             groups: b.groups.map(g => ({
                                 ...g,
-                                items: g.items.filter(i => !selectedItemIds.includes(i.id))
+                                items: g.items.filter(i => !leaving.has(i.id))
                             }))
                         };
                     }
                     if (b.id === targetBoardId && b.isDataLoaded) {
                         return {
                             ...b,
-                            items: [...b.items, ...movingItems],
+                            items: [...b.items, ...arriving],
                             groups: b.groups.map(g => g.id === groupId
-                                ? { ...g, items: [...g.items, ...movingItems] }
+                                ? { ...g, items: [...g.items, ...arriving] }
                                 : g
                             )
                         };
@@ -1097,9 +1112,16 @@ export const createItemSlice: StateCreator<
                 selectedItemIds: []
             }));
 
+            // Parents first: a sub-item's group/board are those of the parent it
+            // ends up under.
             await supabase.from('items')
                 .update({ group_id: groupId, board_id: targetBoardId, parent_id: parentId })
                 .in('id', selectedItemIds);
+            if (followers.length > 0) {
+                await supabase.from('items')
+                    .update({ group_id: groupId, board_id: targetBoardId })
+                    .in('id', followers.map(i => i.id));
+            }
         } else {
             set(state => ({
                 boards: state.boards.map(b => b.id === activeBoardId ? {

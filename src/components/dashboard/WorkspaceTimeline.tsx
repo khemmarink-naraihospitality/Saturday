@@ -1,56 +1,12 @@
-import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { format, addMonths, subMonths, addYears, subYears } from 'date-fns';
-import { ArrowUpDown, ChevronLeft, ChevronRight, Eye, EyeOff, LayoutPanelLeft, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { buildTimeGrid, computeBarSpan, isCurrentUnit, todayOffset, unitWidthFor, type TimelineViewType } from '../../lib/timelineScale';
 import {
-    buildTimelineRows, matchesSearch, sectionRows, sortRows,
-    type TimelineGroupBy, type TimelineGroupInfo, type TimelineRow, type TimelineSort, type TimelineSortKey,
-    type TimelineSourceColumn, type TimelineSourceItem
+    buildTimelineRows, orderRows,
+    type TimelineGroupInfo, type TimelineRow, type TimelineSourceColumn, type TimelineSourceItem
 } from '../../lib/workspaceTimeline';
 import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, BAR_V_INSET } from '../table/timelineGeometry';
-
-const SORT_OPTIONS: { key: TimelineSortKey; label: string }[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'start', label: 'Start date' },
-    { key: 'end', label: 'End date' },
-    { key: 'board', label: 'Board' }
-];
-
-const GROUP_BY_OPTIONS: { key: TimelineGroupBy; label: string }[] = [
-    { key: 'none', label: 'Default (no groups)' },
-    { key: 'board', label: 'Board' },
-    { key: 'group', label: 'Group' },
-    { key: 'status', label: 'Status' }
-];
-
-const toolbarItemStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '14px',
-    color: 'hsl(var(--color-text-secondary))',
-    cursor: 'pointer',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    border: 'none',
-    background: 'transparent',
-    height: '32px'
-};
-
-const menuItemStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 16px',
-    fontSize: '13px',
-    color: 'hsl(var(--color-text-primary))',
-    cursor: 'pointer',
-    border: 'none',
-    background: 'transparent',
-    width: '100%',
-    textAlign: 'left'
-};
 
 const navBtnStyle: CSSProperties = {
     height: '32px',
@@ -64,63 +20,6 @@ const navBtnStyle: CSSProperties = {
     color: 'hsl(var(--color-text-secondary))',
     padding: '0 8px'
 };
-
-const hoverOn = (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'; };
-const hoverOff = (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = 'transparent'; };
-
-/** A toolbar button that opens a small menu under it. */
-const MenuButton = ({ icon, label, active, width = 200, children }: {
-    icon: ReactNode;
-    label: string;
-    active?: boolean;
-    width?: number;
-    children: (close: () => void) => ReactNode;
-}) => {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLButtonElement>(null);
-    const rect = open ? ref.current?.getBoundingClientRect() : undefined;
-
-    return (
-        <>
-            <button
-                ref={ref}
-                onClick={() => setOpen(o => !o)}
-                style={{ ...toolbarItemStyle, color: active ? 'hsl(var(--color-brand-primary))' : toolbarItemStyle.color }}
-                onMouseEnter={hoverOn}
-                onMouseLeave={hoverOff}
-            >
-                {icon}
-                <span>{label}</span>
-            </button>
-            {open && rect && createPortal(
-                <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-                    <div style={{
-                        position: 'fixed',
-                        top: rect.bottom + 8,
-                        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-                        width,
-                        backgroundColor: 'white',
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '8px',
-                        padding: '8px 0',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                        zIndex: 9999
-                    }}>
-                        {children(() => setOpen(false))}
-                    </div>
-                </>,
-                document.body
-            )}
-        </>
-    );
-};
-
-const MenuHeading = ({ children }: { children: ReactNode }) => (
-    <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-text-tertiary))', textTransform: 'uppercase' }}>
-        {children}
-    </div>
-);
 
 /**
  * The workspace dashboard's Timeline: the board Timeline view's look, across
@@ -143,37 +42,25 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
     const [viewDate, setViewDate] = useState(() => new Date());
     // Month by default, same as the board: a whole year fits on screen.
     const [viewType, setViewType] = useState<TimelineViewType>('month');
-    const [search, setSearch] = useState('');
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const [sort, setSort] = useState<TimelineSort>(null);
-    const [groupBy, setGroupBy] = useState<TimelineGroupBy>('none');
-    const [showHidden, setShowHidden] = useState(false);
-
     const timeGrid = useMemo(() => buildTimeGrid(viewDate, viewType), [viewDate, viewType]);
     const unitWidth = unitWidthFor(viewType);
     const gridWidth = timeGrid.length * unitWidth;
 
-    const allRows = useMemo(
-        () => buildTimelineRows({ items, columns, boards, groupsByBoard, showHidden }),
-        [items, columns, boards, groupsByBoard, showHidden]
+    const rows = useMemo(
+        () => orderRows(buildTimelineRows({ items, columns, boards, groupsByBoard })),
+        [items, columns, boards, groupsByBoard]
     );
-
-    const sections = useMemo(() => {
-        const visible = allRows.filter(row => matchesSearch(row, search));
-        return sectionRows(sortRows(visible, sort), groupBy);
-    }, [allRows, search, sort, groupBy]);
 
     const bars = useMemo(() => {
         const map = new Map<string, NonNullable<ReturnType<typeof computeBarSpan>>>();
-        sections.forEach(section => section.rows.forEach(row => {
+        rows.forEach(row => {
             const span = computeBarSpan(row.start, row.end, timeGrid, viewType, unitWidth);
             if (span) map.set(row.id, span);
-        }));
+        });
         return map;
-    }, [sections, timeGrid, viewType, unitWidth]);
+    }, [rows, timeGrid, viewType, unitWidth]);
 
     const todayLeft = todayOffset(timeGrid, viewType, unitWidth);
-    const rowCount = sections.reduce((n, s) => n + s.rows.length, 0);
 
     const shift = (direction: 1 | -1) => {
         if (viewType === 'day') setViewDate(d => direction === 1 ? addMonths(d, 1) : subMonths(d, 1));
@@ -253,90 +140,8 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
             boxSizing: 'border-box',
             minWidth: 0
         }}>
-            {/* Toolbar. Left padding leaves room for the card's drag handle. */}
-            <div className="widget-header-with-space" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px', padding: '12px 20px 4px 36px' }}>
-                <div style={{
-                    ...toolbarItemStyle, padding: '0 8px', gap: '4px', cursor: 'text',
-                    border: isSearchFocused ? '1px solid hsl(var(--color-brand-primary))' : '1px solid transparent',
-                    backgroundColor: isSearchFocused ? 'white' : 'transparent'
-                }}>
-                    <Search size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search items..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setIsSearchFocused(false)}
-                        style={{ border: 'none', background: 'none', outline: 'none', fontSize: '14px', color: 'hsl(var(--color-text-primary))', width: '110px', padding: '4px 0' }}
-                    />
-                </div>
-
-                <MenuButton icon={<ArrowUpDown size={16} />} label="Sort" active={!!sort}>
-                    {close => (
-                        <>
-                            <MenuHeading>Sort by</MenuHeading>
-                            <button style={menuItemStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff} onClick={() => { setSort(null); close(); }}>
-                                <span>None</span>
-                            </button>
-                            {SORT_OPTIONS.map(option => (
-                                <button
-                                    key={option.key}
-                                    style={menuItemStyle}
-                                    onMouseEnter={hoverOn}
-                                    onMouseLeave={hoverOff}
-                                    // Picking the one already chosen flips its direction, like the board's Sort.
-                                    onClick={() => {
-                                        setSort(prev => ({ key: option.key, direction: prev?.key === option.key && prev.direction === 'asc' ? 'desc' : 'asc' }));
-                                        close();
-                                    }}
-                                >
-                                    <span>{option.label}</span>
-                                    {sort?.key === option.key && (
-                                        <span style={{ fontSize: '10px', marginLeft: 'auto', opacity: 0.6 }}>{sort.direction === 'asc' ? 'ASC' : 'DESC'}</span>
-                                    )}
-                                </button>
-                            ))}
-                        </>
-                    )}
-                </MenuButton>
-
-                <MenuButton icon={<LayoutPanelLeft size={16} />} label="Group by" active={groupBy !== 'none'}>
-                    {close => (
-                        <>
-                            <MenuHeading>Group by</MenuHeading>
-                            {GROUP_BY_OPTIONS.map(option => (
-                                <button
-                                    key={option.key}
-                                    style={menuItemStyle}
-                                    onMouseEnter={hoverOn}
-                                    onMouseLeave={hoverOff}
-                                    onClick={() => { setGroupBy(option.key); close(); }}
-                                >
-                                    <span>{option.label}</span>
-                                    {groupBy === option.key && (
-                                        <span style={{ fontSize: '10px', marginLeft: 'auto', color: 'hsl(var(--color-brand-primary))' }}>●</span>
-                                    )}
-                                </button>
-                            ))}
-                        </>
-                    )}
-                </MenuButton>
-
-                <button
-                    onClick={() => setShowHidden(v => !v)}
-                    title={showHidden ? 'Showing hidden items' : 'Hidden items are not shown'}
-                    style={toolbarItemStyle}
-                    onMouseEnter={hoverOn}
-                    onMouseLeave={hoverOff}
-                >
-                    {showHidden ? <Eye size={16} /> : <EyeOff size={16} />}
-                    <span>Hide</span>
-                </button>
-            </div>
-
-            {/* Navigator */}
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px', padding: '12px 20px 12px 36px' }}>
+            {/* Navigator. Left padding leaves room for the card's drag handle. */}
+            <div className="widget-header-with-space" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px', padding: '12px 20px 12px 36px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>{title}</h3>
                 <div style={{ display: 'flex', gap: '4px' }}>
                     <button onClick={() => shift(-1)} style={navBtnStyle} aria-label="Previous"><ChevronLeft size={18} /></button>
@@ -362,7 +167,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                     ))}
                 </div>
 
-                {/* Filter sits with the date controls, under the toolbar row. */}
+                {/* Filter sits with the date controls. */}
                 {filterControl}
             </div>
 
@@ -398,11 +203,9 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                         <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))', position: 'sticky', left: 0 }}>
                             Loading timeline…
                         </div>
-                    ) : rowCount === 0 ? (
+                    ) : rows.length === 0 ? (
                         <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))', position: 'sticky', left: 0 }}>
-                            {allRows.length === 0
-                                ? 'No scheduled items yet. An item shows here once it has a Date, Timeline or Due date.'
-                                : 'No items match.'}
+                            No scheduled items yet. An item shows here once it has a Date, Timeline or Due date.
                         </div>
                     ) : (
                         <div style={{ position: 'relative' }}>
@@ -412,26 +215,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                                     backgroundColor: '#f00', zIndex: 4, pointerEvents: 'none', opacity: 0.6
                                 }} />
                             )}
-                            {sections.map(section => (
-                                <div key={section.key}>
-                                    {groupBy !== 'none' && (
-                                        <div style={{ display: 'flex', height: `${ROW_INNER_HEIGHT}px`, backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
-                                            <div style={{
-                                                position: 'sticky', left: 0, zIndex: 6, backgroundColor: '#f8fafc',
-                                                width: `${NAME_COL_WIDTH * 2}px`, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px',
-                                                fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', whiteSpace: 'nowrap', overflow: 'hidden'
-                                            }}>
-                                                {section.color && <span style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: section.color, flexShrink: 0 }} />}
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{section.label}</span>
-                                                {section.sublabel && <span style={{ fontWeight: 400, color: 'hsl(var(--color-text-tertiary))', overflow: 'hidden', textOverflow: 'ellipsis' }}>{section.sublabel}</span>}
-                                                <span style={{ fontWeight: 400, color: 'hsl(var(--color-text-tertiary))' }}>{section.rows.length}</span>
-                                            </div>
-                                            <div style={{ width: `${Math.max(0, gridWidth - NAME_COL_WIDTH)}px`, flexShrink: 0 }} />
-                                        </div>
-                                    )}
-                                    {section.rows.map(renderRow)}
-                                </div>
-                            ))}
+                            {rows.map(renderRow)}
                         </div>
                     )}
                 </div>

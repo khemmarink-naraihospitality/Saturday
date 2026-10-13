@@ -33,15 +33,11 @@ export const AdminPage = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
-            // 1. Get User Count
-            const { count: userCount } = await supabase
-                .from('profiles')
-                .select('*', { count: 'exact', head: true });
-
-            // 2. Get Workspace Count
-            const { count: workspaceCount } = await supabase
-                .from('workspaces')
-                .select('*', { count: 'exact', head: true });
+            // Two independent counts: ask for both at once rather than one after the other.
+            const [{ count: userCount }, { count: workspaceCount }] = await Promise.all([
+                supabase.from('profiles').select('*', { count: 'exact', head: true }),
+                supabase.from('workspaces').select('*', { count: 'exact', head: true })
+            ]);
 
             setStats([
                 { label: 'Total Users', value: userCount?.toString() || '0', icon: Users, color: '#6366f1' },

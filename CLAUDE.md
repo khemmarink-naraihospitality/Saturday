@@ -140,7 +140,7 @@ Boards with `is_private: true` are gated by a 6-digit PIN before any board data 
 
 Beyond user/SMTP/system settings, the Admin console can manage board and workspace membership directly — `AdminBoardMembersModal` / `AdminWorkspaceMembersModal` (+ `AdminAddMemberForm`) reuse `MembersList` from the board-side share UI, but fetch members with `includeInactive: true` so a deactivated member (see `is_active` above) still shows up somewhere they can be removed from. `AdminDeleteWorkspaceModal` is the UI for the transfer-then-delete flow described above.
 
-`ActivityLeaderboards.tsx`, `DailyActiveUsersChart.tsx`, and `BasicStatsCards.tsx` read through `src/lib/activityStats.ts`, which pages `activity_logs` in batches of 1000 up to a 50k-row / ~60-day cap (`MAX_PAGES`) and reports back whether it hit that cap, so a summary never silently under-counts without saying so.
+`ActivityLeaderboards.tsx`, `DailyActiveUsersChart.tsx`, and `BasicStatsCards.tsx` all read one document from `fetchDashboardStats()` in `src/lib/activityStats.ts`, which calls the `admin_dashboard_stats(p_tz)` RPC (`supabase/migrations/20261014_admin_dashboard_stats.sql`): the 60-day counts, 30-day active-user buckets and 4-week leaderboards are aggregated in Postgres in the viewer's time zone, so nothing is paged down to the browser and there is no row cap to fall short of. The panels mount together and share the one in-flight request. It checks `is_admin()` itself (it is `SECURITY DEFINER` so it can read everyone's activity); a figure added here is added in that function, not by fetching rows.
 
 ### User-written HTML
 

@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { fetchDashboardActivity, actorProfile } from '../../lib/activityStats';
+import { fetchDashboardStats } from '../../lib/activityStats';
 
 const WEEKS = 4;
-const DAYS_COVERED = WEEKS * 7;
-// Bounded so one very busy period can't render a thousand rows, but high enough
-// that the tables are something you scroll through rather than a top-5 cut-off.
-const TOP_N = 50;
 // Roughly five and a half rows, so the clipped row is itself the hint that the
 // list keeps going.
 const LIST_MAX_HEIGHT = 360;
@@ -70,79 +65,10 @@ export const ActivityLeaderboards = () => {
             }
             setWeekLabels(labels);
 
-            const { rows } = await fetchDashboardActivity();
-
-            const boardTally = new Map<string, { items: number; updates: number }>();
-            const creatorTally = new Map<string, PersonRow>();
-            const communicatorTally = new Map<string, PersonRow>();
-
-            const ensure = (map: Map<string, PersonRow>, row: any) => {
-                const id = row.actor_id as string;
-                let entry = map.get(id);
-                if (!entry) {
-                    const profile = actorProfile(row);
-                    entry = {
-                        userId: id,
-                        name: profile?.full_name || profile?.email || 'Unknown user',
-                        avatarUrl: profile?.avatar_url || null,
-                        weeks: new Array(WEEKS).fill(0),
-                        total: 0
-                    };
-                    map.set(id, entry);
-                }
-                return entry;
-            };
-
-            rows.forEach((row: any) => {
-                const rowDay = new Date(row.created_at);
-                rowDay.setHours(0, 0, 0, 0);
-                const daysAgo = Math.round((today.getTime() - rowDay.getTime()) / 86400000);
-                // The shared fetch spans 60 days; these tables only cover four weeks.
-                if (daysAgo < 0 || daysAgo >= DAYS_COVERED) return;
-                const week = WEEKS - 1 - Math.floor(daysAgo / 7);
-
-                const isCreate = row.action_type === 'item_created';
-                const isUpdate = row.action_type === 'item_comment_added';
-                if (!isCreate && !isUpdate) return;
-
-                const boardId = row.metadata?.board_id;
-                if (typeof boardId === 'string') {
-                    const tally = boardTally.get(boardId) || { items: 0, updates: 0 };
-                    if (isCreate) tally.items += 1; else tally.updates += 1;
-                    boardTally.set(boardId, tally);
-                }
-
-                if (!row.actor_id) return;
-                const entry = ensure(isCreate ? creatorTally : communicatorTally, row);
-                entry.weeks[week] += 1;
-                entry.total += 1;
-            });
-
-            const topBoards = Array.from(boardTally.entries())
-                .sort((a, b) => (b[1].items + b[1].updates) - (a[1].items + a[1].updates))
-                .slice(0, TOP_N);
-
-            let titles: Record<string, string> = {};
-            if (topBoards.length > 0) {
-                const { data } = await supabase
-                    .from('boards')
-                    .select('id, title')
-                    .in('id', topBoards.map(([id]) => id));
-                (data || []).forEach((b: any) => { titles[b.id] = b.title; });
-            }
-
-            setBoards(topBoards.map(([boardId, tally]) => ({
-                boardId,
-                title: titles[boardId] || 'Deleted board',
-                items: tally.items,
-                updates: tally.updates
-            })));
-
-            const rank = (map: Map<string, PersonRow>) =>
-                Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, TOP_N);
-
-            setCreators(rank(creatorTally));
-            setCommunicators(rank(communicatorTally));
+            const stats = await fetchDashboardStats();
+            setBoards(stats.boards);
+            setCreators(stats.creators);
+            setCommunicators(stats.communicators);
         } finally {
             setLoading(false);
         }

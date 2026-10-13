@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { fetchDashboardActivity, startOfWindow, DASHBOARD_WINDOW_DAYS } from '../../lib/activityStats';
+import { fetchDashboardStats, DASHBOARD_WINDOW_DAYS } from '../../lib/activityStats';
 
 const WINDOW_DAYS = DASHBOARD_WINDOW_DAYS;
 const PERIOD_LABEL = `Last ${WINDOW_DAYS} days`;
@@ -32,7 +31,6 @@ const EMPTY: Stats = {
 export const BasicStatsCards = () => {
     const [stats, setStats] = useState<Stats>(EMPTY);
     const [loading, setLoading] = useState(true);
-    const [truncated, setTruncated] = useState(false);
 
     useEffect(() => {
         fetchStats();
@@ -41,51 +39,15 @@ export const BasicStatsCards = () => {
     const fetchStats = async () => {
         setLoading(true);
         try {
-            const since = startOfWindow(WINDOW_DAYS);
-            const sinceIso = since.toISOString();
-
-            const [{ rows, truncated: hitCap }, { count: joinedCount }] = await Promise.all([
-                fetchDashboardActivity(),
-                supabase
-                    .from('profiles')
-                    .select('id', { count: 'exact', head: true })
-                    .gte('created_at', sinceIso)
-            ]);
-
-            const boards = new Set<string>();
-            const posters = new Set<string>();
-            const contributors = new Set<string>();
-            const signedIn = new Set<string>();
-            let updates = 0;
-
-            rows.forEach(row => {
-                const actor = row.actor_id;
-                const boardId = row.metadata?.board_id;
-                if (typeof boardId === 'string') boards.add(boardId);
-
-                if (row.action_type === 'user_login') {
-                    if (actor) signedIn.add(actor);
-                    return;
-                }
-
-                // Everything that isn't a bare sign-in is someone changing something.
-                if (actor) contributors.add(actor);
-
-                if (row.action_type === 'item_comment_added') {
-                    updates += 1;
-                    if (actor) posters.add(actor);
-                }
-            });
-
+            const { summary, joined } = await fetchDashboardStats();
             setStats({
-                boardsUpdated: boards.size,
-                peoplePosted: posters.size,
-                updatesInBoards: updates,
-                peopleJoined: joinedCount || 0,
-                peopleContributed: contributors.size,
-                peopleSignedIn: signedIn.size
+                boardsUpdated: summary.boardsUpdated,
+                peoplePosted: summary.peoplePosted,
+                updatesInBoards: summary.updates,
+                peopleJoined: joined,
+                peopleContributed: summary.contributed,
+                peopleSignedIn: summary.signedIn
             });
-            setTruncated(hitCap);
         } finally {
             setLoading(false);
         }
@@ -111,20 +73,6 @@ export const BasicStatsCards = () => {
             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>
                 Activity across the whole system over the last {WINDOW_DAYS} days.
             </p>
-
-            {truncated && (
-                <div style={{
-                    padding: '10px 14px',
-                    marginBottom: '16px',
-                    borderRadius: '8px',
-                    backgroundColor: '#fef3c7',
-                    border: '1px solid #fcd34d',
-                    color: '#92400e',
-                    fontSize: '12px'
-                }}>
-                    There is more activity in this period than these figures cover, so they are undercounts.
-                </div>
-            )}
 
             <div style={{
                 display: 'grid',

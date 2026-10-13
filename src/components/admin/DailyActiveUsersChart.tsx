@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Activity } from 'lucide-react';
-import { fetchDashboardActivity } from '../../lib/activityStats';
+import { fetchDashboardStats } from '../../lib/activityStats';
 
 interface DayBucket {
     key: string;
@@ -41,29 +41,13 @@ export const DailyActiveUsersChart = () => {
             days.push(d);
         }
 
-        const byDay: Record<string, Map<string, { name: string; email: string }>> = {};
-        days.forEach(d => { byDay[toDayKey(d)] = new Map(); });
-
-        // Shared 60-day fetch; days outside this chart's window simply find no
-        // bucket below and are skipped.
-        const { rows } = await fetchDashboardActivity();
-
-        rows.forEach((row: any) => {
-            const dayKey = toDayKey(new Date(row.created_at));
-            const bucket = byDay[dayKey];
-            if (!bucket || !row.actor_id) return;
-            const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-            if (!bucket.has(row.actor_id)) {
-                bucket.set(row.actor_id, {
-                    name: profile?.full_name || profile?.email || 'Unknown user',
-                    email: profile?.email || ''
-                });
-            }
-        });
+        // Who was active each day, already worked out in the database.
+        const { daily } = await fetchDashboardStats();
+        const usersByDay = new Map(daily.map(entry => [entry.day, entry.users]));
 
         setBuckets(days.map(d => {
             const key = toDayKey(d);
-            const users = Array.from(byDay[key].values()).sort((a, b) => a.name.localeCompare(b.name));
+            const users = usersByDay.get(key) || [];
             return { key, label: shortLabel(d), fullLabel: fullLabel(d), count: users.length, users };
         }));
         setLoading(false);

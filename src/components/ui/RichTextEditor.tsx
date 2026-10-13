@@ -8,6 +8,7 @@ import {
     ArrowUp, ArrowDown
 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { sanitizeHtml } from '../../lib/sanitizeHtml';
 
 interface RichTextEditorProps {
     value: string; // HTML string
@@ -165,8 +166,10 @@ export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHe
             return;
         }
 
+        // The stored HTML is whatever any member posted; scrub it before it
+        // becomes live DOM inside the editor, where an <img onerror> would run.
         if (editorRef.current && !isFocused && editorRef.current.innerHTML !== value) {
-            editorRef.current.innerHTML = value;
+            editorRef.current.innerHTML = sanitizeHtml(value);
         }
         // Handle empty initial case
         if (editorRef.current && !value && !isFocused) {

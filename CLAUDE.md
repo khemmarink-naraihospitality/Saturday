@@ -136,6 +136,10 @@ Beyond user/SMTP/system settings, the Admin console can manage board and workspa
 
 `ActivityLeaderboards.tsx`, `DailyActiveUsersChart.tsx`, and `BasicStatsCards.tsx` read through `src/lib/activityStats.ts`, which pages `activity_logs` in batches of 1000 up to a 50k-row / ~60-day cap (`MAX_PAGES`) and reports back whether it hit that cap, so a summary never silently under-counts without saying so.
 
+### User-written HTML
+
+Updates and replies are stored as `RichTextEditor`'s raw `innerHTML` and shown with `dangerouslySetInnerHTML`, so a member's markup is live in every teammate's session. Anything that puts stored HTML into the DOM goes through `sanitizeHtml()` (`src/lib/sanitizeHtml.ts`, DOMPurify): the update/reply render in `TaskDetail` and the editor's own load path (`innerHTML = sanitizeHtml(value)`). Storage is left as typed — it is scrubbed on the way out, so tightening the rules later also covers old rows. If the editor starts producing a new tag or attribute, add it to the allow-list there and to `tests/sanitize_html_test.ts` (needs `npm install --no-save jsdom`), or it will silently disappear from posted updates. The admin-only email-template previews in `EmailSettings` still render unsanitized HTML; they're authored by admins, not members.
+
 ### Styling
 
 Tailwind CSS v4 (via `@tailwindcss/postcss`). Design tokens use CSS custom properties in HSL format: `hsl(var(--color-bg-canvas))`, `hsl(var(--color-brand-primary))`, etc. Many components use inline styles rather than Tailwind classes for layout-critical properties.

@@ -29,7 +29,7 @@ const navBtnStyle: CSSProperties = {
  * Read-only on purpose — dragging a bar to reschedule or linking items needs a
  * board's permissions and dependency state; do that on the board itself.
  */
-export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoading, filterControl, onOpenItem, storageKey }: {
+export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoading, filterControl, onOpenItem, storageKey, fillHeight }: {
     items: TimelineSourceItem[];
     columns: TimelineSourceColumn[];
     boards: { id: string; title: string }[];
@@ -40,6 +40,8 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
     onOpenItem: (itemId: string) => void;
     // localStorage key for the collapsed state, so it is remembered per workspace.
     storageKey: string;
+    // The card was resized by the user: use the room it has instead of the 520px cap.
+    fillHeight: boolean;
 }) => {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
@@ -197,7 +199,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
             </div>
 
             {/* Grid. Capped and scrolled: a workspace's timeline can run to hundreds of rows. */}
-            {!collapsed && <div style={{ flex: 1, minHeight: 0, maxHeight: '520px', overflow: 'auto', borderTop: '1px solid hsl(var(--color-border))' }}>
+            {!collapsed && <div style={{ flex: 1, minHeight: 0, maxHeight: fillHeight ? undefined : '520px', overflow: 'auto', borderTop: '1px solid hsl(var(--color-border))' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'max-content', position: 'relative' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
                         <div style={{

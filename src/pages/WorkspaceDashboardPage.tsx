@@ -232,7 +232,19 @@ const CatCushionFarm = ({ groups }: { groups: CatFarmGroup[] }) => {
     );
 };
 
-const DraggableDashboardWidget = ({ id, children, isFullWidth = false, span }: { id: string, children: React.ReactNode, isFullWidth?: boolean, span?: number }) => {
+const GRID_GAP = 24;
+const MIN_WIDGET_HEIGHT = 120;
+
+const DraggableDashboardWidget = ({ id, children, span, height, compact = false, onResize }: {
+    id: string,
+    children: React.ReactNode,
+    span: number,
+    // Pixels once the user has dragged the corner; undefined sizes to content.
+    height?: number,
+    // Folds to its header (the Timeline), so no minimum height.
+    compact?: boolean,
+    onResize: (next: { span: number, height: number }) => void
+}) => {
     const {
         attributes,
         listeners,
@@ -248,13 +260,47 @@ const DraggableDashboardWidget = ({ id, children, isFullWidth = false, span }: {
         zIndex: isDragging ? 100 : 1,
         position: 'relative' as const,
         opacity: isDragging ? 0.3 : 1,
-        gridColumn: span ? `span ${span}` : isFullWidth ? 'span 2' : 'span 1',
+        gridColumn: `span ${span}`,
         // A wide widget that scrolls inside itself (the Timeline) has to be allowed
         // to be narrower than its content, or it stretches the grid instead.
-        minWidth: span ? 0 : undefined,
-        minHeight: span ? 0 : '200px',
-        height: '100%',
+        minWidth: 0,
+        minHeight: compact ? 0 : '200px',
+        height: height ? `${height}px` : '100%',
         touchAction: 'none'
+    };
+
+    // Dragging the bottom-right corner: height follows the pointer freely, width
+    // snaps to whole grid columns (1–3).
+    const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const handle = e.currentTarget;
+        const widget = handle.closest('.dashboard-draggable-wrapper') as HTMLElement | null;
+        const grid = widget?.parentElement;
+        if (!widget || !grid) return;
+        handle.setPointerCapture(e.pointerId);
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startW = widget.offsetWidth;
+        const startH = widget.offsetHeight;
+        const colW = (grid.clientWidth - 2 * GRID_GAP) / 3;
+
+        const move = (ev: PointerEvent) => {
+            const width = startW + ev.clientX - startX;
+            onResize({
+                span: Math.min(3, Math.max(1, Math.round((width + GRID_GAP) / (colW + GRID_GAP)))),
+                height: Math.max(MIN_WIDGET_HEIGHT, Math.round(startH + ev.clientY - startY))
+            });
+        };
+        const end = () => {
+            handle.removeEventListener('pointermove', move);
+            handle.removeEventListener('pointerup', end);
+            handle.removeEventListener('pointercancel', end);
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', end);
+        handle.addEventListener('pointercancel', end);
     };
 
     return (
@@ -287,10 +333,25 @@ const DraggableDashboardWidget = ({ id, children, isFullWidth = false, span }: {
                 </div>
 
                 {children}
+
+                <div
+                    onPointerDown={startResize}
+                    className="resize-handle"
+                    title="Drag to resize"
+                    style={{
+                        position: 'absolute', right: 2, bottom: 2, width: '18px', height: '18px',
+                        cursor: 'nwse-resize', opacity: 0, transition: 'opacity 0.2s ease', zIndex: 20,
+                        touchAction: 'none',
+                        // Two diagonal strokes in the corner.
+                        background: 'linear-gradient(135deg, transparent 0 55%, hsl(var(--color-text-tertiary)) 55% 62%, transparent 62% 72%, hsl(var(--color-text-tertiary)) 72% 79%, transparent 79%)',
+                        borderBottomRightRadius: '6px'
+                    }}
+                />
             </div>
 
             <style>{`
-                .dashboard-draggable-wrapper:hover .grip-handle {
+                .dashboard-draggable-wrapper:hover .grip-handle,
+                .dashboard-draggable-wrapper:hover .resize-handle {
                     opacity: 1 !important;
                 }
                 .grip-handle:hover {
@@ -746,13 +807,62 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
     );
 };
 
+const WIDGET_IDS = ['totalTasks', 'totalStatus', 'catFarm', 'workStatusChart', 'boardUpdates', 'timeline'];
+const DEFAULT_SPAN: Record<string, number> = { workStatusChart: 2, timeline: 3 };
+
+interface DashboardLayout {
+    order: string[];
+    sizes: Record<string, { span: number; height: number }>;
+}
+const DEFAULT_LAYOUT: DashboardLayout = { order: WIDGET_IDS, sizes: {} };
+
+// A saved layout can be stale or damaged: widgets added since are appended,
+// ones that no longer exist are dropped, and sizes are clamped.
+const parseStoredLayout = (raw: string | null): DashboardLayout => {
+    if (!raw) return DEFAULT_LAYOUT;
+    try {
+        const parsed = JSON.parse(raw);
+        const saved: string[] = Array.isArray(parsed?.order) ? parsed.order.filter((id: unknown) => typeof id === 'string' && WIDGET_IDS.includes(id)) : [];
+        const order = [...new Set([...saved, ...WIDGET_IDS])];
+        const sizes: DashboardLayout['sizes'] = {};
+        if (parsed?.sizes && typeof parsed.sizes === 'object') {
+            for (const id of WIDGET_IDS) {
+                const size = parsed.sizes[id];
+                if (size && Number.isFinite(size.span) && Number.isFinite(size.height)) {
+                    sizes[id] = { span: Math.min(3, Math.max(1, Math.round(size.span))), height: Math.max(MIN_WIDGET_HEIGHT, Math.round(size.height)) };
+                }
+            }
+        }
+        return { order, sizes };
+    } catch {
+        return DEFAULT_LAYOUT;
+    }
+};
+
 export const WorkspaceDashboardPage = () => {
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspaces = useBoardStore(state => state.workspaces);
     const allBoards = useBoardStore(state => state.boards);
     
     // Track widget order
-    const [widgetOrder, setWidgetOrder] = useState(['totalTasks', 'totalStatus', 'catFarm', 'workStatusChart', 'boardUpdates', 'timeline']);
+    // Order, width (grid columns) and height of each widget, remembered per
+    // workspace in this browser. Saved from the setter rather than an effect, so
+    // switching workspace can never write one workspace's layout over another's.
+    const layoutKey = `dashboardLayout:${activeWorkspaceId || 'none'}`;
+    const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+    useEffect(() => {
+        try {
+            setLayout(parseStoredLayout(localStorage.getItem(layoutKey)));
+        } catch {
+            setLayout(DEFAULT_LAYOUT);
+        }
+    }, [layoutKey]);
+    const updateLayout = (change: (current: DashboardLayout) => DashboardLayout) => {
+        const next = change(layout);
+        setLayout(next);
+        try { localStorage.setItem(layoutKey, JSON.stringify(next)); } catch { /* private mode — it just won't persist */ }
+    };
+    const widgetOrder = layout.order;
 
     // Configure DnD Sensors
     const sensors = useSensors(
@@ -770,11 +880,10 @@ export const WorkspaceDashboardPage = () => {
         const { active, over } = event;
         
         if (over && active.id !== over.id) {
-            setWidgetOrder((items) => {
-                const oldIndex = items.indexOf(active.id as string);
-                const newIndex = items.indexOf(over.id as string);
-                return arrayMove(items, oldIndex, newIndex);
-            });
+            updateLayout(current => ({
+                ...current,
+                order: arrayMove(current.order, current.order.indexOf(active.id as string), current.order.indexOf(over.id as string))
+            }));
         }
     };
 
@@ -1633,6 +1742,7 @@ export const WorkspaceDashboardPage = () => {
                         // The fetch doesn't run for a workspace with no boards, so groups would stay null forever.
                         isLoading={workspaceData.groups === null && workspaceBoards.length > 0}
                         onOpenItem={openTaskFromActivity}
+                        fillHeight={!!layout.sizes['timeline']}
                         storageKey={`dashboardTimelineCollapsed:${activeWorkspaceId || 'none'}`}
                         filterControl={
                             <BoardGroupFilter
@@ -1668,7 +1778,7 @@ export const WorkspaceDashboardPage = () => {
                         {/* Capped and scrolled rather than left to grow: grid rows size to
                             their tallest widget, so an unbounded feed would stretch the
                             Work Status chart beside it to match. */}
-                        <div style={{ flex: 1, minHeight: 0, maxHeight: '400px', overflowY: 'auto', margin: '0 -4px', padding: '0 4px' }}>
+                        <div style={{ flex: 1, minHeight: 0, maxHeight: layout.sizes['boardUpdates'] ? undefined : '400px', overflowY: 'auto', margin: '0 -4px', padding: '0 4px' }}>
                             {logsLoading ? (
                                 <div style={{ padding: '24px 0', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
                                     Loading activity…
@@ -1724,8 +1834,10 @@ export const WorkspaceDashboardPage = () => {
                                 <DraggableDashboardWidget 
                                     key={id} 
                                     id={id} 
-                                    isFullWidth={id === 'workStatusChart'}
-                                    span={id === 'timeline' ? 3 : undefined}
+                                    span={layout.sizes[id]?.span ?? DEFAULT_SPAN[id] ?? 1}
+                                    height={layout.sizes[id]?.height}
+                                    compact={id === 'timeline'}
+                                    onResize={(size) => updateLayout(current => ({ ...current, sizes: { ...current.sizes, [id]: size } }))}
                                 >
                                     {renderWidget(id)}
                                 </DraggableDashboardWidget>

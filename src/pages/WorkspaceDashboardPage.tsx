@@ -256,10 +256,14 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
 
     const style = {
         transform: CSS.Translate.toString(transform),
-        transition,
+        // Neighbours glide aside on an ease-out curve; the dragged one has no
+        // transition so it tracks the pointer exactly.
+        transition: transition ? 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)' : undefined,
+        willChange: transform ? 'transform' : undefined,
         zIndex: isDragging ? 100 : 1,
         position: 'relative' as const,
-        opacity: isDragging ? 0.3 : 1,
+        opacity: isDragging ? 0.75 : 1,
+        filter: isDragging ? 'drop-shadow(0 12px 24px rgba(15, 23, 42, 0.18))' : undefined,
         gridColumn: `span ${span}`,
         // A wide widget that scrolls inside itself (the Timeline) has to be allowed
         // to be narrower than its content, or it stretches the grid instead.
@@ -286,18 +290,38 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
         const startH = widget.offsetHeight;
         const colW = (grid.clientWidth - 2 * GRID_GAP) / 3;
 
+        // The widget is sized straight on its DOM node while the pointer moves,
+        // once per frame, and React only hears about the result on release.
+        // Reporting every move re-rendered the whole dashboard (every chart and
+        // the cat farm) per pixel, which is what made resizing stutter.
+        let frame = 0;
+        let latest = { span: Math.min(3, Math.max(1, Math.round((startW + GRID_GAP) / (colW + GRID_GAP)))), height: startH };
         const move = (ev: PointerEvent) => {
             const width = startW + ev.clientX - startX;
-            onResize({
+            latest = {
                 span: Math.min(3, Math.max(1, Math.round((width + GRID_GAP) / (colW + GRID_GAP)))),
                 height: Math.max(MIN_WIDGET_HEIGHT, Math.round(startH + ev.clientY - startY))
+            };
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                widget.style.gridColumn = `span ${latest.span}`;
+                widget.style.height = `${latest.height}px`;
             });
         };
         const end = () => {
+            cancelAnimationFrame(frame);
             handle.removeEventListener('pointermove', move);
             handle.removeEventListener('pointerup', end);
             handle.removeEventListener('pointercancel', end);
+            widget.style.transition = prevTransition;
+            document.body.style.userSelect = prevUserSelect;
+            onResize(latest);
         };
+        const prevTransition = widget.style.transition;
+        const prevUserSelect = document.body.style.userSelect;
+        widget.style.transition = 'none';
+        document.body.style.userSelect = 'none';
         handle.addEventListener('pointermove', move);
         handle.addEventListener('pointerup', end);
         handle.addEventListener('pointercancel', end);

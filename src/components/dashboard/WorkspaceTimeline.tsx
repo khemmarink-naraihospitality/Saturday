@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { format, addMonths, subMonths, addYears, subYears } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { buildTimeGrid, computeBarSpan, isCurrentUnit, todayOffset, unitWidthFor, type TimelineViewType } from '../../lib/timelineScale';
 import {
     buildTimelineRows, orderRows,
@@ -29,7 +29,7 @@ const navBtnStyle: CSSProperties = {
  * Read-only on purpose — dragging a bar to reschedule or linking items needs a
  * board's permissions and dependency state; do that on the board itself.
  */
-export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoading, filterControl, onOpenItem }: {
+export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoading, filterControl, onOpenItem, storageKey }: {
     items: TimelineSourceItem[];
     columns: TimelineSourceColumn[];
     boards: { id: string; title: string }[];
@@ -38,7 +38,23 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
     // The board → group picker, drawn as a Filter button beside the Day / Month / Year switch.
     filterControl: ReactNode;
     onOpenItem: (itemId: string) => void;
+    // localStorage key for the collapsed state, so it is remembered per workspace.
+    storageKey: string;
 }) => {
+    const [collapsed, setCollapsed] = useState(() => {
+        try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
+    });
+    const toggleCollapsed = () => {
+        setCollapsed(prev => {
+            const next = !prev;
+            try {
+                if (next) localStorage.setItem(storageKey, '1');
+                else localStorage.removeItem(storageKey);
+            } catch { /* private mode — the choice just won't persist */ }
+            return next;
+        });
+    };
+
     const [viewDate, setViewDate] = useState(() => new Date());
     // Month by default, same as the board: a whole year fits on screen.
     const [viewType, setViewType] = useState<TimelineViewType>('month');
@@ -142,6 +158,15 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
         }}>
             {/* Navigator. Left padding leaves room for the card's drag handle. */}
             <div className="widget-header-with-space" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px', padding: '12px 20px 12px 36px' }}>
+                <button
+                    onClick={toggleCollapsed}
+                    aria-expanded={!collapsed}
+                    aria-label={collapsed ? 'Expand timeline' : 'Collapse timeline'}
+                    title={collapsed ? 'Expand' : 'Collapse'}
+                    style={{ ...navBtnStyle, width: '32px', padding: 0 }}
+                >
+                    <ChevronDown size={18} style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.15s' }} />
+                </button>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>{title}</h3>
                 <div style={{ display: 'flex', gap: '4px' }}>
                     <button onClick={() => shift(-1)} style={navBtnStyle} aria-label="Previous"><ChevronLeft size={18} /></button>
@@ -172,7 +197,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
             </div>
 
             {/* Grid. Capped and scrolled: a workspace's timeline can run to hundreds of rows. */}
-            <div style={{ flex: 1, minHeight: 0, maxHeight: '520px', overflow: 'auto', borderTop: '1px solid hsl(var(--color-border))' }}>
+            {!collapsed && <div style={{ flex: 1, minHeight: 0, maxHeight: '520px', overflow: 'auto', borderTop: '1px solid hsl(var(--color-border))' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'max-content', position: 'relative' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
                         <div style={{
@@ -219,7 +244,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                         </div>
                     )}
                 </div>
-            </div>
+            </div>}
         </div>
     );
 };

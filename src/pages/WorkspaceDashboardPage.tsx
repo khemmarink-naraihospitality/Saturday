@@ -252,6 +252,7 @@ const DraggableDashboardWidget = ({ id, children, isFullWidth = false, span }: {
         // A wide widget that scrolls inside itself (the Timeline) has to be allowed
         // to be narrower than its content, or it stretches the grid instead.
         minWidth: span ? 0 : undefined,
+        minHeight: span ? 0 : '200px',
         height: '100%',
         touchAction: 'none'
     };
@@ -1632,6 +1633,7 @@ export const WorkspaceDashboardPage = () => {
                         // The fetch doesn't run for a workspace with no boards, so groups would stay null forever.
                         isLoading={workspaceData.groups === null && workspaceBoards.length > 0}
                         onOpenItem={openTaskFromActivity}
+                        storageKey={`dashboardTimelineCollapsed:${activeWorkspaceId || 'none'}`}
                         filterControl={
                             <BoardGroupFilter
                                 variant="toolbar"
@@ -1709,7 +1711,9 @@ export const WorkspaceDashboardPage = () => {
                     <div style={{ 
                         display: 'grid', 
                         gridTemplateColumns: 'repeat(3, 1fr)', 
-                        gridAutoRows: 'minmax(200px, auto)',
+                        // Rows size to their content; each widget supplies its own minimum height
+                        // (see DraggableDashboardWidget), so the Timeline can fold down to its header.
+                        gridAutoRows: 'auto',
                         gap: '24px' 
                     }}>
                         <SortableContext 

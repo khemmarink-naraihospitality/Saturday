@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { itemColumns } from '../../lib/columnScope';
 import { useBoardStore } from '../../store/useBoardStore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfYear, endOfYear, eachMonthOfInterval, eachYearOfInterval, isSameMonth, isSameYear, addYears, subYears, addDays, parseISO, differenceInCalendarDays, getDate, getDaysInMonth, getDayOfYear, getDaysInYear } from 'date-fns';
+import { format, addMonths, subMonths, addYears, subYears, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useToast } from '../../hooks/useToast';
@@ -9,15 +9,7 @@ import { ToastContainer } from '../ui/Toast';
 import { DependencyOverlay } from './DependencyOverlay';
 import { DependenciesSection } from '../task/DependenciesSection';
 import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, ROW_HEIGHT, BAR_V_INSET, type BarGeometry } from './timelineGeometry';
-
-// Day view shows this many days from the 1st of the anchor month, rather than
-// stopping at the 30th/31st — a drag or a cascaded dependency shift needs room
-// past the month boundary to actually be visible without switching months.
-const DAY_VIEW_SPAN = 45;
-
-// A one-day bar is only ~2.7px wide at month zoom and ~0.3px at year zoom.
-// Floor it so short items stay visible and clickable instead of vanishing.
-const MIN_BAR_WIDTH = 8;
+import { buildTimeGrid, computeBarSpan, isCurrentUnit, todayOffset, unitWidthFor, type TimelineViewType } from '../../lib/timelineScale';
 
 export const TimelineView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -32,7 +24,7 @@ export const TimelineView = () => {
     // Month by default: a whole year fits on screen, which is the zoom most
     // boards are read at. Day only covers a 45-day window, so opening there
     // hid anything scheduled outside the next few weeks.
-    const [viewType, setViewType] = useState<'day' | 'month' | 'year'>('month');
+    const [viewType, setViewType] = useState<TimelineViewType>('month');
 
     // Drag move state (Local state for better perf).
     // originalFrom/originalTo hold the RAW stored strings, so the commit can
@@ -72,26 +64,9 @@ export const TimelineView = () => {
     const removeItemDependency = useBoardStore(state => state.removeItemDependency);
     const updateItemDependency = useBoardStore(state => state.updateItemDependency);
 
-    const timeGrid = useMemo(() => {
-        if (viewType === 'day') {
-            const start = startOfMonth(viewDate);
-            // 45 days instead of just the calendar month, so a dependency shift
-            // (or any drag) has enough room past the 30/31-day month boundary to
-            // actually be visible without switching months.
-            const end = addDays(start, DAY_VIEW_SPAN - 1);
-            return eachDayOfInterval({ start, end });
-        } else if (viewType === 'month') {
-            const start = startOfYear(viewDate);
-            const end = endOfYear(viewDate);
-            return eachMonthOfInterval({ start, end });
-        } else {
-            const start = subYears(viewDate, 2);
-            const end = addYears(viewDate, 2);
-            return eachYearOfInterval({ start, end });
-        }
-    }, [viewDate, viewType]);
+    const timeGrid = useMemo(() => buildTimeGrid(viewDate, viewType), [viewDate, viewType]);
 
-    const unitWidth = viewType === 'day' ? 40 : (viewType === 'month' ? 80 : 120);
+    const unitWidth = unitWidthFor(viewType);
 
     // Apply Filter/Sort/Search logic
     const items = useMemo(() => {
@@ -170,37 +145,6 @@ export const TimelineView = () => {
 
         const cols = itemColumns(activeBoard.columns).filter(c => c.type === 'timeline' || c.type === 'date' || c.type === 'due_date');
 
-        const lastUnit = timeGrid[timeGrid.length - 1];
-        const windowStart = timeGrid[0];
-        const windowEnd = viewType === 'day' ? lastUnit
-            : viewType === 'month' ? endOfMonth(lastUnit)
-                : endOfYear(lastUnit);
-
-        // Where a day sits, measured in columns from the left edge of the grid.
-        // The whole part is which column it falls in, the fraction how far
-        // through it — which is what lets a bar begin and end partway along a
-        // month or a year rather than on a column boundary.
-        const columnOffset = (date: Date): number | null => {
-            if (viewType === 'day') {
-                const i = timeGrid.findIndex(u => isSameDay(u, date));
-                return i === -1 ? null : i;
-            }
-            if (viewType === 'month') {
-                const i = timeGrid.findIndex(u => isSameMonth(u, date));
-                return i === -1 ? null : i + (getDate(date) - 1) / getDaysInMonth(date);
-            }
-            const i = timeGrid.findIndex(u => isSameYear(u, date));
-            return i === -1 ? null : i + (getDayOfYear(date) - 1) / getDaysInYear(date);
-        };
-
-        // How much of one column a single day takes up at this zoom, so an
-        // end date can be drawn inclusive of the whole day.
-        const dayWidthInColumns = (date: Date): number => {
-            if (viewType === 'day') return 1;
-            if (viewType === 'month') return 1 / getDaysInMonth(date);
-            return 1 / getDaysInYear(date);
-        };
-
         items.forEach((item, rowIndex) => {
             let startDate: Date | null = null;
             let endDate: Date | null = null;
@@ -223,34 +167,10 @@ export const TimelineView = () => {
 
             if (!startDate || !endDate) return;
 
-            // Drop anything wholly outside the window. Compared against the last
-            // unit's *end*, not its start — in Month view the final grid entry is
-            // December 1st, so measuring from there hid every bar starting later
-            // in December whose end ran past the year.
-            if (endDate < windowStart || startDate > windowEnd) return;
+            const span = computeBarSpan(startDate, endDate, timeGrid, viewType, unitWidth);
+            if (!span) return;
 
-            const clippedStart = startDate < windowStart;
-            const clippedEnd = endDate > windowEnd;
-
-            // Measured in columns, fraction included: a month column covers ~30
-            // days, so a 15-day bar has to be half of one. Snapping each edge to
-            // a whole column instead made every bar shorter than its column fill
-            // the entire thing, reading as a month-long task.
-            const from = clippedStart ? 0 : columnOffset(startDate) ?? 0;
-            const to = clippedEnd
-                ? timeGrid.length
-                : (columnOffset(endDate) ?? timeGrid.length) + dayWidthInColumns(endDate);
-
-            const left = from * unitWidth;
-            // A single day is ~2.7px wide at month zoom, so it needs a floor to
-            // stay visible and clickable at all.
-            const width = Math.max(MIN_BAR_WIDTH, (to - from) * unitWidth);
-
-            map.set(item.id, {
-                rowIndex, left, width, colId,
-                clippedStart,
-                clippedEnd
-            });
+            map.set(item.id, { rowIndex, colId, ...span });
         });
 
         return map;
@@ -354,9 +274,7 @@ export const TimelineView = () => {
                     <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
                         <div style={{ width: '200px', flexShrink: 0, borderRight: '1px solid hsl(var(--color-border))', padding: '12px 16px', fontWeight: 600, fontSize: '13px' }}>Item Name</div>
                         {timeGrid.map(unit => {
-                            const isCurrent = viewType === 'day' ? isSameDay(unit, new Date()) : 
-                                             viewType === 'month' ? isSameMonth(unit, new Date()) : 
-                                             isSameYear(unit, new Date());
+                            const isCurrent = isCurrentUnit(viewType, unit);
                             return (
                                 <div key={unit.toISOString()} style={{
                                     width: `${unitWidth}px`,
@@ -381,19 +299,9 @@ export const TimelineView = () => {
 
                     {/* Today Indicator Line (Overlay) */}
                     {(() => {
-                        const today = new Date();
-                        const startIndex = timeGrid.findIndex(u => {
-                            if (viewType === 'day') return isSameDay(u, today);
-                            if (viewType === 'month') return isSameMonth(u, today);
-                            return isSameYear(u, today);
-                        });
-                        
-                        if (startIndex === -1) return null;
-                        
-                        const pos = startIndex * unitWidth + (viewType === 'day' ? 0 : 
-                            (viewType === 'month' ? (today.getDate() / endOfMonth(today).getDate()) * unitWidth : 
-                            (today.getMonth() / 12) * unitWidth));
-                        
+                        const pos = todayOffset(timeGrid, viewType, unitWidth);
+                        if (pos === null) return null;
+
                         return (
                             <div style={{
                                 position: 'absolute',

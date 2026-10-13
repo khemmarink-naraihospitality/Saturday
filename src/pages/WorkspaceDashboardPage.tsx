@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ActivityLogItem, type ActivityLog } from '../components/common/ActivityLogList';
 import { buildCatCushions, NO_STATUS_KEY, NEUTRAL_CUSHION_COLOR, type CatFarmGroup } from '../lib/catFarmLayout';
 import { useBoardStore } from '../store/useBoardStore';
-import { BarChart2, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
+import { BarChart2, ChevronDown, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
 import { 
     DndContext, 
     closestCenter, 
@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../lib/supabase';
+import { WorkspaceTimeline } from '../components/dashboard/WorkspaceTimeline';
 
 const SvgCat = ({ size, color, pose = 'walk' }: { size: number, color: string, pose?: string }) => {
     const isWalking = pose === 'walk';
@@ -231,7 +232,7 @@ const CatCushionFarm = ({ groups }: { groups: CatFarmGroup[] }) => {
     );
 };
 
-const DraggableDashboardWidget = ({ id, children, isFullWidth = false }: { id: string, children: React.ReactNode, isFullWidth?: boolean }) => {
+const DraggableDashboardWidget = ({ id, children, isFullWidth = false, span }: { id: string, children: React.ReactNode, isFullWidth?: boolean, span?: number }) => {
     const {
         attributes,
         listeners,
@@ -247,7 +248,10 @@ const DraggableDashboardWidget = ({ id, children, isFullWidth = false }: { id: s
         zIndex: isDragging ? 100 : 1,
         position: 'relative' as const,
         opacity: isDragging ? 0.3 : 1,
-        gridColumn: isFullWidth ? 'span 2' : 'span 1',
+        gridColumn: span ? `span ${span}` : isFullWidth ? 'span 2' : 'span 1',
+        // A wide widget that scrolls inside itself (the Timeline) has to be allowed
+        // to be narrower than its content, or it stretches the grid instead.
+        minWidth: span ? 0 : undefined,
         height: '100%',
         touchAction: 'none'
     };
@@ -486,7 +490,7 @@ const sanitizeScope = (
  * the whole board; its chevron opens the groups underneath to pick some of
  * them instead, and the board then shows a dash. Starts on everything.
  */
-const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onToggle, onClose }: {
+const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onToggle, onClose, variant = 'icon' }: {
     boards: { id: string; title: string }[];
     groupsByBoard: Map<string, ScopeGroup[]>;
     value: ScopeSelection;
@@ -494,6 +498,9 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
     isOpen: boolean;
     onToggle: () => void;
     onClose: () => void;
+    // 'icon' is the bare funnel in a widget's header; 'toolbar' is a labelled
+    // button for a row of tools (the Timeline's).
+    variant?: 'icon' | 'toolbar';
 }) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -628,7 +635,19 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
                 ref={buttonRef}
                 onClick={onToggle}
                 title={value ? `Showing: ${summary}` : 'Showing: all boards'}
-                style={{
+                style={variant === 'toolbar' ? {
+                    background: 'none',
+                    border: 'none',
+                    height: '32px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '14px',
+                    color: value ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-secondary))'
+                } : {
                     background: 'none',
                     border: 'none',
                     padding: 0,
@@ -640,7 +659,12 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
                 }}
             >
                 <Filter size={16} />
-                {summary && (
+                {variant === 'toolbar' ? (
+                    <>
+                        <span style={{ maxWidth: '160px', ...truncate }}>{summary ?? 'Filter'}</span>
+                        <ChevronDown size={14} />
+                    </>
+                ) : summary && (
                     <span style={{ fontSize: '12px', fontWeight: 500, maxWidth: '130px', ...truncate }}>
                         {summary}
                     </span>
@@ -727,7 +751,7 @@ export const WorkspaceDashboardPage = () => {
     const allBoards = useBoardStore(state => state.boards);
     
     // Track widget order
-    const [widgetOrder, setWidgetOrder] = useState(['totalTasks', 'totalStatus', 'catFarm', 'workStatusChart', 'boardUpdates']);
+    const [widgetOrder, setWidgetOrder] = useState(['totalTasks', 'totalStatus', 'catFarm', 'workStatusChart', 'boardUpdates', 'timeline']);
 
     // Configure DnD Sensors
     const sensors = useSensors(
@@ -816,7 +840,7 @@ export const WorkspaceDashboardPage = () => {
 
     // Which boards and groups each widget counts; null = the whole workspace.
     // Per widget and per workspace, the same as the status-column choice.
-    const SCOPE_FILTER_WIDGETS = ['totalTasks'];
+    const SCOPE_FILTER_WIDGETS = ['totalTasks', 'timeline'];
     const scopeFilterKey = (widgetId: string) =>
         `dashboardBoardFilter:${activeWorkspaceId || 'none'}:${widgetId}`;
     const [scopeFilters, setScopeFilters] = useState<Record<string, ScopeSelection>>({});
@@ -928,7 +952,7 @@ export const WorkspaceDashboardPage = () => {
                     // Deleted tasks sit in items with is_archived set until they're
                     // purged. The board view already leaves them out; without the
                     // same filter here every dashboard figure counted them too.
-                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id').in('board_id', boardIds).eq('is_archived', false),
+                    supabase.from('items').select('id, title, board_id, group_id, values, is_hidden, parent_id, order').in('board_id', boardIds).eq('is_archived', false),
                     // For the board → group filter. Boards opened on the dashboard
                     // aren't loaded into the store, so their groups aren't there.
                     supabase.from('groups').select('id, title, color, board_id, order').in('board_id', boardIds).eq('is_archived', false).order('order')
@@ -1259,6 +1283,16 @@ export const WorkspaceDashboardPage = () => {
         };
     }, [computeStats]);
 
+    // The Timeline's rows come from the same fetch as everything else, narrowed
+    // to its own board/group filter. Memoised so a re-render for an unrelated
+    // reason (a menu opening) doesn't rebuild every row.
+    const timelineScope = scopeFor('timeline');
+    const timelineItems = useMemo(
+        () => timelineScope ? workspaceData.items.filter(item => itemInScope(item, timelineScope)) : workspaceData.items,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- timelineScope is rebuilt each render; its content is what matters
+        [workspaceData.items, JSON.stringify(timelineScope)]
+    );
+
     if (!workspace) {
         return (
             <div style={{ padding: '60px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>
@@ -1588,6 +1622,30 @@ export const WorkspaceDashboardPage = () => {
                         </div>
                     </div>
                 );
+            case 'timeline':
+                return (
+                    <WorkspaceTimeline
+                        items={timelineItems}
+                        columns={workspaceData.columns}
+                        boards={workspaceBoards}
+                        groupsByBoard={groupsByBoard}
+                        // The fetch doesn't run for a workspace with no boards, so groups would stay null forever.
+                        isLoading={workspaceData.groups === null && workspaceBoards.length > 0}
+                        onOpenItem={openTaskFromActivity}
+                        filterControl={
+                            <BoardGroupFilter
+                                variant="toolbar"
+                                boards={workspaceBoards}
+                                groupsByBoard={groupsByBoard}
+                                value={timelineScope}
+                                onChange={(next) => applyScopeFilter('timeline', next)}
+                                isOpen={statusMenuFor === 'timeline:boards'}
+                                onToggle={() => setStatusMenuFor(prev => (prev === 'timeline:boards' ? null : 'timeline:boards'))}
+                                onClose={() => setStatusMenuFor(null)}
+                            />
+                        }
+                    />
+                );
             case 'boardUpdates':
                 return (
                     <div style={{
@@ -1663,6 +1721,7 @@ export const WorkspaceDashboardPage = () => {
                                     key={id} 
                                     id={id} 
                                     isFullWidth={id === 'workStatusChart'}
+                                    span={id === 'timeline' ? 3 : undefined}
                                 >
                                     {renderWidget(id)}
                                 </DraggableDashboardWidget>

@@ -136,7 +136,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
     boards: { id: string; title: string }[];
     groupsByBoard: Map<string, TimelineGroupInfo[]>;
     isLoading: boolean;
-    // The board → group picker, drawn as the toolbar's Filter button.
+    // The board → group picker, drawn as a Filter button beside the Day / Month / Year switch.
     filterControl: ReactNode;
     onOpenItem: (itemId: string) => void;
 }) => {
@@ -272,8 +272,6 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                     />
                 </div>
 
-                {filterControl}
-
                 <MenuButton icon={<ArrowUpDown size={16} />} label="Sort" active={!!sort}>
                     {close => (
                         <>
@@ -363,6 +361,9 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                         </button>
                     ))}
                 </div>
+
+                {/* Filter sits with the date controls, under the toolbar row. */}
+                {filterControl}
             </div>
 
             {/* Grid. Capped and scrolled: a workspace's timeline can run to hundreds of rows. */}

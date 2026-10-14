@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense, useRef } from 'react';
-import { slugify, buildBoardSlug, parseBoardSlugSuffix, shortId } from './lib/utils';
+import { slugify, boardPathSegment, parseBoardSlugSuffix, shortId } from './lib/utils';
 import { Sidebar } from './components/board/Sidebar'
 // BoardHeader, Table, BatchActionsBar moved to BoardPage lazy chunk
 import { useBoardStore } from './store/useBoardStore'
@@ -517,15 +517,23 @@ function MainApp() {
       const currentUser = useUserStore.getState().currentUser;
       const username = currentUser ? slugify(currentUser.name) : 'u';
 
-      const boardName = buildBoardSlug(activeBoard.title, activeBoard.id);
+      // Bare title unless another live board in this workspace has the same one.
+      const boardName = boardPathSegment(
+        activeBoard,
+        boards.filter(b => !b.is_archived && b.workspaceId === activeBoard.workspaceId)
+      );
 
       const newPath = `/${username}/${workspaceName}/${boardName}`;
 
       if (window.location.pathname !== newPath) {
-        window.history.pushState(null, '', newPath);
+        // The same board under an older, longer link (`name--id`): tidy the
+        // address in place rather than adding a history entry for it.
+        const currentSegment = window.location.pathname.split('/').filter(Boolean)[2] || '';
+        const sameBoard = parseBoardSlugSuffix(currentSegment) === shortId(activeBoard.id);
+        window.history[sameBoard ? 'replaceState' : 'pushState'](null, '', newPath);
       }
     }
-  }, [activePage, activeBoardId, activeBoard, isLoading]);
+  }, [activePage, activeBoardId, activeBoard, isLoading, boards]);
 
   useEffect(() => {
     if (activeWorkspaceId) {

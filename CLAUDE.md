@@ -35,7 +35,7 @@ Two more vars are read but not in `.env.example`: `VITE_GOOGLE_API_KEY` / `VITE_
 
 Navigation is driven entirely by `activePage` in Zustand (`useBoardStore`). `App.tsx` switches between lazy-loaded page components based on this value. URL is kept in sync manually via `window.history.pushState`. URL pattern: `/{username}/{workspace-slug}/{board-slug}--{shortId}`.
 
-The board segment carries an id suffix (`buildBoardSlug` / `parseBoardSlugSuffix` / `shortId` in `src/lib/utils.ts`): titles collide (renames, re-created boards, imports), so the last 8 hex chars before a `--` disambiguate the URL. A legacy link with no `--` suffix (`parseBoardSlugSuffix` returns `null`) falls back to title-only matching in `App.tsx`'s deep-link resolver.
+The board segment is the bare title (`/{username}/{workspace}/{board-title}`) unless it needs an id (`boardPathSegment` in `src/lib/utils.ts`): when another live board in the workspace has the same slug, or the title leaves no slug at all (Thai/emoji-only titles slugify to `""`), it carries an id suffix (`buildBoardSlug` / `parseBoardSlugSuffix` / `shortId`) — the last 8 hex chars before a `--` — and the resolver always accepts that form, so older shared links still work. A legacy link with no `--` suffix (`parseBoardSlugSuffix` returns `null`) falls back to title-only matching in `App.tsx`'s deep-link resolver.
 
 Pages: `home`, `board`, `notifications`, `admin`, `dashboard`, `favorites`.
 

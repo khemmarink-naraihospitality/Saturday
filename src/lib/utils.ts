@@ -14,7 +14,8 @@ export function slugify(text: string): string {
 // hyphen) — short and URL-safe on its own.
 export const shortId = (id: string): string => id.slice(0, 8);
 
-// Board URLs are titles for readability, but titles collide — a re-created
+// Board URLs are titles for readability (boardPathSegment drops the suffix below
+// whenever it isn't needed), but titles collide — a re-created
 // board can reuse a deleted one's name, an import can duplicate one, a rename
 // changes the slug out from under an old bookmark. Appending the id suffix
 // makes the URL segment unique regardless of title collisions.
@@ -27,6 +28,20 @@ export const shortId = (id: string): string => id.slice(0, 8);
 // marker that this segment carries a real id, not a coincidence.
 export function buildBoardSlug(title: string, id: string): string {
     return `${slugify(title)}--${shortId(id)}`;
+}
+
+// The URL segment as short as it can be while still pointing at one board: the
+// bare title when no other live board in the workspace has the same slug, the
+// `--id` form (buildBoardSlug) when one does, or when the title leaves no slug
+// at all (a Thai or emoji-only title slugifies to "", and a bare "" would not
+// identify anything). `siblings` are the other boards that share the workspace.
+export function boardPathSegment(
+    board: { id: string; title: string },
+    siblings: { id: string; title: string }[]
+): string {
+    const slug = slugify(board.title);
+    const collides = siblings.some(b => b.id !== board.id && slugify(b.title) === slug);
+    return slug === '' || collides ? buildBoardSlug(board.title, board.id) : slug;
 }
 
 // Reverse of buildBoardSlug: pulls the id suffix off a path segment, if one is

@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
-import { slugify, parseBoardSlugSuffix, shortId } from '../../lib/utils';
-import type { Board, Workspace } from '../../types';
+import { slugify } from '../../lib/utils';
+import type { Workspace } from '../../types';
+import { resolveBoardPath } from './paths';
 import { getInitialPath } from '../../lib/initialPath';
 import { installHistoryDepth, readHistoryState } from './history';
 
@@ -15,22 +16,6 @@ const pathParts = () => window.location.pathname.split('/').filter(Boolean);
 
 const findWorkspaceBySlug = (workspaces: Workspace[], slug: string) =>
     workspaces.find(w => slugify(w.title) === slug);
-
-/**
- * The board a /user/workspace/board path names — the same rule as MainApp's
- * deep-link resolver: an id suffix wins, else the bare title within the
- * workspace. Live boards only.
- */
-export const resolveBoardPath = (parts: string[], boards: Board[], workspaces: Workspace[]): Board | undefined => {
-    const [, workspaceSlug, boardSegment] = parts;
-    const live = boards.filter(b => !b.is_archived);
-    const inWorkspace = (b: Board) =>
-        slugify(workspaces.find(w => w.id === b.workspaceId)?.title || '') === workspaceSlug;
-    const suffix = parseBoardSlugSuffix(boardSegment);
-    return suffix
-        ? live.find(b => inWorkspace(b) && shortId(b.id) === suffix)
-        : live.find(b => inWorkspace(b) && slugify(b.title) === boardSegment);
-};
 
 /** Points the store at whatever the current URL + history entry describe. */
 const syncPageFromLocation = () => {

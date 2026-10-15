@@ -1,0 +1,698 @@
+/* The item screen (reference 19) and its composer. Both are sheets, so every
+   rule is scoped under .m-portal. Rich text also carries the desktop's
+   .narai-update-content rules (lists, headings, tables, checklists). */
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.m-portal .m-item-sheet .m-sheet__header {
+    border-bottom: none;
+    min-height: 60px;
+    padding: 6px 16px 0;
+    background: hsl(var(--m-card));
+}
+
+.m-portal .m-item__close {
+    width: 44px;
+    height: 44px;
+    margin-left: -10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-item__actions {
+    display: flex;
+    gap: 12px;
+}
+
+.m-portal .m-item-sheet .m-icon-btn {
+    border-radius: 12px;
+}
+
+.m-portal .m-item__head {
+    flex-shrink: 0;
+    padding: 4px 16px 14px;
+    background: hsl(var(--m-card));
+}
+
+.m-portal .m-item__title {
+    display: block;
+    width: 100%;
+    margin: 0 0 14px;
+    padding: 0;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+    text-align: left;
+    color: hsl(var(--m-text));
+    overflow-wrap: anywhere;
+}
+
+.m-portal .m-item__title-input {
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 26px;
+    overflow: hidden;
+    box-shadow: inset 0 -2px 0 hsl(var(--m-accent));
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.m-portal .m-item__crumbs {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 28px;
+    padding: 2px 10px;
+    border-radius: 9px;
+    background: hsl(var(--m-field));
+    font-size: 15.5px;
+    color: hsl(var(--m-text));
+    text-align: left;
+    overflow: hidden;
+}
+
+.m-portal .m-item__crumb {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.m-portal .m-item__crumb:last-child {
+    flex: 1;
+}
+
+.m-portal .m-item__crumb-sep {
+    flex-shrink: 0;
+    margin: 0 6px;
+    color: hsl(var(--m-text-3));
+}
+
+/* The tabs stay in reach while the panel scrolls. */
+.m-portal .m-item__tabs {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    flex-shrink: 0;
+    padding: 0 16px 12px;
+    background: hsl(var(--m-card));
+}
+
+.m-portal .m-item__tabs .m-segmented {
+    padding: 3px;
+    gap: 3px;
+    border-radius: 12px;
+    background: hsl(var(--m-field));
+    border: 1px solid hsl(var(--m-row-line) / 0.6);
+}
+
+.m-portal .m-item__tabs .m-segmented__item {
+    min-height: 32px;
+    border-radius: 10px;
+    font-size: 16.5px;
+    font-weight: 400;
+}
+
+.m-portal .m-item__tabs .m-segmented__item--active {
+    font-weight: 600;
+}
+
+.m-portal .m-item__panel {
+    flex: 1 0 auto;
+    padding: 12px 16px 104px;
+}
+
+/* ── Updates ────────────────────────────────────────────────────────────── */
+
+.m-portal .m-updates {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.m-portal .m-update {
+    background: hsl(var(--m-card));
+    border: 1px solid hsl(var(--m-row-line));
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--m-shadow-card);
+}
+
+.m-portal .m-update__main {
+    padding: 14px 16px 12px;
+}
+
+.m-portal .m-update__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.m-portal .m-update__who {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: 2px;
+}
+
+.m-portal .m-update__author {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.m-portal .m-update__time {
+    margin-top: 2px;
+    font-size: 15px;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-update__more {
+    width: 40px;
+    height: 32px;
+    margin-right: -8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-update__body {
+    margin-top: 14px;
+}
+
+.m-portal .m-rich {
+    font-size: 17px;
+    line-height: 1.45;
+    color: hsl(var(--m-text));
+    overflow-wrap: anywhere;
+}
+
+.m-portal .m-rich a {
+    color: hsl(var(--m-link));
+}
+
+/* A wide table scrolls inside the card rather than widening the page. */
+.m-portal .m-rich table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.m-portal .m-update__files {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.m-portal .m-update__file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: hsl(var(--m-field));
+    border: 1px solid hsl(var(--m-row-line));
+    font-size: 15px;
+    color: hsl(var(--m-text));
+    text-decoration: none;
+}
+
+.m-portal .m-update__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    font-size: 15.5px;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-update__replies-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-update__meta-sep {
+    width: 1px;
+    height: 22px;
+    background: hsl(var(--m-row-line));
+}
+
+.m-portal .m-update__likes {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.m-portal .m-update__thread {
+    border-top: 1px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-field));
+    padding: 0 16px;
+}
+
+.m-portal .m-reply {
+    padding: 12px 0;
+}
+
+.m-portal .m-reply + .m-reply {
+    border-top: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-reply .m-update__author {
+    font-size: 15.5px;
+}
+
+.m-portal .m-reply .m-update__time {
+    font-size: 13.5px;
+}
+
+/* Under the name, past the 34px picture and its gap. */
+.m-portal .m-reply__body {
+    padding-left: 48px;
+}
+
+.m-portal .m-reply__body .m-update__body {
+    margin-top: 4px;
+}
+
+.m-portal .m-reply__body .m-rich {
+    font-size: 16px;
+}
+
+.m-portal .m-update__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-update__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 58px;
+    font-size: 17px;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-update__action:active {
+    background: hsl(var(--m-chip));
+}
+
+.m-portal .m-update__action + .m-update__action {
+    border-left: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-update__action--on {
+    color: #b07800;
+    font-weight: 600;
+}
+
+/* "+ Write an update", floating over the bottom of the list. */
+.m-portal .m-composer-pill-wrap {
+    position: sticky;
+    bottom: 0;
+    z-index: 7;
+    flex-shrink: 0;
+    padding: 8px 24px 12px;
+    pointer-events: none;
+}
+
+.m-portal .m-composer-pill {
+    pointer-events: auto;
+    width: 100%;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    border-radius: 20px;
+    background: hsl(var(--m-card));
+    border: 1px solid hsl(var(--m-row-line) / 0.7);
+    box-shadow: 0 10px 30px rgba(17, 24, 64, 0.16), 0 1px 3px rgba(17, 24, 64, 0.08);
+    font-size: 17px;
+    color: hsl(var(--m-text-2));
+    text-align: left;
+}
+
+.m-portal .m-composer-pill__plus {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-composer-pill__draft {
+    color: hsl(var(--m-accent));
+}
+
+/* ── Columns ────────────────────────────────────────────────────────────── */
+
+.m-portal .m-props {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.m-portal .m-props__card {
+    background: hsl(var(--m-card));
+    border: 1px solid hsl(var(--m-row-line));
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.m-portal .m-props__card--deps {
+    padding: 4px 0;
+    overflow: visible;
+}
+
+.m-portal .m-props__title {
+    margin: 0 4px 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-prop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-prop:last-child {
+    border-bottom: none;
+}
+
+.m-portal button.m-prop:active {
+    background: hsl(var(--m-chip));
+}
+
+.m-portal .m-prop__label {
+    flex: 0 0 40%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15.5px;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-prop__label svg {
+    flex-shrink: 0;
+}
+
+.m-portal .m-prop__value {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    text-align: right;
+}
+
+/* ── Files ──────────────────────────────────────────────────────────────── */
+
+.m-portal .m-files {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.m-portal .m-files__add {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.m-portal .m-files__add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    border-radius: 14px;
+    background: hsl(var(--m-card));
+    border: 1px solid hsl(var(--m-row-line));
+    font-size: 15.5px;
+    font-weight: 500;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-file-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-file-row:last-child {
+    border-bottom: none;
+}
+
+.m-portal .m-file-row__open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 4px 12px 16px;
+    color: hsl(var(--m-text));
+    text-decoration: none;
+}
+
+.m-portal .m-file-row__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--m-field));
+}
+
+.m-portal .m-file-row__name {
+    display: block;
+    font-size: 16px;
+}
+
+.m-portal .m-file-row__host {
+    display: block;
+    font-size: 13.5px;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-file-row__more {
+    width: 48px;
+    height: 58px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-input-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-input-field input {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+/* ── Composer ───────────────────────────────────────────────────────────── */
+
+.m-portal .m-composer__context {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 20px;
+    background: hsl(var(--m-field));
+    border-bottom: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-composer__context-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-composer__context-text {
+    font-size: 14.5px;
+    color: hsl(var(--m-text-2));
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.m-portal .m-composer__tools {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.m-portal .m-composer__tools-gap {
+    flex: 1;
+}
+
+.m-portal .m-composer__tool {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-composer__tool--on {
+    background: hsl(var(--m-accent-soft));
+    color: hsl(var(--m-accent));
+}
+
+.m-portal .m-composer__link {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-composer__link input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-field));
+    outline: none;
+}
+
+.m-portal .m-composer__link-add {
+    flex-shrink: 0;
+    padding: 0 16px;
+    border-radius: 10px;
+    background: hsl(var(--m-accent));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.m-portal .m-composer__link-add[disabled] {
+    opacity: 0.45;
+}
+
+.m-portal .m-composer__mentions {
+    flex-shrink: 0;
+    max-height: 232px;
+    overflow-y: auto;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-card));
+}
+
+.m-portal .m-composer__mention {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 54px;
+    padding: 6px 16px;
+}
+
+.m-portal .m-composer__mention:active {
+    background: hsl(var(--m-chip));
+}
+
+.m-portal .m-composer__editor {
+    position: relative;
+    flex: 1 0 auto;
+    min-height: 200px;
+    padding: 16px 20px 28px;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Placeholder while empty — positioned, so the caret stays at the start. */
+.m-portal .m-composer__editor--empty::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    color: hsl(var(--m-text-3));
+    pointer-events: none;
+}
+
+.m-portal .m-composer__files {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px 16px;
+    border-top: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-composer__file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 0 4px 0 10px;
+    border-radius: 10px;
+    background: hsl(var(--m-field));
+    border: 1px solid hsl(var(--m-row-line));
+    font-size: 14px;
+}
+
+.m-portal .m-composer__file button {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}

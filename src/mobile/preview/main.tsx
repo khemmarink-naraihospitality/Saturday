@@ -39,12 +39,55 @@ const chain: any = new Proxy(function () { /* callable */ }, {
     apply: () => chain,
 });
 
+// items.updates as the database holds it, so posting, replying, liking and
+// deleting work end to end (itemSlice reads the row before every rewrite).
+const dbUpdates = new Map<string, unknown[]>();
+const dbUpdatesOf = (itemId: string) => {
+    if (!dbUpdates.has(itemId)) {
+        const original = fx.boards.flatMap(b => b.items).find(i => i.id === itemId);
+        dbUpdates.set(itemId, original?.updates ? [...original.updates] : []);
+    }
+    return dbUpdates.get(itemId)!;
+};
+
+/** A query on one table: everything succeeds empty, except items.updates, which is remembered. */
+const tableChain = (table: string) => {
+    const q: { op: string; columns?: string; filters: Record<string, unknown>; payload?: Record<string, unknown> } = { op: 'select', filters: {} };
+    const result = () => {
+        const id = q.filters.id as string | undefined;
+        if (table === 'items' && id) {
+            if (q.op === 'select' && q.columns === 'updates') return { ...emptyResult, data: { updates: dbUpdatesOf(id) } };
+            if (q.op === 'update' && q.payload && 'updates' in q.payload) dbUpdates.set(id, q.payload.updates as unknown[]);
+        }
+        return emptyResult;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const proxy: any = new Proxy(function () { /* callable */ }, {
+        get(_target, prop) {
+            if (prop === 'then') {
+                return (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => Promise.resolve(result()).then(resolve, reject);
+            }
+            return (...args: unknown[]) => {
+                if (prop === 'select' && q.op === 'select') q.columns = args[0] as string;
+                if (prop === 'update' || prop === 'insert' || prop === 'upsert' || prop === 'delete') {
+                    q.op = prop;
+                    q.payload = args[0] as Record<string, unknown>;
+                }
+                if (prop === 'eq') q.filters[args[0] as string] = args[1];
+                return proxy;
+            };
+        },
+        apply: () => proxy,
+    });
+    return proxy;
+};
+
 const fakeUser = { id: fx.ME.id, email: fx.ME.email, user_metadata: { full_name: fx.ME.name }, app_metadata: { provider: 'google' } };
 const fakeSession = { user: fakeUser, access_token: 'preview', refresh_token: 'preview', expires_in: 3600, token_type: 'bearer' };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const client = supabase as any;
-client.from = () => chain;
+client.from = (table: string) => tableChain(table);
 client.rpc = () => chain;
 client.channel = () => chain;
 client.removeChannel = async () => 'ok';

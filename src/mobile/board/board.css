@@ -223,29 +223,6 @@
 
 /* ── Sheets ─────────────────────────────────────────────────────────────── */
 
-.m-portal .m-board-action {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    min-height: 56px;
-    padding: 0 20px;
-    font-size: 17px;
-    text-align: left;
-    color: hsl(var(--m-text));
-}
-
-.m-portal .m-board-action:active {
-    background: hsl(var(--m-chip));
-}
-
-.m-portal .m-board-action__icon {
-    width: 24px;
-    display: flex;
-    justify-content: center;
-    color: hsl(var(--m-text-2));
-}
-
 .m-portal .m-board-field {
     display: flex;
     align-items: center;

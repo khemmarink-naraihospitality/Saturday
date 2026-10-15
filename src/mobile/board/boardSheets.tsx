@@ -7,8 +7,8 @@ import type { FilterState } from '../../types';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, mobileToast, useBoardPeople } from '../ui';
 
 const SheetAction = ({ icon, label, onClick, right }: { icon: ReactNode; label: ReactNode; onClick: () => void; right?: ReactNode }) => (
-    <button type="button" className="m-board-action" onClick={onClick}>
-        <span className="m-board-action__icon">{icon}</span>
+    <button type="button" className="m-action" onClick={onClick}>
+        <span className="m-action__icon">{icon}</span>
         <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
         {right}
     </button>

@@ -25,6 +25,8 @@ export interface BottomSheetProps {
     ariaLabel?: string;
     testId?: string;
     bodyStyle?: CSSProperties;
+    /** Extra class on the panel, for a sheet with its own look (the item screen). */
+    className?: string;
     children: ReactNode;
 }
 
@@ -57,6 +59,7 @@ const SheetPanel = ({
     ariaLabel,
     testId,
     bodyStyle,
+    className,
     children
 }: BottomSheetProps) => {
     const dragControls = useDragControls();
@@ -65,7 +68,10 @@ const SheetPanel = ({
     onCloseRef.current = onClose;
 
     useEffect(() => {
-        panelRef.current?.focus({ preventScroll: true });
+        // Children mount first: if one took focus on purpose (an autofocused
+        // field, which is what brings up the phone keyboard), leave it there.
+        const panel = panelRef.current;
+        if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onCloseRef.current();
         };
@@ -79,7 +85,7 @@ const SheetPanel = ({
     };
 
     const panelStyle: CSSProperties | undefined = size === 'tall'
-        ? { height: 'calc(100dvh - 48px - var(--m-safe-top))' }
+        ? { height: 'calc(100dvh - var(--m-sheet-gap))' }
         : undefined;
 
     return (
@@ -99,7 +105,7 @@ const SheetPanel = ({
                 aria-label={ariaLabel ?? (typeof title === 'string' ? title : undefined)}
                 tabIndex={-1}
                 data-testid={testId}
-                className={`m-sheet${size === 'full' ? ' m-sheet--full' : ''}`}
+                className={`m-sheet${size === 'full' ? ' m-sheet--full' : ''}${className ? ` ${className}` : ''}`}
                 style={panelStyle}
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}

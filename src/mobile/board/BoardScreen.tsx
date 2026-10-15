@@ -1,6 +1,7 @@
 import { useBoardStore } from '../../store/useBoardStore';
 import { ScreenHeader } from '../ui';
 import { backFromBoard } from '../nav/navigation';
+import { MobileTable } from './MobileTable';
 
 /** A board — reference: screenshots 18, 20, 25. Placeholder — the "board" agent. */
 export const BoardScreen = ({ boardId }: { boardId: string }) => {
@@ -8,6 +9,7 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
     return (
         <div className="m-screen" data-testid="m-board">
             <ScreenHeader title={title} onBack={backFromBoard} />
+            <MobileTable boardId={boardId} canEdit />
         </div>
     );
 };

@@ -250,3 +250,39 @@ export const workspaceMembers: Record<string, unknown[]> = {
         { id: 'wm4', user_id: 'u-jir', role: 'member', profiles: PEOPLE.jirayu },
     ],
 };
+
+// ── A big board, for checking speed (?screen=board-large) ─────────────────
+
+/** 12 groups × 400 items over the Tech Summary columns; built only when asked for. */
+export const buildLargeBoard = (): Board => {
+    const colors = ['#a25ddc', '#579bfc', '#00c875', '#fdab3d', '#e2445c', '#037f4c', '#ff158a', '#784bd1', '#66ccff', '#bb3354', '#cab641', '#808080'];
+    const groupDefs = colors.map((color, g) => ({ id: `lg-${g}`, title: `Group ${g + 1}`, color, order: g }));
+    const items: Item[] = [];
+    groupDefs.forEach((group, g) => {
+        for (let i = 0; i < 400; i++) {
+            const base = techItems[(g * 400 + i) % techItems.length];
+            items.push({
+                ...base,
+                id: `lg-${g}-${i}`,
+                title: `${base.title} #${g * 400 + i + 1}`,
+                groupId: group.id,
+                boardId: 'b-large',
+                parentId: undefined,
+                order: i,
+            });
+        }
+    });
+    return withGroups({
+        id: 'b-large',
+        workspaceId: 'ws-btd',
+        title: 'Large board',
+        columns: techColumns,
+        items,
+        groupDefs,
+        isDataLoaded: true,
+        itemColumnTitle: 'Item',
+        activeViewId: 'main_table',
+        collapsedGroups: [],
+        expandedItemIds: [],
+    });
+};

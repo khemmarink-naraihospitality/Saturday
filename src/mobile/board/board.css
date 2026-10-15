@@ -1,0 +1,389 @@
+/* Board screen chrome on a phone (BoardScreen, toolbar, sheets). Scoped under
+   .m-app / .m-portal. */
+
+.m-app .m-board {
+    background: hsl(var(--m-card));
+}
+
+.m-app .m-board .m-header {
+    background: hsl(var(--m-card));
+}
+
+.m-app .m-board-controls {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 20px 12px;
+}
+
+.m-app .m-board .m-icon-btn {
+    border-radius: 12px;
+}
+
+.m-app .m-board-view-picker {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0 10px 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-radius: 10px;
+    border: 1.5px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-card));
+    font-size: 16.5px;
+    color: hsl(var(--m-text));
+}
+
+.m-app .m-board-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* The desktop views (timeline, kanban, calendar, AI summary) in a phone frame. */
+.m-app .m-board-view {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--m-safe-bottom);
+}
+
+.m-app .m-board-pin {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* ── Floating toolbar ─────────────────────────────────────────────────────── */
+
+.m-app .m-board {
+    --m-board-toolbar-space: calc(100px + max(var(--m-safe-bottom), 14px));
+}
+
+.m-app .m-board-toolbar {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: calc(max(var(--m-safe-bottom), 14px) + 2px);
+    z-index: 40;
+    height: 66px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-radius: 24px;
+    background: hsl(var(--m-card));
+    box-shadow: var(--m-shadow-float);
+    border: 1px solid hsl(var(--m-row-line) / 0.7);
+}
+
+/* The rows fade out under the toolbar, as in the reference. */
+.m-app .m-board-body::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(96px + max(var(--m-safe-bottom), 14px));
+    pointer-events: none;
+    background: linear-gradient(180deg, hsl(var(--m-card) / 0), hsl(var(--m-card) / 0.92) 62%);
+    z-index: 20;
+}
+
+/* Quick find and the square buttons: a pale field with a hairline border. */
+.m-app .m-board-toolbar__find,
+.m-app .m-board-toolbar__search,
+.m-app .m-board-toolbar__btn {
+    height: 37px;
+    border-radius: 11px;
+    border: 1px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-field));
+    color: hsl(var(--m-text));
+}
+
+.m-app .m-board-toolbar__find,
+.m-app .m-board-toolbar__search {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 8px 0 4px;
+    font-size: 16.5px;
+}
+
+.m-app .m-board-toolbar__search input {
+    flex: 1;
+    min-width: 0;
+    height: 35px;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.m-app .m-board-toolbar__search-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--m-accent));
+    color: #fff;
+}
+
+.m-app .m-board-toolbar__clear {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-app .m-board-toolbar__people {
+    width: 56px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.m-app .m-board-toolbar__people--on {
+    background: hsl(var(--m-accent-soft));
+}
+
+/* Two blank cards, slightly askew: "filter by person" before anyone is picked. */
+.m-app .m-board-toolbar__ghosts {
+    position: relative;
+    width: 54px;
+    height: 40px;
+}
+
+.m-app .m-board-toolbar__ghosts > span {
+    position: absolute;
+    top: 2px;
+    width: 34px;
+    height: 36px;
+    border-radius: 11px;
+    border: 1px solid hsl(var(--m-row-line));
+    background: linear-gradient(160deg, hsl(var(--m-field)), hsl(var(--m-chip)));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--m-text-3));
+}
+
+.m-app .m-board-toolbar__ghosts > span:first-child {
+    left: 0;
+    transform: rotate(-7deg);
+}
+
+.m-app .m-board-toolbar__ghosts > span:last-child {
+    left: 18px;
+    transform: rotate(4deg);
+    box-shadow: -2px 0 0 hsl(var(--m-card) / 0.9);
+}
+
+.m-app .m-board-toolbar__btn {
+    position: relative;
+    width: 37px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.m-app .m-board-toolbar__btn--on {
+    background: hsl(var(--m-accent-soft));
+    border-color: hsl(var(--m-accent) / 0.5);
+    color: hsl(var(--m-accent));
+}
+
+.m-app .m-board-toolbar__dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: hsl(var(--m-accent));
+}
+
+/* ── Sheets ─────────────────────────────────────────────────────────────── */
+
+.m-portal .m-board-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 20px;
+    font-size: 17px;
+    text-align: left;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-board-action:active {
+    background: hsl(var(--m-chip));
+}
+
+.m-portal .m-board-action__icon {
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-board-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-board-field input {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.m-portal .m-board-choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 50px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: hsl(var(--m-chip));
+    font-size: 16px;
+    text-align: left;
+}
+
+.m-portal .m-board-choice--on {
+    background: hsl(var(--m-accent-soft));
+    box-shadow: inset 0 0 0 2px hsl(var(--m-accent));
+}
+
+.m-portal .m-board-choice__dot,
+.m-portal .m-board-chip__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.m-portal .m-board-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+}
+
+.m-portal .m-board-filter-title {
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--m-text-2));
+}
+
+.m-portal .m-board-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.m-portal .m-board-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 19px;
+    background: hsl(var(--m-chip));
+    font-size: 15px;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-board-chip--on {
+    background: hsl(var(--m-accent-soft));
+    box-shadow: inset 0 0 0 2px hsl(var(--m-accent));
+    font-weight: 600;
+}
+
+/* Views sheet (reference 26) */
+
+.m-portal .m-board-field--search {
+    min-height: 38px;
+    border-radius: 11px;
+    background: hsl(var(--m-field));
+    border: 1px solid hsl(var(--m-row-line) / 0.6);
+}
+
+.m-portal .m-board-field--search input {
+    height: 36px;
+    font-size: 16.5px;
+}
+
+.m-portal .m-views__label {
+    margin: 22px 1px 12px;
+    font-size: 17px;
+    color: hsl(var(--m-text));
+}
+
+.m-portal .m-views__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.m-portal .m-views__row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 56px;
+    padding: 0 20px 0 17px;
+    border-radius: 14px;
+    background: hsl(var(--m-field));
+    color: hsl(var(--m-text));
+    text-align: left;
+}
+
+/* The current view: tinted, with a ring standing a little off it. */
+.m-portal .m-views__row--on {
+    background: hsl(var(--m-accent-soft));
+    outline: 2px solid hsl(var(--m-accent));
+    outline-offset: 3px;
+}
+
+.m-portal .m-views__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 17px;
+    font-weight: 500;
+}
+
+.m-portal .m-views__check {
+    flex-shrink: 0;
+    color: hsl(var(--m-accent));
+}

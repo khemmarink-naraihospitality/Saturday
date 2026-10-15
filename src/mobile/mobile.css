@@ -12,6 +12,7 @@
     --m-card: 0 0% 100%;
     --m-chip: 228 22% 94%;          /* square icon buttons, inputs, segmented control */
     --m-chip-strong: 228 18% 89%;
+    --m-field: 225 20% 97%;         /* pale fields with a hairline border (board toolbar) */
     --m-scrim: 230 25% 10% / 0.42;  /* behind a bottom sheet */
     --m-row-line: 228 20% 91%;
 
@@ -49,6 +50,7 @@
     --m-card: var(--color-bg-surface);
     --m-chip: var(--color-bg-subtle);
     --m-chip-strong: var(--color-bg-surface-hover);
+    --m-field: var(--color-bg-subtle);
     --m-scrim: 0 0% 0% / 0.6;
     --m-row-line: var(--color-border);
     --m-accent-soft: 255 60% 22%;

@@ -1,0 +1,343 @@
+/* The phone board table (MobileTable). Scoped under .m-app. */
+
+.m-app .m-table {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: hsl(var(--m-card));
+    scrollbar-width: none;
+}
+
+.m-app .m-table::-webkit-scrollbar {
+    display: none;
+}
+
+.m-app .m-table__content {
+    position: relative;
+}
+
+/* The pinned copy of the current group's header: zero-height and sticky, so it
+   takes no room in the layout and lies exactly over the real header at rest. */
+.m-app .m-table__sticky {
+    position: sticky;
+    top: 0;
+    height: 0;
+    z-index: 30;
+}
+
+.m-app .m-table__sticky > .m-tr {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    box-shadow: 0 6px 10px -8px rgba(17, 24, 64, 0.25);
+}
+
+.m-app .m-table__row {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.m-app .m-tr {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    background: hsl(var(--m-card));
+}
+
+.m-app .m-tr__gutter {
+    flex-shrink: 0;
+}
+
+/* The frozen name column. */
+.m-app .m-tr__name {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    flex-shrink: 0;
+    width: var(--m-name-w, 318px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px 0 16px;
+    background: hsl(var(--m-card));
+    border-bottom: 1px solid hsl(var(--m-row-line));
+    border-right: 1px solid hsl(var(--m-row-line));
+    overflow: hidden;
+}
+
+.m-app .m-tr__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+}
+
+/* Grows as the name column narrows, so the columns never move. */
+.m-app .m-tr__spacer {
+    flex-shrink: 0;
+    width: calc(var(--m-name-base, 318px) - var(--m-name-w, 318px));
+}
+
+.m-app .m-tr__cell {
+    position: relative;
+    flex-shrink: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid hsl(var(--m-row-line));
+    border-right: 1px solid hsl(var(--m-row-line));
+}
+
+/* A status block carries its own 1px gap to the next row. */
+.m-app .m-tr__cell--status {
+    border-bottom: none;
+    align-items: flex-start;
+}
+
+.m-app .m-tr__cell[role="button"]:active {
+    filter: brightness(0.94);
+}
+
+/* Column titles: in a group's header row, and (smaller) above sub-items. */
+.m-app .m-tr__head {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 16px;
+    color: hsl(var(--m-text));
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* A flex item, so a long title ends in "…" instead of spilling both ways (ref 20). */
+.m-app .m-tr__head > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Group header */
+
+.m-app .m-tr--group .m-tr__name {
+    border-bottom: none;
+    border-right: none;
+    padding-left: 6px;
+}
+
+.m-app .m-tr__group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.m-app .m-tr__group-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Item rows */
+
+/* A small square as in the reference; the tap area reaches past it. */
+.m-app .m-tr__expand {
+    position: relative;
+    width: 21px;
+    height: 21px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text));
+}
+
+.m-app .m-tr__expand::before {
+    content: '';
+    position: absolute;
+    inset: -12px -6px -12px -14px;
+}
+
+.m-app .m-tr__expand--blank {
+    background: transparent;
+}
+
+.m-app .m-tr__title {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    color: hsl(var(--m-text));
+    text-align: left;
+}
+
+.m-app .m-tr__title-text {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m-app .m-tr__title:active .m-tr__title-text {
+    color: hsl(var(--m-accent));
+}
+
+.m-app .m-tr__count {
+    flex-shrink: 0;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text));
+    font-size: 14px;
+    line-height: 21px;
+    text-align: center;
+}
+
+.m-app .m-tr__updates {
+    color: hsl(var(--m-text-2));
+}
+
+.m-app .m-tr__bubble {
+    position: relative;
+    display: inline-flex;
+}
+
+.m-app .m-tr__bubble-count {
+    position: absolute;
+    right: -7px;
+    bottom: -5px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 4px;
+    border-radius: 10px;
+    background: hsl(var(--m-text-2));
+    color: hsl(var(--m-card));
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    box-shadow: 0 0 0 2px hsl(var(--m-card));
+}
+
+.m-app .m-tr__bubble-empty {
+    opacity: 0.4;
+}
+
+/* Sub-items */
+
+.m-app .m-tr--sub .m-tr__name,
+.m-app .m-tr--subhead .m-tr__name,
+.m-app .m-tr--subfoot .m-tr__name {
+    background: hsl(var(--m-bg));
+}
+
+.m-app .m-tr__sub-indent {
+    width: 22px;
+    height: 100%;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.m-app .m-tr__sub-indent::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    width: 12px;
+    height: 50%;
+    border-left: 2px solid hsl(var(--m-chip-strong));
+    border-bottom: 2px solid hsl(var(--m-chip-strong));
+    border-bottom-left-radius: 7px;
+}
+
+.m-app .m-tr--sub .m-tr__title {
+    font-size: 15.5px;
+}
+
+.m-app .m-tr--subhead .m-tr__head {
+    font-size: 13px;
+    color: hsl(var(--m-text-3));
+    border-bottom: 1px solid hsl(var(--m-row-line));
+    background: hsl(var(--m-bg));
+}
+
+.m-app .m-tr__subhead-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(var(--m-text-3));
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* "+ Add …" */
+
+.m-app .m-tr__add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    font-size: 16.5px;
+    color: hsl(var(--m-link));
+    white-space: nowrap;
+}
+
+.m-app .m-tr__add--sub {
+    font-size: 15px;
+}
+
+.m-app .m-tr__add-input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1.5px solid hsl(var(--m-accent));
+    outline: none;
+    background: hsl(var(--m-card));
+}
+
+.m-app .m-tr__footer-count {
+    font-size: 14px;
+    color: hsl(var(--m-text-3));
+}
+
+.m-app .m-tr--gap {
+    background: hsl(var(--m-card));
+}
+
+/* Search or filters that match nothing. Stays in view while scrolled sideways. */
+.m-app .m-table__empty {
+    position: sticky;
+    left: 0;
+    width: 100%;
+    padding: 28px 24px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    font-size: 15.5px;
+    color: hsl(var(--m-text-2));
+}

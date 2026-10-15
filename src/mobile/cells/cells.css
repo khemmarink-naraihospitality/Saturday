@@ -1,0 +1,234 @@
+/* How values look in the phone layout's table cells and item detail rows.
+   Scoped under .m-app / .m-portal (the item screen is a portal). */
+
+.m-app .m-cell-text,
+.m-portal .m-cell-text {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+    font-size: 16px;
+    color: hsl(var(--m-text));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m-app .m-cell-text--center,
+.m-portal .m-cell-text--center {
+    justify-content: center;
+}
+
+.m-app .m-cell-center,
+.m-portal .m-cell-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.m-app .m-cell-link,
+.m-portal .m-cell-link {
+    color: hsl(var(--m-link));
+    gap: 6px;
+}
+
+/* A status fills its cell; the 1px gap underneath is the line between rows. */
+.m-app .m-status-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: calc(100% - 1px);
+    margin-bottom: 1px;
+    padding: 0 8px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m-app .m-status-pill,
+.m-portal .m-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 9px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.m-app .m-chips,
+.m-portal .m-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.m-app .m-chips--table {
+    flex-wrap: nowrap;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    padding: 0 10px;
+    overflow: hidden;
+}
+
+.m-app .m-chip,
+.m-portal .m-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.m-app .m-timeline-pill,
+.m-portal .m-timeline-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100% - 16px);
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 15px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m-app .m-check,
+.m-portal .m-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: 2px solid hsl(var(--m-chip-strong));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.m-app .m-check--on,
+.m-portal .m-check--on {
+    border-color: #00c875;
+    background: #00c875;
+}
+
+.m-app .m-more-badge,
+.m-portal .m-more-badge {
+    min-width: 26px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 7px;
+    background: hsl(var(--m-chip));
+    color: hsl(var(--m-text-2));
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Summaries in a group's "+ Add" row */
+
+.m-app .m-summary-bar {
+    display: flex;
+    width: calc(100% - 20px);
+    height: 22px;
+    margin: 0 10px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: hsl(var(--m-chip));
+}
+
+.m-app .m-summary-number {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.15;
+    overflow: hidden;
+}
+
+.m-app .m-summary-number__label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: hsl(var(--m-text-3));
+}
+
+.m-app .m-summary-files {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    line-height: 1.15;
+    color: hsl(var(--m-text));
+}
+
+.m-app .m-summary-files strong {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Item detail (Columns tab) values */
+
+.m-portal .m-detail-text {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: hsl(var(--m-text));
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-portal .m-detail-text--wrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.m-portal .m-detail-empty {
+    font-size: 16px;
+    color: hsl(var(--m-text-3));
+}
+
+.m-portal .m-people-list,
+.m-portal .m-file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.m-portal .m-people-list__item,
+.m-portal .m-file-list__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15.5px;
+    min-width: 0;
+}

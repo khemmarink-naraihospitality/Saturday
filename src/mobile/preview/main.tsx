@@ -9,7 +9,8 @@
  * Screens (?screen=): home, home-scrolled, workspace, board, item-updates,
  * board-scrolled, sheet-status, sheet-date, sheet-files, sheet-date2,
  * sheet-timeline, sheet-views, workspaces, favorites, notifications, more,
- * dashboard, item-columns, item-files. Add &theme=dark for the dark theme.
+ * dashboard, item-columns, item-files, board-large (4,800 rows, for speed).
+ * Add &theme=dark for the dark theme.
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -116,13 +117,17 @@ const openTech = () => store().setActiveBoard('b-tech');
 /** Runs after the first render, once the screen's DOM exists. */
 const afterRender = (fn: () => void, delay = 350) => window.setTimeout(fn, delay);
 
-const scrollInside = (selector: string, to: { top?: number; left?: number }) => afterRender(() => {
+/** Scrolls an element once it exists (lazy screens can take a moment to arrive). */
+const scrollInside = (selector: string, to: { top?: number; left?: number }, tries = 30) => afterRender(() => {
     const el = document.querySelector(selector) as HTMLElement | null;
-    if (!el) return;
+    if (!el) {
+        if (tries > 0) scrollInside(selector, to, tries - 1);
+        return;
+    }
     if (to.top !== undefined) el.scrollTop = to.top < 0 ? el.scrollHeight : to.top;
     if (to.left !== undefined) el.scrollLeft = to.left;
     el.dispatchEvent(new Event('scroll'));
-});
+}, tries === 30 ? 350 : 100);
 
 const scenarios: Record<string, () => void> = {
     home: () => store().navigateTo('home'),
@@ -145,7 +150,8 @@ const scenarios: Record<string, () => void> = {
     board: openTech,
     'board-scrolled': () => {
         openTech();
-        scrollInside('[data-testid="m-table-scroll"]', { left: 360 });
+        // Updates scrolled under the name column, as in reference 20.
+        scrollInside('[data-testid="m-table-scroll"]', { left: 236 });
     },
     'board-expanded': () => {
         openTech();
@@ -193,6 +199,12 @@ const scenarios: Record<string, () => void> = {
     'sheet-text': () => {
         openTech();
         afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-domain', columnId: 'c-note' }));
+    },
+    'board-large': () => {
+        const large = fx.buildLargeBoard();
+        set(state => ({ boards: [...state.boards, large] }));
+        (window as unknown as { __openedAt: number }).__openedAt = performance.now();
+        void store().setActiveBoard('b-large');
     },
     'sheet-views': () => {
         openTech();

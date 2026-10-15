@@ -24,6 +24,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../lib/supabase';
 import { WorkspaceTimeline } from '../components/dashboard/WorkspaceTimeline';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const SvgCat = ({ size, color, pose = 'walk' }: { size: number, color: string, pose?: string }) => {
     const isWalking = pose === 'walk';
@@ -235,7 +236,7 @@ const CatCushionFarm = ({ groups }: { groups: CatFarmGroup[] }) => {
 const GRID_GAP = 24;
 const MIN_WIDGET_HEIGHT = 120;
 
-const DraggableDashboardWidget = ({ id, children, span, height, compact = false, onResize }: {
+const DraggableDashboardWidget = ({ id, children, span, height, compact = false, fixed = false, onResize }: {
     id: string,
     children: React.ReactNode,
     span: number,
@@ -243,6 +244,8 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
     height?: number,
     // Folds to its header (the Timeline), so no minimum height.
     compact?: boolean,
+    // The phone layout: one column, no drag grip, no resize corner.
+    fixed?: boolean,
     onResize: (next: { span: number, height: number }) => void
 }) => {
     const {
@@ -331,7 +334,7 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
         <div ref={setNodeRef} style={style} className="dashboard-draggable-wrapper">
             <div className="widget-drag-handle-container" style={{ position: 'relative', height: '100%', width: '100%' }}>
                 {/* Drag Handle - Slimmer, positioned further left */}
-                <div 
+                {!fixed && <div 
                     {...attributes} 
                     {...listeners}
                     style={{
@@ -354,11 +357,11 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
                     title="Drag to reorder"
                 >
                     <GripVertical size={14} />
-                </div>
+                </div>}
 
                 {children}
 
-                <div
+                {!fixed && <div
                     onPointerDown={startResize}
                     className="resize-handle"
                     title="Drag to resize"
@@ -370,7 +373,7 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
                         background: 'linear-gradient(135deg, transparent 0 55%, hsl(var(--color-text-tertiary)) 55% 62%, transparent 62% 72%, hsl(var(--color-text-tertiary)) 72% 79%, transparent 79%)',
                         borderBottomRightRadius: '6px'
                     }}
-                />
+                />}
             </div>
 
             <style>{`
@@ -930,6 +933,11 @@ export const WorkspaceDashboardPage = () => {
         }, 600);
     };
     const widgetOrder = layout.order;
+
+    // On a phone the widgets stack in one column and don't drag or resize; an
+    // empty sensor set leaves the DnD context inert there.
+    const isMobile = useIsMobile();
+    const noSensors = useSensors();
 
     // Configure DnD Sensors
     const sensors = useSensors(
@@ -1880,18 +1888,18 @@ export const WorkspaceDashboardPage = () => {
 
             {/* Content Scrollable Area with DnD Context */}
             <DndContext 
-                sensors={sensors}
+                sensors={isMobile ? noSensors : sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
             >
-                <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '8px 12px calc(var(--m-tabbar-h, 66px) + 36px)' : '32px' }}>
                     <div style={{ 
                         display: 'grid', 
-                        gridTemplateColumns: 'repeat(3, 1fr)', 
+                        gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'repeat(3, 1fr)', 
                         // Rows size to their content; each widget supplies its own minimum height
                         // (see DraggableDashboardWidget), so the Timeline can fold down to its header.
                         gridAutoRows: 'auto',
-                        gap: '24px' 
+                        gap: isMobile ? '16px' : '24px' 
                     }}>
                         <SortableContext 
                             items={widgetOrder}
@@ -1901,9 +1909,10 @@ export const WorkspaceDashboardPage = () => {
                                 <DraggableDashboardWidget 
                                     key={id} 
                                     id={id} 
-                                    span={layout.sizes[id]?.span ?? DEFAULT_SPAN[id] ?? 1}
-                                    height={layout.sizes[id]?.height}
+                                    span={isMobile ? 1 : layout.sizes[id]?.span ?? DEFAULT_SPAN[id] ?? 1}
+                                    height={isMobile ? undefined : layout.sizes[id]?.height}
                                     compact={id === 'timeline'}
+                                    fixed={isMobile}
                                     onResize={(size) => updateLayout(current => ({ ...current, sizes: { ...current.sizes, [id]: size } }))}
                                 >
                                     {renderWidget(id)}

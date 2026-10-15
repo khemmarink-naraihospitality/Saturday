@@ -34,11 +34,16 @@ export interface BottomSheetProps {
  * the back gesture (it owns a history entry while open — useHistoryOverlay).
  * Rendered into document.body so it sits above every screen and the tab bar.
  */
-export const BottomSheet = (props: BottomSheetProps) =>
-    createPortal(
+export const BottomSheet = (props: BottomSheetProps) => {
+    // Here rather than in the panel: the panel stays mounted through its closing
+    // animation, and the history entry has to come off the moment the sheet
+    // closes — before whatever the tap that closed it navigates to next.
+    useHistoryOverlay(props.open, props.onClose);
+    return createPortal(
         <AnimatePresence>{props.open && <SheetPanel {...props} />}</AnimatePresence>,
         document.body
     );
+};
 
 const SheetPanel = ({
     onClose,
@@ -54,8 +59,6 @@ const SheetPanel = ({
     bodyStyle,
     children
 }: BottomSheetProps) => {
-    useHistoryOverlay(true, onClose);
-
     const dragControls = useDragControls();
     const panelRef = useRef<HTMLDivElement>(null);
     const onCloseRef = useRef(onClose);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { pushHistoryState, readHistoryState } from './history';
+import { popOverlayEntry, pushHistoryState, readHistoryState, whenHistorySettled } from './history';
 
 let overlaySeq = 0;
 
@@ -22,12 +22,14 @@ export const useHistoryOverlay = (open: boolean, onClose: () => void) => {
 
         const token = `o${++overlaySeq}`;
         let pushed = false;
+        let cancelled = false;
         let closedByBack = false;
 
-        const timer = window.setTimeout(() => {
+        const timer = window.setTimeout(() => whenHistorySettled(() => {
+            if (cancelled) return;
             pushHistoryState({ mOverlay: token });
             pushed = true;
-        }, 0);
+        }), 0);
 
         const onPopState = () => {
             if (!pushed) return;
@@ -41,11 +43,12 @@ export const useHistoryOverlay = (open: boolean, onClose: () => void) => {
         window.addEventListener('popstate', onPopState);
 
         return () => {
+            cancelled = true;
             window.clearTimeout(timer);
             window.removeEventListener('popstate', onPopState);
             // Closed by X / Save / a choice: take our entry back off the stack.
             if (pushed && !closedByBack && readHistoryState()?.mOverlay === token) {
-                window.history.back();
+                popOverlayEntry();
             }
         };
     }, [open]);

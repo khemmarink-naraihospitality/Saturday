@@ -63,6 +63,32 @@ const openWorkspaceFromSlug = (slug: string) => {
     if (s.activePage !== 'workspace') s.navigateTo('workspace');
 };
 
+/** Gives the phone-only pages their history entry / URL, from the store's current page. */
+const syncUrlFromPage = () => {
+    const { activePage, activeWorkspaceId, workspaces } = useBoardStore.getState();
+    const path = window.location.pathname;
+    const state = readHistoryState();
+
+    if (ROOT_PAGES.includes(activePage)) {
+        // Home itself is MainApp's ("/" with no mPage); only switching between
+        // root pages while already at "/" needs an entry of our own.
+        const wanted = activePage === 'home' ? undefined : activePage;
+        if (path !== '/' && activePage === 'home') return; // MainApp pushes "/" for Home
+        if (path !== '/' || state?.mPage !== wanted) {
+            window.history.pushState(wanted ? { mPage: wanted } : {}, '', '/');
+        }
+        return;
+    }
+
+    if (activePage === 'workspace') {
+        const workspace = workspaces.find(w => w.id === activeWorkspaceId);
+        if (!workspace) return;
+        const userName = useUserStore.getState().currentUser?.name;
+        const wanted = `/${userName ? slugify(userName) : 'u'}/${slugify(workspace.title)}`;
+        if (path !== wanted) window.history.pushState({ mPage: 'workspace' }, '', wanted);
+    }
+};
+
 /**
  * Keeps the phone layout's screens and the browser history in step. Mount once,
  * in MobileApp.
@@ -107,25 +133,12 @@ export const useMobileRouting = () => {
         return () => window.clearTimeout(timer);
     }, []);
 
+    // Decided a tick later, from the store as it is by then. A back/forward
+    // runs MainApp's popstate handler (which sends "/" to Home) and then ours
+    // (which restores the page the entry was for); React renders in between,
+    // and pushing for that passing Home would add an entry and land there.
     useEffect(() => {
-        const path = window.location.pathname;
-        const state = readHistoryState();
-
-        if (ROOT_PAGES.includes(activePage)) {
-            // Home itself is MainApp's ("/" with no mPage); only switching between
-            // root pages while already at "/" needs an entry of our own.
-            const wanted = activePage === 'home' ? undefined : activePage;
-            if (path !== '/' && activePage === 'home') return; // MainApp pushes "/" for Home
-            if (path !== '/' || state?.mPage !== wanted) {
-                window.history.pushState(wanted ? { mPage: wanted } : {}, '', '/');
-            }
-            return;
-        }
-
-        if (activePage === 'workspace' && workspaceTitle) {
-            const username = userName ? slugify(userName) : 'u';
-            const wanted = `/${username}/${slugify(workspaceTitle)}`;
-            if (path !== wanted) window.history.pushState({ mPage: 'workspace' }, '', wanted);
-        }
+        const timer = window.setTimeout(syncUrlFromPage, 0);
+        return () => window.clearTimeout(timer);
     }, [activePage, activeWorkspaceId, workspaceTitle, userName]);
 };

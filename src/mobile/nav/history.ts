@@ -70,3 +70,59 @@ export const pushHistoryState = (extra: Record<string, unknown>, url?: string) =
 };
 
 export const readHistoryState = currentState;
+
+// ── Keeping overlay pushes and pops in order ────────────────────────────────
+//
+// history.back() is asynchronous: it only takes effect on a later task. A sheet
+// that closes while another opens in the same tap (a menu → "Rename") would
+// otherwise push its entry before the first one's back has landed, and that
+// back would then take the new entry off instead. So every back issued for an
+// overlay is counted, and pushes / navigations wait until they have all landed.
+
+let pendingBacks = 0;
+let settleTimer = 0;
+const settleWaiters: (() => void)[] = [];
+
+const flushWaiters = () => {
+    while (pendingBacks === 0 && settleWaiters.length) settleWaiters.shift()!();
+};
+
+if (typeof window !== 'undefined') {
+    // Registered when this module loads — before any overlay's own listener —
+    // so the count is already down when those run.
+    window.addEventListener('popstate', () => {
+        if (pendingBacks > 0) pendingBacks--;
+        if (pendingBacks === 0) {
+            window.clearTimeout(settleTimer);
+            // After the other popstate listeners for this same event have run.
+            window.setTimeout(flushWaiters, 0);
+        }
+    });
+}
+
+/** Steps back off an overlay's own entry, counting it until it lands. */
+export const popOverlayEntry = () => {
+    pendingBacks++;
+    window.clearTimeout(settleTimer);
+    // A back that never lands (nothing to go back to) mustn't block everything.
+    settleTimer = window.setTimeout(() => {
+        pendingBacks = 0;
+        flushWaiters();
+    }, 700);
+    window.history.back();
+};
+
+/** Runs `fn` once every pending overlay back has landed (now, if there are none). */
+export const whenHistorySettled = (fn: () => void) => {
+    if (pendingBacks === 0) fn();
+    else settleWaiters.push(fn);
+};
+
+/**
+ * Navigating from inside a sheet: close the sheet first (its entry comes off
+ * during the same React commit), then call this — `fn` runs after that back has
+ * landed, so the next screen's URL is pushed on top of the right entry.
+ */
+export const afterSheetClose = (fn: () => void) => {
+    window.setTimeout(() => whenHistorySettled(fn), 0);
+};

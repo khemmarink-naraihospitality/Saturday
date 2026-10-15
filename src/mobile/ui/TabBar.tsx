@@ -1,11 +1,11 @@
-import { Bell, CircleEllipsis, House, LayoutDashboard, Star, type LucideIcon } from 'lucide-react';
+import { Bell, CircleEllipsis, House, PieChart, Star, type LucideIcon } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { openTab, TAB_FOR_PAGE, type MobileTab } from '../nav/navigation';
 
 const TABS: { tab: MobileTab; label: string; icon: LucideIcon; fillWhenActive: boolean }[] = [
     { tab: 'home', label: 'Home', icon: House, fillWhenActive: true },
     { tab: 'favorites', label: 'Favorites', icon: Star, fillWhenActive: true },
-    { tab: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, fillWhenActive: false },
+    { tab: 'dashboard', label: 'Dashboard', icon: PieChart, fillWhenActive: false },
     { tab: 'notifications', label: 'Notifications', icon: Bell, fillWhenActive: true },
     { tab: 'more', label: 'More', icon: CircleEllipsis, fillWhenActive: false },
 ];

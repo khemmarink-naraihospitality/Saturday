@@ -60,6 +60,10 @@ client.auth.signOut = async () => ({ error: null });
 const params = new URLSearchParams(window.location.search);
 const screen = params.get('screen') || 'home';
 
+// Shared components that adapt to the phone (the dashboard) ask useIsMobile(),
+// which in the real app is what decided to render MobileApp in the first place.
+try { localStorage.setItem('saturday:layout', 'mobile'); } catch { /* ignore */ }
+
 if (params.get('theme') === 'dark') useThemeStore.getState().setTheme('dark');
 else useThemeStore.getState().setTheme('light');
 

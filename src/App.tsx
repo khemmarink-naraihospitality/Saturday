@@ -17,6 +17,9 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { supabase } from './lib/supabase';
 import { takePendingDeepLink, clearPendingDeepLink } from './lib/pendingDeepLink';
 import { clearBoardUnlock } from './lib/boardPinUnlock';
+import { useIsMobile } from './hooks/useIsMobile';
+import './lib/initialPath';
+import { MobileLayoutPill } from './components/layout/MobileLayoutPill';
 
 // HomePage moved to lazy
 import { TopBar } from './components/layout/TopBar';
@@ -49,6 +52,8 @@ const BoardPage = lazy(() => import('./pages/BoardPage').then(m => ({ default: m
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
 const WorkspaceDashboardPage = lazy(() => import('./pages/WorkspaceDashboardPage').then(m => ({ default: m.WorkspaceDashboardPage })));
+// The phone layout: its own chunk, only fetched on a phone-sized screen.
+const MobileApp = lazy(() => import('./mobile/MobileApp').then(m => ({ default: m.MobileApp })));
 
 // Loading fallback component
 function PageLoader() {
@@ -214,6 +219,7 @@ function MainApp() {
   const activeBoard = boards.find(b => b.id === activeBoardId);
   const { session } = useAuth();
   const setUser = useUserStore(state => state.setUser); // Import setter
+  const isMobile = useIsMobile();
 
   const lastUserIdRef = useRef<string | null>(null);
   
@@ -577,6 +583,16 @@ function MainApp() {
     return <LoadingScreen message="Loading your workspace..." />;
   }
 
+  // Phones get their own layout over the same store; everything above (data
+  // loading, realtime, deep links, the URL) is shared with the desktop one.
+  if (isMobile) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <MobileApp />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-subtle))', borderRadius: '8px', overflow: 'hidden' }}>
       <Sidebar />
@@ -648,6 +664,7 @@ function MainApp() {
 
       </main>
       <ContactSupportButton />
+      <MobileLayoutPill />
     </div>
   )
 }

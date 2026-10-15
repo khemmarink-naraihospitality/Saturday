@@ -1,0 +1,207 @@
+/**
+ * Phone-layout preview: /mobile-preview.html?screen=<name> in `npm run dev`.
+ *
+ * Renders MobileApp over sample data (fixtures.ts) with every network call
+ * stubbed out, so each screen can be opened, clicked through and screenshotted
+ * without signing in or touching the real database. Development only: the page
+ * is not part of the production build (vite builds index.html alone).
+ *
+ * Screens (?screen=): home, home-scrolled, workspace, board, item-updates,
+ * board-scrolled, sheet-status, sheet-date, sheet-files, sheet-date2,
+ * sheet-timeline, sheet-views, workspaces, favorites, notifications, more,
+ * dashboard, item-columns, item-files. Add &theme=dark for the dark theme.
+ */
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import '../../styles/index.css';
+import { supabase } from '../../lib/supabase';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { useBoardStore } from '../../store/useBoardStore';
+import { useUserStore } from '../../store/useUserStore';
+import { useThemeStore } from '../../store/useThemeStore';
+import { MobileApp } from '../MobileApp';
+import { useMobileUI } from '../state/mobileStore';
+import * as fx from './fixtures';
+
+// ── Network: every query resolves to an empty, successful result ───────────
+
+const emptyResult = { data: null, error: null, count: 0, status: 200, statusText: 'OK' };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const chain: any = new Proxy(function () { /* callable */ }, {
+    get(_target, prop) {
+        if (prop === 'then') {
+            return (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => Promise.resolve(emptyResult).then(resolve, reject);
+        }
+        return () => chain;
+    },
+    apply: () => chain,
+});
+
+const fakeUser = { id: fx.ME.id, email: fx.ME.email, user_metadata: { full_name: fx.ME.name }, app_metadata: { provider: 'google' } };
+const fakeSession = { user: fakeUser, access_token: 'preview', refresh_token: 'preview', expires_in: 3600, token_type: 'bearer' };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const client = supabase as any;
+client.from = () => chain;
+client.rpc = () => chain;
+client.channel = () => chain;
+client.removeChannel = async () => 'ok';
+// functions / storage are getters on the client: shadow them on the instance.
+Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async () => ({ data: null, error: null }) } });
+Object.defineProperty(client, 'storage', { configurable: true, value: { from: () => chain } });
+client.auth.getSession = async () => ({ data: { session: fakeSession }, error: null });
+client.auth.getUser = async () => ({ data: { user: fakeUser }, error: null });
+client.auth.onAuthStateChange = () => ({ data: { subscription: { unsubscribe() { /* noop */ } } } });
+client.auth.signOut = async () => ({ error: null });
+
+// ── Stores: sample data, and the loaders that would hit the network ────────
+
+const params = new URLSearchParams(window.location.search);
+const screen = params.get('screen') || 'home';
+
+if (params.get('theme') === 'dark') useThemeStore.getState().setTheme('dark');
+else useThemeStore.getState().setTheme('light');
+
+useUserStore.setState({
+    currentUser: { id: fx.ME.id, name: fx.ME.name, email: fx.ME.email, avatar: '', role: 'owner', system_role: 'super_admin', is_approved: true, is_active: true },
+});
+
+const set = useBoardStore.setState;
+set({
+    workspaces: fx.workspaces,
+    boards: fx.boards,
+    notifications: fx.notifications,
+    activeWorkspaceId: 'ws-bt',
+    activePage: 'home',
+    activeBoardId: null,
+    activeItemId: null,
+    isLoading: false,
+    isInitializing: false,
+    userWorkspaceRoles: { 'ws-bt': 'owner', 'ws-btd': 'owner', 'ws-main': 'owner', 'ws-mkt': 'member', 'ws-fin': 'owner', 'ws-ops': 'member' },
+    userBoardRoles: {},
+    sharedBoardIds: ['b-tech'],
+    sharedWorkspaceIds: [],
+    activeBoardMembers: fx.boardMembers,
+    // Loaders and subscriptions: the data is already here.
+    loadUserData: async () => { /* preview */ },
+    loadBoardData: async () => { /* preview */ },
+    loadItemUpdates: async () => true,
+    loadNotifications: async () => { /* preview */ },
+    subscribeToRealtime: () => { /* preview */ },
+    unsubscribeFromRealtime: () => { /* preview */ },
+    getBoardMembers: async () => fx.boardMembers,
+    getWorkspaceMembers: async (workspaceId: string) => (fx.workspaceMembers[workspaceId] as never[]) || [],
+    setActiveBoard: async (id: string | null) => {
+        set(state => ({
+            activeBoardId: id,
+            activePage: 'board',
+            activeBoardMembers: fx.boardMembers,
+            activeWorkspaceId: state.boards.find(b => b.id === id)?.workspaceId || state.activeWorkspaceId,
+            boards: state.boards.map(b => (b.id === id ? { ...b, lastViewedAt: new Date().toISOString() } : b)),
+        }));
+    },
+});
+
+// ── Scenarios ───────────────────────────────────────────────────────────────
+
+const store = () => useBoardStore.getState();
+const ui = () => useMobileUI.getState();
+const openTech = () => store().setActiveBoard('b-tech');
+
+/** Runs after the first render, once the screen's DOM exists. */
+const afterRender = (fn: () => void, delay = 350) => window.setTimeout(fn, delay);
+
+const scrollInside = (selector: string, to: { top?: number; left?: number }) => afterRender(() => {
+    const el = document.querySelector(selector) as HTMLElement | null;
+    if (!el) return;
+    if (to.top !== undefined) el.scrollTop = to.top < 0 ? el.scrollHeight : to.top;
+    if (to.left !== undefined) el.scrollLeft = to.left;
+    el.dispatchEvent(new Event('scroll'));
+});
+
+const scenarios: Record<string, () => void> = {
+    home: () => store().navigateTo('home'),
+    'home-scrolled': () => {
+        store().navigateTo('home');
+        scrollInside('[data-testid="m-home"] .m-scroll', { top: -1 });
+    },
+    workspaces: () => store().navigateTo('workspaces'),
+    workspace: () => {
+        store().setActiveWorkspace('ws-bt');
+        store().navigateTo('workspace');
+    },
+    favorites: () => store().navigateTo('favorites'),
+    notifications: () => store().navigateTo('notifications'),
+    more: () => store().navigateTo('more'),
+    dashboard: () => {
+        store().setActiveWorkspace('ws-btd');
+        store().navigateTo('dashboard');
+    },
+    board: openTech,
+    'board-scrolled': () => {
+        openTech();
+        scrollInside('[data-testid="m-table-scroll"]', { left: 360 });
+    },
+    'board-expanded': () => {
+        openTech();
+        store().toggleItemExpansion('b-tech', 'i-microsoft-office-license');
+    },
+    'item-updates': () => {
+        openTech();
+        ui().setItemTab('updates');
+        store().setActiveItem('i-ragnar');
+    },
+    'item-columns': () => {
+        openTech();
+        ui().setItemTab('columns');
+        store().setActiveItem('i-ragnar');
+    },
+    'item-files': () => {
+        openTech();
+        ui().setItemTab('files');
+        store().setActiveItem('i-ragnar');
+    },
+    'sheet-status': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-anti-virus', columnId: 'c-champ' }));
+    },
+    'sheet-date': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-google-workspace-license', columnId: 'c-renew' }));
+    },
+    'sheet-files': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-domain', columnId: 'c-file' }));
+    },
+    'sheet-date2': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-domain', columnId: 'c-expire' }));
+    },
+    'sheet-timeline': () => {
+        void store().setActiveBoard('b-it-bo');
+        afterRender(() => ui().openCellEditor({ boardId: 'b-it-bo', itemId: 'bo-2', columnId: 'bo-tl' }));
+    },
+    'sheet-people': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-domain', columnId: 'c-resp' }));
+    },
+    'sheet-text': () => {
+        openTech();
+        afterRender(() => ui().openCellEditor({ boardId: 'b-tech', itemId: 'i-domain', columnId: 'c-note' }));
+    },
+    'sheet-views': () => {
+        openTech();
+        afterRender(() => ui().openViewsSheet('b-tech'));
+    },
+};
+
+(scenarios[screen] || scenarios.home)();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+        <AuthProvider>
+            <MobileApp />
+        </AuthProvider>
+    </React.StrictMode>
+);

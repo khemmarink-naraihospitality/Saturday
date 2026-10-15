@@ -1,0 +1,67 @@
+import { useSyncExternalStore } from 'react';
+
+// Phones get the mobile layout (src/mobile); everything wider keeps the desktop
+// one exactly as it is. A phone held sideways is wider than 767px but only
+// ~430px tall, which the desktop layout can't use either, so a touch screen that
+// short counts as mobile too. Tablets stay on desktop.
+const MOBILE_QUERY = '(max-width: 767px), (pointer: coarse) and (max-height: 500px)';
+
+// "desktop" / "mobile" pins the layout regardless of screen size — More > Desktop
+// site on a phone, and the pill that brings the phone layout back. Absent = auto.
+const LAYOUT_KEY = 'saturday:layout';
+const LAYOUT_EVENT = 'saturday:layout-change';
+
+export type LayoutOverride = 'desktop' | 'mobile' | null;
+
+/**
+ * Whether phones get the phone layout automatically. Off while it is being
+ * built, so every intermediate push leaves phones on the desktop layout they
+ * have today; `localStorage['saturday:layout'] = 'mobile'` shows it meanwhile.
+ */
+export const MOBILE_LAYOUT_ENABLED = false;
+
+export const getLayoutOverride = (): LayoutOverride => {
+    try {
+        const value = localStorage.getItem(LAYOUT_KEY);
+        return value === 'desktop' || value === 'mobile' ? value : null;
+    } catch {
+        return null;
+    }
+};
+
+export const setLayoutOverride = (value: LayoutOverride) => {
+    try {
+        if (value) localStorage.setItem(LAYOUT_KEY, value);
+        else localStorage.removeItem(LAYOUT_KEY);
+    } catch { /* private mode — the choice just won't stick */ }
+    window.dispatchEvent(new Event(LAYOUT_EVENT));
+};
+
+/** Whether the screen itself is phone-sized, ignoring any override. */
+export const isSmallScreen = () =>
+    typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(MOBILE_QUERY).matches;
+
+const subscribe = (onChange: () => void) => {
+    const mql = window.matchMedia?.(MOBILE_QUERY);
+    mql?.addEventListener?.('change', onChange);
+    window.addEventListener(LAYOUT_EVENT, onChange);
+    window.addEventListener('storage', onChange);
+    return () => {
+        mql?.removeEventListener?.('change', onChange);
+        window.removeEventListener(LAYOUT_EVENT, onChange);
+        window.removeEventListener('storage', onChange);
+    };
+};
+
+const getSnapshot = () => {
+    const override = getLayoutOverride();
+    if (override) return override === 'mobile';
+    return MOBILE_LAYOUT_ENABLED && isSmallScreen();
+};
+
+/** True when the app should render its mobile layout. */
+export const useIsMobile = () => useSyncExternalStore(subscribe, getSnapshot, () => false);
+
+/** True when a phone has been switched to the desktop layout (More > Desktop site). */
+export const useForcedDesktopOnPhone = () =>
+    useSyncExternalStore(subscribe, () => getLayoutOverride() === 'desktop' && isSmallScreen(), () => false);

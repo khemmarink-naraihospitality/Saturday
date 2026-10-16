@@ -17,6 +17,8 @@ interface CarryMove {
     groupId?: string;
     createMissing: boolean;
     regroup?: string;
+    /** 'type' for rows arriving from another board (see planCarry). */
+    match?: 'title' | 'type';
 }
 
 // Takes moved rows' values along to the columns of where they went, adding the
@@ -34,7 +36,7 @@ const carryValues = async (set: any, get: () => BoardState, boardId: string, mov
 
     for (const move of moves) {
         const to = move.scope === 'subitem' ? subitemColumns(working, move.groupId) : itemColumns(working);
-        const plan = planCarry(move.rows, move.from, to, { scope: move.scope, groupId: move.groupId }, uuidv4, move.createMissing);
+        const plan = planCarry(move.rows, move.from, to, { scope: move.scope, groupId: move.groupId }, uuidv4, move.createMissing, move.match);
         plan.updated.forEach(c => changed.set(c.id, c));
         added.push(...plan.created);
         working = [...working.map(c => changed.get(c.id) || c), ...plan.created];
@@ -1065,6 +1067,11 @@ export const createItemSlice: StateCreator<
         }
 
         if (isCrossBoard) {
+            // The target's columns are where the values go. The move menu opens
+            // (loads) a board before offering its groups; make sure all the same.
+            if (!get().boards.find(b => b.id === targetBoardId)?.isDataLoaded) {
+                await get().loadBoardData(targetBoardId);
+            }
             const sourceItems = boards.find(bd => bd.id === activeBoardId)?.items || [];
             const movingItems = sourceItems
                 .filter(i => selectedItemIds.includes(i.id))
@@ -1121,6 +1128,49 @@ export const createItemSlice: StateCreator<
                 await supabase.from('items')
                     .update({ group_id: groupId, board_id: targetBoardId })
                     .in('id', followers.map(i => i.id));
+            }
+
+            // Values are keyed by column id and every board has its own columns,
+            // so a moved row kept its name and updates and showed nothing else.
+            // Each value goes to the target's column of the same type (the same
+            // title first, then the next of that type), status labels by name.
+            // Items fill the target's own columns only; sub-items get their new
+            // group's sub-item columns, missing ones added, as when a parent
+            // changes group. A value with no column of its type there stays
+            // stored under its old column — moved back, it shows again.
+            const target = get().boards.find(b => b.id === targetBoardId);
+            if (sourceBoard && target?.isDataLoaded) {
+                const byId = new Map(sourceBoard.items.map(i => [i.id, i]));
+                const subGroupOf = (row: Item) => (row.parentId ? byId.get(row.parentId)?.groupId : undefined) || row.groupId;
+                const targetParentGroup = parentId
+                    ? target.items.find(i => i.id === parentId)?.groupId || groupId
+                    : groupId;
+                const sets = new Map<string, { rows: Item[]; from: Column[] }>();
+                const addTo = (key: string, from: () => Column[], row: Item) => {
+                    const set = sets.get(key) || { rows: [], from: from() };
+                    set.rows.push(row);
+                    sets.set(key, set);
+                };
+                selectedItemIds.forEach(id => {
+                    const row = byId.get(id);
+                    if (!row) return;
+                    if (row.parentId) addTo(`sub:${subGroupOf(row)}`, () => subitemColumns(sourceBoard.columns, subGroupOf(row)), row);
+                    else addTo('item', () => itemColumns(sourceBoard.columns), row);
+                });
+                const crossCarry: CarryMove[] = [...sets.values()].map(({ rows, from }) => parentId
+                    ? { rows, from, scope: 'subitem' as const, groupId: targetParentGroup, createMissing: true, match: 'type' as const }
+                    : { rows, from, scope: 'item' as const, createMissing: false, match: 'type' as const });
+                const followersBySourceGroup = new Map<string, Item[]>();
+                followers.forEach(f => {
+                    const original = byId.get(f.id);
+                    if (!original) return;
+                    const key = subGroupOf(original);
+                    followersBySourceGroup.set(key, [...(followersBySourceGroup.get(key) || []), original]);
+                });
+                followersBySourceGroup.forEach((rows, sourceGroup) => crossCarry.push({
+                    rows, from: subitemColumns(sourceBoard.columns, sourceGroup), scope: 'subitem', groupId, createMissing: true, match: 'type',
+                }));
+                await carryValues(set, get, targetBoardId, crossCarry);
             }
         } else {
             set(state => ({

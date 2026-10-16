@@ -71,10 +71,14 @@ export interface CarryPlan {
  * this they'd stay under columns the rows' new place doesn't show.
  *
  * Each source column with a value in some row is matched to a target column of
- * the same title and type. Status values are option ids and are matched by
- * label, a label the target lacks being added to it. With `createMissing`, an
- * unmatched column is cloned into the target set so nothing goes out of sight;
- * without it, the value stays where it was (still stored, just not shown).
+ * the same title and type. With `match: 'type'` (rows moving to another board,
+ * whose columns are named however that board's people named them) a column
+ * left over then takes the next unmatched target column of the same type, in
+ * the target's order — titles first, so two date columns don't cross over.
+ * Status values are option ids and are matched by label, a label the target
+ * lacks being added to it. With `createMissing`, an unmatched column is cloned
+ * into the target set so nothing goes out of sight; without it, the value
+ * stays where it was (still stored, just not shown).
  */
 export const planCarry = (
     rows: { values?: Record<string, any> }[],
@@ -82,7 +86,8 @@ export const planCarry = (
     to: Column[],
     target: { scope: ColumnScope; groupId?: string },
     newId: () => string,
-    createMissing = true
+    createMissing = true,
+    match: 'title' | 'type' = 'title'
 ): CarryPlan => {
     const mapping = new Map<string, { to: string; options?: Map<string, string> }>();
     const created: Column[] = [];
@@ -90,11 +95,21 @@ export const planCarry = (
     const taken = new Set<string>();
     let nextOrder = Math.max(0, ...to.map(c => c.order || 0)) + 1;
 
-    for (const src of from) {
-        if (!rows.some(r => hasValue(r.values?.[src.id]))) continue;
-        const match = to.find(t => !taken.has(t.id) && t.type === src.type && sameTitle(t.title, src.title));
+    // Which target column each source column with a value goes to.
+    const sources = from.filter(src => rows.some(r => hasValue(r.values?.[src.id])));
+    const picked = new Map<string, Column>();
+    const pick = (src: Column, test: (t: Column) => boolean) => {
+        const found = to.find(t => !taken.has(t.id) && t.type === src.type && test(t));
+        if (!found) return;
+        taken.add(found.id);
+        picked.set(src.id, found);
+    };
+    sources.forEach(src => pick(src, t => sameTitle(t.title, src.title)));
+    if (match === 'type') sources.forEach(src => { if (!picked.has(src.id)) pick(src, () => true); });
+
+    for (const src of sources) {
+        const match = picked.get(src.id);
         if (match) {
-            taken.add(match.id);
             let options: Map<string, string> | undefined;
             if (src.type === 'status') {
                 options = new Map();

@@ -98,5 +98,52 @@ check('every live value is under a column its row shows', items.filter(i => !('i
 }), true);
 check('current-shape input is left as it is', splitSharedColumns([{ id: 'a', scope: 'item' }, { id: 'b', scope: 'subitem', group_id: 'G1' }], items, groups, newId).columns.map(c => c.id), ['a', 'b']);
 
+console.log('\nmoving to another board: columns matched by type');
+{
+    // Tech Summary → IT BO, as in the report: the target's columns are named
+    // differently and some types aren't there at all.
+    const src: Column[] = [
+        { id: 'resp', title: 'Responsible', type: 'people', order: 1, scope: 'item' },
+        { id: 'champ', title: 'Champion', type: 'status', order: 2, scope: 'item', options: [{ id: 'o-ui', label: 'IT (Ui)', color: '#037f4c' }, { id: 'o-ops', label: 'Ops', color: '#fdab3d' }] },
+        { id: 'renew', title: 'Renewal Date', type: 'date', order: 3, scope: 'item' },
+        { id: 'expire', title: 'Expire Date', type: 'date', order: 4, scope: 'item' },
+        { id: 'file', title: 'File', type: 'files', order: 5, scope: 'item' },
+        { id: 'note', title: 'Notes', type: 'text', order: 6, scope: 'item' },
+    ];
+    const dst: Column[] = [
+        { id: 'start', title: 'Start', type: 'date', order: 1, scope: 'item' },
+        { id: 'expiry', title: 'expire date', type: 'date', order: 2, scope: 'item' },
+        { id: 'stage', title: 'Stage', type: 'status', order: 3, scope: 'item', options: [{ id: 't-ops', label: 'ops', color: '#ccc' }] },
+        { id: 'owner', title: 'Owner', type: 'people', order: 4, scope: 'item' },
+        { id: 'docs', title: 'Docs', type: 'files', order: 5, scope: 'item' },
+    ];
+    const row = { values: { resp: ['u1'], champ: 'o-ui', renew: '2026-02-09', expire: '2026-12-31', file: [{ id: 'f', name: 'a.pdf', url: 'x', type: 'file-url' }], note: 'keep me' } };
+    const row2 = { values: { champ: 'o-ops' } };
+    const byType = planCarry([row, row2], src, dst, { scope: 'item' }, newId, false, 'type');
+    const moved = byType.remap(row.values);
+    check('same title wins over order (Expire → "expire date", not the first date column)', moved.expiry, '2026-12-31');
+    check('the other date takes the remaining date column', moved.start, '2026-02-09');
+    check('people → the people column', moved.owner, ['u1']);
+    check('files → the files column', moved.docs, row.values.file);
+    const stage = byType.updated.find(c => c.id === 'stage');
+    const added = stage?.options?.find(o => o.label === 'IT (Ui)');
+    check('a label the target lacks is added to its status column', !!added && added.color === '#037f4c', true);
+    check('…and the value points at it', moved.stage, added?.id);
+    check('a label it has is matched by name', byType.remap(row2.values).stage, 't-ops');
+    check('a column with no type to go to keeps its value under the old id', moved.note, 'keep me');
+    check('mapped values leave their old ids', ['resp', 'champ', 'renew', 'expire', 'file'].filter(k => k in moved), []);
+    check('nothing is created for the target board (createMissing off)', byType.created, []);
+
+    const byTitle = planCarry([row], src, dst, { scope: 'item' }, newId, false);
+    const titleOnly = byTitle.remap(row.values);
+    check('title matching (within a board) is unchanged: only the same-named column', Object.keys(titleOnly).sort(), ['champ', 'expiry', 'file', 'note', 'renew', 'resp'].sort());
+
+    const back = planCarry([{ values: moved }], dst, src, { scope: 'item' }, newId, false, 'type').remap(moved);
+    check('moved back, values return to the original columns', [back.resp, back.champ, back.renew, back.expire, back.note], [['u1'], 'o-ui', '2026-02-09', '2026-12-31', 'keep me']);
+
+    const empty = planCarry([{ values: {} }], src, dst, { scope: 'item' }, newId, false, 'type');
+    check('rows with no values: nothing to plan', [empty.updated, empty.created], [[], []]);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

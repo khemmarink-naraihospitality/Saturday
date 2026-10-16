@@ -105,6 +105,15 @@
     align-items: flex-start;
 }
 
+/* The cell whose editor sheet is open. */
+.m-app .m-tr__cell--editing::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 0 2px hsl(var(--m-accent));
+    pointer-events: none;
+}
+
 .m-app .m-tr__cell[role="button"]:active {
     filter: brightness(0.94);
 }

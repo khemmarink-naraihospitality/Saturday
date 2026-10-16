@@ -9,6 +9,7 @@ import { itemUpdateSummary } from '../../lib/utils';
 import type { Column, Item } from '../../types';
 import { columnWidthFor, NAME_COLUMN_MIN_WIDTH, NAME_COLUMN_WIDTH, UPDATES_COLUMN_WIDTH } from '../cells';
 import { useBoardPeople } from '../ui';
+import { mediumSheetHeightPx } from '../ui/BottomSheet';
 import { useMobileUI } from '../state/mobileStore';
 import { openItem } from '../nav/navigation';
 import { GUTTER, ROW_HEIGHT, nameColumnWidth, rowOffsets, stickyGroupIndex, toTableRows, type TableRow } from './table/layout';
@@ -42,6 +43,7 @@ export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: bo
     const setBoardFilters = useBoardStore(state => state.setBoardFilters);
     const setSearchQuery = useBoardStore(state => state.setSearchQuery);
     const people = useBoardPeople();
+    const editing = useMobileUI(state => state.cellEditor);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const [stickyIndex, setStickyIndex] = useState<number | null>(null);
@@ -132,6 +134,26 @@ export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: bo
     }, []);
     useEffect(() => { onScroll(); }, [onScroll]);
 
+    // A cell's editor sheet covers the lower half of the screen: bring the row
+    // being edited up above it (references 21 and 25 show the row in sight).
+    const coveredByItem = useBoardStore(state => !!state.activeItemId);
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!editing || editing.boardId !== boardId || coveredByItem || !el) return;
+        const index = rows.findIndex(r => (r.type === 'item' || r.type === 'subitem') && r.id === editing.itemId);
+        if (index < 0) return;
+        const pinnedHeader = ROW_HEIGHT.group;
+        const top = offsets[index];
+        const bottom = top + ROW_HEIGHT[rows[index].type];
+        const sheetTop = window.innerHeight - mediumSheetHeightPx(window.innerHeight);
+        const visibleBottom = sheetTop - el.getBoundingClientRect().top - 12;
+        if (bottom - el.scrollTop > visibleBottom || top - el.scrollTop < pinnedHeader) {
+            el.scrollTo({ top: Math.max(0, top - pinnedHeader - 8), behavior: 'smooth' });
+        }
+        // Only when a sheet opens, not on every change to the rows behind it.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editing?.itemId, editing?.columnId]);
+
     const ctx: RowContext = useMemo(() => ({
         boardId,
         canEdit,
@@ -199,6 +221,7 @@ export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: bo
                         expanded={(board.expandedItemIds || []).includes(item.id)}
                         updatesCount={itemUpdateSummary(item).count}
                         roundTop={index > 0 && rows[index - 1].type === 'group'}
+                        editingColumnId={editing && editing.itemId === item.id ? editing.columnId : undefined}
                         onToggleExpand={onToggleExpand}
                         onOpen={onOpen}
                         onOpenUpdates={onOpenUpdates}

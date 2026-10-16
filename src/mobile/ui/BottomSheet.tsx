@@ -13,9 +13,11 @@ export interface BottomSheetProps {
     headerRight?: ReactNode;
     /** Replaces the X on the left (e.g. a "Cancel" text button). */
     headerLeft?: ReactNode;
-    /** 'auto' grows with its content up to near the top; 'tall' is always that
-     *  tall; 'full' covers the whole screen (the item screen). */
-    size?: 'auto' | 'tall' | 'full';
+    /** 'auto' grows with its content up to near the top; 'medium' is a fixed
+     *  half-and-a-bit, like the cell editors in references 21–25, so the row
+     *  being edited stays in sight above it; 'tall' reaches near the top;
+     *  'full' covers the whole screen (the item screen). */
+    size?: 'auto' | 'medium' | 'tall' | 'full';
     /** No header row at all; the children draw their own. */
     bare?: boolean;
     /** Pinned under the scrolling body (a composer, a button row). */
@@ -29,6 +31,13 @@ export interface BottomSheetProps {
     className?: string;
     children: ReactNode;
 }
+
+/** A 'medium' sheet: 54% of the screen, but room for a month calendar on a small phone. */
+export const MEDIUM_SHEET_HEIGHT = 'max(54dvh, min(500px, calc(100dvh - var(--m-sheet-gap))))';
+
+/** The same in pixels, for code that has to keep something clear of the sheet. */
+export const mediumSheetHeightPx = (viewportHeight: number) =>
+    Math.max(viewportHeight * 0.54, Math.min(500, viewportHeight - 56));
 
 /**
  * The phone layout's one sheet: slides up from the bottom over a dimmed page,
@@ -86,7 +95,9 @@ const SheetPanel = ({
 
     const panelStyle: CSSProperties | undefined = size === 'tall'
         ? { height: 'calc(100dvh - var(--m-sheet-gap))' }
-        : undefined;
+        : size === 'medium'
+            ? { height: MEDIUM_SHEET_HEIGHT }
+            : undefined;
 
     return (
         <div className="m-portal">

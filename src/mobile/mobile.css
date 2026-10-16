@@ -13,7 +13,7 @@
     --m-chip: 228 22% 94%;          /* square icon buttons, inputs, segmented control */
     --m-chip-strong: 228 18% 89%;
     --m-field: 225 20% 97%;         /* pale fields with a hairline border (board toolbar) */
-    --m-scrim: 230 25% 10% / 0.42;  /* behind a bottom sheet */
+    --m-scrim: 230 25% 10% / 0.2;   /* behind a bottom sheet: a light veil, as in the references */
     --m-row-line: 228 20% 91%;
 
     /* Text */

@@ -85,7 +85,7 @@ const UpdatesCell = ({ count, onOpen }: { count: number; onOpen: () => void }) =
 );
 
 /** An item or sub-item row. */
-export const ItemRow = memo(({ item, columns, ctx, groupColor, isSub, subCount, expanded, updatesCount, roundTop, onToggleExpand, onOpen, onOpenUpdates }: {
+export const ItemRow = memo(({ item, columns, ctx, groupColor, isSub, subCount, expanded, updatesCount, roundTop, editingColumnId, onToggleExpand, onOpen, onOpenUpdates }: {
     item: Item;
     columns: Column[];
     ctx: RowContext;
@@ -95,6 +95,8 @@ export const ItemRow = memo(({ item, columns, ctx, groupColor, isSub, subCount, 
     expanded: boolean;
     updatesCount: number;
     roundTop: boolean;
+    /** The column whose editor sheet is open on this row, outlined as in references 21 and 25. */
+    editingColumnId?: string;
     onToggleExpand: (itemId: string) => void;
     onOpen: (itemId: string) => void;
     onOpenUpdates: (itemId: string) => void;
@@ -130,7 +132,7 @@ export const ItemRow = memo(({ item, columns, ctx, groupColor, isSub, subCount, 
             return (
                 <div
                     key={col.id}
-                    className={`m-tr__cell${col.type === 'status' ? ' m-tr__cell--status' : ''}`}
+                    className={`m-tr__cell${col.type === 'status' ? ' m-tr__cell--status' : ''}${col.id === editingColumnId ? ' m-tr__cell--editing' : ''}`}
                     style={{ width: columnWidthFor(col) }}
                     onClick={ctx.canEdit ? () => activateCell({ boardId: ctx.boardId, itemId: item.id, column: col, value }) : undefined}
                     role={ctx.canEdit ? 'button' : undefined}

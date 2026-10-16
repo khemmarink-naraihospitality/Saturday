@@ -31,6 +31,14 @@ export const historyDepth = (): number => {
  * Stamps a depth on every pushState/replaceState while the phone layout is up
  * (MainApp's own pushes included, which carry no state of their own). Returns
  * the uninstaller.
+ *
+ * It also keeps an open overlay's entry on top. A page entry pushed while an
+ * overlay is showing — MainApp writing the board's URL after an emailed link
+ * has already opened the item over it — would otherwise land above the
+ * overlay's entry, and the back gesture would then step through it instead of
+ * closing the item. Such a push is slid in underneath: the overlay's entry
+ * becomes the page entry, and the overlay is pushed again on top at the new
+ * URL. A replace keeps the overlay's marker for the same reason.
  */
 export const installHistoryDepth = (): (() => void) => {
     const originalPush = window.history.pushState;
@@ -38,11 +46,19 @@ export const installHistoryDepth = (): (() => void) => {
 
     window.history.pushState = function (state: unknown, unused: string, url?: string | URL | null) {
         const base = state && typeof state === 'object' ? state as Record<string, unknown> : {};
+        const top = currentState();
+        if (typeof top?.mOverlay === 'string' && !('mOverlay' in base)) {
+            const depth = historyDepth();
+            originalReplace.call(this, { ...base, mDepth: depth }, unused, url);
+            return originalPush.call(this, { ...base, mOverlay: top.mOverlay, mDepth: depth + 1 }, unused, url);
+        }
         return originalPush.call(this, { ...base, mDepth: historyDepth() + 1 }, unused, url);
     };
     window.history.replaceState = function (state: unknown, unused: string, url?: string | URL | null) {
         const base = state && typeof state === 'object' ? state as Record<string, unknown> : {};
-        return originalReplace.call(this, { ...base, mDepth: historyDepth() }, unused, url);
+        const top = currentState();
+        const keep = typeof top?.mOverlay === 'string' && !('mOverlay' in base) ? { mOverlay: top.mOverlay } : {};
+        return originalReplace.call(this, { ...base, ...keep, mDepth: historyDepth() }, unused, url);
     };
 
     return () => {

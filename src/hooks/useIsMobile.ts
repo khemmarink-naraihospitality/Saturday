@@ -14,11 +14,11 @@ const LAYOUT_EVENT = 'saturday:layout-change';
 export type LayoutOverride = 'desktop' | 'mobile' | null;
 
 /**
- * Whether phones get the phone layout automatically. Off while it is being
- * built, so every intermediate push leaves phones on the desktop layout they
- * have today; `localStorage['saturday:layout'] = 'mobile'` shows it meanwhile.
+ * Whether phones get the phone layout automatically. Turning it off sends every
+ * phone back to the desktop layout in one change (the override above still
+ * shows the phone layout to whoever sets it).
  */
-export const MOBILE_LAYOUT_ENABLED = false;
+export const MOBILE_LAYOUT_ENABLED = true;
 
 export const getLayoutOverride = (): LayoutOverride => {
     try {

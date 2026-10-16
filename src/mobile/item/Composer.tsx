@@ -7,6 +7,7 @@ import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { getGoogleDriveFileName } from '../../lib/utils';
 import { hasHtmlContent, previewText } from '../../lib/updates';
+import { autolinkBeforeCaret, findUrls, linkifyNode } from '../../lib/linkify';
 import type { Comment, FileLink } from '../../types';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, mobileToast, useBoardPeople } from '../ui';
 import { DRIVE_ICON, FileIcon } from '../cells/CellView';
@@ -465,15 +466,22 @@ const Editor = ({ editorRef, initialHtml, placeholder, onInput, onSelection }: {
             aria-multiline="true"
             aria-label={placeholder}
             data-placeholder={placeholder}
-            onInput={() => {
+            onInput={(e) => {
+                // A web address followed by a space becomes a link as you type.
+                const input = e.nativeEvent as InputEvent;
+                if (input.inputType === 'insertText' && input.data && /\s/.test(input.data) && editorRef.current) {
+                    autolinkBeforeCaret(editorRef.current);
+                }
                 setEmpty(!hasHtmlContent(editorRef.current?.innerHTML || ''));
                 onInput();
             }}
             onPaste={(e) => {
-                // Pasted pages bring their own markup; keep the words.
+                // Pasted pages bring their own markup; keep the words — and a
+                // pasted web address becomes a link straight away.
                 e.preventDefault();
                 const text = e.clipboardData.getData('text/plain');
                 document.execCommand('insertText', false, text);
+                if (findUrls(text).length && editorRef.current) linkifyNode(editorRef.current, true);
             }}
         />
     );

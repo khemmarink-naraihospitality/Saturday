@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { DependenciesSection } from './DependenciesSection';
-import { sanitizeHtml } from '../../lib/sanitizeHtml';
+import { displayUpdateHtml } from '../../lib/linkify';
 import { getDedupedUpdates, hasHtmlContent, repliesTo, splitThreads } from '../../lib/updates';
 
 export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () => void }) => {
@@ -941,7 +941,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                     <div
                                                         className="prose prose-sm max-w-none narai-update-content"
                                                         style={{ color: '#1a1728', lineHeight: 1.6, fontSize: '14px' }}
-                                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(update.content) }}
+                                                        dangerouslySetInnerHTML={{ __html: displayUpdateHtml(update.content) }}
                                                     />
                                                     {update.files && update.files.length > 0 && (
                                                         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid hsl(var(--color-border))' }}>

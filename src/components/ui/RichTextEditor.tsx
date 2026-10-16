@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
+import { autolinkBeforeCaret, findUrls, linkifyNode } from '../../lib/linkify';
 
 interface RichTextEditorProps {
     value: string; // HTML string
@@ -1013,7 +1014,23 @@ export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHe
                 id={id}
                 contentEditable
                 data-placeholder={placeholder}
-                onInput={handleChange}
+                onInput={(e) => {
+                    // A web address followed by a space becomes a link as you type.
+                    const input = e.nativeEvent as InputEvent;
+                    if (input.inputType === 'insertText' && input.data && /\s/.test(input.data) && editorRef.current) {
+                        autolinkBeforeCaret(editorRef.current);
+                    }
+                    handleChange();
+                }}
+                onPaste={(e) => {
+                    // A pasted web address becomes a link straight away, without
+                    // the link button: the browser pastes as usual, then any plain
+                    // address in the box is wrapped (the caret stays put).
+                    if (!findUrls(e.clipboardData?.getData('text/plain') || '').length) return;
+                    window.setTimeout(() => {
+                        if (editorRef.current && linkifyNode(editorRef.current, true)) handleChange();
+                    }, 0);
+                }}
                 onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                         e.preventDefault();

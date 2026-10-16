@@ -3,6 +3,7 @@ import { ChevronDown, Copy, ExternalLink, MoreHorizontal, Pencil, Reply, ThumbsU
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
+import { displayUpdateHtml } from '../../lib/linkify';
 import { getDedupedUpdates, repliesTo, splitThreads } from '../../lib/updates';
 import type { Comment, FileLink, Item } from '../../types';
 import { Avatar, AvatarStack, BottomSheet, CenteredSpinner, EmptyState, PrimaryButton, mobileToast, shortAge, type PersonInfo } from '../ui';
@@ -64,8 +65,8 @@ const UpdateHead = ({ update, avatarUrl, size, onMore }: { update: Comment; avat
 
 const UpdateBody = ({ update }: { update: Comment }) => (
     <>
-        {/* Stored as typed and live in every teammate's session: always through sanitizeHtml. */}
-        <div className="m-update__body narai-update-content m-rich" onClick={openLinksOutside} dangerouslySetInnerHTML={{ __html: sanitizeHtml(update.content) }} />
+        {/* Stored as typed and live in every teammate's session: always through sanitizeHtml (displayUpdateHtml), plain addresses made links. */}
+        <div className="m-update__body narai-update-content m-rich" onClick={openLinksOutside} dangerouslySetInnerHTML={{ __html: displayUpdateHtml(update.content) }} />
         {update.files && update.files.length > 0 && <Attachments files={update.files} />}
     </>
 );

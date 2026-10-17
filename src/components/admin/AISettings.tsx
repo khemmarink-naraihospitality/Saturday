@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { setAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
 export const AISettings = () => {
     const [apiKey, setApiKey] = useState('');
@@ -26,6 +27,8 @@ export const AISettings = () => {
     const handleToggle = async () => {
         const next = !enabled;
         setEnabled(next);
+        // Open boards (desktop tabs, the phone's Views sheet) follow straight away.
+        setAiSummaryEnabled(next);
         await supabase.from('system_settings').upsert({
             key: 'ai_summary_enabled',
             value: String(next),

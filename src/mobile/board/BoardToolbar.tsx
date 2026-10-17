@@ -5,6 +5,7 @@ import { itemColumns } from '../../lib/columnScope';
 import { Avatar, useBoardPeople } from '../ui';
 import { FilterSheet, PersonFilterSheet } from './boardSheets';
 import { AiSparkleIcon } from './icons';
+import { useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
 /**
  * The floating pill at the bottom of a board (reference 18): Quick find, a
@@ -17,6 +18,7 @@ export const BoardToolbar = ({ boardId }: { boardId: string }) => {
     const columns = useBoardStore(state => state.boards.find(b => b.id === boardId)?.columns);
     const filters = useBoardStore(state => state.boards.find(b => b.id === boardId)?.filters);
     const people = useBoardPeople();
+    const aiEnabled = useAiSummaryEnabled();
 
     const [searching, setSearching] = useState(!!searchQuery);
     const [text, setText] = useState(searchQuery);
@@ -99,9 +101,12 @@ export const BoardToolbar = ({ boardId }: { boardId: string }) => {
                             <ListFilter size={20} strokeWidth={1.9} />
                             {otherFilters > 0 && <span className="m-board-toolbar__dot" />}
                         </button>
-                        <button type="button" className="m-board-toolbar__btn" onClick={() => setActiveView(boardId, 'ai_summary')} aria-label="AI summary">
-                            <AiSparkleIcon size={21} />
-                        </button>
+                        {/* Only when AI Summary is switched on in Admin › AI Settings. */}
+                        {aiEnabled === true && (
+                            <button type="button" className="m-board-toolbar__btn" onClick={() => setActiveView(boardId, 'ai_summary')} aria-label="AI summary">
+                                <AiSparkleIcon size={21} />
+                            </button>
+                        )}
                     </>
                 )}
             </div>

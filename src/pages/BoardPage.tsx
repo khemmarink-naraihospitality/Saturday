@@ -11,11 +11,13 @@ import { AISummaryView } from '../components/board/AISummaryView';
 import { LoadingScreen } from '../components/common/LoadingScreen';
 import { PinLockScreen } from '../components/board/PinLockScreen';
 import { isBoardUnlocked } from '../lib/boardPinUnlock';
+import { shownViewId, useAiSummaryEnabled } from '../hooks/useAiSummaryEnabled';
 
 export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
     const loadBoardData = useBoardStore(state => state.loadBoardData);
+    const aiEnabled = useAiSummaryEnabled();
     const activeBoard = boards.find(b => b.id === activeBoardId);
 
     const [isUnlocked, setIsUnlocked] = useState(() => !activeBoardId || isBoardUnlocked(activeBoardId));
@@ -83,7 +85,8 @@ export const BoardPage = () => {
         );
     }
 
-    const activeViewId = activeBoard.activeViewId || 'main_table';
+    // A board left on AI Summary shows its table while that feature is switched off.
+    const activeViewId = shownViewId(activeBoard.activeViewId, aiEnabled);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>

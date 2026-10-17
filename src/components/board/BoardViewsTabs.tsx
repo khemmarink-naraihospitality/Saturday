@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { supabase } from '../../lib/supabase';
+import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
 const BASE_VIEWS = [
     { id: 'main_table', label: 'Main table' },
@@ -11,30 +10,15 @@ const BASE_VIEWS = [
 
 const AI_SUMMARY_VIEW = { id: 'ai_summary', label: '✦ AI Summary' };
 
-// Module-level cache so we only fetch once per session
-let aiEnabledCache: boolean | null = null;
-
 export const BoardViewsTabs = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
     const setActiveView = useBoardStore(state => state.setActiveView);
-    const [aiEnabled, setAiEnabled] = useState<boolean>(aiEnabledCache ?? false);
-
-    useEffect(() => {
-        if (aiEnabledCache !== null) return;
-        supabase
-            .from('system_settings')
-            .select('value')
-            .eq('key', 'ai_summary_enabled')
-            .single()
-            .then(({ data }) => {
-                aiEnabledCache = data?.value === 'true';
-                setAiEnabled(aiEnabledCache);
-            });
-    }, []);
+    // Offered only when switched on in Admin › AI Settings (the backend needs its key).
+    const aiEnabled = useAiSummaryEnabled();
 
     const views = aiEnabled ? [...BASE_VIEWS, AI_SUMMARY_VIEW] : BASE_VIEWS;
-    const activeViewId = activeBoard?.activeViewId || 'main_table';
+    const activeViewId = shownViewId(activeBoard?.activeViewId, aiEnabled);
 
     if (!activeBoardId) return null;
 

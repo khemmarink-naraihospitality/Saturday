@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useMobileUI } from '../state/mobileStore';
 import { BottomSheet } from '../ui';
 import { VIEW_OPTIONS } from './views';
+import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
 /**
  * The board's Views sheet — reference screenshot 26: a search field and the
@@ -15,7 +16,9 @@ import { VIEW_OPTIONS } from './views';
 export const ViewsSheetHost = () => {
     const boardId = useMobileUI(state => state.viewsSheetBoardId);
     const close = useMobileUI(state => state.closeViewsSheet);
-    const activeViewId = useBoardStore(state => state.boards.find(b => b.id === boardId)?.activeViewId || 'main_table');
+    const storedViewId = useBoardStore(state => state.boards.find(b => b.id === boardId)?.activeViewId);
+    const aiEnabled = useAiSummaryEnabled();
+    const activeViewId = shownViewId(storedViewId, aiEnabled);
     const setActiveView = useBoardStore(state => state.setActiveView);
     const [query, setQuery] = useState('');
 
@@ -24,7 +27,8 @@ export const ViewsSheetHost = () => {
     }, [boardId]);
 
     const q = query.trim().toLowerCase();
-    const views = VIEW_OPTIONS.filter(v => !q || v.label.toLowerCase().includes(q));
+    // AI Summary only when switched on in Admin › AI Settings, as on desktop.
+    const views = VIEW_OPTIONS.filter(v => (v.id !== 'ai_summary' || aiEnabled === true) && (!q || v.label.toLowerCase().includes(q)));
 
     return (
         <BottomSheet open={!!boardId} onClose={close} title="Views" size="tall" testId="m-views-sheet">

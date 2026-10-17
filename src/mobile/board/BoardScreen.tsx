@@ -12,6 +12,7 @@ import { MobileTable } from './MobileTable';
 import { BoardToolbar } from './BoardToolbar';
 import { BoardActionsSheet, NewItemSheet } from './boardSheets';
 import { VIEW_OPTIONS } from './views';
+import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 import { StackedRowsIcon } from './icons';
 
 // The other views are the desktop components, fetched only when picked.
@@ -33,6 +34,7 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
     const toggleGroup = useBoardStore(state => state.toggleGroup);
     const setSearchQuery = useBoardStore(state => state.setSearchQuery);
     const openViewsSheet = useMobileUI(state => state.openViewsSheet);
+    const aiEnabled = useAiSummaryEnabled();
     const { can } = usePermission();
     const canEdit = can('edit_items');
 
@@ -89,7 +91,7 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
         );
     }
 
-    const viewId = board.activeViewId || 'main_table';
+    const viewId = shownViewId(board.activeViewId, aiEnabled);
     const viewLabel = VIEW_OPTIONS.find(v => v.id === viewId)?.label || 'Main Table';
 
     let body;

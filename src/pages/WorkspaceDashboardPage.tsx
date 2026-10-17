@@ -273,7 +273,10 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
         minWidth: 0,
         minHeight: compact ? 0 : '200px',
         height: height ? `${height}px` : '100%',
-        touchAction: 'none'
+        // Dragging a widget by touch needs the browser to leave the touch alone —
+        // but on a phone (fixed: no dragging) that stopped the page from
+        // scrolling whenever the finger landed on a widget, i.e. almost always.
+        touchAction: fixed ? undefined : 'none'
     };
 
     // Dragging the bottom-right corner: height follows the pointer freely, width

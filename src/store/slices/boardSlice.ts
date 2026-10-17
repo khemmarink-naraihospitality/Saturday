@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
+import { isMobileLayout } from '../../hooks/useIsMobile';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Board, ColumnType, ColumnScope, Column, Comment, Item } from '../../types';
@@ -286,7 +287,9 @@ export const createBoardSlice: StateCreator<
             const currentBoardId = get().activeBoardId;
             const validCurrentBoard = fullBoards.find(b => b.id === currentBoardId);
             let activeBoardId = validCurrentBoard ? validCurrentBoard.id : null;
-            if (!activeBoardId) {
+            // The desktop reopens the last board; the phone starts on Home, as
+            // monday's app does (a link to a board still opens that board).
+            if (!activeBoardId && !isMobileLayout()) {
                 const lastBoardId = localStorage.getItem('lastActiveBoardId');
                 const validBoard = fullBoards.find(b => b.id === lastBoardId);
                 activeBoardId = validBoard ? validBoard.id : null;

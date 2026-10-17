@@ -53,14 +53,15 @@ const subscribe = (onChange: () => void) => {
     };
 };
 
-const getSnapshot = () => {
+/** Whether the app renders its phone layout right now — for code outside React (the store). */
+export const isMobileLayout = (): boolean => {
     const override = getLayoutOverride();
     if (override) return override === 'mobile';
     return MOBILE_LAYOUT_ENABLED && isSmallScreen();
 };
 
 /** True when the app should render its mobile layout. */
-export const useIsMobile = () => useSyncExternalStore(subscribe, getSnapshot, () => false);
+export const useIsMobile = () => useSyncExternalStore(subscribe, isMobileLayout, () => false);
 
 /** True when a phone has been switched to the desktop layout (More > Desktop site). */
 export const useForcedDesktopOnPhone = () =>

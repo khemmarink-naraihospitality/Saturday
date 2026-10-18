@@ -10,6 +10,11 @@
             ],
             "destination": "https://saturday.naraihospitalitygroup.com/$1",
             "permanent": true
+        },
+        {
+            "source": "/favicon.ico",
+            "destination": "https://naraihospitalitygroup.com/wp-content/uploads/2024/11/FAVICON.png",
+            "permanent": false
         }
     ],
     "rewrites": [

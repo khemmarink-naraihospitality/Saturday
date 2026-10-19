@@ -398,6 +398,7 @@ export const createMemberSlice: StateCreator<
             const { data: inviterProfile } = await supabase.from('profiles').select('full_name').eq('id', currentUser?.id).single();
             const inviterName = inviterProfile?.full_name
                 || currentUser?.user_metadata?.full_name
+                || currentUser?.user_metadata?.name
                 || currentUser?.email?.split('@')[0]
                 || 'A Team Member';
 

@@ -212,7 +212,7 @@ export const createBoardSlice: StateCreator<
             supabase.from('profiles').upsert({
                 id: user.id,
                 email: user.email,
-                full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
                 avatar_url: existingProfile?.avatar_url || user.user_metadata?.avatar_url,
                 system_role: existingProfile?.system_role || 'user',
                 auth_type: existingProfile?.auth_type || (user.app_metadata?.provider === 'google' ? 'google' : 'internal')
@@ -785,7 +785,7 @@ export const createBoardSlice: StateCreator<
                     id: uuidv4(),
                     user_id: user.id,
                     role: 'owner',
-                    profiles: profile || { email: user.email, id: user.id, full_name: user.user_metadata?.full_name }
+                    profiles: profile || { email: user.email, id: user.id, full_name: user.user_metadata?.full_name || user.user_metadata?.name }
                 }],
                 userBoardRoles: { ...state.userBoardRoles, [boardId]: 'owner' }
             }));

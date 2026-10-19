@@ -1,6 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { savePendingDeepLink } from '../lib/pendingDeepLink';
+import { takeMicrosoftEntry } from '../lib/initialPath';
+
+// A sign-in the provider or Supabase turned down comes back to the page with
+// error_description in the query or the hash. Read it once, and tidy the URL.
+const readReturnedAuthError = (): string | null => {
+    const fromQuery = new URLSearchParams(window.location.search);
+    const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const message = fromQuery.get('error_description') || fromHash.get('error_description');
+    if (!message) return null;
+    ['error', 'error_code', 'error_description'].forEach(k => fromQuery.delete(k));
+    const rest = fromQuery.toString();
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${rest ? `?${rest}` : ''}`);
+    return message.replace(/\+/g, ' ');
+};
 
 export const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -72,6 +86,36 @@ export const LoginPage = () => {
             setForgotLoading(false);
         }
     };
+
+    const handleMicrosoftLogin = async () => {
+        try {
+            // As for Google: stash the deep link, come back to the bare origin
+            // (it is on the redirect allow-list). Azure must return an email.
+            savePendingDeepLink(window.location.search);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'azure',
+                options: {
+                    scopes: 'email',
+                    redirectTo: `${window.location.origin}`
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    // Opened at /auth/microsoft: go straight to Microsoft. A failed attempt
+    // comes back to "/" with an error instead, so this can't loop.
+    useEffect(() => {
+        const returned = readReturnedAuthError();
+        if (returned) {
+            setError(returned);
+            return;
+        }
+        if (takeMicrosoftEntry()) void handleMicrosoftLogin();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleGoogleLogin = async () => {
         try {
@@ -187,7 +231,7 @@ export const LoginPage = () => {
                 )}
 
                 {/* Google Login (Now First) */}
-                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
                     <button
                         onClick={handleGoogleLogin}
                         type="button"
@@ -218,6 +262,41 @@ export const LoginPage = () => {
                             <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
                         Continue with Google
+                    </button>
+                </div>
+
+                {/* Microsoft (Entra ID) */}
+                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+                    <button
+                        onClick={handleMicrosoftLogin}
+                        type="button"
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: 'white',
+                            color: '#0f172a',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '12px',
+                            transition: 'background-color 0.2s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
+                            <path fill="#f35325" d="M1 1h10v10H1z" />
+                            <path fill="#81bc06" d="M12 1h10v10H12z" />
+                            <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                            <path fill="#ffba08" d="M12 12h10v10H12z" />
+                        </svg>
+                        Continue with Microsoft
                     </button>
                 </div>
 

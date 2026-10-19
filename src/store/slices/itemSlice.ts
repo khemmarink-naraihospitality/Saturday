@@ -355,7 +355,7 @@ export const createItemSlice: StateCreator<
                     // assignment/mention already do.
                     const { data: { user: actor } } = await supabase.auth.getUser();
                     if (actor) {
-                        const actorName = actor.user_metadata?.full_name || actor.email?.split('@')[0] || 'Someone';
+                        const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
                         const assigneeIds = new Set<string>();
                         board.columns.filter(c => c.type === 'people').forEach(col => {
                             const val = currentItem.values?.[col.id];

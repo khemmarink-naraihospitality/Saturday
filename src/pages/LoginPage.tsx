@@ -231,7 +231,7 @@ export const LoginPage = () => {
                 )}
 
                 {/* Google Login (Now First) */}
-                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
                     <button
                         onClick={handleGoogleLogin}
                         type="button"
@@ -265,41 +265,6 @@ export const LoginPage = () => {
                     </button>
                 </div>
 
-                {/* Microsoft (Entra ID) */}
-                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
-                    <button
-                        onClick={handleMicrosoftLogin}
-                        type="button"
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            backgroundColor: 'white',
-                            color: '#0f172a',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '15px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '12px',
-                            transition: 'background-color 0.2s',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
-                            <path fill="#f35325" d="M1 1h10v10H1z" />
-                            <path fill="#81bc06" d="M12 1h10v10H12z" />
-                            <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                            <path fill="#ffba08" d="M12 12h10v10H12z" />
-                        </svg>
-                        Continue with Microsoft
-                    </button>
-                </div>
-
                 <div style={{ position: 'relative', marginBottom: '24px' }}>
                     <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e2e8f0' }}></div>
                     <span 
@@ -322,6 +287,40 @@ export const LoginPage = () => {
 
                 {showEmailLogin && !showForgotPassword && (
                     <>
+                        {/* Microsoft (Entra ID): under the email option for now, until it is rolled out */}
+                        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+                            <button
+                                onClick={handleMicrosoftLogin}
+                                type="button"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    backgroundColor: 'white',
+                                    color: '#0f172a',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    fontSize: '15px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '12px',
+                                    transition: 'background-color 0.2s',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
+                                    <path fill="#f35325" d="M1 1h10v10H1z" />
+                                    <path fill="#81bc06" d="M12 1h10v10H12z" />
+                                    <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                                    <path fill="#ffba08" d="M12 12h10v10H12z" />
+                                </svg>
+                                Continue with Microsoft
+                            </button>
+                        </div>
                         <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Your Alias Email</label>

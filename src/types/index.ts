@@ -10,7 +10,7 @@ export interface FileLink {
     id: string;
     name: string;
     url: string;
-    type: 'google-drive' | 'file-url';
+    type: 'google-drive' | 'onedrive' | 'file-url';
     iconUrl?: string;
     mimeType?: string;
 }

@@ -5,6 +5,7 @@ import { formatNumberValue } from '../../utils/format';
 import { linkDisplayText } from '../../lib/utils';
 import { AvatarStack, Avatar, peopleIds, type PersonInfo } from '../ui';
 import { formatDateCell, formatTimelineRange, isOverdue } from './format';
+import { ONEDRIVE_ICON } from '../../lib/fileLinks';
 import './cells.css';
 
 export interface CellViewProps {
@@ -26,7 +27,9 @@ const EMPTY_STATUS = '#c4c4c4';
 
 /** A file's small picture: the Drive mark for Drive files, else a document icon. */
 export const FileIcon = ({ file, size = 22 }: { file: FileLink; size?: number }) =>
-    file.type === 'google-drive' || /drive\.google|docs\.google/.test(file.url || '')
+    file.type === 'onedrive'
+        ? <img src={ONEDRIVE_ICON} alt="" width={size} height={size} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        : file.type === 'google-drive' || /drive\.google|docs\.google/.test(file.url || '')
         ? <img src={file.iconUrl || DRIVE_ICON} alt="" width={size} height={size} style={{ objectFit: 'contain', flexShrink: 0 }} referrerPolicy="no-referrer" loading="lazy" />
         : <FileText size={size} color="hsl(var(--m-text-2))" style={{ flexShrink: 0 }} />;
 

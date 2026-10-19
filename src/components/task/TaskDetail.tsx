@@ -5,7 +5,7 @@ import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Papercli
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
-import { isValidGoogleDriveUrl, getGoogleDriveFileName } from '../../lib/utils';
+import { fileLinkFromUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
@@ -158,27 +158,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
     const handleAddFile = () => {
         if (!fileUrl.trim()) return;
 
-        let url = fileUrl.trim();
-        if (!url.startsWith('http')) {
-            url = `https://${url}`;
-        }
-
-        if (!isValidGoogleDriveUrl(url)) {
-            setFileError('Only Google Drive links are allowed.');
+        const newFile = fileLinkFromUrl(fileUrl, fileName, uuidv4);
+        if (!newFile || newFile.type === 'file-url') {
+            setFileError('Only Google Drive or OneDrive / SharePoint links are allowed.');
             return;
         }
-
-        let name = fileName.trim();
-        if (!name) {
-            name = getGoogleDriveFileName(url);
-        }
-
-        const newFile: FileLink = {
-            id: uuidv4(),
-            name: name,
-            url: url,
-            type: 'google-drive'
-        };
 
         const currentFiles = activeItem?.files || [];
         updateItemFiles(itemId, [...currentFiles, newFile]);
@@ -231,13 +215,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleAddEditAttachUrl = () => {
         if (!editAttachUrl.trim()) return;
-        let url = editAttachUrl.trim();
-        if (!url.startsWith('http')) url = `https://${url}`;
-        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
-            ? getGoogleDriveFileName(url)
-            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
-        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
-        setEditDraftFiles(prev => [...prev, { id: uuidv4(), name, url, type }]);
+        const attached = fileLinkFromUrl(editAttachUrl, '', uuidv4);
+        if (!attached) return;
+        setEditDraftFiles(prev => [...prev, attached]);
         setEditAttachUrl('');
         setShowEditUrlPanel(false);
     };
@@ -304,13 +284,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleAddAttachUrl = () => {
         if (!attachUrl.trim()) return;
-        let url = attachUrl.trim();
-        if (!url.startsWith('http')) url = `https://${url}`;
-        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
-            ? getGoogleDriveFileName(url)
-            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
-        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
-        setDraftFiles(prev => [...prev, { id: uuidv4(), name, url, type }]);
+        const attached = fileLinkFromUrl(attachUrl, '', uuidv4);
+        if (!attached) return;
+        setDraftFiles(prev => [...prev, attached]);
         setAttachUrl('');
         setAttachError(null);
         setShowUrlPanel(false);
@@ -426,13 +402,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const handleAddReplyAttachUrl = (updateId: string) => {
         if (!replyAttachUrl.trim()) return;
-        let url = replyAttachUrl.trim();
-        if (!url.startsWith('http')) url = `https://${url}`;
-        const name = url.includes('drive.google.com') || url.includes('docs.google.com')
-            ? getGoogleDriveFileName(url)
-            : (url.split('/').pop()?.split('?')[0] || 'Attached File');
-        const type = url.includes('drive.google.com') || url.includes('docs.google.com') ? 'google-drive' : 'file-url';
-        setReplyFiles(prev => ({ ...prev, [updateId]: [...(prev[updateId] || []), { id: uuidv4(), name, url, type }] }));
+        const attached = fileLinkFromUrl(replyAttachUrl, '', uuidv4);
+        if (!attached) return;
+        setReplyFiles(prev => ({ ...prev, [updateId]: [...(prev[updateId] || []), attached] }));
         setReplyAttachUrl('');
         setReplyAttachError(null);
         setReplyActiveUrlId(null);
@@ -609,7 +581,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', borderBottom: '1px solid hsl(var(--color-border))' }}>
                                                 {draftFiles.map(file => (
                                                     <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
-                                                        {file.type === 'google-drive' ? (
+                                                        {file.type === 'onedrive' ? (
+                                                            <img src={ONEDRIVE_ICON} alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                        ) : file.type === 'google-drive' ? (
                                                             <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
                                                         ) : (
                                                             <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
@@ -853,7 +827,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', borderBottom: '1px solid hsl(var(--color-border))' }}>
                                                                         {editDraftFiles.map(file => (
                                                                             <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
-                                                                                {file.type === 'google-drive' ? (
+                                                                                {file.type === 'onedrive' ? (
+                                                                                    <img src={ONEDRIVE_ICON} alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                                                ) : file.type === 'google-drive' ? (
                                                                                     <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
                                                                                 ) : (
                                                                                     <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
@@ -970,7 +946,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
                                                                     >
-                                                                        {file.type === 'google-drive' ? (
+                                                                        {file.type === 'onedrive' ? (
+                                                                            <img src={ONEDRIVE_ICON} alt="" style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                                                                        ) : file.type === 'google-drive' ? (
                                                                             <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '14px', height: '14px', flexShrink: 0 }} />
                                                                         ) : (
                                                                             <Link2 size={13} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
@@ -1100,7 +1078,9 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 10px 0' }}>
                                                                             {(replyFiles[update.id] || []).map(file => (
                                                                                 <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', backgroundColor: 'hsl(var(--color-bg-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: '12px', fontSize: '12px', color: 'hsl(var(--color-text-primary))', maxWidth: '200px' }}>
-                                                                                    {file.type === 'google-drive' ? (
+                                                                                    {file.type === 'onedrive' ? (
+                                                                                        <img src={ONEDRIVE_ICON} alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+                                                                                    ) : file.type === 'google-drive' ? (
                                                                                         <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '12px', height: '12px', flexShrink: 0 }} />
                                                                                     ) : (
                                                                                         <Link2 size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-brand-primary))' }} />
@@ -1237,13 +1217,13 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                 border: '1px solid #e1e4e8',
                                 marginBottom: '24px'
                             }}>
-                                <div style={{ marginBottom: '16px', fontWeight: 500, fontSize: '14px' }}>Add Google Drive Link</div>
+                                <div style={{ marginBottom: '16px', fontWeight: 500, fontSize: '14px' }}>Add Google Drive or OneDrive Link</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div style={{ display: 'flex', gap: '12px' }}>
                                         <div style={{ flex: 1 }}>
                                             <input
                                                 type="text"
-                                                placeholder="Paste Google Drive Link here..."
+                                                placeholder="Paste a Google Drive or OneDrive / SharePoint link here..."
                                                 value={fileUrl}
                                                 onChange={(e) => {
                                                     setFileUrl(e.target.value);

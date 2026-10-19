@@ -6,6 +6,7 @@ import { useGooglePicker } from '../../../hooks/useGooglePicker';
 import type { FileLink } from '../../../types';
 import { BottomSheet, PrimaryButton, TextButton } from '../../ui';
 import { DRIVE_ICON, FileIcon } from '../CellView';
+import { fileLinkFromUrl, isOneDriveUrl, ONEDRIVE_ICON } from '../../../lib/fileLinks';
 import type { EditorProps } from './types';
 
 const hostOf = (url: string) => {
@@ -57,12 +58,24 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
         return Array.isArray(v) ? v as FileLink[] : [];
     };
 
+    // 'onedrive': the same form, for a OneDrive / SharePoint share link (name optional).
+    const [kind, setKind] = useState<'link' | 'onedrive'>('link');
+    const [error, setError] = useState<string | null>(null);
+
     const addLink = () => {
-        if (!name.trim() || !url.trim()) return;
-        save([...files, { id: uuidv4(), name: name.trim(), url: url.trim(), type: 'file-url' }]);
+        if (!url.trim()) return;
+        if (kind === 'link' && !name.trim()) return;
+        if (kind === 'onedrive' && !isOneDriveUrl(url)) {
+            setError('Paste a OneDrive or SharePoint link (1drv.ms, onedrive.live.com or …sharepoint.com).');
+            return;
+        }
+        const file = fileLinkFromUrl(url, name, uuidv4);
+        if (!file) return;
+        save([...files, file]);
         setAdding(false);
         setName('');
         setUrl('');
+        setError(null);
     };
 
     return (
@@ -74,9 +87,13 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
             testId="m-cell-editor"
             footer={!adding ? (
                 <div className="m-files-bar">
-                    <button type="button" className="m-files-bar__btn" onClick={() => setAdding(true)}>
+                    <button type="button" className="m-files-bar__btn" onClick={() => { setKind('link'); setAdding(true); }}>
                         <span className="m-files-bar__icon"><Link2 size={22} /></span>
                         Link
+                    </button>
+                    <button type="button" className="m-files-bar__btn" onClick={() => { setKind('onedrive'); setAdding(true); }}>
+                        <span className="m-files-bar__icon"><img src={ONEDRIVE_ICON} alt="" width={24} height={24} /></span>
+                        OneDrive
                     </button>
                     <button
                         type="button"
@@ -94,7 +111,7 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
             {adding ? (
                 <div className="m-editor-pad" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <label className="m-editor-field">
-                        <span>Name</span>
+                        <span>{kind === 'onedrive' ? 'Name (optional)' : 'Name'}</span>
                         <input autoFocus type="text" enterKeyHint="next" placeholder="Contract 2026" value={name} onChange={(e) => setName(e.target.value)} />
                     </label>
                     <label className="m-editor-field">
@@ -105,12 +122,13 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
                             enterKeyHint="done"
                             placeholder="https://"
                             value={url}
-                            onChange={(e) => setUrl(e.target.value)}
+                            onChange={(e) => { setUrl(e.target.value); setError(null); }}
                             onKeyDown={(e) => { if (e.key === 'Enter') addLink(); }}
                         />
                     </label>
-                    <PrimaryButton onClick={addLink} disabled={!name.trim() || !url.trim()}>Add file</PrimaryButton>
-                    <TextButton onClick={() => setAdding(false)} style={{ alignSelf: 'center' }}>Cancel</TextButton>
+                    {error && <div style={{ color: 'hsl(var(--color-danger))', fontSize: 14 }}>{error}</div>}
+                    <PrimaryButton onClick={addLink} disabled={(kind === 'link' && !name.trim()) || !url.trim()}>Add file</PrimaryButton>
+                    <TextButton onClick={() => { setAdding(false); setError(null); }} style={{ alignSelf: 'center' }}>Cancel</TextButton>
                 </div>
             ) : files.length === 0 ? (
                 <div className="m-files-empty">

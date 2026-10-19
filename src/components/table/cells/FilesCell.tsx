@@ -5,6 +5,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { FileText, Plus } from 'lucide-react';
 import { FilesPicker } from '../FilesPicker';
+import { ONEDRIVE_ICON } from '../../../lib/fileLinks';
 
 interface FilesCellProps {
     itemId: string;
@@ -83,7 +84,9 @@ export const FilesCell: React.FC<FilesCellProps> = memo(({ itemId, column, files
                                     const mime = file.mimeType?.toLowerCase() || '';
                                     const name = file.name.toLowerCase();
 
-                                    if (mime.includes('spreadsheet')) {
+                                    if (file.type === 'onedrive') {
+                                        iconUrl = ONEDRIVE_ICON;
+                                    } else if (mime.includes('spreadsheet')) {
                                         iconUrl = FILE_ICONS.sheets;
                                     } else if (mime.includes('document')) {
                                         iconUrl = FILE_ICONS.docs;

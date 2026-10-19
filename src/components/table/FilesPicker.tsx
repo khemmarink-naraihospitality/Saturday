@@ -4,6 +4,7 @@ import { X, Globe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
+import { fileLinkFromUrl, isOneDriveUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
 
 interface FilesPickerProps {
     files: FileLink[];
@@ -15,6 +16,9 @@ interface FilesPickerProps {
 export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPickerProps) => {
     const [localFiles, setLocalFiles] = useState<FileLink[]>(files || []);
     const [isAddingUrl, setIsAddingUrl] = useState(false);
+    // 'onedrive': the same form, for a OneDrive / SharePoint link (name optional).
+    const [addKind, setAddKind] = useState<'url' | 'onedrive'>('url');
+    const [urlError, setUrlError] = useState<string | null>(null);
     const [urlName, setUrlName] = useState('');
     const [urlValue, setUrlValue] = useState('');
     
@@ -47,19 +51,21 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
     };
 
     const handleAddUrlFile = () => {
-        if (!urlName.trim() || !urlValue.trim()) return;
-        
-        const newFile: FileLink = {
-            id: uuidv4(),
-            name: urlName,
-            url: urlValue.trim(),
-            type: 'file-url'
-        };
+        if (!urlValue.trim()) return;
+        if (addKind === 'url' && !urlName.trim()) return;
+        if (addKind === 'onedrive' && !isOneDriveUrl(urlValue)) {
+            setUrlError('Paste a OneDrive or SharePoint link (1drv.ms, onedrive.live.com or …sharepoint.com).');
+            return;
+        }
+
+        // The link's own kind decides the icon, whichever button it came from.
+        const newFile: FileLink = fileLinkFromUrl(urlValue, urlName, uuidv4)!;
         
         const updated = [...localFiles, newFile];
         setLocalFiles(updated);
         onSave(updated); // Sync immediately
         setIsAddingUrl(false);
+        setUrlError(null);
         setUrlName('');
         setUrlValue('');
     };
@@ -69,8 +75,8 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         position: 'fixed',
         top: position.bottom + 4,
         left: position.left,
-        minWidth: '320px',
-        maxWidth: '400px',
+        minWidth: '360px',
+        maxWidth: '420px',
         backgroundColor: 'white',
         borderRadius: '8px',
         boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
@@ -89,7 +95,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
     }
 
     // Auto-adjust if off screen (horizontal)
-    const pickerWidth = 320;
+    const pickerWidth = 360;
     if ((style.left as number) + pickerWidth > window.innerWidth) {
         style.left = undefined;
         const newLeft = window.innerWidth - pickerWidth - 16;
@@ -154,7 +160,9 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                                 const mime = file.mimeType?.toLowerCase() || '';
                                 const name = file.name.toLowerCase();
 
-                                if (mime.includes('spreadsheet')) {
+                                if (file.type === 'onedrive') {
+                                    iconUrl = ONEDRIVE_ICON;
+                                } else if (mime.includes('spreadsheet')) {
                                     iconUrl = "https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png";
                                 } else if (mime.includes('document')) {
                                     iconUrl = "https://www.gstatic.com/images/branding/product/1x/docs_2020q4_48dp.png";
@@ -193,32 +201,33 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
             {/* Addition Choice */}
             {isAddingUrl ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #eee' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '2px' }}>Add File URL</div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '2px' }}>{addKind === 'onedrive' ? 'Add OneDrive / SharePoint link' : 'Add File URL'}</div>
                     <input 
                         autoFocus
-                        placeholder="File Name (e.g. My Document)"
+                        placeholder={addKind === 'onedrive' ? 'File Name (optional)' : 'File Name (e.g. My Document)'}
                         value={urlName}
                         onChange={(e) => setUrlName(e.target.value)}
                         style={{ padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', outline: 'none' }}
                         onKeyDown={(e) => e.key === 'Enter' && handleAddUrlFile()}
                     />
                     <input 
-                        placeholder="https://example.com/file.pdf"
+                        placeholder={addKind === 'onedrive' ? 'Paste the OneDrive share link' : 'https://example.com/file.pdf'}
                         value={urlValue}
-                        onChange={(e) => setUrlValue(e.target.value)}
-                        style={{ padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', outline: 'none' }}
+                        onChange={(e) => { setUrlValue(e.target.value); setUrlError(null); }}
+                        style={{ padding: '8px', fontSize: '13px', border: urlError ? '1px solid #e11d48' : '1px solid #ddd', borderRadius: '4px', outline: 'none' }}
                         onKeyDown={(e) => e.key === 'Enter' && handleAddUrlFile()}
                     />
+                    {urlError && <div style={{ fontSize: '12px', color: '#e11d48' }}>{urlError}</div>}
                     <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                         <button 
-                            onClick={() => setIsAddingUrl(false)}
+                            onClick={() => { setIsAddingUrl(false); setUrlError(null); }}
                             style={{ flex: 1, padding: '8px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         >
                             Cancel
                         </button>
                         <button 
                             onClick={handleAddUrlFile}
-                            disabled={!urlName.trim() || !urlValue.trim()}
+                            disabled={(addKind === 'url' && !urlName.trim()) || !urlValue.trim()}
                             style={{ 
                               flex: 2, 
                               padding: '8px', 
@@ -228,7 +237,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                               border: 'none', 
                               borderRadius: '4px', 
                               cursor: 'pointer', 
-                              opacity: (!urlName.trim() || !urlValue.trim()) ? 0.6 : 1,
+                              opacity: ((addKind === 'url' && !urlName.trim()) || !urlValue.trim()) ? 0.6 : 1,
                               fontWeight: 600,
                               display: 'flex',
                               justifyContent: 'center',
@@ -293,9 +302,42 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         Google Drive
                     </button>
 
+                    {/* OneDrive / SharePoint Option: a pasted share link */}
+                    <button
+                        onClick={() => { setAddKind('onedrive'); setIsAddingUrl(true); }}
+                        style={{
+                            flex: 1,
+                            backgroundColor: 'white',
+                            color: '#333',
+                            border: '1px solid #d0d4e4',
+                            borderRadius: '8px',
+                            padding: '12px 8px',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary))';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderColor = '#d0d4e4';
+                        }}
+                    >
+                        <img src={ONEDRIVE_ICON} alt="OneDrive" width="24" height="24" />
+                        OneDrive
+                    </button>
+
                     {/* File URL Option */}
                     <button
-                        onClick={() => setIsAddingUrl(true)}
+                        onClick={() => { setAddKind('url'); setIsAddingUrl(true); }}
                         style={{
                             flex: 1,
                             backgroundColor: 'white',

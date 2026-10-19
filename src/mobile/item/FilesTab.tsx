@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ExternalLink, Link2, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
-import { getGoogleDriveFileName, isValidGoogleDriveUrl } from '../../lib/utils';
+import { fileLinkFromUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
 import type { FileLink, Item } from '../../types';
 import { BottomSheet, EmptyState, PrimaryButton } from '../ui';
 import { DRIVE_ICON, FileIcon } from '../cells/CellView';
@@ -38,14 +38,12 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
     };
 
     const addLink = () => {
-        let link = url.trim();
-        if (!link) return;
-        if (!link.startsWith('http')) link = `https://${link}`;
-        if (!isValidGoogleDriveUrl(link)) {
-            setError('Only Google Drive links can be added here.');
+        const file = fileLinkFromUrl(url, name, uuidv4);
+        if (!file) return;
+        if (file.type === 'file-url') {
+            setError('Only Google Drive or OneDrive / SharePoint links can be added here.');
             return;
         }
-        const file: FileLink = { id: uuidv4(), name: name.trim() || getGoogleDriveFileName(link), url: link, type: 'google-drive' };
         void updateItemFiles(item.id, [...files, file]);
         resetForm();
         setAdding(false);
@@ -63,7 +61,7 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
             {canEdit && (
                 <div className="m-files__add">
                     <button type="button" className="m-files__add-btn" onClick={() => { resetForm(); setAdding(true); }}>
-                        <Link2 size={19} /> Add a Drive link
+                        <img src={ONEDRIVE_ICON} alt="" width={19} height={19} /> OneDrive / Drive link
                     </button>
                     <button type="button" className="m-files__add-btn" onClick={pickFromDrive}>
                         <img src={DRIVE_ICON} alt="" width={19} height={19} /> Google Drive
@@ -72,7 +70,7 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
             )}
 
             {files.length === 0 ? (
-                <EmptyState title="No files yet">{canEdit ? 'Add a Google Drive link to share it with the team.' : 'Files added to this item will show here.'}</EmptyState>
+                <EmptyState title="No files yet">{canEdit ? 'Add a Google Drive or OneDrive link to share it with the team.' : 'Files added to this item will show here.'}</EmptyState>
             ) : (
                 <div className="m-props__card">
                     {files.map(file => (
@@ -95,7 +93,7 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
             <BottomSheet
                 open={adding}
                 onClose={() => setAdding(false)}
-                title="Add a Drive link"
+                title="Add a OneDrive or Drive link"
                 headerRight={<PrimaryButton onClick={addLink} disabled={!url.trim()} style={{ minHeight: 38, padding: '0 16px', fontSize: 15 }}>Add</PrimaryButton>}
             >
                 <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -106,10 +104,10 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
                             type="url"
                             inputMode="url"
                             enterKeyHint="next"
-                            placeholder="Paste a Google Drive link"
+                            placeholder="Paste a Google Drive or OneDrive link"
                             value={url}
                             onChange={(e) => { setUrl(e.target.value); setError(null); }}
-                            aria-label="Google Drive link"
+                            aria-label="Google Drive or OneDrive link"
                         />
                     </label>
                     {error && <div style={{ color: 'hsl(var(--color-danger))', fontSize: 14 }}>{error}</div>}

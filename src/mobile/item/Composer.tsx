@@ -5,7 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
-import { getGoogleDriveFileName } from '../../lib/utils';
+import { fileLinkFromUrl } from '../../lib/fileLinks';
 import { hasHtmlContent, previewText } from '../../lib/updates';
 import { autolinkBeforeCaret, findUrls, linkifyNode } from '../../lib/linkify';
 import type { Comment, FileLink } from '../../types';
@@ -24,14 +24,7 @@ const newUpdateFiles = new Map<string, FileLink[]>();
 const replyDrafts = new Map<string, { html: string; files: FileLink[] }>();
 
 /** A pasted or typed link as an attachment — the desktop composer's rule. */
-const linkAttachment = (raw: string): FileLink | null => {
-    let url = raw.trim();
-    if (!url) return null;
-    if (!url.startsWith('http')) url = `https://${url}`;
-    const isDrive = url.includes('drive.google.com') || url.includes('docs.google.com');
-    const name = isDrive ? getGoogleDriveFileName(url) : (url.split('/').pop()?.split('?')[0] || 'Attached File');
-    return { id: uuidv4(), name, url, type: isDrive ? 'google-drive' : 'file-url' };
-};
+const linkAttachment = (raw: string): FileLink | null => fileLinkFromUrl(raw, '', uuidv4);
 
 interface MentionUser {
     id: string;

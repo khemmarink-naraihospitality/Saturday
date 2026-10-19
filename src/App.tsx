@@ -44,6 +44,15 @@ export const isAllowedDomain = (email?: string | null) => {
   return !!domain && ALLOWED_DOMAINS.includes(domain);
 };
 
+// An account whose first sign-in was Microsoft (Supabase's Azure provider)
+// waits for an admin's approval whatever its domain — for now, while Microsoft
+// sign-in is new. Same rule as handle_new_user
+// (20261019_microsoft_signins_need_approval.sql). Someone with an account who
+// signs in with Microsoft later keeps their approval: app_metadata.provider
+// stays the first method.
+const createdViaMicrosoft = (user?: { app_metadata?: { provider?: string } } | null) =>
+  user?.app_metadata?.provider === 'azure';
+
 const DEFAULT_ASSIGN_TEMPLATE = `<div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 20px;"><div style="text-align: center; margin-bottom: 20px;"><img src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png" alt="NARAI" style="width: 80px; height: 80px; background-color: #1f291e; object-fit: contain; margin: 0 auto; display: block;" /></div><div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><div style="text-align: center; padding: 20px 20px 10px;"><a href="https://saturday.naraihospitalitygroup.com" style="color: #2563eb; text-decoration: underline; font-weight: bold; font-size: 16px;">saturday.com</a></div><div style="border-bottom: 2px solid #1e293b; margin: 0 20px;"></div><div style="padding: 30px 40px; text-align: center;"><p style="font-size: 15px; color: #475569; line-height: 1.5; margin-bottom: 24px;"><strong>{{inviterName}}</strong> assigned you to item <strong>{{itemName}}</strong> under <strong>{{groupName}}</strong> in <strong>{{boardName}}</strong>.</p><a href="{{itemLink}}" style="background-color: #a86315; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; display: inline-block;">View Item</a></div></div><div style="text-align: center; margin-top: 20px; font-size: 11px; color: #94a3b8;">Powered by <strong>NHG BusinessTech Team</strong></div></div>`;
 
 const NotificationPage = lazy(() => import('./pages/NotificationPage').then(m => ({ default: m.NotificationPage })));
@@ -241,7 +250,7 @@ function MainApp() {
 
         const userEmail = session.user.email || '';
         const shouldBeApproved = profile?.is_approved ||
-                                isAllowedDomain(userEmail) ||
+                                (isAllowedDomain(userEmail) && !createdViaMicrosoft(session.user)) ||
                                 userEmail === 'khemmarin.k@naraihospitality.com';
 
         // Auto-update database if they should be approved but aren't yet (fire and forget)
@@ -689,7 +698,7 @@ function AppContent() {
     return <ResetPasswordPage />;
   }
 
-  const isAutoApproved = isAllowedDomain(currentUser?.email);
+  const isAutoApproved = isAllowedDomain(currentUser?.email) && !createdViaMicrosoft(session?.user);
 
   // Deactivation outranks the approval check and the auto-approved domains alike:
   // it is how someone who has left is shut out, so no domain gets them back in.

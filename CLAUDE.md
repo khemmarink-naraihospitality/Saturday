@@ -72,6 +72,8 @@ Realtime updates come through a Supabase channel subscription (set up in `member
 
 `AuthContext` wraps the app and exposes `session`. `App.tsx` checks `is_approved` before rendering `MainApp`. Accounts at `naraihospitality.com`, `marasca.live`, `lubd.com`, `visitamanta.com`, `riverineplace.com` and `naraihotel.co.th` never need an admin's approval: the database approves them when the account is created (`public.is_auto_approved_email()`, called by the `handle_new_user` trigger on `auth.users` — `supabase/migrations/20261011_auto_approve_company_domains.sql`), so an invited user who hasn't signed in yet isn't left "Pending". `ALLOWED_DOMAINS` in `App.tsx` is the client's copy of the same list — change both together.
 
+Sign-in is Google, email/password, or **Microsoft** (Supabase's Azure provider, single-tenant app registration; enabled in the project's Auth settings, secret held there only; `LoginPage`, and `/auth/microsoft` starts it directly — `takeMicrosoftEntry` in `src/lib/initialPath.ts`). An account whose *first* sign-in was Microsoft (`app_metadata.provider = 'azure'`) is not auto-approved whatever its domain: it waits for an admin in User Management, and the super admin is notified (`supabase/migrations/20261019_microsoft_signins_need_approval.sql`, mirrored by `createdViaMicrosoft` in `App.tsx`). An existing account that later signs in with Microsoft keeps its approval.
+
 **Two separate role systems:**
 
 - **System roles** (`profiles.system_role`): `super_admin`, `it_admin`, `user` — controls access to the Admin page.

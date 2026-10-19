@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { fileLinkFromUrl, isOneDriveUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
+import { useCloudDrives } from '../../hooks/useCloudDrives';
 
 interface FilesPickerProps {
     files: FileLink[];
@@ -24,6 +25,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
     
     const pickerRef = useRef<HTMLDivElement>(null);
     const { openPicker } = useGooglePicker();
+    const drives = useCloudDrives();
 
     useEffect(() => {
         setLocalFiles(files || []);
@@ -75,7 +77,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
         position: 'fixed',
         top: position.bottom + 4,
         left: position.left,
-        minWidth: '360px',
+        minWidth: drives.google && drives.onedrive ? '360px' : '320px',
         maxWidth: '420px',
         backgroundColor: 'white',
         borderRadius: '8px',
@@ -250,7 +252,8 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                 </div>
             ) : (
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Google Drive Option */}
+                    {/* Google Drive Option: for someone signed in with Google (or email) */}
+                    {drives.google && (
                     <button
                         onClick={() => {
                             openPicker((result) => {
@@ -301,8 +304,10 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         />
                         Google Drive
                     </button>
+                    )}
 
-                    {/* OneDrive / SharePoint Option: a pasted share link */}
+                    {/* OneDrive / SharePoint Option: for someone signed in with Microsoft (or email) */}
+                    {drives.onedrive && (
                     <button
                         onClick={() => { setAddKind('onedrive'); setIsAddingUrl(true); }}
                         style={{
@@ -334,6 +339,7 @@ export const FilesPicker = ({ files = [], position, onSave, onClose }: FilesPick
                         <img src={ONEDRIVE_ICON} alt="OneDrive" width="24" height="24" />
                         OneDrive
                     </button>
+                    )}
 
                     {/* File URL Option */}
                     <button

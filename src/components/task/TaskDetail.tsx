@@ -6,6 +6,7 @@ import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { RichTextEditor } from '../ui/RichTextEditor';
 import { fileLinkFromUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
+import { useCloudDrives } from '../../hooks/useCloudDrives';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
@@ -154,6 +155,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
     const { openPicker } = useGooglePicker();
+    const drives = useCloudDrives();
 
     const handleAddFile = () => {
         if (!fileUrl.trim()) return;
@@ -638,6 +640,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 >😊</button>
 
                                                 {/* Google Drive */}
+
+                                                {drives.google && (
                                                 <button
                                                     onClick={() => openPicker((result) => {
                                                         setDraftFiles(prev => [...prev, { id: uuidv4(), name: result.name, url: result.url, type: 'google-drive', iconUrl: result.iconUrl, mimeType: result.mimeType }]);
@@ -649,6 +653,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                 >
                                                     <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '18px', height: '18px' }} />
                                                 </button>
+
+                                                )}
                                             </div>
 
                                             {/* Right: Update button */}
@@ -883,6 +889,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         >😊</button>
 
                                                                         {/* Google Drive */}
+
+                                                                        {drives.google && (
                                                                         <button
                                                                             onClick={() => openPicker((result) => {
                                                                                 setEditDraftFiles(prev => [...prev, { id: uuidv4(), name: result.name, url: result.url, type: 'google-drive', iconUrl: result.iconUrl, mimeType: result.mimeType }]);
@@ -894,6 +902,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         >
                                                                             <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '18px', height: '18px' }} />
                                                                         </button>
+
+                                                                        )}
                                                                     </div>
 
                                                                     {/* Right: Cancel + Save */}
@@ -1132,6 +1142,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                             >😊</button>
 
                                                                             {/* Google Drive */}
+
+                                                                            {drives.google && (
                                                                             <button
                                                                                 onClick={() => openPicker((result) => {
                                                                                     setReplyFiles(prev => ({
@@ -1146,6 +1158,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                             >
                                                                                 <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" style={{ width: '17px', height: '17px' }} />
                                                                             </button>
+
+                                                                            )}
                                                                         </div>
 
                                                                         <button
@@ -1217,13 +1231,13 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                 border: '1px solid #e1e4e8',
                                 marginBottom: '24px'
                             }}>
-                                <div style={{ marginBottom: '16px', fontWeight: 500, fontSize: '14px' }}>Add Google Drive or OneDrive Link</div>
+                                <div style={{ marginBottom: '16px', fontWeight: 500, fontSize: '14px' }}>{drives.google && drives.onedrive ? 'Add Google Drive or OneDrive Link' : drives.onedrive ? 'Add OneDrive Link' : 'Add Google Drive Link'}</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div style={{ display: 'flex', gap: '12px' }}>
                                         <div style={{ flex: 1 }}>
                                             <input
                                                 type="text"
-                                                placeholder="Paste a Google Drive or OneDrive / SharePoint link here..."
+                                                placeholder={drives.google && drives.onedrive ? 'Paste a Google Drive or OneDrive / SharePoint link here...' : drives.onedrive ? 'Paste a OneDrive / SharePoint link here...' : 'Paste Google Drive Link here...'}
                                                 value={fileUrl}
                                                 onChange={(e) => {
                                                     setFileUrl(e.target.value);
@@ -1281,6 +1295,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                         >
                                             <Plus size={16} /> Add Link
                                         </button>
+                                        {drives.google && (
                                         <button
                                             onClick={() => {
                                                 openPicker((result) => {
@@ -1314,6 +1329,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             <img src="https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="" style={{ width: '18px', height: '18px' }} />
                                             Google Drive
                                         </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>

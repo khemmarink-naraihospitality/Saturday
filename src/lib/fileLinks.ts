@@ -65,3 +65,23 @@ export const ONEDRIVE_ICON =
     'data:image/svg+xml;utf8,' + encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="#0364b8" d="M12.2 9.6a7.4 7.4 0 0 1 6.5 3.7 6 6 0 0 1 1.3-.1 5.8 5.8 0 0 1 5.6 4.4 5 5 0 0 1 1.9 9.6H7.7a5.9 5.9 0 0 1-1.1-11.7 7.4 7.4 0 0 1 5.6-5.9z"/><path fill="#0078d4" d="M12.2 9.6a7.4 7.4 0 0 0-5.6 5.9 5.9 5.9 0 0 0-4.6 5.7 5.7 5.7 0 0 0 4 5.4h19.3a5 5 0 0 0 1.5-9.6 5.8 5.8 0 0 0-5.6-4.4 6 6 0 0 0-1.3.1 7.4 7.4 0 0 0-6.5-3.7z" opacity=".55"/><path fill="#28a8ea" d="M20 13.2a6 6 0 0 1 1.3-.1 5.8 5.8 0 0 1 5.6 4.4 5 5 0 0 1 1.9 9.6H12.3z"/></svg>'
     );
+
+/**
+ * Which cloud-file sources to offer, from how this person signed in: someone
+ * who signed in with Google sees Google Drive, with Microsoft sees OneDrive,
+ * and an email/password account (neither) sees both. Links to either kind can
+ * still be pasted and are still shown whatever the sign-in.
+ *
+ * "How they signed in" is the identity used most recently
+ * (identities[].last_sign_in_at), falling back to the account's first provider.
+ */
+export const driveSourcesFor = (
+    user: { app_metadata?: { provider?: string }; identities?: { provider: string; last_sign_in_at?: string }[] } | null | undefined
+) => {
+    const identities = [...(user?.identities || [])].sort((a, b) => (b.last_sign_in_at || '').localeCompare(a.last_sign_in_at || ''));
+    const provider = identities[0]?.provider || user?.app_metadata?.provider || '';
+    return {
+        google: provider !== 'azure',
+        onedrive: provider !== 'google',
+    };
+};

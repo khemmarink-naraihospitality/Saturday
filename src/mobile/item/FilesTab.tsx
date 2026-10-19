@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { fileLinkFromUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
+import { useCloudDrives } from '../../hooks/useCloudDrives';
 import type { FileLink, Item } from '../../types';
 import { BottomSheet, EmptyState, PrimaryButton } from '../ui';
 import { DRIVE_ICON, FileIcon } from '../cells/CellView';
@@ -24,6 +25,7 @@ const hostOf = (url: string) => {
 export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) => {
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
     const { openPicker } = useGooglePicker();
+    const drives = useCloudDrives();
     const [adding, setAdding] = useState(false);
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
@@ -59,13 +61,15 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
     return (
         <div className="m-files">
             {canEdit && (
-                <div className="m-files__add">
+                <div className="m-files__add" style={drives.google ? undefined : { gridTemplateColumns: '1fr' }}>
                     <button type="button" className="m-files__add-btn" onClick={() => { resetForm(); setAdding(true); }}>
-                        <img src={ONEDRIVE_ICON} alt="" width={19} height={19} /> OneDrive / Drive link
+                        <img src={drives.onedrive ? ONEDRIVE_ICON : DRIVE_ICON} alt="" width={19} height={19} /> {drives.google && drives.onedrive ? 'OneDrive / Drive link' : drives.onedrive ? 'OneDrive link' : 'Drive link'}
                     </button>
+                    {drives.google && (
                     <button type="button" className="m-files__add-btn" onClick={pickFromDrive}>
                         <img src={DRIVE_ICON} alt="" width={19} height={19} /> Google Drive
                     </button>
+                    )}
                 </div>
             )}
 

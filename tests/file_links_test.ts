@@ -3,7 +3,7 @@
  * Drive, OneDrive / SharePoint or other, and the name a link gets.
  * Run with:  npx tsx tests/file_links_test.ts
  */
-import { fileLinkFromUrl, fileTypeForUrl, getOneDriveFileName, isOneDriveUrl, ONEDRIVE_ICON } from '../src/lib/fileLinks';
+import { driveSourcesFor, fileLinkFromUrl, fileTypeForUrl, getOneDriveFileName, isOneDriveUrl, ONEDRIVE_ICON } from '../src/lib/fileLinks';
 
 let passed = 0;
 let failed = 0;
@@ -45,6 +45,15 @@ eq('a Google Doc keeps its name rule', fileLinkFromUrl('https://docs.google.com/
 eq('another site: last path segment', fileLinkFromUrl('https://example.com/a/b/report.pdf?x=1', '', id)?.name, 'report.pdf');
 eq('nothing typed', fileLinkFromUrl('   ', 'x', id), null);
 check('the icon is an inline image', ONEDRIVE_ICON.startsWith('data:image/svg+xml'));
+
+// driveSourcesFor: what to offer by how the person signed in
+eq('google sign-in: Google Drive only', driveSourcesFor({ app_metadata: { provider: 'google' }, identities: [{ provider: 'google', last_sign_in_at: '2026-10-19T01:00:00Z' }] }), { google: true, onedrive: false });
+eq('microsoft sign-in: OneDrive only', driveSourcesFor({ app_metadata: { provider: 'azure' }, identities: [{ provider: 'azure', last_sign_in_at: '2026-10-19T01:00:00Z' }] }), { google: false, onedrive: true });
+eq('email account: both', driveSourcesFor({ app_metadata: { provider: 'email' }, identities: [{ provider: 'email', last_sign_in_at: '2026-10-19T01:00:00Z' }] }), { google: true, onedrive: true });
+eq('has both identities: the one used last wins', driveSourcesFor({ app_metadata: { provider: 'google' }, identities: [
+    { provider: 'google', last_sign_in_at: '2026-10-01T00:00:00Z' }, { provider: 'azure', last_sign_in_at: '2026-10-19T00:00:00Z' }] }), { google: false, onedrive: true });
+eq('no identities listed: the first provider', driveSourcesFor({ app_metadata: { provider: 'azure' } }), { google: false, onedrive: true });
+eq('nobody signed in yet: both', driveSourcesFor(null), { google: true, onedrive: true });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

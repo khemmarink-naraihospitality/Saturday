@@ -82,7 +82,7 @@ const tableChain = (table: string) => {
     return proxy;
 };
 
-const fakeUser = { id: fx.ME.id, email: fx.ME.email, user_metadata: { full_name: fx.ME.name }, app_metadata: { provider: 'google' } };
+const fakeUser = { id: fx.ME.id, email: fx.ME.email, user_metadata: { full_name: fx.ME.name }, app_metadata: { provider: new URLSearchParams(window.location.search).get('provider') || 'google' } };
 const fakeSession = { user: fakeUser, access_token: 'preview', refresh_token: 'preview', expires_in: 3600, token_type: 'bearer' };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

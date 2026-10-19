@@ -6,6 +6,7 @@ import { useUserStore } from '../../store/useUserStore';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { fileLinkFromUrl } from '../../lib/fileLinks';
+import { useCloudDrives } from '../../hooks/useCloudDrives';
 import { hasHtmlContent, previewText } from '../../lib/updates';
 import { autolinkBeforeCaret, findUrls, linkifyNode } from '../../lib/linkify';
 import type { Comment, FileLink } from '../../types';
@@ -91,6 +92,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
     const currentUser = useUserStore(state => state.currentUser);
     const people = useBoardPeople();
     const { openPicker } = useGooglePicker();
+    const drives = useCloudDrives();
 
     // Keep the last mode while the sheet animates away.
     const lastMode = useRef<ComposerMode | null>(mode);
@@ -324,6 +326,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
                 <span className="m-composer__tools-gap" />
                 <ToolButton label="Mention someone" onTap={insertAt}><AtSign size={19} strokeWidth={2.2} /></ToolButton>
                 <ToolButton label="Attach a link" on={linkOpen} onTap={() => setLinkOpen(v => !v)}><Link2 size={19} strokeWidth={2.2} /></ToolButton>
+                {drives.google && (
                 <ToolButton
                     label="Attach from Google Drive"
                     onTap={() => openPicker(result => setFiles(prev => [...prev, {
@@ -332,6 +335,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
                 >
                     <img src={DRIVE_ICON} alt="" width={19} height={19} />
                 </ToolButton>
+                )}
             </div>
 
             {linkOpen && (

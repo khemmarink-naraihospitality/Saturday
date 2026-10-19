@@ -7,6 +7,7 @@ import type { FileLink } from '../../../types';
 import { BottomSheet, PrimaryButton, TextButton } from '../../ui';
 import { DRIVE_ICON, FileIcon } from '../CellView';
 import { fileLinkFromUrl, isOneDriveUrl, ONEDRIVE_ICON } from '../../../lib/fileLinks';
+import { useCloudDrives } from '../../../hooks/useCloudDrives';
 import type { EditorProps } from './types';
 
 const hostOf = (url: string) => {
@@ -37,6 +38,7 @@ const FilesArt = () => (
 export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { openPicker } = useGooglePicker();
+    const drives = useCloudDrives();
     const files: FileLink[] = Array.isArray(value) ? (value as FileLink[]) : [];
     const [adding, setAdding] = useState(false);
     const [name, setName] = useState('');
@@ -91,10 +93,13 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
                         <span className="m-files-bar__icon"><Link2 size={22} /></span>
                         Link
                     </button>
+                    {drives.onedrive && (
                     <button type="button" className="m-files-bar__btn" onClick={() => { setKind('onedrive'); setAdding(true); }}>
                         <span className="m-files-bar__icon"><img src={ONEDRIVE_ICON} alt="" width={24} height={24} /></span>
                         OneDrive
                     </button>
+                    )}
+                    {drives.google && (
                     <button
                         type="button"
                         className="m-files-bar__btn"
@@ -105,6 +110,7 @@ export const FilesEditor = ({ open, onClose, item, column, value }: EditorProps)
                         <span className="m-files-bar__icon"><img src={DRIVE_ICON} alt="" width={22} height={22} /></span>
                         Google Drive
                     </button>
+                    )}
                 </div>
             ) : undefined}
         >

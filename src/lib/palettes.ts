@@ -29,7 +29,7 @@ export const PALETTES: Palette[] = [
         id: 'narai',
         name: 'Narai',
         blurb: 'Crystal glass in pale sage green',
-        swatch: { canvas: '#fafdf6', sidebar: '#f1f7e6', line: '#e1ebd3', brand: '#4f7f43', brandSoft: '#e2f0cd', accent: '#9cc472', text: '#222b1b' },
+        swatch: { canvas: '#fcfefa', sidebar: '#f7fbf0', line: '#e9f0de', brand: '#4f7f43', brandSoft: '#eaf5d9', accent: '#9cc472', text: '#222b1b' },
     },
 ];
 

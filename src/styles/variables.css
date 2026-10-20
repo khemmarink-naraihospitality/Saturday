@@ -124,15 +124,15 @@
   --color-brand-primary: 104 30% 38%;  /* #4F7F43 */
   --color-brand-hover: 104 33% 31%;
   --color-brand-active: 104 36% 25%;
-  --color-brand-light: 84 52% 92%;     /* sage mist: selected row, active tab */
-  --color-brand-subtle: 84 46% 85%;
+  --color-brand-light: 86 55% 95%;     /* sage mist: selected row, active tab */
+  --color-brand-subtle: 86 48% 89%;
 
   /* Pale grass green surfaces */
-  --color-bg: 90 55% 98.5%;            /* #FAFDF6 */
-  --color-bg-canvas: 90 55% 98.5%;
-  --color-bg-surface: 88 45% 96.5%;     /* #F4F9EC */
-  --color-bg-surface-hover: 86 34% 91%;
-  --color-bg-subtle: 88 42% 94.5%;      /* #F1F7E6 sidebar */
+  --color-bg: 90 60% 99.2%;            /* #FCFEFA */
+  --color-bg-canvas: 90 60% 99.2%;
+  --color-bg-surface: 90 50% 98%;       /* #FAFDF5 */
+  --color-bg-surface-hover: 88 36% 94%;
+  --color-bg-subtle: 90 46% 96.8%;      /* #F7FBF0 sidebar */
 
   /* Deep green-olive ink */
   --color-text-primary: 92 24% 14%;    /* #222B1B */
@@ -140,10 +140,10 @@
   --color-text-tertiary: 90 10% 49%;
   --color-text-disabled: 90 10% 49%;
 
-  --color-border: 86 28% 89%;          /* #E1EBD3 */
-  --color-border-hover: 86 24% 79%;
-  --color-cell-border: 86 28% 89%;
-  --color-border-strong: 86 24% 79%;
+  --color-border: 88 26% 92%;          /* #E9F0DE */
+  --color-border-hover: 88 22% 84%;
+  --color-cell-border: 88 26% 92%;
+  --color-border-strong: 88 22% 84%;
 
   --color-status-gray-bg: 90 10% 58%;
 
@@ -152,21 +152,21 @@
   --gradient-energy: linear-gradient(90deg, #466f37, #e9d27a);
   --gradient-depth: linear-gradient(135deg, #24391c, #466f37);
 
-  --color-table-header-bg: 90 55% 98.5%;
-  --color-group-header-bg: 90 55% 98.5%;
+  --color-table-header-bg: 90 60% 99.2%;
+  --color-group-header-bg: 90 60% 99.2%;
 
   --shadow-sm: 0 1px 3px rgba(70, 110, 60, 0.07);
   --shadow-md: 0 4px 12px rgba(70, 110, 60, 0.09);
   --shadow-lg: 0 8px 24px rgba(70, 110, 60, 0.11);
 
   /* Status / dropdown labels: pastel, with dark ink */
-  --label-tint: 56%;
+  --label-tint: 68%;
   --label-tint-base: #fcfdf6;
   --label-text: #2a3322;
 
   /* Spots that were hard-coded violet (read with the old value as fallback) */
   --color-nav-accent: #4f7f43;
-  --color-nav-accent-bg: #e2f0cd;
+  --color-nav-accent-bg: #eaf5d9;
   --color-icon-accent: #5b8a4a;
   --color-action: #4f7f43;
   --color-action-2: #6a9d55;
@@ -174,8 +174,8 @@
   --color-action-2-glow: rgba(95, 147, 72, 0.26);
 
   /* Dashboard's cat-farm room */
-  --dash-wall: #eef6dc;
-  --dash-wall-edge: #dcebc1;
+  --dash-wall: #f4faea;
+  --dash-wall-edge: #e6f1d2;
   --dash-window: #86ad6c;
   --dash-window-text: #4f7f43;
 
@@ -186,11 +186,11 @@
   --radius-lg: 24px;
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
   --color-bg-base: 84 50% 94%;
-  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #e4f2cc 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #d6f0e2 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #eef6d4 0%, transparent 62%), radial-gradient(40% 40% at 0% 100%, #dcefd0 0%, transparent 60%), linear-gradient(160deg, #f3f9e8, #e6f2d9);
-  --glass-panel: linear-gradient(155deg, rgba(255, 255, 255, 0.86), rgba(250, 254, 246, 0.7));
-  --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.26));
-  --glass-pop: rgba(252, 254, 249, 0.7);
-  --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(252, 255, 248, 0.58));
+  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #eef7de 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #e4f5ee 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #f3f9e1 0%, transparent 62%), radial-gradient(40% 40% at 0% 100%, #e8f4dc 0%, transparent 60%), linear-gradient(160deg, #f9fcf3, #f0f7e6);
+  --glass-panel: linear-gradient(155deg, rgba(255, 255, 255, 0.82), rgba(252, 255, 249, 0.62));
+  --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.34));
+  --glass-pop: rgba(253, 255, 251, 0.68);
+  --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(253, 255, 250, 0.6));
   --glass-edge: rgba(255, 255, 255, 0.88);
   --glass-line: rgba(140, 180, 110, 0.16);
   --glass-shadow: 0 30px 60px -30px rgba(70, 110, 60, 0.3), 0 8px 24px -12px rgba(70, 110, 60, 0.12);

@@ -342,7 +342,7 @@ export const GlobalTopActions = () => {
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                            <UserCog size={16} color="#6366f1" />
+                            <UserCog size={16} style={{ color: 'var(--color-icon-accent, #6366f1)' }} />
                             <span style={{ fontWeight: 500 }}>Profile Settings</span>
                         </button>
 
@@ -369,7 +369,7 @@ export const GlobalTopActions = () => {
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <ShieldCheck size={16} color="#6366f1" />
+                                <ShieldCheck size={16} style={{ color: 'var(--color-icon-accent, #6366f1)' }} />
                                 <span style={{ fontWeight: 500 }}>Admin Console</span>
                             </button>
                         )}

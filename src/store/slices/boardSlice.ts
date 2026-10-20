@@ -9,6 +9,7 @@ import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { mapDbDependency } from './itemDependencySlice';
 import { isBoardUnlocked } from '../../lib/boardPinUnlock';
 import { splitSharedColumns } from '../../lib/columnScope';
+import { adoptAccountPalette } from '../../lib/uiTheme';
 
 export interface BoardSlice {
     boards: Board[];
@@ -169,7 +170,7 @@ export const createBoardSlice: StateCreator<
                 supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id),
-                supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url, auth_type').eq('id', user.id).single()
+                supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url, auth_type, ui_theme').eq('id', user.id).single()
             ]);
 
             // parent_id (sub-workspace support) may not exist yet on every environment's
@@ -198,6 +199,10 @@ export const createBoardSlice: StateCreator<
                     });
                 }
             }
+
+            // The palette is part of the account. A profile without the column yet
+            // (migration not applied) has no ui_theme and keeps what this browser has.
+            if (existingProfile && 'ui_theme' in existingProfile) adoptAccountPalette(existingProfile.ui_theme);
 
             // ENSURE PROFILE — fire and forget, nothing below reads its result.
             // avatar_url prefers whatever is already on the profile row (a

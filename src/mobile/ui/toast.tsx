@@ -85,7 +85,7 @@ export const MobileToastHost = () => {
                                     borderRadius: 10,
                                     fontSize: 15,
                                     fontWeight: 700,
-                                    color: 'hsl(255 100% 82%)',
+                                    color: 'hsl(var(--m-toast-action, 255 100% 82%))',
                                     background: 'hsl(0 0% 100% / 0.1)'
                                 }}
                             >

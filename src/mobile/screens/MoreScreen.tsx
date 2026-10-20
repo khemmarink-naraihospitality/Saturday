@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, ShieldCheck } from 'lucide-react';
+import { Check, ChevronRight, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, Palette as PaletteIcon, ShieldCheck } from 'lucide-react';
 import './screens.css';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
@@ -8,6 +8,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { setLayoutOverride } from '../../hooks/useIsMobile';
 import { Avatar, BottomSheet, Card, PrimaryButton } from '../ui';
 import { openWorkspaces } from '../nav/navigation';
+import { PALETTES } from '../../lib/palettes';
+import { chooseAccountPalette } from '../../lib/uiTheme';
+import { ThemeSwatch } from '../../components/common/ThemeChoice';
 
 // The same form as the desktop's floating "Contact support" button.
 const SUPPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header';
@@ -35,6 +38,8 @@ export const MoreScreen = () => {
     const user = useUserStore(state => state.currentUser);
     const theme = useThemeStore(state => state.theme);
     const toggleTheme = useThemeStore(state => state.toggleTheme);
+    const palette = useThemeStore(state => state.palette);
+    const [themeOpen, setThemeOpen] = useState(false);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const { signOut } = useAuth();
     const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -59,6 +64,12 @@ export const MoreScreen = () => {
 
                     <Card className="m-menu">
                         <MenuItem icon={<LayoutGrid size={20} />} label="Workspaces" onClick={openWorkspaces} />
+                        <MenuItem
+                            icon={<PaletteIcon size={20} />}
+                            label="Theme"
+                            onClick={() => setThemeOpen(true)}
+                            right={<span className="m-menu__value">{PALETTES.find(p => p.id === palette)?.name}<ChevronRight size={18} color="hsl(var(--m-text-3))" /></span>}
+                        />
                         <MenuItem
                             icon={<Moon size={20} />}
                             label="Dark mode"
@@ -89,6 +100,28 @@ export const MoreScreen = () => {
                     </Card>
                 </div>
             </div>
+
+            <BottomSheet open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme">
+                <div className="m-theme-list">
+                    {PALETTES.map(p => (
+                        <button
+                            key={p.id}
+                            type="button"
+                            className={`m-theme-option${palette === p.id ? ' m-theme-option--on' : ''}`}
+                            aria-pressed={palette === p.id}
+                            onClick={() => chooseAccountPalette(user?.id, p.id)}
+                        >
+                            <ThemeSwatch palette={p} height={92} />
+                            <span className="m-theme-option__text">
+                                <span className="m-theme-option__name">{p.name}</span>
+                                <span className="m-theme-option__blurb">{p.blurb}</span>
+                            </span>
+                            <span className="m-theme-option__check">{palette === p.id && <Check size={14} strokeWidth={3} />}</span>
+                        </button>
+                    ))}
+                    <div className="m-theme-note">Colours for your account only. Dark mode is the switch below Theme.</div>
+                </div>
+            </BottomSheet>
 
             <BottomSheet open={confirmSignOut} onClose={() => setConfirmSignOut(false)} title="Sign out?">
                 <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>

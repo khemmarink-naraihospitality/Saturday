@@ -51,30 +51,30 @@ export const ContactSupportButton = () => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            backgroundColor: '#6b4cc3', // Exact Monday purple/blue support color
+                            backgroundColor: 'var(--color-action-2, #6b4cc3)', // Exact Monday purple/blue support color
                             color: 'white',
                             border: 'none',
                             borderRadius: '24px',
                             padding: '4px 16px 4px 4px',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 10px rgba(107, 76, 195, 0.3)',
+                            boxShadow: '0 4px 10px var(--color-action-2-glow, rgba(107, 76, 195, 0.3))',
                             fontFamily: 'inherit',
                             transition: 'transform 0.2s, box-shadow 0.2s',
                         }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 6px 14px rgba(107, 76, 195, 0.4)';
+                            e.currentTarget.style.boxShadow = '0 6px 14px var(--color-action-2-glow, rgba(107, 76, 195, 0.4))';
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 10px rgba(107, 76, 195, 0.3)';
+                            e.currentTarget.style.boxShadow = '0 4px 10px var(--color-action-2-glow, rgba(107, 76, 195, 0.3))';
                         }}
                     >
                         <div style={{
                             width: '32px',
                             height: '32px',
                             borderRadius: '50%',
-                            backgroundColor: '#4e2f9d', // Darker shade for contrast
+                            backgroundColor: 'var(--color-action-2-dark, #4e2f9d)', // Darker shade for contrast
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',

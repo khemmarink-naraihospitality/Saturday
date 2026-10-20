@@ -10,7 +10,7 @@
  * board-scrolled, sheet-status, sheet-date, sheet-files, sheet-date2,
  * sheet-timeline, sheet-views, workspaces, favorites, notifications, more,
  * dashboard, item-columns, item-files, board-large (4,800 rows, for speed).
- * Add &theme=dark for the dark theme.
+ * Add &theme=dark for the dark theme, &palette=narai for the Narai palette.
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -110,6 +110,7 @@ try { localStorage.setItem('saturday:layout', 'mobile'); } catch { /* ignore */ 
 
 if (params.get('theme') === 'dark') useThemeStore.getState().setTheme('dark');
 else useThemeStore.getState().setTheme('light');
+useThemeStore.getState().setPalette(params.get('palette') === 'narai' ? 'narai' : 'saturday');
 
 useUserStore.setState({
     currentUser: { id: fx.ME.id, name: fx.ME.name, email: fx.ME.email, avatar: '', role: 'owner', system_role: 'super_admin', is_approved: true, is_active: true },

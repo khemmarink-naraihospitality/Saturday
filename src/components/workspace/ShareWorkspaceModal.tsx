@@ -254,7 +254,7 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
                         onClick={onClose}
                         style={{
                             padding: '8px 24px',
-                            backgroundColor: '#4f46e5',
+                            backgroundColor: 'var(--color-action, #4f46e5)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',

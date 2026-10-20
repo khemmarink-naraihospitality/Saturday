@@ -198,9 +198,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                 <div
                     className={clsx('tree-node-parent', { expanded: isExpanded, active: isActive })}
                     style={{
-                        backgroundColor: isActive ? '#f3e8ff' : 'transparent',
-                        color: isActive ? '#7c3aed' : 'hsl(var(--color-text-primary))',
-                        borderTop: dragOverWorkspaceId === ws.id && draggedWorkspaceId !== ws.id ? '2px solid #7c3aed' : 'none',
+                        backgroundColor: isActive ? 'var(--color-nav-accent-bg, #f3e8ff)' : 'transparent',
+                        color: isActive ? 'var(--color-nav-accent, #7c3aed)' : 'hsl(var(--color-text-primary))',
+                        borderTop: dragOverWorkspaceId === ws.id && draggedWorkspaceId !== ws.id ? '2px solid var(--color-nav-accent, #7c3aed)' : 'none',
                         opacity: draggedWorkspaceId === ws.id ? 0.3 : 1
                     }}
                     draggable={!searchActive && !editingWorkspaceId}
@@ -366,7 +366,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             <div className="tree-node-leaf last-child">
                                 {creatingBoardInWorkspaceId === ws.id ? (
                                     <div className="tree-sidebar-item" style={{ paddingLeft: '4px', cursor: 'default' }}>
-                                        <BoardIcon size={16} style={{ color: '#7c3aed' }} />
+                                        <BoardIcon size={16} style={{ color: 'var(--color-nav-accent, #7c3aed)' }} />
                                         <form
                                             onSubmit={(e) => {
                                                 e.preventDefault();
@@ -399,7 +399,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 ) : (
                                     <div
                                         className="tree-sidebar-item"
-                                        style={{ color: '#7c3aed', opacity: 0.8 }}
+                                        style={{ color: 'var(--color-nav-accent, #7c3aed)', opacity: 0.8 }}
                                         onClick={() => {
                                             setActiveWorkspace(ws.id);
                                             setCreatingBoardInWorkspaceId(ws.id);
@@ -411,7 +411,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 )}
                                 {creatingSubWorkspaceInId === ws.id ? (
                                     <div className="tree-sidebar-item" style={{ paddingLeft: '4px', cursor: 'default' }}>
-                                        <Plus size={16} style={{ color: '#7c3aed' }} />
+                                        <Plus size={16} style={{ color: 'var(--color-nav-accent, #7c3aed)' }} />
                                         <form
                                             onSubmit={(e) => {
                                                 e.preventDefault();

@@ -109,3 +109,119 @@
   --color-danger: 0 80% 69%;           /* #F07070 */
   --color-danger-bg: 0 62% 11%;        /* #2B0A0A */
 }
+/* ── Narai palette ─────────────────────────────────────────────────────────
+ * Pastel cream, sage green and warm wood, after the NHGOne campus picture.
+ * Chosen per person (src/lib/palettes.ts); useThemeStore.setPalette puts
+ * data-palette="narai" on <html>. Saturday is :root above and needs no
+ * attribute. The :not(.dark) / .dark pairs keep the light block from
+ * reaching the dark one whichever comes later in the cascade.
+ * Status, dropdown and group colours are people's data and stay as chosen.
+ */
+:root[data-palette='narai']:not(.dark) {
+  /* Forest green (the "NHG OPERATIONS" sign) */
+  --color-brand-primary: 104 34% 33%;  /* #466F37 */
+  --color-brand-hover: 104 37% 26%;
+  --color-brand-active: 104 40% 20%;
+  --color-brand-light: 78 48% 91%;     /* #EAF1D8 sage */
+  --color-brand-subtle: 80 42% 82%;
+
+  /* Cream and sand */
+  --color-bg: 43 100% 98%;             /* #FFFCF5 */
+  --color-bg-canvas: 43 100% 98%;
+  --color-bg-surface: 42 75% 96%;      /* #FDF8EC */
+  --color-bg-surface-hover: 41 45% 88%;
+  --color-bg-subtle: 42 60% 92%;       /* #F7EFDC sidebar */
+
+  /* Olive-brown ink */
+  --color-text-primary: 46 18% 14%;    /* #2B281E */
+  --color-text-secondary: 38 20% 32%;
+  --color-text-tertiary: 40 14% 50%;
+  --color-text-disabled: 40 14% 50%;
+
+  --color-border: 42 42% 86%;          /* #EBE1CB */
+  --color-border-hover: 40 34% 75%;
+  --color-cell-border: 42 42% 86%;
+  --color-border-strong: 40 34% 75%;
+
+  --color-status-gray-bg: 40 14% 55%;
+
+  /* Wood (the "ADMIN CONSOLE" sign) for the second colour of a gradient */
+  --gradient-brand: linear-gradient(135deg, #466f37, #8db35c);
+  --gradient-spectrum: linear-gradient(135deg, #a8692c, #466f37, #8db35c);
+  --gradient-energy: linear-gradient(90deg, #466f37, #e5b54f);
+  --gradient-depth: linear-gradient(135deg, #24391c, #466f37);
+
+  --color-table-header-bg: 43 100% 98%;
+  --color-group-header-bg: 43 100% 98%;
+
+  --shadow-sm: 0 1px 3px rgba(110, 80, 30, 0.1);
+  --shadow-md: 0 4px 12px rgba(110, 80, 30, 0.12);
+  --shadow-lg: 0 8px 24px rgba(110, 80, 30, 0.15);
+
+  /* Spots that were hard-coded violet (read with the old value as fallback) */
+  --color-nav-accent: #466f37;
+  --color-nav-accent-bg: #eaf1d8;
+  --color-icon-accent: #a8692c;
+  --color-action: #466f37;
+  --color-action-2: #9c5f27;
+  --color-action-2-dark: #7a4519;
+  --color-action-2-glow: rgba(156, 95, 39, 0.3);
+
+  /* Dashboard's cat-farm room */
+  --dash-wall: #eaf1d8;
+  --dash-wall-edge: #d5e4b8;
+  --dash-window: #a8692c;
+  --dash-window-text: #466f37;
+}
+
+:root[data-palette='narai'].dark {
+  /* Deep olive and dark wood */
+  --color-bg: 75 16% 8%;               /* #14160F */
+  --color-bg-canvas: 75 16% 8%;
+  --color-bg-surface: 70 14% 11%;
+  --color-bg-surface-hover: 60 12% 20%;
+  --color-bg-subtle: 65 12% 15%;
+
+  --color-text-primary: 45 45% 94%;
+  --color-text-secondary: 42 18% 72%;
+  --color-text-tertiary: 42 10% 48%;
+  --color-text-disabled: 42 10% 48%;
+
+  --color-border: 60 11% 22%;
+  --color-border-hover: 55 11% 30%;
+  --color-cell-border: 60 11% 22%;
+  --color-border-strong: 55 11% 30%;
+
+  --color-brand-primary: 100 34% 40%;
+  --color-brand-hover: 92 45% 64%;
+  --color-brand-active: 92 38% 56%;
+  --color-brand-light: 100 34% 45% / 0.18;
+  --color-brand-subtle: 100 25% 25%;
+
+  --color-status-gray-bg: 42 10% 45%;
+
+  --color-table-header-bg: 75 16% 8%;
+  --color-group-header-bg: 75 16% 8%;
+
+  --gradient-brand: linear-gradient(135deg, #4f8a3e, #a8692c);
+  --gradient-spectrum: linear-gradient(135deg, #a8692c, #4f8a3e, #8db35c);
+  --gradient-energy: linear-gradient(90deg, #4f8a3e, #e5b54f);
+  --gradient-depth: linear-gradient(135deg, #14160f, #4f8a3e);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  --color-nav-accent: #9cc77f;
+  --color-nav-accent-bg: hsl(100 34% 45% / 0.18);
+  --color-icon-accent: #d79a5a;
+  --color-action: #4f8a3e;
+  --color-action-2: #9c5f27;
+  --color-action-2-dark: #7a4519;
+  --color-action-2-glow: rgba(0, 0, 0, 0.35);
+
+  --dash-wall: #eaf1d8;
+  --dash-wall-edge: #d5e4b8;
+  --dash-window: #a8692c;
+  --dash-window-text: #466f37;
+}

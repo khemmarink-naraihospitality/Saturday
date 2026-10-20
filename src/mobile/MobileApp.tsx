@@ -42,7 +42,10 @@ const MountOnce = ({ wanted, children }: { wanted: boolean; children: ReactNode 
     return mounted ? <Suspense fallback={null}>{children}</Suspense> : null;
 };
 
-const THEME_COLOR = { light: '#eff1f8', dark: '#0c0a1a' };
+const THEME_COLOR = {
+    saturday: { light: '#eff1f8', dark: '#0c0a1a' },
+    narai: { light: '#f9f2e3', dark: '#14160f' },
+};
 
 /**
  * The phone layout. Rendered by MainApp (App.tsx) in place of the desktop one
@@ -61,6 +64,7 @@ export const MobileApp = () => {
     const loadNotifications = useBoardStore(state => state.loadNotifications);
     const userId = useUserStore(state => state.currentUser?.id);
     const theme = useThemeStore(state => state.theme);
+    const palette = useThemeStore(state => state.palette);
 
     // On desktop the top bar loads notifications; the phone layout has no top
     // bar, so the tab bar's badge and the Notifications tab are fed from here.
@@ -82,11 +86,11 @@ export const MobileApp = () => {
     useEffect(() => {
         const meta = document.querySelector('meta[name="theme-color"]');
         const previous = meta?.getAttribute('content') ?? null;
-        meta?.setAttribute('content', THEME_COLOR[theme === 'dark' ? 'dark' : 'light']);
+        meta?.setAttribute('content', (THEME_COLOR[palette] || THEME_COLOR.saturday)[theme === 'dark' ? 'dark' : 'light']);
         return () => {
             if (meta && previous !== null) meta.setAttribute('content', previous);
         };
-    }, [theme]);
+    }, [theme, palette]);
 
     let screen: ReactNode;
     switch (activePage) {

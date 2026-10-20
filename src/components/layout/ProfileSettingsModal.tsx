@@ -5,6 +5,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUserStore } from '../../store/useUserStore';
 import { X, UserCog, Save, Camera } from 'lucide-react';
 import { AvatarCropModal } from './AvatarCropModal';
+import { useThemeStore } from '../../store/useThemeStore';
+import { PALETTES } from '../../lib/palettes';
+import { chooseAccountPalette } from '../../lib/uiTheme';
+import { ThemeChoiceCard } from '../common/ThemeChoice';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
@@ -20,6 +24,7 @@ interface ProfileSettingsModalProps {
 export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => {
     const { user } = useAuth();
     const { currentUser, setUser } = useUserStore();
+    const palette = useThemeStore(state => state.palette);
 
     const [name, setName] = useState(currentUser.name);
     const [saving, setSaving] = useState(false);
@@ -228,6 +233,19 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
                         fontSize: '14px', backgroundColor: 'hsl(var(--color-bg-subtle))', color: 'hsl(var(--color-text-tertiary))'
                     }}>
                         {user?.email}
+                    </div>
+
+                    {/* Theme: applies at once, independent of Save (which is for the name) */}
+                    <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid hsl(var(--color-border))' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Theme</div>
+                        <div style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', margin: '2px 0 10px' }}>
+                            Colours for your account only. Dark mode still switches with the moon button.
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            {PALETTES.map(p => (
+                                <ThemeChoiceCard key={p.id} palette={p} selected={palette === p.id} onSelect={() => chooseAccountPalette(user?.id, p.id)} />
+                            ))}
+                        </div>
                     </div>
 
                     {message.text && (

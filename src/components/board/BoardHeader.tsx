@@ -394,7 +394,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         alignItems: 'center',
                         gap: '6px',
                         padding: '6px 12px',
-                        backgroundColor: '#6b4cc3',
+                        backgroundColor: 'var(--color-action-2, #6b4cc3)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',

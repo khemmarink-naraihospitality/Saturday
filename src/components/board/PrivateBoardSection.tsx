@@ -143,7 +143,7 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
                         disabled={isSaving || !canSave}
                         style={{
                             padding: '8px 20px', borderRadius: '6px', border: 'none',
-                            backgroundColor: '#4f46e5', color: 'white', fontWeight: 600, fontSize: '14px',
+                            backgroundColor: 'var(--color-action, #4f46e5)', color: 'white', fontWeight: 600, fontSize: '14px',
                             cursor: (isSaving || !canSave) ? 'not-allowed' : 'pointer',
                             opacity: (isSaving || !canSave) ? 0.6 : 1
                         }}

@@ -61,6 +61,7 @@ client.auth.signOut = async () => ({ error: null });
 // ── Stores ──────────────────────────────────────────────────────────────────
 
 useThemeStore.getState().setTheme(params.get('theme') === 'dark' ? 'dark' : 'light');
+useThemeStore.getState().setPalette(params.get('palette') === 'narai' ? 'narai' : 'saturday');
 
 useUserStore.setState({
     currentUser: { id: fx.ME.id, name: fx.ME.name, email: fx.ME.email, avatar: '', role: 'owner', system_role: 'super_admin', is_approved: true, is_active: true },

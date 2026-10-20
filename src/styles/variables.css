@@ -130,7 +130,7 @@
   /* Pale grass green surfaces */
   --color-bg: 0 0% 100%;                /* white */
   --color-bg-canvas: 0 0% 100%;
-  --color-bg-surface: 90 30% 99%;       /* #FCFDFA */
+  --color-bg-surface: 0 0% 100%;
   --color-bg-surface-hover: 88 30% 95.5%;
   --color-bg-subtle: 90 30% 98.5%;      /* #FBFCF9 sidebar */
 
@@ -187,7 +187,7 @@
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
   --color-bg-base: 84 50% 94%;
   --glass-mesh: radial-gradient(55% 45% at 8% 6%, #f7fbef 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #f1faf6 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #f9fcf0 0%, transparent 62%), linear-gradient(160deg, #ffffff, #fbfdf8);
-  --glass-panel: linear-gradient(155deg, rgba(255, 255, 255, 0.82), rgba(252, 255, 249, 0.62));
+  --glass-panel: #ffffff;
   --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6));
   --glass-pop: rgba(253, 255, 251, 0.68);
   --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(253, 255, 250, 0.6));

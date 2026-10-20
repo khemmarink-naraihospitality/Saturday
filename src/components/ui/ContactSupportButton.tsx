@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useThemeStore } from '../../store/useThemeStore';
+
+// The support cat: the original is purple (hosted by the guideline site); under
+// Narai it is the same picture recoloured white with brown patches.
+const SUPPORT_CAT = 'https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru.png';
+const SUPPORT_CAT_NARAI = '/support-cat-narai.png';
 
 export const ContactSupportButton = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const palette = useThemeStore(state => state.palette);
 
     useEffect(() => {
         // Show after a slight delay for better UX
@@ -82,7 +89,7 @@ export const ContactSupportButton = () => {
                             overflow: 'hidden'
                         }}>
                             <img 
-                                src="https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru.png" 
+                                src={palette === 'narai' ? SUPPORT_CAT_NARAI : SUPPORT_CAT}
                                 alt="Support" 
                                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 onError={(e) => {

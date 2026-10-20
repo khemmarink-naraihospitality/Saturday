@@ -201,8 +201,6 @@
   --glass-glint: rgba(236, 217, 150, 0.4);
   --glass-sheen: rgba(255, 255, 255, 0.42);
   --glass-scrim: rgba(70, 100, 60, 0.2);
-  --ws-badge-radius: 50%;
-  --support-radius: 24px;
 }
 
 :root[data-palette='narai'].dark {
@@ -278,6 +276,4 @@
   --glass-glint: rgba(236, 217, 150, 0.3);
   --glass-sheen: rgba(255, 255, 255, 0.07);
   --glass-scrim: rgba(0, 0, 0, 0.5);
-  --ws-badge-radius: 50%;
-  --support-radius: 24px;
 }

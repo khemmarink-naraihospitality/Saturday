@@ -35,7 +35,7 @@ export const WorkspaceIcon = ({ title, isActive, size = 20 }: { title: string, i
         <div data-ws-badge="" data-ws-active={isActive ? 'true' : 'false'} data-ws-size={size} data-ws-hue={titleHue(title)} style={{
             width: `${size}px`,
             height: `${size}px`,
-            // A rounded square under Saturday; Narai sets --ws-badge-radius (a circle for now)
+            // A rounded square in every palette; a palette may override --ws-badge-radius
             borderRadius: 'var(--ws-badge-radius, 6px)',
             backgroundColor: isActive ? 'hsl(var(--color-brand-primary))' : '#e6e9ef',
             color: isActive ? 'white' : '#676879',

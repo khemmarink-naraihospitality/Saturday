@@ -74,7 +74,7 @@ export const LoginPage = () => {
             }
 
             if (errorBody?.error === 'GOOGLE_ACCOUNT') {
-                setForgotResult({ type: 'error', text: 'This account uses Google Sign-In. Please use "Continue with Google" instead.' });
+                setForgotResult({ type: 'error', text: 'This account signs in with Google or Microsoft. Please use that sign-in button instead.' });
             } else if (fnError || errorBody?.error) {
                 setForgotResult({ type: 'error', text: errorBody?.error || fnError?.message || 'Something went wrong. Please try again.' });
             } else {

@@ -14,7 +14,7 @@ interface Profile {
     is_approved: boolean;
     created_at: string;
     last_login_at: string | null;
-    auth_type?: 'google' | 'internal';
+    auth_type?: AuthType;
     avatar_url?: string | null;
     is_active?: boolean;
 }
@@ -31,6 +31,20 @@ type UserStatus = 'pending' | 'active' | 'inactive';
 const getUserStatus = (p: Profile): UserStatus =>
     !p.is_approved ? 'pending' : p.is_active === false ? 'inactive' : 'active';
 const STATUS_LABELS: Record<UserStatus, string> = { pending: 'Pending', active: 'Active', inactive: 'Inactive' };
+
+/** How an account signs in (profiles.auth_type). */
+type AuthType = 'google' | 'internal' | 'microsoft';
+const AUTH_LABELS: Record<AuthType, string> = { google: 'Google', microsoft: 'Microsoft', internal: 'Internal' };
+
+/** The four-square Microsoft mark, in the brand's own colours. */
+const MicrosoftMark = ({ size = 12 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 21 21" aria-hidden="true" style={{ flexShrink: 0 }}>
+        <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+    </svg>
+);
 const STATUS_COLORS: Record<UserStatus, string> = { pending: '#f59e0b', active: '#10b981', inactive: '#dc2626' };
 
 const HEADER_ROW_HEIGHT = 44;
@@ -126,7 +140,7 @@ export const UserTable = () => {
         fullName: string;
         email: string;
         role: string;
-        authType: 'google' | 'internal';
+        authType: AuthType;
         isActive: boolean;
     } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -402,7 +416,7 @@ export const UserTable = () => {
             Name: p.full_name || 'Unknown',
             Email: p.email || '',
             Role: ROLE_LABELS[p.system_role] || p.system_role,
-            Authentication: p.auth_type === 'internal' ? 'Internal' : 'Google',
+            Authentication: AUTH_LABELS[p.auth_type || 'google'] || 'Google',
             Status: STATUS_LABELS[getUserStatus(p)],
             'Last Login': p.last_login_at
                 ? new Date(p.last_login_at).toLocaleString('en-US', {
@@ -728,6 +742,10 @@ export const UserTable = () => {
                                             <span title="Internal (email + password)" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', backgroundColor: '#f1f5f9', color: '#475569' }}>
                                                 <Lock size={11} /> Internal
                                             </span>
+                                        ) : profile.auth_type === 'microsoft' ? (
+                                            <span title="Microsoft" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', backgroundColor: '#ecfdf5', color: '#047857' }}>
+                                                <MicrosoftMark size={11} /> Microsoft
+                                            </span>
                                         ) : (
                                             <span title="Google" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', backgroundColor: '#eff6ff', color: '#1d4ed8' }}>
                                                 <Globe size={11} /> Google
@@ -1012,8 +1030,8 @@ export const UserTable = () => {
                             {/* Authentication */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>Authentication</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                                    {(['google', 'internal'] as const).map((authType) => (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                    {(['google', 'microsoft', 'internal'] as const).map((authType) => (
                                         <button
                                             key={authType}
                                             onClick={() => setEditProfileModal({ ...editProfileModal, authType })}
@@ -1030,14 +1048,16 @@ export const UserTable = () => {
                                                 textAlign: 'center'
                                             }}
                                         >
-                                            {authType === 'google' ? 'Google' : 'Internal'}
+                                            {AUTH_LABELS[authType]}
                                         </button>
                                     ))}
                                 </div>
                                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>
                                     {editProfileModal.authType === 'google'
                                         ? 'Signs in with Continue with Google.'
-                                        : 'Signs in with email + a password. Switching this label alone does not send a setup email or change their existing credentials.'}
+                                        : editProfileModal.authType === 'microsoft'
+                                            ? 'Signs in with their Microsoft account.'
+                                            : 'Signs in with email + a password. Switching this label alone does not send a setup email or change their existing credentials.'}
                                 </p>
                             </div>
 

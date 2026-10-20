@@ -220,7 +220,7 @@ export const createBoardSlice: StateCreator<
                 full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
                 avatar_url: existingProfile?.avatar_url || user.user_metadata?.avatar_url,
                 system_role: existingProfile?.system_role || 'user',
-                auth_type: existingProfile?.auth_type || (user.app_metadata?.provider === 'google' ? 'google' : 'internal')
+                auth_type: existingProfile?.auth_type || (user.app_metadata?.provider === 'google' ? 'google' : user.app_metadata?.provider === 'azure' ? 'microsoft' : 'internal')
             }, { onConflict: 'id' }).then(({ error }) => {
                 if (error) console.error("Failed to ensure profile:", error);
             });

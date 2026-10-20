@@ -87,10 +87,9 @@ html[data-palette='narai'] button[style*="background-color: var(--color-action"]
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 0 1px var(--glass-glint), 0 8px 16px -8px rgba(70, 110, 60, 0.4) !important;
 }
 
-/* Status cells: pastel pills with a soft gloss, instead of full-bleed blocks */
+/* Status cells keep the rounded-square shape every palette has (table.css); here they get a soft gloss */
 html[data-palette='narai'] .status-cell-full {
     background-image: var(--glass-gloss);
-    clip-path: inset(3px 6px round 11px);
 }
 
 /* Dashboard widgets */

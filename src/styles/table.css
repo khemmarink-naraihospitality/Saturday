@@ -145,8 +145,6 @@
     height: 100% !important;
     box-sizing: border-box !important;
     border-bottom: 0.5px solid hsl(var(--color-bg-canvas)) !important;
-    /* A rounded square set into the row rather than a block to its edges */
-    clip-path: inset(3px 6px round 8px);
 }
 /* Column resize handle. Sits on the column's right edge — drag to resize,
    double-click to auto-fit to the widest cell. Widened past the 4px inline

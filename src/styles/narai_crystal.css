@@ -20,17 +20,16 @@ html[data-palette='narai'] .app-container {
 
 html[data-palette='narai'] .sidebar {
     background: var(--glass-side);
-    -webkit-backdrop-filter: blur(28px) saturate(1.5);
-    backdrop-filter: blur(28px) saturate(1.5);
     border-right: 1px solid var(--glass-line);
 }
 
-/* The floating main panel: a sheet of glass with a lit top edge */
+/* The floating main panel: a sheet of glass with a lit top edge. No backdrop-filter
+   (nor transform / filter) on the shell: any of them makes the panel the containing
+   block of its position:fixed children, and the full-page Admin Console would be
+   trapped inside the frame. It is opaque in light mode anyway. */
 html[data-palette='narai'] .app-main {
     position: relative;
     background: var(--glass-panel) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(1.6);
-    backdrop-filter: blur(32px) saturate(1.6);
     border: 1px solid var(--glass-edge);
     border-radius: 32px !important;
     margin: 12px 12px 12px 0 !important;
@@ -62,8 +61,10 @@ html[data-palette='narai'] .sidebar-item.active {
 /* Floating surfaces (menus, pickers, dialogs): frosted glass. Matched on the
    background colour itself (not the border's) and on a real shadow (0.1 and
    up), which leaves out small in-flow pills such as the group summary label
-   and the notification badge. */
-html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"], [style*="background-color: #fff"], [style*="background-color: #ffffff"])[style*="box-shadow"]:is([style*="rgba(0, 0, 0, 0.1"], [style*="rgba(0, 0, 0, 0.2"], [style*="rgba(0, 0, 0, 0.3"], [style*="rgba(0, 0, 0, 0.4"]) {
+   and the notification badge. Not the shell's main panel (.app-main): it has the same
+   inline colour and shadow, but a blur there would trap the full-page Admin Console
+   inside it and make the white panel see-through. */
+html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"], [style*="background-color: #fff"], [style*="background-color: #ffffff"])[style*="box-shadow"]:not(.app-main):is([style*="rgba(0, 0, 0, 0.1"], [style*="rgba(0, 0, 0, 0.2"], [style*="rgba(0, 0, 0, 0.3"], [style*="rgba(0, 0, 0, 0.4"]) {
     background: var(--glass-pop) !important;
     -webkit-backdrop-filter: blur(26px) saturate(1.7);
     backdrop-filter: blur(26px) saturate(1.7);

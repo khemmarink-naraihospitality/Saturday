@@ -83,6 +83,9 @@
     --m-toast-action: 85 60% 78%;
     --m-hero: linear-gradient(140deg, #86ad60 0%, #5d8a43 48%, #3f6b36 100%);
     --m-hero-glow: rgba(70, 111, 55, 0.5);
+    --m-radius-card: 32px;
+    --m-radius-tile: 22px;
+    --m-radius-button: 18px;
 }
 
 [data-palette='narai'].dark .m-app,
@@ -104,6 +107,9 @@
     --m-toast-action: 85 60% 78%;
     --m-hero: linear-gradient(140deg, #4f7a3c 0%, #3c6330 48%, #2c4a24 100%);
     --m-hero-glow: rgba(0, 0, 0, 0.5);
+    --m-radius-card: 32px;
+    --m-radius-tile: 22px;
+    --m-radius-button: 18px;
 }
 
 /* ── Shell ─────────────────────────────────────────────────────────────── */
@@ -613,4 +619,79 @@
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
     }
+}
+
+
+/* ── Narai crystal ─────────────────────────────────────────────────────────
+   Frosted glass over the green mesh, rounded like iOS. The --glass-* tokens
+   come from variables.css (light and dark); nothing here applies to Saturday. */
+
+[data-palette='narai'] .m-app {
+    background: var(--glass-mesh), hsl(var(--m-bg));
+}
+
+[data-palette='narai'] .m-app .m-screen,
+[data-palette='narai'] .m-app .m-home {
+    background: transparent;
+}
+
+[data-palette='narai'] .m-app .m-card {
+    background: var(--glass-card);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
+    border: 1px solid var(--glass-edge);
+    box-shadow: 0 18px 34px -22px rgba(44, 86, 34, 0.45), inset 0 1px 0 var(--glass-edge);
+}
+
+[data-palette='narai'] .m-tabbar {
+    background: var(--glass-card);
+    -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    backdrop-filter: blur(30px) saturate(1.8);
+    border: 1px solid var(--glass-edge);
+    border-radius: 36px;
+    box-shadow: var(--glass-pop-shadow), inset 0 1px 0 var(--glass-edge);
+}
+
+[data-palette='narai'] .m-sheet {
+    background: var(--glass-pop);
+    -webkit-backdrop-filter: blur(32px) saturate(1.7);
+    backdrop-filter: blur(32px) saturate(1.7);
+    border-top: 1px solid var(--glass-edge);
+    border-radius: 36px 36px 0 0;
+    box-shadow: 0 -20px 50px -16px rgba(40, 80, 30, 0.3), inset 0 1px 0 var(--glass-edge);
+}
+
+[data-palette='narai'] .m-sheet--full {
+    border-radius: 0;
+}
+
+[data-palette='narai'] .m-sheet-scrim {
+    background: var(--glass-scrim);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+[data-palette='narai'] .m-icon-btn {
+    background: var(--glass-card);
+    border: 1px solid var(--glass-edge);
+    box-shadow: 0 6px 14px -8px rgba(44, 86, 34, 0.4), inset 0 1px 0 var(--glass-edge);
+}
+
+[data-palette='narai'] .m-primary-btn {
+    border-radius: 18px;
+    background-image: var(--glass-gloss);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 0 1px var(--glass-glint), 0 10px 18px -10px rgba(50, 90, 35, 0.7);
+}
+
+[data-palette='narai'] .m-app .m-fav {
+    background: var(--glass-gloss), var(--m-hero);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 36px;
+    box-shadow: 0 18px 34px -16px var(--m-hero-glow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+[data-palette='narai'] .m-app .m-status-block,
+[data-palette='narai'] .m-portal .m-status-pill,
+[data-palette='narai'] .m-portal .m-choice {
+    background-image: var(--glass-gloss);
 }

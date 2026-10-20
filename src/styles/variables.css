@@ -178,6 +178,27 @@
   --dash-wall-edge: #cfe2ad;
   --dash-window: #6f9a54;
   --dash-window-text: #466f37;
+
+  /* Crystal: translucent panels over a soft green mesh, rounded like iOS
+     (styles/narai_crystal.css reads these) */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
+  --color-bg-base: 84 50% 94%;
+  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #d4eaae 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #c4e7d0 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #e5f0b9 0%, transparent 62%), radial-gradient(40% 40% at 0% 100%, #cce4ad 0%, transparent 60%), linear-gradient(160deg, #e8f3d4, #d6e9bf);
+  --glass-panel: linear-gradient(155deg, rgba(255, 255, 255, 0.9), rgba(247, 252, 238, 0.8));
+  --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.24));
+  --glass-pop: rgba(251, 254, 246, 0.76);
+  --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(249, 253, 241, 0.66));
+  --glass-edge: rgba(255, 255, 255, 0.88);
+  --glass-line: rgba(120, 160, 90, 0.2);
+  --glass-shadow: 0 30px 60px -28px rgba(44, 86, 34, 0.45), 0 8px 24px -10px rgba(44, 86, 34, 0.18);
+  --glass-pop-shadow: 0 28px 60px -18px rgba(40, 80, 30, 0.42), 0 6px 16px -6px rgba(40, 80, 30, 0.16);
+  --glass-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, 0.07));
+  --glass-glint: rgba(236, 217, 150, 0.4);
+  --glass-sheen: rgba(255, 255, 255, 0.3);
+  --glass-scrim: rgba(40, 62, 32, 0.28);
 }
 
 :root[data-palette='narai'].dark {
@@ -234,4 +255,23 @@
   --dash-wall-edge: #cfe2ad;
   --dash-window: #6f9a54;
   --dash-window-text: #466f37;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
+  --color-bg-base: 90 18% 8%;
+  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #2c4426 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #1e3b33 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #34421f 0%, transparent 62%), linear-gradient(160deg, #0f140c, #172010);
+  --glass-panel: linear-gradient(155deg, rgba(40, 54, 34, 0.84), rgba(22, 30, 18, 0.8));
+  --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  --glass-pop: rgba(30, 41, 26, 0.8);
+  --glass-card: linear-gradient(160deg, rgba(48, 64, 40, 0.7), rgba(28, 38, 24, 0.6));
+  --glass-edge: rgba(255, 255, 255, 0.16);
+  --glass-line: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.75), 0 8px 24px -10px rgba(0, 0, 0, 0.4);
+  --glass-pop-shadow: 0 28px 60px -18px rgba(0, 0, 0, 0.7), 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+  --glass-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, 0.12));
+  --glass-glint: rgba(236, 217, 150, 0.3);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
+  --glass-scrim: rgba(0, 0, 0, 0.5);
 }

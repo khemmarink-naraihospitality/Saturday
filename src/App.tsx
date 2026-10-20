@@ -605,7 +605,7 @@ function MainApp() {
   return (
     <div className="app-container" style={{ height: '100vh', display: 'flex', backgroundColor: 'hsl(var(--color-bg-subtle))', borderRadius: '8px', overflow: 'hidden' }}>
       <Sidebar />
-      <main style={{
+      <main className="app-main" style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',

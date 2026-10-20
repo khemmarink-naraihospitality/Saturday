@@ -3,6 +3,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { BottomSheet, TextButton } from '../../ui';
 import { LabelsEditor } from './LabelsEditor';
 import type { EditorProps } from './types';
+import { tintLabel } from '../../../lib/labelTint';
 
 /**
  * A status — reference screenshot 21: every label as a full-width block in its
@@ -49,7 +50,7 @@ export const StatusEditor = ({ open, onClose, item, column, value }: EditorProps
                                 role="option"
                                 aria-selected={selected}
                                 className={`m-choice${selected ? ' m-choice--on' : ''}`}
-                                style={{ backgroundColor: option.color }}
+                                style={{ backgroundColor: tintLabel(option.color) }}
                                 onClick={() => choose(option.id)}
                             >
                                 {option.label === 'Default' ? '' : option.label}

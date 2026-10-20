@@ -5,6 +5,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { columnJustify, defaultColumnAlign } from '../../../lib/utils';
 import { DropdownPicker } from '../DropdownPicker';
+import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
 
 interface DropdownCellProps {
     itemId: string;
@@ -67,8 +68,8 @@ export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column,
                         const opt = options.find(o => o.label === label);
                         return (
                             <div key={idx} style={{
-                                backgroundColor: opt?.color || '#a0c4ff',
-                                color: '#fff',
+                                backgroundColor: tintLabel(opt?.color || '#a0c4ff'),
+                                color: LABEL_TEXT,
                                 padding: '2px 8px',
                                 borderRadius: '12px',
                                 fontSize: '11px',

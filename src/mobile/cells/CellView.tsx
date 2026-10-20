@@ -7,6 +7,7 @@ import { AvatarStack, Avatar, peopleIds, type PersonInfo } from '../ui';
 import { formatDateCell, formatTimelineRange, isOverdue } from './format';
 import { ONEDRIVE_ICON } from '../../lib/fileLinks';
 import './cells.css';
+import { tintLabel } from '../../lib/labelTint';
 
 export interface CellViewProps {
     column: Column;
@@ -65,11 +66,11 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
             const label = option && option.label !== 'Default' ? option.label : '';
             if (!table) {
                 return option
-                    ? <span className="m-status-pill" style={{ backgroundColor: option.color }}>{label || ' '}</span>
+                    ? <span className="m-status-pill" style={{ backgroundColor: tintLabel(option.color) }}>{label || ' '}</span>
                     : <span className="m-detail-empty">—</span>;
             }
             return (
-                <span className="m-status-block" style={{ backgroundColor: option?.color || EMPTY_STATUS }}>
+                <span className="m-status-block" style={{ backgroundColor: tintLabel(option?.color || EMPTY_STATUS) }}>
                     {label}
                 </span>
             );
@@ -82,7 +83,7 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
             return (
                 <span className={table ? 'm-chips m-chips--table' : 'm-chips'}>
                     {labels.map((label, i) => (
-                        <span key={`${label}-${i}`} className="m-chip" style={{ backgroundColor: options.find(o => o.label === label)?.color || '#a0c4ff' }}>
+                        <span key={`${label}-${i}`} className="m-chip" style={{ backgroundColor: tintLabel(options.find(o => o.label === label)?.color || '#a0c4ff') }}>
                             {label}
                         </span>
                     ))}

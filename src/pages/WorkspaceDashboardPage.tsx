@@ -25,6 +25,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../lib/supabase';
 import { WorkspaceTimeline } from '../components/dashboard/WorkspaceTimeline';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { tintLabel } from '../lib/labelTint';
 
 const SvgCat = ({ size, color, pose = 'walk' }: { size: number, color: string, pose?: string }) => {
     const isWalking = pose === 'walk';
@@ -1321,7 +1322,7 @@ export const WorkspaceDashboardPage = () => {
                     if (!statusCounts[key]) {
                         statusCounts[key] = {
                             label: parsedLabel,
-                            color: label.color || '#cbd5e1',
+                            color: tintLabel(label.color || '#cbd5e1'),
                             count: 0,
                             workloadCount: 0,
                             people: {}

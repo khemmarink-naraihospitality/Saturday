@@ -5,6 +5,7 @@ import { itemColumns } from '../../lib/columnScope';
 import { setLayoutOverride } from '../../hooks/useIsMobile';
 import type { FilterState } from '../../types';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, mobileToast, useBoardPeople } from '../ui';
+import { tintLabel } from '../../lib/labelTint';
 
 const SheetAction = ({ icon, label, onClick, right }: { icon: ReactNode; label: ReactNode; onClick: () => void; right?: ReactNode }) => (
     <button type="button" className="m-action" onClick={onClick}>
@@ -218,7 +219,7 @@ export const FilterSheet = ({ open, onClose, boardId }: { open: boolean; onClose
         const on = isOn(columnId, value);
         return (
             <button type="button" className={`m-board-chip${on ? ' m-board-chip--on' : ''}`} onClick={() => toggle(columnId, value)} aria-pressed={on}>
-                {color && <span className="m-board-chip__dot" style={{ backgroundColor: color }} />}
+                {color && <span className="m-board-chip__dot" style={{ backgroundColor: tintLabel(color) }} />}
                 {label || '(empty)'}
             </button>
         );

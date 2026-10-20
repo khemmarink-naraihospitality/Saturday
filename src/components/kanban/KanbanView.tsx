@@ -24,6 +24,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown, CornerDownRight } from 'lucide-react';
 import type { Item, Column } from '../../types';
 import { itemUpdateSummary } from '../../lib/utils';
+import { tintLabel } from '../../lib/labelTint';
 
 const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
     // Same rule as the table's people cell: ids that no longer resolve to a visible
@@ -149,7 +150,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                 </div>
 
                 {statusOption && (
-                    <div className="kanban-status-bar" style={{ backgroundColor: statusOption.color }}>
+                    <div className="kanban-status-bar" style={{ backgroundColor: tintLabel(statusOption.color) }}>
                         {statusOption.label}
                     </div>
                 )}
@@ -252,7 +253,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     margin-top: 10px;
                     padding: 4px 10px;
                     border-radius: 4px;
-                    color: white;
+                    color: var(--label-text, white);
                     font-size: 12px;
                     font-weight: 500;
                     text-align: center;
@@ -383,7 +384,7 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                         width: '12px', 
                         height: '12px', 
                         borderRadius: '3px', 
-                        backgroundColor: color 
+                        backgroundColor: tintLabel(color) 
                     }} />
                     <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>
                         {label} <span style={{ fontWeight: 400, color: 'hsl(var(--color-text-tertiary))', marginLeft: '4px' }}>{items.length}</span>

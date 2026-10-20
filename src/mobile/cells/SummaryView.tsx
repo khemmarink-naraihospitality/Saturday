@@ -5,6 +5,7 @@ import { computeAggregates } from '../../utils/grouping';
 import { formatNumberValue } from '../../utils/format';
 import { AvatarStack, type PersonInfo } from '../ui';
 import { parseDay } from './format';
+import { tintLabel } from '../../lib/labelTint';
 
 const shortDay = (value: string) => {
     const date = parseDay(value) || new Date(value);
@@ -42,7 +43,7 @@ export const SummaryView = memo(({ column, items, people, color }: {
             return (
                 <span className="m-summary-bar" role="img" aria-label="Status breakdown">
                     {segments.map(s => (
-                        <span key={s.key} style={{ width: `${(s.count / items.length) * 100}%`, backgroundColor: s.color }} />
+                        <span key={s.key} style={{ width: `${(s.count / items.length) * 100}%`, backgroundColor: tintLabel(s.color) }} />
                     ))}
                 </span>
             );

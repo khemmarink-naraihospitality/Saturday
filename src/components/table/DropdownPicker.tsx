@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Check, Edit2, PaintBucket } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { LABEL_COLORS, nextLabelColor, nextUniqueLabel, palettePosition, PALETTE_WIDTH } from '../../lib/labelColors';
+import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
 
 interface DropdownPickerProps {
     columnId: string;
@@ -165,7 +166,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                                             width: '8px',
                                             height: '8px',
                                             borderRadius: '50%',
-                                            backgroundColor: opt.color
+                                            backgroundColor: tintLabel(opt.color)
                                         }} />
                                         <span style={{ flex: 1, fontSize: '13px' }}>{opt.label}</span>
                                         {isSelected && <Check size={14} className="text-brand-primary" />}
@@ -242,12 +243,12 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                                     style={{
                                         width: '24px',
                                         height: '24px',
-                                        backgroundColor: opt.color,
+                                        backgroundColor: tintLabel(opt.color),
                                         borderRadius: '4px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        color: 'white',
+                                        color: LABEL_TEXT,
                                         cursor: 'pointer',
                                         flexShrink: 0
                                     }}
@@ -361,7 +362,7 @@ export const DropdownPicker = ({ columnId, options, currentValue = [], position,
                                         style={{
                                             width: '18px',
                                             height: '18px',
-                                            backgroundColor: c,
+                                            backgroundColor: tintLabel(c),
                                             borderRadius: '3px',
                                             cursor: 'pointer',
                                             border: current?.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'

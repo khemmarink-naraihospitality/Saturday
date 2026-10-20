@@ -4,6 +4,7 @@ import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, 
 import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
 import { LinkGroupModal } from './LinkGroupModal';
+import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
 
 export const BoardViewsToolbar = () => {
     const addItem = useBoardStore(state => state.addItem);
@@ -242,7 +243,7 @@ export const BoardViewsToolbar = () => {
                                                         fontSize: '11px',
                                                         border: 'none',
                                                         backgroundColor: isActive ? group.color : 'hsl(var(--color-bg-subtle))',
-                                                        color: isActive ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                        color: isActive ? LABEL_TEXT : 'hsl(var(--color-text-secondary))',
                                                         cursor: 'pointer',
                                                         transition: 'all 0.1s'
                                                     }}
@@ -278,7 +279,7 @@ export const BoardViewsToolbar = () => {
                                                                 fontSize: '11px',
                                                                 border: 'none',
                                                                 backgroundColor: isActive ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-bg-subtle))',
-                                                                color: isActive ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                                color: isActive ? LABEL_TEXT : 'hsl(var(--color-text-secondary))',
                                                                 cursor: 'pointer',
                                                                 transition: 'all 0.1s'
                                                             }}
@@ -302,8 +303,8 @@ export const BoardViewsToolbar = () => {
                                                             borderRadius: '12px',
                                                             fontSize: '11px',
                                                             border: 'none',
-                                                            backgroundColor: isActive ? opt.color : 'hsl(var(--color-bg-subtle))',
-                                                            color: isActive ? 'white' : 'hsl(var(--color-text-secondary))',
+                                                            backgroundColor: isActive ? tintLabel(opt.color) : 'hsl(var(--color-bg-subtle))',
+                                                            color: isActive ? LABEL_TEXT : 'hsl(var(--color-text-secondary))',
                                                             cursor: 'pointer',
                                                             transition: 'all 0.1s'
                                                         }}

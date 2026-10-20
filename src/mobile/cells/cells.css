@@ -45,7 +45,7 @@
     height: calc(100% - 1px);
     margin-bottom: 1px;
     padding: 0 8px;
-    color: #fff;
+    color: var(--label-text, #fff);
     font-size: 16px;
     font-weight: 500;
     white-space: nowrap;
@@ -62,7 +62,7 @@
     min-height: 34px;
     padding: 0 14px;
     border-radius: 9px;
-    color: #fff;
+    color: var(--label-text, #fff);
     font-size: 15px;
     font-weight: 500;
 }
@@ -87,7 +87,7 @@
 .m-portal .m-chip {
     padding: 3px 10px;
     border-radius: 12px;
-    color: #fff;
+    color: var(--label-text, #fff);
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;

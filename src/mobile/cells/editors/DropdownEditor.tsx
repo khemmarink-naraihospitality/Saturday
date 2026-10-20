@@ -4,6 +4,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { nextLabelColor } from '../../../lib/labelColors';
 import { BottomSheet, TextButton } from '../../ui';
 import type { EditorProps } from './types';
+import { tintLabel } from '../../../lib/labelTint';
 
 /**
  * Dropdown labels: any number of them, ticked on and off in place (stored as
@@ -67,7 +68,7 @@ export const DropdownEditor = ({ open, onClose, item, column, value }: EditorPro
                         const on = selected.includes(option.label);
                         return (
                             <button key={option.id} type="button" role="option" aria-selected={on} className="m-check-row" onClick={() => toggle(option.label)}>
-                                <span className="m-check-row__chip" style={{ backgroundColor: option.color }}>{option.label}</span>
+                                <span className="m-check-row__chip" style={{ backgroundColor: tintLabel(option.color) }}>{option.label}</span>
                                 <span className={`m-check-row__box${on ? ' m-check-row__box--on' : ''}`}>{on && <Check size={16} strokeWidth={3} />}</span>
                             </button>
                         );

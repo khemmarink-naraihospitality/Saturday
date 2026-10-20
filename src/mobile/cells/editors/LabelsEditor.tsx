@@ -3,6 +3,7 @@ import { Check, Plus, Trash2 } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { LABEL_COLORS, nextLabelColor, nextUniqueLabel } from '../../../lib/labelColors';
 import type { Column } from '../../../types';
+import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
 
 /**
  * A column's labels, editable: rename, recolour from the shared palette
@@ -61,7 +62,7 @@ export const LabelsEditor = ({ column }: { column: Column }) => {
                         <button
                             type="button"
                             className="m-labels__swatch"
-                            style={{ backgroundColor: option.color }}
+                            style={{ backgroundColor: tintLabel(option.color) }}
                             onClick={() => setPaletteFor(prev => (prev === option.id ? null : option.id))}
                             aria-label={`Colour of ${option.label || 'label'}`}
                             aria-expanded={paletteFor === option.id}
@@ -100,13 +101,13 @@ export const LabelsEditor = ({ column }: { column: Column }) => {
                                     aria-selected={option.color === color}
                                     aria-label={color}
                                     className="m-palette__swatch"
-                                    style={{ backgroundColor: color }}
+                                    style={{ backgroundColor: tintLabel(color) }}
                                     onClick={() => {
                                         updateColumnOption(column.id, option.id, { color });
                                         setPaletteFor(null);
                                     }}
                                 >
-                                    {option.color.toLowerCase() === color.toLowerCase() && <Check size={14} strokeWidth={3} color="#fff" />}
+                                    {option.color.toLowerCase() === color.toLowerCase() && <Check size={14} strokeWidth={3} color={LABEL_TEXT} />}
                                 </button>
                             ))}
                         </div>

@@ -4,6 +4,7 @@ import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { StatusPicker } from '../StatusPicker';
+import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
 
 interface StatusCellProps {
     itemId: string;
@@ -41,8 +42,8 @@ export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, val
     // treat it as plain text (e.g. for Date in hybrid column)
     const isHybridValue = !statusOption && value;
     
-    const backgroundColor = isHybridValue ? 'transparent' : (statusOption?.color || (value ? '#c4c4c4' : '#c4c4c4'));
-    const textColor = isHybridValue ? 'hsl(var(--color-text-primary))' : '#fff';
+    const backgroundColor = isHybridValue ? 'transparent' : tintLabel(statusOption?.color || '#c4c4c4');
+    const textColor = isHybridValue ? 'hsl(var(--color-text-primary))' : LABEL_TEXT;
     const content = statusOption ? (statusOption.label === 'Default' ? '' : statusOption.label) : (value || '');
 
     return (

@@ -2,6 +2,7 @@ import { Star } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { formatNumberValue } from '../../utils/format';
 import type { Column } from '../../types';
+import { tintLabel } from '../../lib/labelTint';
 
 /**
  * The summary shown for one column under a group, or under a parent's
@@ -45,7 +46,7 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
                                 <div key={opt.id} style={{
                                     width: `${widthPct}%`,
                                     height: '100%',
-                                    backgroundColor: opt.color,
+                                    backgroundColor: tintLabel(opt.color),
                                 }} title={`${opt.label}: ${Math.round(widthPct)}%`} />
                             );
                         }).concat(
@@ -53,7 +54,7 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
                                 <div key="default" style={{
                                     width: `${(counts['default'] / totalCount) * 100}%`,
                                     height: '100%',
-                                    backgroundColor: '#c4c4c4',
+                                    backgroundColor: tintLabel('#c4c4c4'),
                                 }} title="Empty" />
                             ) : null
                         );

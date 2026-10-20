@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2, PaintBucket } from 'lucide-react';
 import type { ColumnOption } from '../../types';
 import { useBoardStore } from '../../store/useBoardStore';
 import { LABEL_COLORS, nextUniqueLabel } from '../../lib/labelColors';
+import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
 
 interface StatusPickerProps {
     columnId: string; // Need this for editing
@@ -154,12 +155,12 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                             <div style={{
                                 width: '24px',
                                 height: '24px',
-                                backgroundColor: opt.color,
+                                backgroundColor: tintLabel(opt.color),
                                 borderRadius: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: 'white',
+                                color: LABEL_TEXT,
                                 cursor: 'pointer',
                                 flexShrink: 0
                             }}
@@ -279,7 +280,7 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                                     style={{
                                         width: '18px',
                                         height: '18px',
-                                        backgroundColor: c,
+                                        backgroundColor: tintLabel(c),
                                         borderRadius: '3px',
                                         cursor: 'pointer',
                                         border: opt?.color === c ? '2px solid #333' : '1px solid rgba(0,0,0,0.1)'
@@ -348,8 +349,8 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                             key={opt.id}
                             onClick={() => onSelect(opt.id)}
                             style={{
-                                backgroundColor: opt.color,
-                                color: 'white',
+                                backgroundColor: tintLabel(opt.color),
+                                color: LABEL_TEXT,
                                 border: 'none',
                                 borderRadius: '4px',
                                 padding: '6px 10px',

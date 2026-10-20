@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
+import { tintLabel } from '../../lib/labelTint';
 
 interface FilterOption {
     id: string; // The value to filter by
@@ -202,7 +203,7 @@ export const FilterMenu = ({
                                     style={{ marginRight: '8px', cursor: 'pointer' }}
                                 />
                                 {opt.color && (
-                                    <div style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: opt.color, marginRight: 8 }} />
+                                    <div style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: tintLabel(opt.color), marginRight: 8 }} />
                                 )}
                                 <span>{opt.label}</span>
                             </div>

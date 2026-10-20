@@ -61,7 +61,7 @@ export const ContactSupportButton = () => {
                             backgroundColor: 'var(--color-action-2, #6b4cc3)', // Exact Monday purple/blue support color
                             color: 'white',
                             border: 'none',
-                            borderRadius: '24px',
+                            borderRadius: 'var(--support-radius, 8px)', // a button like the others; Narai makes it a pill
                             padding: '4px 16px 4px 4px',
                             cursor: 'pointer',
                             boxShadow: '0 4px 10px var(--color-action-2-glow, rgba(107, 76, 195, 0.3))',

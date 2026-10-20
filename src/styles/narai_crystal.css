@@ -11,9 +11,10 @@
  * is the Narai section of src/mobile/mobile.css.
  */
 
-/* Backdrop the glass sits on */
+/* The backdrop: one background behind the sidebar and round the main panel
+   (light: a single sage green, dark: the mesh) */
 html[data-palette='narai'] .app-container {
-    background: var(--glass-mesh) !important;
+    background: var(--glass-desk-bg, var(--glass-mesh)) !important;
     background-attachment: fixed;
 }
 

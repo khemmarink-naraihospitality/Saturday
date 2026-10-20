@@ -188,7 +188,9 @@
   --color-bg-base: 84 50% 94%;
   --glass-mesh: radial-gradient(55% 45% at 8% 6%, #f7fbef 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #f1faf6 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #f9fcf0 0%, transparent 62%), linear-gradient(160deg, #ffffff, #fbfdf8);
   --glass-panel: #ffffff;
-  --glass-side: linear-gradient(180deg, rgba(214, 234, 192, 0.94), rgba(224, 240, 205, 0.88));
+  /* One background: the sidebar and the margins round the white panel are the same green */
+  --glass-desk-bg: linear-gradient(180deg, #ddedca 0%, #e3f1d1 100%);
+  --glass-side: transparent;
   --glass-pop: rgba(253, 255, 251, 0.68);
   --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(253, 255, 250, 0.6));
   --glass-edge: rgba(255, 255, 255, 0.88);

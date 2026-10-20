@@ -88,7 +88,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     <div style={{
                         width: '28px',
                         height: '28px',
-                        borderRadius: '6px',
+                        borderRadius: '28%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

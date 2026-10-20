@@ -102,7 +102,7 @@ export const PeopleCell: React.FC<PeopleCellProps> = memo(({ itemId, boardId, co
                                 <div key={idx} style={{
                                     width: '26px',
                                     height: '26px',
-                                    borderRadius: '50%',
+                                    borderRadius: '28%',
                                     backgroundColor: profile?.avatar_url ? 'transparent' : '#0073ea',
                                     color: 'white',
                                     display: 'flex',
@@ -134,7 +134,7 @@ export const PeopleCell: React.FC<PeopleCellProps> = memo(({ itemId, boardId, co
                             <div style={{
                                 width: '26px',
                                 height: '26px',
-                                borderRadius: '50%',
+                                borderRadius: '28%',
                                 backgroundColor: '#e5e7eb',
                                 color: '#6b7280',
                                 display: 'flex',

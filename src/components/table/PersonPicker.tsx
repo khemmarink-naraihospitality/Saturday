@@ -243,7 +243,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                             onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                         >
                             <div style={{
-                                width: '24px', height: '24px', borderRadius: '50%',
+                                width: '24px', height: '24px', borderRadius: '28%',
                                 backgroundColor: profile.avatar_url ? 'transparent' : 'hsl(var(--color-brand-primary))',
                                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0
@@ -293,7 +293,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     <div style={{
-                                        width: '24px', height: '24px', borderRadius: '50%',
+                                        width: '24px', height: '24px', borderRadius: '28%',
                                         backgroundColor: user.avatar_url ? 'transparent' : 'hsl(var(--color-brand-primary))', // Different color for non-members
                                         color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: '11px', fontWeight: 600, overflow: 'hidden', flexShrink: 0

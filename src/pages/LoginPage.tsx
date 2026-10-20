@@ -193,7 +193,7 @@ export const LoginPage = () => {
                     <div style={{
                         width: '64px',
                         height: '64px',
-                        borderRadius: '12px',
+                        borderRadius: '28%',
                         overflow: 'hidden',
                         marginBottom: '16px',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.05)',

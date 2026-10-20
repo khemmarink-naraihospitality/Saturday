@@ -250,7 +250,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                         key={member.user_id || index}
                                         title={`${name} (${member.role})`}
                                         style={{
-                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            width: '28px', height: '28px', borderRadius: '28%',
                                             background: isOwner ? 'hsl(var(--color-brand-primary))' : '#9ca3af',
                                             color: 'white',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -276,7 +276,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             })}
                             {remainingMembers > 0 && (
                                 <div style={{
-                                    width: '28px', height: '28px', borderRadius: '50%',
+                                    width: '28px', height: '28px', borderRadius: '28%',
                                     background: '#e5e7eb', color: '#6b7280',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: '10px', border: '2px solid white', marginLeft: '-6px',
@@ -290,7 +290,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                             <button
                                 onClick={() => can('invite_members') && setShowShareModal(true)}
                                 style={{
-                                    width: '28px', height: '28px', borderRadius: '50%',
+                                    width: '28px', height: '28px', borderRadius: '28%',
                                     background: 'hsl(var(--color-bg-subtle))',
                                     color: 'hsl(var(--color-text-secondary))',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',

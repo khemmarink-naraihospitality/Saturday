@@ -171,12 +171,12 @@ export const ProfileSettingsModal = ({ onClose }: ProfileSettingsModalProps) => 
                         <div
                             onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
                             style={{
-                                position: 'relative', width: '56px', height: '56px', borderRadius: '50%', flexShrink: 0,
+                                position: 'relative', width: '56px', height: '56px', borderRadius: '28%', flexShrink: 0,
                                 cursor: uploadingAvatar ? 'default' : 'pointer'
                             }}
                         >
                             <div style={{
-                                width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
+                                width: '100%', height: '100%', borderRadius: '28%', overflow: 'hidden',
                                 border: '1px solid hsl(var(--color-border))',
                                 backgroundColor: userAvatar ? 'transparent' : 'hsl(var(--color-brand-primary))',
                                 color: 'white', fontSize: '20px', fontWeight: 600,

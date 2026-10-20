@@ -172,7 +172,7 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
                                 <div key={userId} title={name} style={{
                                     width: '24px',
                                     height: '24px',
-                                    borderRadius: '50%',
+                                    borderRadius: '28%',
                                     backgroundColor: profile?.avatar_url ? 'transparent' : '#0073ea',
                                     color: 'white',
                                     display: 'flex',
@@ -204,7 +204,7 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
                             <div style={{
                                 width: '24px',
                                 height: '24px',
-                                borderRadius: '50%',
+                                borderRadius: '28%',
                                 backgroundColor: '#e5e7eb',
                                 color: '#6b7280',
                                 display: 'flex',

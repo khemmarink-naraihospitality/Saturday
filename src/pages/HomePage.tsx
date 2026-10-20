@@ -399,7 +399,7 @@ const InboxFeed = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{
-                        width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white',
+                        width: '24px', height: '24px', borderRadius: '28%', backgroundColor: 'hsl(var(--color-brand-primary))', color: 'white',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 600
                     }}>
                         {feedNotifications.length}
@@ -439,7 +439,7 @@ const InboxFeed = () => {
                                 style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', borderBottom: '1px solid hsl(var(--color-border))', paddingBottom: '16px', position: 'relative', paddingRight: '24px', cursor: (n.data?.board_id || n.data?.workspace_id) ? 'pointer' : 'default' }}
                             >
                                 <div style={{
-                                    width: '40px', height: '40px', borderRadius: '50%',
+                                    width: '40px', height: '40px', borderRadius: '28%',
                                     backgroundColor: 'hsl(var(--color-bg-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     flexShrink: 0
                                 }}>

@@ -254,7 +254,7 @@ export const GlobalTopActions = () => {
                     style={{
                         width: '36px',
                         height: '36px',
-                        borderRadius: '50%',
+                        borderRadius: '28%',
                         border: '1px solid hsl(var(--color-border))',
                         cursor: 'pointer',
                         overflow: 'hidden',

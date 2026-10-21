@@ -695,3 +695,97 @@
 [data-palette='narai'] .m-portal .m-choice {
     background-image: var(--glass-gloss);
 }
+
+
+/* ── Narai symbols (phone) ─────────────────────────────────────────────────
+   The phone's half of the icon system in src/styles/narai_crystal.css, after
+   Apple's HIG (Icons, SF Symbols, Tab bars): one weight per size, a filled
+   symbol for the selected tab, and list icons as small app-icon tiles like the
+   rows of iOS Settings. Visual only: stroke, fill, colour, gradient, shadow and
+   corner radius, plus the width of the icon tile in the More list (offset by a
+   negative margin so the row's text does not move). No behaviour, position or
+   hit area of any control changes. The update bubbles in the board table keep
+   the thin line they were drawn with. */
+
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='10']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='11']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='12']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='13']:not(.m-tr__bubble *) {
+    stroke-width: 2.25;
+}
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='14']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='15']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='16']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='17']:not(.m-tr__bubble *) {
+    stroke-width: 2.1;
+}
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='18']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='19']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='20']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='21']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='22']:not(.m-tr__bubble *) {
+    stroke-width: 1.95;
+}
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='23']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='24']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='25']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='26']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='27']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='28']:not(.m-tr__bubble *) {
+    stroke-width: 1.85;
+}
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='29']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='30']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='31']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='32']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='33']:not(.m-tr__bubble *),
+[data-palette='narai'] :is(.m-app, .m-portal) :is(svg.lucide, svg[stroke='currentColor'])[width='34']:not(.m-tr__bubble *) {
+    stroke-width: 1.75;
+}
+
+/* Tab bar: the selected tab is heavier and filled. Home, Favorites and
+   Notifications already fill in code; Dashboard and More get the same. */
+[data-palette='narai'] .m-tabbar__item--active svg {
+    stroke-width: 2.05;
+}
+[data-palette='narai'] .m-tabbar__item--active svg.lucide-chart-pie path:first-child,
+[data-palette='narai'] .m-tabbar__item--active svg.lucide-circle-ellipsis circle {
+    fill: currentColor;
+    fill-opacity: 0.24;
+}
+
+/* More: the menu's icons as app-icon tiles (squircle, soft gradient, lit top edge) */
+[data-palette='narai'] .m-app .m-menu__icon {
+    --tile-a: #5fa94c;
+    --tile-b: #35772f;
+    width: 28px;
+    height: 28px;
+    margin-inline: -1px;
+    align-items: center;
+    border-radius: 28%;
+    background: linear-gradient(160deg, var(--tile-a), var(--tile-b));
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2), 0 3px 6px -3px rgba(40, 70, 30, 0.5);
+}
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-palette)      { --tile-a: #e0a04a; --tile-b: #b86a22; }
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-moon)         { --tile-a: #7a87a8; --tile-b: #48537a; }
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-shield-check) { --tile-a: #4fb5a0; --tile-b: #2a8070; }
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-monitor)      { --tile-a: #5f9fd6; --tile-b: #3472ad; }
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-life-buoy)    { --tile-a: #ee9560; --tile-b: #d4642d; }
+[data-palette='narai'] .m-app .m-menu__icon:has(svg.lucide-log-out)      { --tile-a: #ec7a70; --tile-b: #cc3f38; }
+
+/* Notifications and the workspace list: the same tile language */
+[data-palette='narai'] .m-app .m-notif__icon {
+    border-radius: 28%;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), hsl(var(--m-accent-soft)));
+    color: hsl(var(--m-accent));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px hsl(var(--m-row-line)), 0 3px 8px -4px rgba(50, 90, 35, 0.3);
+}
+[data-palette='narai'].dark .m-app .m-notif__icon {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), hsl(var(--m-accent-soft)));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 1px hsl(var(--m-row-line));
+}
+[data-palette='narai'] .m-app .m-ws-entry__icon {
+    background: linear-gradient(160deg, #6fb35a, #36752f);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2), 0 6px 12px -6px rgba(50, 90, 35, 0.55);
+}

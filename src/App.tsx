@@ -9,6 +9,7 @@ import { useUserStore } from './store/useUserStore';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { SidePanel } from './components/ui/SidePanel';
 import { ContactSupportButton } from './components/ui/ContactSupportButton';
+import { UndoToastHost } from './components/ui/UndoToastHost';
 import { TaskDetail } from './components/task/TaskDetail';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
@@ -596,9 +597,12 @@ function MainApp() {
   // loading, realtime, deep links, the URL) is shared with the desktop one.
   if (isMobile) {
     return (
-      <Suspense fallback={<PageLoader />}>
-        <MobileApp />
-      </Suspense>
+      <>
+        <Suspense fallback={<PageLoader />}>
+          <MobileApp />
+        </Suspense>
+        <UndoToastHost />
+      </>
     );
   }
 
@@ -674,6 +678,7 @@ function MainApp() {
       </main>
       <ContactSupportButton />
       <MobileLayoutPill />
+      <UndoToastHost />
     </div>
   )
 }

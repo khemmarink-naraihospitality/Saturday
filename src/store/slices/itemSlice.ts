@@ -8,6 +8,7 @@ import { itemColumns, subitemColumns, planCarry } from '../../lib/columnScope';
 import { tableRows } from '../../lib/boardRows';
 import { checkableRows, rangeBetween } from '../../lib/selectionRange';
 import { showToast } from '../../utils/toast';
+import { offerUndo } from '../useUndoToast';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -76,6 +77,44 @@ const carryValues = async (set: any, get: () => BoardState, boardId: string, mov
     await Promise.all([...rowUpdates.entries()].map(([id, u]) =>
         supabase.from('items').update(u.groupId ? { values: u.values, group_id: u.groupId } : { values: u.values }).eq('id', id)
     ));
+};
+
+/**
+ * Puts rows back exactly where they were before a move: board, group, parent
+ * and values (a cross-board move rewrites the values onto the other board's
+ * columns, so the originals are restored whole). `originals` are the rows as
+ * they were before the move. Parents are written first, then the rows under
+ * them, as the move itself did.
+ */
+const restoreMovedRows = async (set: any, get: () => BoardState, originals: Item[]) => {
+    const ids = new Set(originals.map(o => o.id));
+    const current = new Map<string, Item>();
+    get().boards.forEach(b => b.items.forEach(i => { if (ids.has(i.id)) current.set(i.id, i); }));
+    const back = originals.map(o => ({ ...(current.get(o.id) || o), groupId: o.groupId, boardId: o.boardId, parentId: o.parentId, values: o.values }));
+    const now = Date.now();
+    set((state: BoardState) => ({
+        boards: state.boards.map(b => {
+            const returning = back.filter(r => r.boardId === b.id);
+            const strip = (list: Item[]) => list.filter(i => !ids.has(i.id));
+            return {
+                ...b,
+                items: [...strip(b.items), ...returning],
+                groups: b.groups.map(g => ({ ...g, items: [...strip(g.items), ...returning.filter(r => r.groupId === g.id)] })),
+            };
+        }),
+        lastOptimisticUpdate: [...ids].reduce((acc, id) => ({ ...acc, [id]: now }), state.lastOptimisticUpdate),
+    }));
+    const write = (o: Item) => supabase.from('items')
+        .update({ group_id: o.groupId, board_id: o.boardId, parent_id: o.parentId ?? null, values: o.values })
+        .eq('id', o.id);
+    const results = [
+        ...(await Promise.all(originals.filter(o => !o.parentId).map(write))),
+        ...(await Promise.all(originals.filter(o => o.parentId).map(write))),
+    ];
+    if (results.some(r => r.error)) {
+        console.error('[Undo move] Failed to restore some rows:', results.find(r => r.error)?.error);
+        void get().loadUserData(true);
+    }
 };
 
 // Every write to items.updates replaces the whole JSON array, so the array sent
@@ -1060,6 +1099,17 @@ export const createItemSlice: StateCreator<
 
         const isCrossBoard = targetBoardId !== activeBoardId;
 
+        // How the rows looked before the move: the Activity entry names where
+        // they came from, and the Undo button puts them back as they were. A
+        // parent's sub-items travel with it across boards (and are re-grouped
+        // within one), so they are kept too.
+        const moveStart = boards.find(b => b.id === activeBoardId);
+        const chosen = new Set(selectedItemIds);
+        const originals: Item[] = (moveStart?.items || []).filter(i => chosen.has(i.id) || (i.parentId && chosen.has(i.parentId)));
+        const movedTitles = (moveStart?.items || []).filter(i => chosen.has(i.id)).map(i => i.title);
+        const fromGroupTitles = [...new Set((moveStart?.items || []).filter(i => chosen.has(i.id)).map(i => moveStart?.groups.find(g => g.id === i.groupId)?.title).filter(Boolean))] as string[];
+        const fromBoardTitle = moveStart?.title || '';
+
         // Within the board, work out where each moving row's values have to go
         // before anything moves: a parent changing group takes its sub-items to
         // that group's sub-item columns; a row becoming a sub-item goes to its new
@@ -1219,6 +1269,40 @@ export const createItemSlice: StateCreator<
             await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
             await carryValues(set, get, activeBoardId, carry);
         }
+
+        // Where they went, for the Activity panel (it shows on both boards) and the message
+        const targetBoard = get().boards.find(b => b.id === targetBoardId);
+        const toBoardTitle = targetBoard?.title || '';
+        const toGroupTitle = targetBoard?.groups.find(g => g.id === groupId)?.title || '';
+        const count = movedTitles.length;
+        if (count === 0) return;
+        const meta = {
+            board_id: activeBoardId,
+            from_board_id: activeBoardId,
+            to_board_id: targetBoardId,
+            from_board_title: fromBoardTitle,
+            to_board_title: toBoardTitle,
+            from_group_titles: fromGroupTitles,
+            to_group_title: toGroupTitle,
+            count,
+            item_titles: movedTitles.slice(0, 5),
+            as_subitems: !!parentId,
+        };
+        // One entry on each board it touches: the Activity panel and the access rule
+        // for who may read an entry both go by the board it is filed under.
+        const logMove = (action: string) => {
+            void get().logActivity(action, 'board', activeBoardId, meta);
+            if (isCrossBoard) void get().logActivity(action, 'board', targetBoardId, { ...meta, board_id: targetBoardId });
+        };
+        logMove('items_moved');
+        const what = count === 1 ? `"${movedTitles[0]}"` : `${count} tasks`;
+        offerUndo(
+            isCrossBoard ? `Moved ${what} to ${toBoardTitle ? `"${toBoardTitle}"` : 'another board'}` : `Moved ${what} to ${toGroupTitle ? `"${toGroupTitle}"` : 'another group'}`,
+            async () => {
+                await restoreMovedRows(set, get, originals);
+                logMove('items_move_undone');
+            }
+        );
     },
 
     setDraft: (itemId, content) => set(state => ({ drafts: { ...state.drafts, [itemId]: content } })),

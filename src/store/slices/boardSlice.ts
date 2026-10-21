@@ -10,6 +10,7 @@ import { mapDbDependency } from './itemDependencySlice';
 import { isBoardUnlocked } from '../../lib/boardPinUnlock';
 import { splitSharedColumns } from '../../lib/columnScope';
 import { adoptAccountPalette } from '../../lib/uiTheme';
+import { offerUndo } from '../useUndoToast';
 
 export interface BoardSlice {
     boards: Board[];
@@ -36,7 +37,7 @@ export interface BoardSlice {
     toggleGroup: (boardId: string, groupId: string) => void;
     toggleItemExpansion: (boardId: string, itemId: string) => void;
     duplicateBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
-    moveBoardToWorkspace: (boardId: string, workspaceId: string) => Promise<void>;
+    moveBoardToWorkspace: (boardId: string, workspaceId: string, options?: { undo?: boolean }) => Promise<void>;
     toggleFavorite: (boardId: string) => Promise<void>;
     navigateTo: (page: string) => void;
     setActivePage: (page: string) => void;
@@ -1023,9 +1024,12 @@ export const createBoardSlice: StateCreator<
         }
     },
 
-    moveBoardToWorkspace: async (boardId, workspaceId) => {
+    moveBoardToWorkspace: async (boardId, workspaceId, options) => {
         if (!boardId || !workspaceId) return;
         const board = get().boards.find(b => b.id === boardId);
+        const fromWorkspaceId = board?.workspaceId;
+        if (fromWorkspaceId === workspaceId) return;
+        const titleOf = (id?: string) => get().workspaces.find(w => w.id === id)?.title || '';
         set(state => ({
             boards: state.boards.map(b => b.id === boardId ? { ...b, workspaceId } : b)
         }));
@@ -1033,11 +1037,22 @@ export const createBoardSlice: StateCreator<
         if (error) {
             console.error('[Move] Failed to move board:', error);
             get().loadUserData(true);
-        } else {
-            get().logActivity('board_moved', 'workspace', workspaceId, {
-                workspace_id: workspaceId,
-                board_title: board?.title || 'Unknown'
-            });
+            return;
+        }
+        // board_id lets the board's own Activity panel list it; from/to say where it went
+        get().logActivity(options?.undo ? 'board_move_undone' : 'board_moved', 'workspace', workspaceId, {
+            workspace_id: workspaceId,
+            board_id: boardId,
+            board_title: board?.title || 'Unknown',
+            from_workspace_id: fromWorkspaceId,
+            from_workspace_title: titleOf(fromWorkspaceId),
+            to_workspace_title: titleOf(workspaceId),
+        });
+        if (!options?.undo && fromWorkspaceId) {
+            offerUndo(
+                `Moved board "${board?.title || 'Untitled'}" to ${titleOf(workspaceId) ? `"${titleOf(workspaceId)}"` : 'another workspace'}`,
+                () => get().moveBoardToWorkspace(boardId, fromWorkspaceId, { undo: true })
+            );
         }
     },
 

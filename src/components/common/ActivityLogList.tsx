@@ -40,6 +40,9 @@ const ACTION_LABELS: Record<string, string> = {
     board_restored: 'Board Restored',
     board_duplicated: 'Board Duplicated',
     board_moved: 'Board Moved',
+    board_move_undone: 'Board Move Undone',
+    items_moved: 'Tasks Moved',
+    items_move_undone: 'Move Undone',
     board_imported: 'Board Imported',
     board_invite_sent: 'Board Invite Sent',
     invite_accepted: 'Invite Accepted',
@@ -174,6 +177,30 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 return <span>Linked group <strong>{meta.group_title}</strong> to another board</span>;
             case 'group_unlinked':
                 return <span>Unlinked group <strong>{meta.group_title}</strong></span>;
+            case 'items_moved':
+            case 'items_move_undone': {
+                const undone = action_type === 'items_move_undone';
+                const names = (meta.item_titles || []) as string[];
+                const count = meta.count || names.length;
+                const list = names.length > 0
+                    ? <>{names.map((n, i) => <span key={i}>{i > 0 ? ', ' : ''}<strong>"{truncate(n, 40)}"</strong></span>)}{count > names.length ? <> and {count - names.length} more</> : null}</>
+                    : <strong>{count} tasks</strong>;
+                const sameBoard = (meta.from_board_id || meta.board_id) === meta.to_board_id;
+                const fromGroups = ((meta.from_group_titles || []) as string[]).join(', ');
+                return (
+                    <span>
+                        {undone ? 'Put back ' : 'Moved '}{list}
+                        {undone
+                            ? (sameBoard ? <> to {fromGroups ? <>group <strong>{fromGroups}</strong></> : 'their previous group'}</> : <> to <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null}, from <strong>{meta.to_board_title}</strong></>)
+                            : (sameBoard
+                                ? <> {fromGroups ? <>from group <strong>{fromGroups}</strong> </> : null}to {meta.as_subitems ? 'sub-items' : <>group <strong>{meta.to_group_title}</strong></>}</>
+                                : <> from <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null} to <strong>{meta.to_board_title}</strong>{meta.to_group_title ? <> › <strong>{meta.to_group_title}</strong></> : null}</>)}
+                    </span>
+                );
+            }
+            case 'board_moved':
+            case 'board_move_undone':
+                return <span>{action_type === 'board_moved' ? 'Moved' : 'Moved back'} board <strong>{meta.board_title}</strong>{meta.from_workspace_title ? <> from workspace <strong>{meta.from_workspace_title}</strong></> : null}{meta.to_workspace_title ? <> to <strong>{meta.to_workspace_title}</strong></> : null}</span>;
             case 'board_deleted':
                 return <span>Deleted board <strong>{meta.board_title}</strong></span>;
             case 'board_restored':

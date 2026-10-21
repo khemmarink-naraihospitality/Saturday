@@ -1,5 +1,7 @@
 import type { Board, Item } from '../types';
 import { linkDisplayText } from './utils';
+import { groupItems, type VirtualItemData } from '../utils/grouping';
+import { itemColumns, subitemColumns } from './columnScope';
 
 /**
  * A board's items as its table lists them: the search box, hidden items, the
@@ -98,3 +100,23 @@ export const filterAndSortItems = (
 
     return items;
 };
+
+/**
+ * The rows the desktop table draws, top to bottom: filterAndSortItems, then
+ * groupItems with the board's grouping, collapsed groups and expanded parents.
+ * The Table renders this, and anything that needs "what is on screen, in what
+ * order" (Shift-click range selection) asks it too, so the two cannot drift.
+ */
+export const tableRows = (
+    board: Board,
+    options: { searchQuery: string; showHiddenItems: boolean }
+): VirtualItemData[] =>
+    groupItems(
+        filterAndSortItems(board, options),
+        board.groups || [],
+        board.groupByColumnId || null,
+        board.collapsedGroups || [],
+        board.expandedItemIds || [],
+        itemColumns(board.columns),
+        groupId => subitemColumns(board.columns, groupId)
+    );

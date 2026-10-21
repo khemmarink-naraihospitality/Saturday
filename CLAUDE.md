@@ -46,7 +46,7 @@ Two Zustand stores:
 - **`useBoardStore`** (`src/store/useBoardStore.ts`) — the primary store, composed of 8 slices:
   - `boardSlice` — boards CRUD, navigation, view state, Excel import
   - `workspaceSlice` — workspaces CRUD
-  - `itemSlice` — items/sub-items CRUD, selection, drag-and-drop
+  - `itemSlice` — items/sub-items CRUD, selection, drag-and-drop. Shift-click on a row's checkbox (`selectItemRange`) ticks every row from the last one ticked to this one, in the order the table draws them: `tableRows()` in `src/lib/boardRows.ts` is the one pipeline from a board to those rows (the Table renders it too), `src/lib/selectionRange.ts` picks the range (same level only, so a parent is never ticked with its own sub-items; none if either end isn't on screen), and the start must still be ticked, else it is an ordinary tick (`tests/selection_range_test.ts`)
   - `groupSlice` — groups CRUD
   - `columnSlice` — columns CRUD, type changes
   - `memberSlice` — board/workspace members, notifications, Supabase Realtime subscription

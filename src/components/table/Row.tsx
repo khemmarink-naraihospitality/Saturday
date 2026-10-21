@@ -133,9 +133,17 @@ export const Row = React.memo(({
                 {/* Row Checkbox */}
                 <div
                     className="row-checkbox"
+                    // Shift-click would otherwise also select the text between the two rows
+                    onMouseDown={(e) => { if (e.shiftKey) e.preventDefault(); }}
                     onClick={(e) => {
                         e.stopPropagation();
+                        const shift = e.shiftKey;
                         import('../../store/useBoardStore').then(({ useBoardStore }) => {
+                            if (shift) {
+                                window.getSelection()?.removeAllRanges();
+                                useBoardStore.getState().selectItemRange(item.id);
+                                return;
+                            }
                             const isSelected = useBoardStore.getState().selectedItemIds.includes(item.id);
                             useBoardStore.getState().toggleItemSelection(item.id, !isSelected);
                         });

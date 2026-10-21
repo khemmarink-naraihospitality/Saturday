@@ -7,10 +7,9 @@ import { usePermission } from '../../hooks/usePermission';
 import { Header } from './Header';
 import { Row } from './Row';
 import { GroupRow } from './GroupRow';
-import { groupItems } from '../../utils/grouping';
 import type { VirtualItemData } from '../../utils/grouping';
-import { filterAndSortItems } from '../../lib/boardRows';
-import { itemColumns, subitemColumns, scopeOf } from '../../lib/columnScope';
+import { tableRows } from '../../lib/boardRows';
+import { itemColumns, scopeOf } from '../../lib/columnScope';
 import type { Column } from '../../types';
 import { SummaryCell } from './SummaryCell';
 import {
@@ -136,9 +135,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
 
     const virtualItems = useMemo(() => {
         if (!board) return [];
-        const items = filterAndSortItems(board, { searchQuery, showHiddenItems });
-
-        return groupItems(items, board.groups || [], board.groupByColumnId || null, board.collapsedGroups || [], board.expandedItemIds || [], itemColumns(board.columns), groupId => subitemColumns(board.columns, groupId));
+        return tableRows(board, { searchQuery, showHiddenItems });
     }, [board?.items, board?.groups, board?.groupByColumnId, board?.collapsedGroups, board?.expandedItemIds, board?.columns, searchQuery, board?.sort, board?.filters, showHiddenItems]);
 
     const rowVirtualizer = useVirtualizer({

@@ -5,6 +5,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import type { Item, FileLink, Comment, Column, ColumnScope } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { itemColumns, subitemColumns, planCarry } from '../../lib/columnScope';
+import { tableRows } from '../../lib/boardRows';
+import { checkableRows, rangeBetween } from '../../lib/selectionRange';
 import { showToast } from '../../utils/toast';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
@@ -159,6 +161,8 @@ const resolveAssigneeEmail = async (get: () => BoardState, userId: string): Prom
 
 export interface ItemSlice {
     selectedItemIds: string[];
+    /** The item whose checkbox was clicked last: where a Shift-click range starts. */
+    lastSelectedItemId: string | null;
     showHiddenItems: boolean;
     activeItemId: string | null;
     highlightedItemId: string | null;
@@ -190,6 +194,7 @@ export interface ItemSlice {
 
     // Selection
     toggleItemSelection: (itemId: string, selected: boolean) => void;
+    selectItemRange: (itemId: string) => void;
     selectGroupItems: (groupId: string) => void;
     clearSelection: () => void;
     deleteSelectedItems: () => void;
@@ -217,6 +222,7 @@ export const createItemSlice: StateCreator<
     ItemSlice
 > = (set, get) => ({
     selectedItemIds: [],
+    lastSelectedItemId: null,
     showHiddenItems: false,
     activeItemId: null,
     highlightedItemId: null,
@@ -865,8 +871,29 @@ export const createItemSlice: StateCreator<
         set(state => {
             const current = new Set(state.selectedItemIds);
             if (selected) current.add(itemId); else current.delete(itemId);
-            return { selectedItemIds: Array.from(current) };
+            return { selectedItemIds: Array.from(current), lastSelectedItemId: itemId };
         });
+    },
+    // Shift-click on a checkbox: tick every row between the last one ticked and
+    // this one, in the order the table shows them (so a filter, a sort, grouping
+    // and collapsed groups all count). The start has to still be ticked: after
+    // the selection was cleared or the item unticked, a Shift-click is just an
+    // ordinary tick, not a range from something the person has let go of.
+    selectItemRange: (itemId) => {
+        const { activeBoardId, boards, selectedItemIds, lastSelectedItemId, searchQuery, showHiddenItems } = get();
+        const board = boards.find(b => b.id === activeBoardId);
+        const anchor = lastSelectedItemId && selectedItemIds.includes(lastSelectedItemId) ? lastSelectedItemId : null;
+        const range = board && anchor
+            ? rangeBetween(checkableRows(tableRows(board, { searchQuery, showHiddenItems })), anchor, itemId)
+            : null;
+        if (!range) {
+            get().toggleItemSelection(itemId, !selectedItemIds.includes(itemId));
+            return;
+        }
+        set(state => ({
+            selectedItemIds: Array.from(new Set([...state.selectedItemIds, ...range])),
+            lastSelectedItemId: itemId
+        }));
     },
     selectGroupItems: (groupId) => {
         const { activeBoardId, boards } = get();
@@ -878,7 +905,7 @@ export const createItemSlice: StateCreator<
             return { selectedItemIds: Array.from(current) };
         });
     },
-    clearSelection: () => set({ selectedItemIds: [] }),
+    clearSelection: () => set({ selectedItemIds: [], lastSelectedItemId: null }),
     deleteSelectedItems: async () => {
         const { activeBoardId, selectedItemIds } = get();
         if (!activeBoardId) return;

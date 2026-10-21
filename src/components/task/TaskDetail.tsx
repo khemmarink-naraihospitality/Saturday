@@ -349,11 +349,11 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         }
     };
 
-    // Types into a reply's editor at the caret (or at the end if it wasn't
+    // Types into an update or reply editor at the caret (or at the end if it wasn't
     // focused), as if the user had — so '@' opens the mention list and an
     // emoji lands inside the text rather than after its closing tag.
-    const insertIntoReply = (updateId: string, text: string) => {
-        const el = document.getElementById(`reply-input-${updateId}`);
+    const insertIntoEditor = (elementId: string, text: string) => {
+        const el = document.getElementById(elementId);
         if (!el) return;
         if (document.activeElement !== el) {
             el.focus();
@@ -366,6 +366,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         }
         document.execCommand('insertText', false, text);
     };
+    const insertIntoReply = (updateId: string, text: string) => insertIntoEditor(`reply-input-${updateId}`, text);
 
     const handleReplyEmojiSelect = (updateId: string, emoji: string) => {
         setReplyActiveEmojiId(null);
@@ -544,6 +545,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                         {/* Input Area (New WYSIWYG) */}
                         <div style={{ marginBottom: '32px' }}>
                             <RichTextEditor
+                                id={`update-input-${itemId}`}
                                 value={draftText}
                                 onChange={(val) => setDraft(itemId, val)}
                                 footer={
@@ -603,7 +605,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                 {/* @ mention */}
                                                 <button
-                                                    onMouseDown={(e) => { e.preventDefault(); setDraft(itemId, draftText + '@'); }}
+                                                    onMouseDown={(e) => { e.preventDefault(); insertIntoEditor(`update-input-${itemId}`, '@'); }}
                                                     title="Mention someone"
                                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '15px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))' }}
                                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
@@ -797,6 +799,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                             {editingUpdateId === update.id ? (
                                                 <div style={{ marginTop: '12px' }}>
                                                     <RichTextEditor
+                                                        id="edit-update-input"
                                                         value={editUpdateContent}
                                                         onChange={(val) => setEditUpdateContent(val)}
                                                         footer={
@@ -852,7 +855,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                                         {/* @ mention */}
                                                                         <button
-                                                                            onMouseDown={(e) => { e.preventDefault(); setEditUpdateContent(editUpdateContent + '@'); }}
+                                                                            onMouseDown={(e) => { e.preventDefault(); insertIntoEditor('edit-update-input', '@'); }}
                                                                             title="Mention someone"
                                                                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '15px', fontWeight: 700, color: 'hsl(var(--color-text-secondary))' }}
                                                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}

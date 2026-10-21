@@ -63,10 +63,12 @@ html[data-palette='narai'] .sidebar-item.active {
    up), which leaves out small in-flow pills such as the group summary label
    and the notification badge. Not the shell's main panel (.app-main): it has the same
    inline colour and shadow, but a blur there would trap the full-page Admin Console
-   inside it and make the white panel see-through. Also not a button (the selected
+   inside it and make the white panel see-through. Likewise the item side panel (.side-panel-content):
+   blurred, it became the containing block of the editor's fixed @-mention list and shifted
+   it 700px to the right. Also not a button (the selected
    segment of a switcher), a sticky table row, or a box that holds an image (the logo):
    they share the white-and-soft-shadow look of a menu but are not floating surfaces. */
-html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"], [style*="background-color: #fff"], [style*="background-color: #ffffff"])[style*="box-shadow"]:not(.app-main, button, [style*="position: sticky"], :has(> img)):is([style*="rgba(0, 0, 0, 0.1"], [style*="rgba(0, 0, 0, 0.2"], [style*="rgba(0, 0, 0, 0.3"], [style*="rgba(0, 0, 0, 0.4"]) {
+html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"], [style*="background-color: #fff"], [style*="background-color: #ffffff"])[style*="box-shadow"]:not(.app-main, .side-panel-content, button, [style*="position: sticky"], :has(> img)):is([style*="rgba(0, 0, 0, 0.1"], [style*="rgba(0, 0, 0, 0.2"], [style*="rgba(0, 0, 0, 0.3"], [style*="rgba(0, 0, 0, 0.4"]) {
     background: var(--glass-pop) !important;
     -webkit-backdrop-filter: blur(26px) saturate(1.7);
     backdrop-filter: blur(26px) saturate(1.7);

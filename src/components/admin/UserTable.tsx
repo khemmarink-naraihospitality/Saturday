@@ -406,6 +406,14 @@ export const UserTable = () => {
                 valB = getUserStatus(b);
             }
 
+            // An empty value (an account that has never signed in has no last_login_at)
+            // always goes last, whichever way the column is sorted. Comparing null with
+            // `<` and `>` is false both ways, which made it "equal" to every date and
+            // broke the order of the whole column: recent sign-ins were pushed far down.
+            const emptyA = valA === null || valA === undefined || valA === '';
+            const emptyB = valB === null || valB === undefined || valB === '';
+            if (emptyA || emptyB) return emptyA === emptyB ? 0 : emptyA ? 1 : -1;
+
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;

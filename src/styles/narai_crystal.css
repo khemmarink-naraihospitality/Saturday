@@ -75,6 +75,16 @@ html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-sur
     box-shadow: var(--glass-pop-shadow), inset 0 1px 0 var(--glass-edge) !important;
 }
 
+/* A glass surface inside another glass surface (the Move to menu in the selection
+   bar): a backdrop blur only sees what is inside the nearest blurred ancestor, so
+   the inner one cannot blur the table behind it and showed the rows straight through.
+   It is drawn as a near-solid sheet instead. */
+html[data-palette='narai'] [style*="position: fixed"][style*="z-index: 1000"] [style*="position: absolute"][style*="box-shadow"] {
+    background: var(--glass-solid) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
 /* The veil behind a dialog */
 html[data-palette='narai'] [style*="position: fixed"][style*="rgba(0, 0, 0, 0.5)"] {
     background: var(--glass-scrim) !important;

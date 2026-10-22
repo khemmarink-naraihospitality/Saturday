@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, BellOff } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
-import { usePermission } from '../../hooks/usePermission';
+import { useUserStore } from '../../store/useUserStore';
 import { peopleOnItem } from '../../lib/itemPeople';
 
 const Toggle = ({ on }: { on: boolean }) => (
@@ -28,9 +28,8 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.items.some(i => i.id === itemId)));
     const item = board?.items.find(i => i.id === itemId);
     const members = useBoardStore(state => state.activeBoardMembers);
-    const setItemNotifyPeople = useBoardStore(state => state.setItemNotifyPeople);
-    const { can } = usePermission();
-    const canEdit = can('edit_items');
+    const setMyItemNotifications = useBoardStore(state => state.setMyItemNotifications);
+    const meId = useUserStore(state => state.currentUser?.id);
 
     const people = useMemo(() => peopleOnItem(board, item).map(id => {
         const member = members.find((m: any) => m.user_id === id);
@@ -68,7 +67,6 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
 
     const summary = people.length === 0 ? 'On' : onCount === 0 ? 'Off' : onCount === people.length ? 'On' : `${onCount} of ${people.length}`;
     const active = people.length === 0 || onCount > 0;
-    const everyoneOn = people.length > 0 && onCount === people.length;
 
     return (
         <>
@@ -107,7 +105,7 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 >
                     <div style={{ padding: '8px 10px 6px', fontSize: '12px', lineHeight: 1.4, color: 'hsl(var(--color-text-secondary))' }}>
                         <strong style={{ display: 'block', color: 'hsl(var(--color-text-primary))', fontSize: '13px' }}>Who is notified</strong>
-                        People who are on get an in-app notification and an email when this item changes. Everyone in the Person column is on unless you switch them off.
+                        People who are on get an in-app notification and an email when this item changes. Everyone in the Person column is on by default. You can only switch your own on or off.
                     </div>
 
                     {people.length === 0 && (
@@ -118,21 +116,22 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
 
                     {people.map(person => {
                         const isOn = !off.has(person.id);
+                        const mine = person.id === meId;
                         return (
                             <button
                                 key={person.id}
                                 type="button"
                                 role="switch"
                                 aria-checked={isOn}
-                                disabled={!canEdit}
-                                onClick={() => setItemNotifyPeople(itemId, [person.id], !isOn)}
+                                aria-disabled={!mine}
+                                disabled={!mine}
+                                title={mine ? undefined : `Only ${person.name} can change this`}
+                                onClick={() => { if (mine) setMyItemNotifications(itemId, !isOn); }}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '7px 10px', borderRadius: '8px',
-                                    background: 'transparent', border: 'none', textAlign: 'left', cursor: canEdit ? 'pointer' : 'not-allowed', opacity: canEdit ? 1 : 0.6,
-                                    color: 'hsl(var(--color-text-primary))',
+                                    background: mine ? 'hsl(var(--color-bg-subtle))' : 'transparent', border: 'none', textAlign: 'left',
+                                    cursor: mine ? 'pointer' : 'default', color: 'hsl(var(--color-text-primary))',
                                 }}
-                                onMouseEnter={(e) => { if (canEdit) e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover, var(--color-bg-subtle)))'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                             >
                                 <span style={{
                                     width: 28, height: 28, borderRadius: '28%', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -143,27 +142,17 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                                         : person.name.charAt(0).toUpperCase()}
                                 </span>
                                 <span style={{ flex: 1, minWidth: 0 }}>
-                                    <span style={{ display: 'block', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{person.name}</span>
+                                    <span style={{ display: 'block', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {person.name}{mine && <span style={{ fontWeight: 500, color: 'hsl(var(--color-text-tertiary))' }}> (you)</span>}
+                                    </span>
                                     {person.email && person.email !== person.name && (
                                         <span style={{ display: 'block', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{person.email}</span>
                                     )}
                                 </span>
-                                <Toggle on={isOn} />
+                                <span style={{ opacity: mine ? 1 : 0.55, display: 'inline-flex' }}><Toggle on={isOn} /></span>
                             </button>
                         );
                     })}
-
-                    {people.length > 1 && canEdit && (
-                        <div style={{ padding: '6px 10px 8px', borderTop: '1px solid hsl(var(--color-border))', marginTop: '4px' }}>
-                            <button
-                                type="button"
-                                onClick={() => setItemNotifyPeople(itemId, people.map(p => p.id), !everyoneOn)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-brand-primary))' }}
-                            >
-                                {everyoneOn ? 'Turn off for everyone' : 'Turn on for everyone'}
-                            </button>
-                        </div>
-                    )}
                 </div>,
                 document.body
             )}

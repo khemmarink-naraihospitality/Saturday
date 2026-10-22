@@ -9,6 +9,7 @@ import { tableRows } from '../../lib/boardRows';
 import { checkableRows, rangeBetween } from '../../lib/selectionRange';
 import { showToast } from '../../utils/toast';
 import { offerUndo } from '../useUndoToast';
+import { useUserStore } from '../useUserStore';
 import { describeChange } from '../../lib/itemChangeText';
 import { peopleToNotify } from '../../lib/itemPeople';
 
@@ -238,8 +239,8 @@ export interface ItemSlice {
 
     // Selection
     toggleItemSelection: (itemId: string, selected: boolean) => void;
-    /** Switch notifications for these people on (or off) for the item; everyone in its Person column is on by default. */
-    setItemNotifyPeople: (itemId: string, userIds: string[], on: boolean) => Promise<void>;
+    /** Switch the signed-in person's own notifications for the item on or off (everyone on it is on by default). Nobody can change anyone else's. */
+    setMyItemNotifications: (itemId: string, on: boolean) => Promise<void>;
     selectItemRange: (itemId: string) => void;
     selectGroupItems: (groupId: string) => void;
     clearSelection: () => void;
@@ -946,14 +947,15 @@ export const createItemSlice: StateCreator<
     setHighlightedUpdate: (updateId) => set({ highlightedUpdateId: updateId }),
     setSearchQuery: (query) => set({ searchQuery: query }),
 
-    setItemNotifyPeople: async (itemId, userIds, on) => {
+    setMyItemNotifications: async (itemId, on) => {
         const { activeBoardId } = get();
         const found = get().boards.flatMap(b => b.items).find(i => i.id === itemId);
-        if (!found || userIds.length === 0) return;
+        const me = useUserStore.getState().currentUser;
+        if (!found || !me?.id) return;
         // What is stored is who is switched OFF
         const before = found.notifyMutedUserIds || [];
-        const after = on ? before.filter(id => !userIds.includes(id)) : [...new Set([...before, ...userIds])];
-        if (after.length === before.length && after.every(id => before.includes(id))) return;
+        const after = on ? before.filter(id => id !== me.id) : (before.includes(me.id) ? before : [...before, me.id]);
+        if (after.length === before.length) return;
         const apply = (ids: string[]) => set(state => ({
             boards: state.boards.map(b => ({
                 ...b,
@@ -962,20 +964,16 @@ export const createItemSlice: StateCreator<
             })),
         }));
         apply(after);
-        const { error } = await supabase.from('items').update({ notify_muted_user_ids: after }).eq('id', itemId);
+        // Through the function, which (like a trigger on the table) only ever
+        // touches the caller's own id, and works for people who cannot edit the item.
+        const { error } = await supabase.rpc('set_item_notifications', { p_item_id: itemId, p_on: on });
         if (error) {
             console.error('[Notifications switch] Failed to save:', error);
             apply(before);
             return;
         }
-        const nameOf = (id: string) => {
-            const member = get().activeBoardMembers.find((m: any) => m.user_id === id);
-            const profile = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
-            return profile?.full_name || profile?.email || 'Someone';
-        };
-        const changed = on ? before.filter(id => !after.includes(id)) : after.filter(id => !before.includes(id));
         void get().logActivity(on ? 'item_notifications_on' : 'item_notifications_off', 'item', itemId, {
-            board_id: activeBoardId, item_title: found.title || 'Unknown Task', person_names: changed.map(nameOf),
+            board_id: activeBoardId, item_title: found.title || 'Unknown Task', person_names: [me.name || 'Someone'],
         });
     },
     toggleItemSelection: (itemId, selected) => {

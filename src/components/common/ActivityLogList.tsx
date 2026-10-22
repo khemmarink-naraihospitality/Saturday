@@ -201,9 +201,11 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 );
             }
             case 'item_notifications_on':
-                return <span>Turned on notifications for <strong>{itemTitle}</strong>: the people in its Person column are told about changes</span>;
-            case 'item_notifications_off':
-                return <span>Turned off notifications for <strong>{itemTitle}</strong></span>;
+            case 'item_notifications_off': {
+                const who = ((meta.person_names || []) as string[]).join(', ');
+                const on = action_type === 'item_notifications_on';
+                return <span>{on ? 'Turned on' : 'Turned off'} notifications for <strong>{who || 'someone'}</strong> on <strong>{itemTitle}</strong></span>;
+            }
             case 'board_moved':
             case 'board_move_undone':
                 return <span>{action_type === 'board_moved' ? 'Moved' : 'Moved back'} board <strong>{meta.board_title}</strong>{meta.from_workspace_title ? <> from workspace <strong>{meta.from_workspace_title}</strong></> : null}{meta.to_workspace_title ? <> to <strong>{meta.to_workspace_title}</strong></> : null}</span>;

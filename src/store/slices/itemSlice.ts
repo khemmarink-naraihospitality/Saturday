@@ -10,6 +10,7 @@ import { checkableRows, rangeBetween } from '../../lib/selectionRange';
 import { showToast } from '../../utils/toast';
 import { offerUndo } from '../useUndoToast';
 import { describeChange } from '../../lib/itemChangeText';
+import { peopleToNotify } from '../../lib/itemPeople';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -199,16 +200,6 @@ const resolveAssigneeEmail = async (get: () => BoardState, userId: string): Prom
     return data?.email || null;
 };
 
-/** The people in any of the board's Person columns for this item: who an item's notification switch tells. */
-const peopleOnItem = (board: { columns: Column[] } | undefined, item: Item | undefined): Set<string> => {
-    const ids = new Set<string>();
-    (board?.columns || []).filter(c => c.type === 'people').forEach(col => {
-        const val = item?.values?.[col.id];
-        (Array.isArray(val) ? val : (val ? [val] : [])).forEach((id: string) => ids.add(id));
-    });
-    return ids;
-};
-
 export interface ItemSlice {
     selectedItemIds: string[];
     /** The item whose checkbox was clicked last: where a Shift-click range starts. */
@@ -244,8 +235,8 @@ export interface ItemSlice {
 
     // Selection
     toggleItemSelection: (itemId: string, selected: boolean) => void;
-    /** Turn the item's notification switch on or off (off by default). */
-    setItemNotifications: (itemId: string, enabled: boolean) => Promise<void>;
+    /** Switch notifications for these people on (or off) for the item; nobody is on by default. */
+    setItemNotifyPeople: (itemId: string, userIds: string[], on: boolean) => Promise<void>;
     selectItemRange: (itemId: string) => void;
     selectGroupItems: (groupId: string) => void;
     clearSelection: () => void;
@@ -412,10 +403,10 @@ export const createItemSlice: StateCreator<
                     // change is high-signal enough to warrant an email the way
                     // assignment/mention already do.
                     const { data: { user: actor } } = await supabase.auth.getUser();
-                    // Only for items whose notification switch is on
-                    if (actor && currentItem.notifyEnabled) {
+                    // Only the people switched on for this item
+                    if (actor && peopleToNotify(board, currentItem).length > 0) {
                         const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
-                        const assigneeIds = peopleOnItem(board, currentItem);
+                        const assigneeIds = new Set(peopleToNotify(board, currentItem));
                         const oldLabel = logMeta.old_label || 'None';
                         const newLabel = logMeta.new_label || 'a new status';
                         for (const assigneeId of assigneeIds) {
@@ -451,12 +442,12 @@ export const createItemSlice: StateCreator<
                     // A change to one of the item's other fields, told to the people on
                     // it when the item's switch is on (People and Files have their own
                     // messages, so describeChange gives nothing for them).
-                    const summary = column && currentItem.notifyEnabled ? describeChange(column, logMeta.old_value, logMeta.new_value) : null;
+                    const summary = column && peopleToNotify(board, currentItem).length > 0 ? describeChange(column, logMeta.old_value, logMeta.new_value) : null;
                     if (summary) {
                         const { data: { user: actor } } = await supabase.auth.getUser();
                         if (actor) {
                             const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
-                            for (const personId of peopleOnItem(board, currentItem)) {
+                            for (const personId of peopleToNotify(board, currentItem)) {
                                 if (personId === actor.id) continue;
                                 await get().createNotification(
                                     personId,
@@ -799,8 +790,8 @@ export const createItemSlice: StateCreator<
         // "Assignee" mirrors the convention already used for dashboard people-stats
         // (WorkspaceDashboardPage.tsx) — any people-type column's value, not just
         // one hardcoded "Person" column.
-        // Only for items whose notification switch is on (a @mention above always notifies).
-        const assigneeIds = item?.notifyEnabled ? peopleOnItem(board, item) : new Set<string>();
+        // Only the people switched on for this item (a @mention above always notifies).
+        const assigneeIds = new Set(peopleToNotify(board, item));
         for (const assigneeId of assigneeIds) {
             if (assigneeId === author.id || mentionedUserIds.has(assigneeId)) continue;
             await get().createNotification(
@@ -946,24 +937,36 @@ export const createItemSlice: StateCreator<
     setHighlightedItem: (itemId) => set({ highlightedItemId: itemId }),
     setSearchQuery: (query) => set({ searchQuery: query }),
 
-    setItemNotifications: async (itemId, enabled) => {
+    setItemNotifyPeople: async (itemId, userIds, on) => {
         const { activeBoardId } = get();
-        const apply = (value: boolean) => set(state => ({
+        const found = get().boards.flatMap(b => b.items).find(i => i.id === itemId);
+        if (!found || userIds.length === 0) return;
+        const before = found.notifyUserIds || [];
+        const after = on ? [...new Set([...before, ...userIds])] : before.filter(id => !userIds.includes(id));
+        if (after.length === before.length && after.every(id => before.includes(id))) return;
+        const apply = (ids: string[]) => set(state => ({
             boards: state.boards.map(b => ({
                 ...b,
-                items: b.items.map(i => i.id === itemId ? { ...i, notifyEnabled: value } : i),
-                groups: b.groups.map(g => ({ ...g, items: g.items.map(i => i.id === itemId ? { ...i, notifyEnabled: value } : i) })),
+                items: b.items.map(i => i.id === itemId ? { ...i, notifyUserIds: ids } : i),
+                groups: b.groups.map(g => ({ ...g, items: g.items.map(i => i.id === itemId ? { ...i, notifyUserIds: ids } : i) })),
             })),
         }));
-        apply(enabled);
-        const { error } = await supabase.from('items').update({ notify_enabled: enabled }).eq('id', itemId);
+        apply(after);
+        const { error } = await supabase.from('items').update({ notify_user_ids: after }).eq('id', itemId);
         if (error) {
             console.error('[Notifications switch] Failed to save:', error);
-            apply(!enabled);
+            apply(before);
             return;
         }
-        const title = get().boards.flatMap(b => b.items).find(i => i.id === itemId)?.title;
-        void get().logActivity(enabled ? 'item_notifications_on' : 'item_notifications_off', 'item', itemId, { board_id: activeBoardId, item_title: title || 'Unknown Task' });
+        const nameOf = (id: string) => {
+            const member = get().activeBoardMembers.find((m: any) => m.user_id === id);
+            const profile = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
+            return profile?.full_name || profile?.email || 'Someone';
+        };
+        const changed = on ? after.filter(id => !before.includes(id)) : before.filter(id => !after.includes(id));
+        void get().logActivity(on ? 'item_notifications_on' : 'item_notifications_off', 'item', itemId, {
+            board_id: activeBoardId, item_title: found.title || 'Unknown Task', person_names: changed.map(nameOf),
+        });
     },
     toggleItemSelection: (itemId, selected) => {
         set(state => {

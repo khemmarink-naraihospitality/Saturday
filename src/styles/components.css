@@ -365,3 +365,17 @@
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 16px hsla(var(--color-brand-primary), 0.4) !important;
 }
+
+/* The update (or reply) a notification or an emailed link points at: the item panel
+   scrolls to it and it glows for a moment, then settles. */
+@keyframes update-flash {
+    0%, 55% { box-shadow: 0 0 0 3px hsl(var(--color-brand-primary) / 0.55); background-color: hsl(var(--color-brand-light)); }
+    100% { box-shadow: 0 0 0 3px hsl(var(--color-brand-primary) / 0); }
+}
+.update-flash {
+    animation: update-flash 3.2s ease-out;
+    border-radius: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .update-flash { animation: none; box-shadow: 0 0 0 3px hsl(var(--color-brand-primary) / 0.55); }
+}

@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import type { Notification } from '../../types';
 import { Card, EmptyState, SegmentedTabs, relativeTime } from '../ui';
 import { openBoard, openItem, openWorkspace } from '../nav/navigation';
+import { useMobileUI } from '../state/mobileStore';
 
 type Filter = 'all' | 'unread' | 'mentions';
 
@@ -117,7 +118,12 @@ const NotificationRow = ({ notification }: { notification: Notification }) => {
             openBoard(boardId);
             // Board-scoped notifications carry the board id as their entity_id;
             // only a different id is an item (same rule as NotificationItem).
-            if (notification.entity_id && notification.entity_id !== boardId) openItem(notification.entity_id);
+            if (notification.entity_id && notification.entity_id !== boardId) {
+                // A notification about an update opens the item on its Updates tab, on that update
+                if (notification.data?.update_id) useMobileUI.getState().setItemTab('updates');
+                openItem(notification.entity_id);
+                useBoardStore.getState().setHighlightedUpdate(notification.data?.update_id || null);
+            }
         } else if (notification.data?.workspace_id) {
             openWorkspace(notification.data.workspace_id);
         }
@@ -145,7 +151,7 @@ const NotificationRow = ({ notification }: { notification: Notification }) => {
             <div className="m-notif__body">
                 <div className="m-notif__title">{notification.title || notification.content}</div>
                 {notification.message && <div className="m-notif__message">{notification.message}</div>}
-                {notification.type === 'mention' && notification.data?.updatePreview && (
+                {(notification.type === 'mention' || notification.type === 'comment') && notification.data?.updatePreview && (
                     <div className="m-notif__quote">“{notification.data.updatePreview}”</div>
                 )}
                 <div className="m-notif__time">{relativeTime(notification.created_at)}</div>

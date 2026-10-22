@@ -1,4 +1,4 @@
-// Holds the target of an emailed "View Item" link (/?boardId=…&itemId=…) across
+// Holds the target of an emailed "View Item" link (/?boardId=…&itemId=…&updateId=…) across
 // a sign-in, so a recipient who clicks the link while logged out still lands on
 // the right item instead of the home page.
 //
@@ -14,6 +14,8 @@ export interface PendingDeepLink {
     boardId?: string;
     workspaceId?: string;
     itemId?: string;
+    /** The update (or reply) inside the item that the link is about. */
+    updateId?: string;
 }
 
 /** Stash the deep-link params currently in the URL, if there are any worth keeping. */
@@ -24,9 +26,11 @@ export function savePendingDeepLink(search: string) {
         const boardId = params.get('boardId');
         const workspaceId = params.get('workspaceId');
         const itemId = params.get('itemId');
+        const updateId = params.get('updateId');
         if (boardId) link.boardId = boardId;
         if (workspaceId) link.workspaceId = workspaceId;
         if (itemId) link.itemId = itemId;
+        if (updateId && itemId) link.updateId = updateId;
 
         if (Object.keys(link).length === 0) return;
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(link));

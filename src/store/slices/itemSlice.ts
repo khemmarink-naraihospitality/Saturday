@@ -207,6 +207,8 @@ export interface ItemSlice {
     showHiddenItems: boolean;
     activeItemId: string | null;
     highlightedItemId: string | null;
+    /** The update or reply to scroll to and flash when the item panel opens (from a notification or an emailed link). */
+    highlightedUpdateId: string | null;
     searchQuery: string;
     lastOptimisticUpdate: Record<string, number>;
 
@@ -231,6 +233,7 @@ export interface ItemSlice {
     toggleShowHiddenItems: () => void;
     setActiveItem: (itemId: string | null) => void;
     setHighlightedItem: (itemId: string | null) => void;
+    setHighlightedUpdate: (updateId: string | null) => void;
     setSearchQuery: (query: string) => void;
 
     // Selection
@@ -269,6 +272,7 @@ export const createItemSlice: StateCreator<
     showHiddenItems: false,
     activeItemId: null,
     highlightedItemId: null,
+    highlightedUpdateId: null,
     searchQuery: '',
     drafts: {},
     lastOptimisticUpdate: {},
@@ -738,11 +742,15 @@ export const createItemSlice: StateCreator<
         get().logActivity('item_comment_added', 'item', itemId, { board_id: activeBoardId, item_title: item?.title || 'Unknown Task' });
 
         // Mentions Logic
-        const textPreview = content.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+        // The text of the update, for the notification and the email; an update with only a
+        // picture or a file has no words to show.
+        const plainText = content.replace(/<br\s*\/?>|<\/(p|div|li)>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+        const textPreview = plainText.substring(0, 300) || (/<img/i.test(content) ? '(image or GIF)' : (files && files.length > 0 ? '(attachment)' : ''));
         // Every notification link — email and in-app alike — resolves to the same
         // place: the board with the item open. Keep these in step if either side
         // changes.
-        const itemLink = `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`;
+        // updateId takes the link to this very update (or reply) inside the item.
+        const itemLink = `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}&updateId=${newUpdate.id}`;
         const dataIdRegex = /data-id="([^"]+)"/g;
         let dataIdMatch;
         const mentionedUserIds = new Set<string>();
@@ -760,7 +768,7 @@ export const createItemSlice: StateCreator<
                     'mention',
                     `${author.name} mentioned you in "${item?.title || 'an update'}"`,
                     itemId,
-                    { board_id: activeBoardId, updatePreview: textPreview }
+                    { board_id: activeBoardId, updatePreview: textPreview, update_id: newUpdate.id }
                 );
 
                 // Board activity log
@@ -797,9 +805,9 @@ export const createItemSlice: StateCreator<
             await get().createNotification(
                 assigneeId,
                 'comment',
-                `${author.name} commented on "${item?.title || 'a task'}" you're assigned to`,
+                parentId ? `${author.name} replied on "${item?.title || 'a task'}"` : `${author.name} posted an update on "${item?.title || 'a task'}"`,
                 itemId,
-                { board_id: activeBoardId, updatePreview: textPreview }
+                { board_id: activeBoardId, updatePreview: textPreview, update_id: newUpdate.id }
             );
 
             const assigneeEmail = await resolveAssigneeEmail(get, assigneeId);
@@ -885,7 +893,7 @@ export const createItemSlice: StateCreator<
                 'like',
                 `${user.name} liked your update on "${itemTitle || 'a task'}"`,
                 itemId,
-                { board_id: activeBoardId }
+                { board_id: activeBoardId, update_id: updateId }
             );
 
             const authorEmail = await resolveAssigneeEmail(get, updateAuthorId);
@@ -897,7 +905,7 @@ export const createItemSlice: StateCreator<
                         likerName: user.name,
                         itemName: itemTitle || 'an item',
                         boardName: get().boards.find(b => b.id === activeBoardId)?.title || 'a board',
-                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
+                        itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}&updateId=${updateId}`
                     }
                 }).catch((e: unknown) => console.error('Like email error:', e));
             }
@@ -935,6 +943,7 @@ export const createItemSlice: StateCreator<
     toggleShowHiddenItems: () => set(state => ({ showHiddenItems: !state.showHiddenItems })),
     setActiveItem: (itemId) => set({ activeItemId: itemId }),
     setHighlightedItem: (itemId) => set({ highlightedItemId: itemId }),
+    setHighlightedUpdate: (updateId) => set({ highlightedUpdateId: updateId }),
     setSearchQuery: (query) => set({ searchQuery: query }),
 
     setItemNotifyPeople: async (itemId, userIds, on) => {

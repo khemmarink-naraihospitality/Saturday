@@ -97,7 +97,7 @@ const UpdateCard = memo(({ update, replies, me, avatarOf, expanded, onToggleRepl
     }, [thread, avatarOf]);
 
     return (
-        <article className="m-update" data-testid="m-update">
+        <article className="m-update" data-testid="m-update" data-update-id={update.id}>
             <div className="m-update__main">
                 <UpdateHead update={update} avatarUrl={avatarOf(update.userId)} size={46} onMore={() => onMore(update)} />
                 <UpdateBody update={update} />
@@ -124,7 +124,7 @@ const UpdateCard = memo(({ update, replies, me, avatarOf, expanded, onToggleRepl
             {expanded && thread.length > 0 && (
                 <div className="m-update__thread">
                     {thread.map(reply => (
-                        <div key={reply.id} className="m-reply">
+                        <div key={reply.id} className="m-reply" data-update-id={reply.id}>
                             <UpdateHead update={reply} avatarUrl={avatarOf(reply.userId)} size={34} onMore={() => onMore(reply)} />
                             <div className="m-reply__body"><UpdateBody update={reply} /></div>
                         </div>
@@ -152,12 +152,14 @@ UpdateCard.displayName = 'UpdateCard';
  * (getDedupedUpdates → splitThreads), loaded on open if the board only had the
  * counts so far.
  */
-export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleThread }: {
+export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleThread, onExpandThread }: {
     item: Item;
     people: Map<string, PersonInfo>;
     onCompose: (mode: ComposerMode) => void;
     expandedThreads: Set<string>;
     onToggleThread: (id: string) => void;
+    /** Opens a thread (and leaves it open if it already is). */
+    onExpandThread: (id: string) => void;
 }) => {
     const loadItemUpdates = useBoardStore(state => state.loadItemUpdates);
     const toggleUpdateLike = useBoardStore(state => state.toggleUpdateLike);
@@ -171,6 +173,34 @@ export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleT
     }, [item.id, item.updatesLoaded, loadItemUpdates]);
 
     const updates = useMemo(() => getDedupedUpdates(item.updates) as Comment[], [item.updates]);
+
+    // Opened from a notification or a link about one update: open its thread if it
+    // is a reply, scroll to it and let it glow (the same flash as the desktop panel).
+    const highlightedUpdateId = useBoardStore(state => state.highlightedUpdateId);
+    const setHighlightedUpdate = useBoardStore(state => state.setHighlightedUpdate);
+    useEffect(() => {
+        if (!highlightedUpdateId) return;
+        const target = updates.find(u => u.id === highlightedUpdateId);
+        if (target?.parentId) onExpandThread(target.parentId);
+        let tries = 0;
+        const timer = window.setInterval(() => {
+            const el = document.querySelector<HTMLElement>(`[data-update-id="${CSS.escape(highlightedUpdateId)}"]`);
+            if (el) {
+                window.clearInterval(timer);
+                el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                el.classList.remove('update-flash');
+                void el.offsetWidth;
+                el.classList.add('update-flash');
+                window.setTimeout(() => el.classList.remove('update-flash'), 3400);
+                setHighlightedUpdate(null);
+            } else if (++tries > 40) {
+                window.clearInterval(timer);
+                setHighlightedUpdate(null);
+            }
+        }, 150);
+        return () => window.clearInterval(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightedUpdateId, updates.length]);
     const { topLevel, replies } = useMemo(() => splitThreads(updates) as { topLevel: Comment[]; replies: Comment[] }, [updates]);
 
     const me: Me = useMemo(() => ({ id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }), [currentUser.id, currentUser.name, currentUser.avatar]);

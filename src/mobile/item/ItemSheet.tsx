@@ -171,7 +171,7 @@ const ItemContent = ({ board, item }: { board: Board; item: Item }) => {
             <div className="m-item__panel" role="tabpanel">
                 {tab === 'columns' && <ColumnsTab board={board} item={item} canEdit={canEdit} people={people} groupColor={groupColor} />}
                 {tab === 'updates' && (
-                    <UpdatesTab item={item} people={people} onCompose={setComposer} expandedThreads={expandedThreads} onToggleThread={toggleThread} />
+                    <UpdatesTab item={item} people={people} onCompose={setComposer} expandedThreads={expandedThreads} onToggleThread={toggleThread} onExpandThread={(id) => setExpandedThreads(prev => (prev.has(id) ? prev : new Set(prev).add(id)))} />
                 )}
                 {tab === 'files' && <FilesTab item={item} canEdit={canEdit} />}
             </div>

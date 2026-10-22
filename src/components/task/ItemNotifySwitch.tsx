@@ -78,7 +78,7 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 aria-haspopup="dialog"
                 aria-expanded={open}
                 onClick={toggleOpen}
-                title="Choose who is notified (in the app and by email) when this item changes"
+                title="Choose who is notified (in the app and by email) about this item"
                 style={{
                     marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none',
                     padding: '2px 0', cursor: 'pointer', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
@@ -86,7 +86,7 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 }}
             >
                 {active ? <Bell size={14} /> : <BellOff size={14} />}
-                Email notification
+                Notification
                 <span style={{
                     padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 700,
                     background: active ? 'hsl(var(--color-brand-light))' : 'hsl(var(--color-bg-subtle))',

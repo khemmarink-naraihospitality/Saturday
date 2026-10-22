@@ -108,6 +108,34 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
         }
     }, [itemId, activeItem?.updatesLoaded, activeItem, loadItemUpdates]);
 
+    // Opened from a notification or an emailed link about one update: show the
+    // Updates tab, scroll to that update (or reply) and let it glow. The update may
+    // not be on screen yet (the panel is sliding in, the comments are still
+    // loading), so look for it for a few seconds before giving up.
+    const highlightedUpdateId = useBoardStore(state => state.highlightedUpdateId);
+    const setHighlightedUpdate = useBoardStore(state => state.setHighlightedUpdate);
+    useEffect(() => {
+        if (!highlightedUpdateId) return;
+        setActiveTab('updates');
+        let tries = 0;
+        const timer = window.setInterval(() => {
+            const el = document.querySelector<HTMLElement>(`[data-update-id="${CSS.escape(highlightedUpdateId)}"]`);
+            if (el) {
+                window.clearInterval(timer);
+                el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                el.classList.remove('update-flash');
+                void el.offsetWidth; // restart the animation if it is flashed again
+                el.classList.add('update-flash');
+                window.setTimeout(() => el.classList.remove('update-flash'), 3400);
+                setHighlightedUpdate(null);
+            } else if (++tries > 40) {
+                window.clearInterval(timer);
+                setHighlightedUpdate(null);
+            }
+        }, 150);
+        return () => window.clearInterval(timer);
+    }, [highlightedUpdateId, itemId, setHighlightedUpdate]);
+
     // Auto-grow the item title textarea up to 2 lines as content changes
     useEffect(() => {
         const el = titleTextareaRef.current;
@@ -713,7 +741,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                     const { topLevel, replies } = splitThreads(validUpdates);
 
                                     const renderUpdate = (update: any, depth = 0) => (
-                                        <div key={update.id} style={{
+                                        <div key={update.id} data-update-id={update.id} style={{
                                             backgroundColor: depth === 0 ? 'white' : 'transparent',
                                             borderRadius: '0px', // Sharp architectural corners
                                             border: depth === 0 ? '1px solid hsl(var(--color-border))' : 'none',

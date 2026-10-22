@@ -349,7 +349,7 @@ function MainApp() {
   // because the State→URL sync effect below pushes a clean /user/workspace/board
   // path as soon as the board resolves, which drops the query string long before
   // the item is loadable.
-  const pendingItemLink = useRef<{ boardId: string; itemId: string } | null>(null);
+  const pendingItemLink = useRef<{ boardId: string; itemId: string; updateId?: string } | null>(null);
 
   // URL Sync and Popstate Handler
   useEffect(() => {
@@ -390,6 +390,7 @@ function MainApp() {
     const qBoardId = params.get('boardId') || stashed.boardId || null;
     const qWorkspaceId = params.get('workspaceId') || stashed.workspaceId || null;
     const qItemId = params.get('itemId') || stashed.itemId || null;
+    const qUpdateId = params.get('updateId') || stashed.updateId || null;
 
     // Sent by the Admin console's "Access" button. The cached unlock is dropped
     // here, at mount, rather than trusted to survive in the URL: the canonical
@@ -405,7 +406,7 @@ function MainApp() {
         // Open the panel straight away — TaskDetail renders its own spinner
         // while the item is still loading — but the group/scroll work has to
         // wait for the board's items, so hand the rest to the resolver below.
-        pendingItemLink.current = { boardId: qBoardId, itemId: qItemId };
+        pendingItemLink.current = { boardId: qBoardId, itemId: qItemId, updateId: qUpdateId || undefined };
         useBoardStore.getState().setActiveItem(qItemId);
       }
     } else if (qWorkspaceId) {
@@ -452,6 +453,8 @@ function MainApp() {
     // Table.tsx watches highlightedItemId and scrolls that row into view.
     store.setActiveItem(target.itemId);
     store.setHighlightedItem(target.itemId);
+    // A link to one update inside the item: the panel scrolls to it and flashes it
+    if (target.updateId) store.setHighlightedUpdate(target.updateId);
   }, [boards]);
 
   // 3. Deep Link Resolution (On Initial Data Load ONLY)

@@ -57,6 +57,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
             // on its loading spinner looking for an item that cannot exist.
             if (notification.entity_id && notification.entity_id !== notification.data.board_id) {
                 setActiveItem(notification.entity_id);
+                // A notification about an update opens the item on that very update
+                useBoardStore.getState().setHighlightedUpdate(notification.data?.update_id || null);
             }
             if (onClose) onClose();
         } else if (notification.data?.workspace_id) {
@@ -131,7 +133,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
                         </p>
                     )}
 
-                    {isMention && notification.data?.updatePreview && (
+                    {(isMention || isComment) && notification.data?.updatePreview && (
                         <div style={{
                             marginTop: '8px',
                             padding: '8px 12px',
@@ -144,7 +146,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
                             fontStyle: 'italic',
                             overflow: 'hidden',
                             display: '-webkit-box',
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: 4,
                             WebkitBoxOrient: 'vertical',
                         } as React.CSSProperties}>
                             "{notification.data.updatePreview}"

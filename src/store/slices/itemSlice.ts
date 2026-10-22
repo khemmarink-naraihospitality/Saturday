@@ -9,6 +9,7 @@ import { tableRows } from '../../lib/boardRows';
 import { checkableRows, rangeBetween } from '../../lib/selectionRange';
 import { showToast } from '../../utils/toast';
 import { offerUndo } from '../useUndoToast';
+import { describeChange } from '../../lib/itemChangeText';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -198,6 +199,16 @@ const resolveAssigneeEmail = async (get: () => BoardState, userId: string): Prom
     return data?.email || null;
 };
 
+/** The people in any of the board's Person columns for this item: who an item's notification switch tells. */
+const peopleOnItem = (board: { columns: Column[] } | undefined, item: Item | undefined): Set<string> => {
+    const ids = new Set<string>();
+    (board?.columns || []).filter(c => c.type === 'people').forEach(col => {
+        const val = item?.values?.[col.id];
+        (Array.isArray(val) ? val : (val ? [val] : [])).forEach((id: string) => ids.add(id));
+    });
+    return ids;
+};
+
 export interface ItemSlice {
     selectedItemIds: string[];
     /** The item whose checkbox was clicked last: where a Shift-click range starts. */
@@ -233,6 +244,8 @@ export interface ItemSlice {
 
     // Selection
     toggleItemSelection: (itemId: string, selected: boolean) => void;
+    /** Turn the item's notification switch on or off (off by default). */
+    setItemNotifications: (itemId: string, enabled: boolean) => Promise<void>;
     selectItemRange: (itemId: string) => void;
     selectGroupItems: (groupId: string) => void;
     clearSelection: () => void;
@@ -399,14 +412,10 @@ export const createItemSlice: StateCreator<
                     // change is high-signal enough to warrant an email the way
                     // assignment/mention already do.
                     const { data: { user: actor } } = await supabase.auth.getUser();
-                    if (actor) {
+                    // Only for items whose notification switch is on
+                    if (actor && currentItem.notifyEnabled) {
                         const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
-                        const assigneeIds = new Set<string>();
-                        board.columns.filter(c => c.type === 'people').forEach(col => {
-                            const val = currentItem.values?.[col.id];
-                            const ids: string[] = Array.isArray(val) ? val : (val ? [val] : []);
-                            ids.forEach(id => assigneeIds.add(id));
-                        });
+                        const assigneeIds = peopleOnItem(board, currentItem);
                         const oldLabel = logMeta.old_label || 'None';
                         const newLabel = logMeta.new_label || 'a new status';
                         for (const assigneeId of assigneeIds) {
@@ -438,6 +447,41 @@ export const createItemSlice: StateCreator<
                     }
                 } else {
                     get().logActivity('item_value_updated', 'item', itemId, logMeta);
+
+                    // A change to one of the item's other fields, told to the people on
+                    // it when the item's switch is on (People and Files have their own
+                    // messages, so describeChange gives nothing for them).
+                    const summary = column && currentItem.notifyEnabled ? describeChange(column, logMeta.old_value, logMeta.new_value) : null;
+                    if (summary) {
+                        const { data: { user: actor } } = await supabase.auth.getUser();
+                        if (actor) {
+                            const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
+                            for (const personId of peopleOnItem(board, currentItem)) {
+                                if (personId === actor.id) continue;
+                                await get().createNotification(
+                                    personId,
+                                    'item_change',
+                                    `${actorName} updated "${currentItem.title || 'a task'}" — ${summary}`,
+                                    itemId,
+                                    { board_id: activeBoardId, change: summary }
+                                );
+                                const personEmail = await resolveAssigneeEmail(get, personId);
+                                if (personEmail) {
+                                    supabase.functions.invoke('invite-user', {
+                                        body: {
+                                            action: 'item_change',
+                                            email: personEmail,
+                                            inviterName: actorName,
+                                            itemName: currentItem.title || 'an item',
+                                            boardName: board.title || 'a board',
+                                            changeSummary: summary,
+                                            itemLink: `https://saturdaycom.vercel.app/?boardId=${activeBoardId}&itemId=${itemId}`
+                                        }
+                                    }).catch((e: unknown) => console.error('Item change email error:', e));
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -750,17 +794,13 @@ export const createItemSlice: StateCreator<
             }
         }
 
-        // Plain-comment notification: alert this item's assignees even when they
-        // weren't @mentioned, so a comment on your task doesn't go unnoticed.
+        // Plain-comment notification: alert the people on an item with its switch on,
+        // even when they weren't @mentioned.
         // "Assignee" mirrors the convention already used for dashboard people-stats
         // (WorkspaceDashboardPage.tsx) — any people-type column's value, not just
         // one hardcoded "Person" column.
-        const assigneeIds = new Set<string>();
-        (board?.columns || []).filter(c => c.type === 'people').forEach(col => {
-            const val = item?.values?.[col.id];
-            const ids: string[] = Array.isArray(val) ? val : (val ? [val] : []);
-            ids.forEach(id => assigneeIds.add(id));
-        });
+        // Only for items whose notification switch is on (a @mention above always notifies).
+        const assigneeIds = item?.notifyEnabled ? peopleOnItem(board, item) : new Set<string>();
         for (const assigneeId of assigneeIds) {
             if (assigneeId === author.id || mentionedUserIds.has(assigneeId)) continue;
             await get().createNotification(
@@ -906,6 +946,25 @@ export const createItemSlice: StateCreator<
     setHighlightedItem: (itemId) => set({ highlightedItemId: itemId }),
     setSearchQuery: (query) => set({ searchQuery: query }),
 
+    setItemNotifications: async (itemId, enabled) => {
+        const { activeBoardId } = get();
+        const apply = (value: boolean) => set(state => ({
+            boards: state.boards.map(b => ({
+                ...b,
+                items: b.items.map(i => i.id === itemId ? { ...i, notifyEnabled: value } : i),
+                groups: b.groups.map(g => ({ ...g, items: g.items.map(i => i.id === itemId ? { ...i, notifyEnabled: value } : i) })),
+            })),
+        }));
+        apply(enabled);
+        const { error } = await supabase.from('items').update({ notify_enabled: enabled }).eq('id', itemId);
+        if (error) {
+            console.error('[Notifications switch] Failed to save:', error);
+            apply(!enabled);
+            return;
+        }
+        const title = get().boards.flatMap(b => b.items).find(i => i.id === itemId)?.title;
+        void get().logActivity(enabled ? 'item_notifications_on' : 'item_notifications_off', 'item', itemId, { board_id: activeBoardId, item_title: title || 'Unknown Task' });
+    },
     toggleItemSelection: (itemId, selected) => {
         set(state => {
             const current = new Set(state.selectedItemIds);

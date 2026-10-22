@@ -28,7 +28,7 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     const isComment = notification.type === 'comment';
     const isLike = notification.type === 'like';
     const isDueDateReminder = notification.type === 'due_date_reminder';
-    const isStatusUpdate = notification.type === 'status_update';
+    const isStatusUpdate = notification.type === 'status_update' || notification.type === 'item_change';
 
     const handleAction = async (action: 'accept' | 'decline') => {
         setIsProcessing(true);

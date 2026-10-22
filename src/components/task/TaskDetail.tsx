@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { FileLink } from '../../types';
 import { useGooglePicker } from '../../hooks/useGooglePicker';
 import { DependenciesSection } from './DependenciesSection';
+import { ItemNotifySwitch } from './ItemNotifySwitch';
 import { displayUpdateHtml } from '../../lib/linkify';
 import { getDedupedUpdates, hasHtmlContent, repliesTo, splitThreads } from '../../lib/updates';
 
@@ -495,7 +496,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                 </button>
             </div>
 
-            <DependenciesSection itemId={activeItem.id} boardId={activeItem.boardId} />
+            <DependenciesSection itemId={activeItem.id} boardId={activeItem.boardId} trailing={<ItemNotifySwitch itemId={activeItem.id} />} />
 
             {/* New Tab List (Removed Activity) */}
             <div style={{

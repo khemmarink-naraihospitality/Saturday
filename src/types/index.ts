@@ -120,6 +120,8 @@ export interface Item {
     updates?: Comment[]; // For Task Sidebar
     files?: FileLink[]; // For Task Sidebar Files Tab
     isHidden?: boolean;
+    /** Notify the people in the item's Person column (in-app and email) when it changes. Off unless someone turns it on. */
+    notifyEnabled?: boolean;
     order?: number;
     createdAt?: string;
     parentId?: string; // Link to parent Item for sub-items
@@ -180,7 +182,7 @@ export interface Board {
     is_private?: boolean;
 }
 
-export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like' | 'due_date_reminder' | 'status_update';
+export type NotificationType = 'workspace_invite' | 'board_invite' | 'assignment' | 'mention' | 'access_granted' | 'board_added' | 'workspace_added' | 'comment' | 'like' | 'due_date_reminder' | 'status_update' | 'item_change';
 export type NotificationStatus = 'pending' | 'accepted' | 'declined';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

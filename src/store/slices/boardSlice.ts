@@ -525,7 +525,7 @@ export const createBoardSlice: StateCreator<
 
             const { data: items } = await supabase
                 .from('items')
-                .select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id')
+                .select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, notify_enabled, created_at, parent_id')
                 .eq('board_id', boardId)
                 .eq('is_archived', false)
                 .order('order');
@@ -547,7 +547,7 @@ export const createBoardSlice: StateCreator<
                     const existing = existingById.get(i.id);
                     const p = {
                         id: i.id, title: i.title, groupId: i.group_id, boardId,
-                        values: parseSqlJson(i.values, {}), isHidden: i.is_hidden,
+                        values: parseSqlJson(i.values, {}), isHidden: i.is_hidden, notifyEnabled: !!i.notify_enabled,
                         updates: existing?.updates ?? [],
                         updatesCount: existing?.updatesLoaded
                             ? (existing.updates?.length ?? 0)
@@ -592,7 +592,7 @@ export const createBoardSlice: StateCreator<
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id').eq('board_id', boardId).order('order'),
-                supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
+                supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, notify_enabled, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)
             ]);
@@ -643,6 +643,7 @@ export const createBoardSlice: StateCreator<
                         boardId,
                         values: keepLocal ? existing!.values : parseSqlJson(i.values, {}),
                         isHidden: i.is_hidden,
+                        notifyEnabled: !!i.notify_enabled,
                         updates: existing?.updatesLoaded ? existing.updates ?? [] : [],
                         updatesCount: existing?.updatesLoaded ? (existing.updates?.length ?? 0) : (i.updates_count ?? 0),
                         lastUpdateAt: i.last_update_at || undefined,

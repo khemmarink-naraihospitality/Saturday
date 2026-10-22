@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, type ReactNode } from 'react';
 import { Plus, X, ArrowRight } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
@@ -11,6 +11,8 @@ interface DependenciesSectionProps {
     // popover (the Timeline bar's double-click popup) instead of TaskDetail's
     // full-width panel.
     compact?: boolean;
+    // Shown at the end of the bar (the item's notification switch)
+    trailing?: ReactNode;
 }
 
 /**
@@ -18,7 +20,7 @@ interface DependenciesSectionProps {
  * blocks. The picker only ever offers items that can't close a loop, so a cycle
  * is impossible to pick rather than rejected after the fact.
  */
-export const DependenciesSection = ({ itemId, boardId, compact = false }: DependenciesSectionProps) => {
+export const DependenciesSection = ({ itemId, boardId, compact = false, trailing }: DependenciesSectionProps) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const itemDependencies = useBoardStore(state => state.itemDependencies);
     const addItemDependency = useBoardStore(state => state.addItemDependency);
@@ -253,6 +255,8 @@ export const DependenciesSection = ({ itemId, boardId, compact = false }: Depend
                     ))}
                 </>
             )}
+
+            {trailing}
         </div>
     );
 };

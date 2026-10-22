@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
+import { useThemeStore } from '../store/useThemeStore';
 import { supabase } from '../lib/supabase';
 import { savePendingDeepLink } from '../lib/pendingDeepLink';
 import { takeMicrosoftEntry } from '../lib/initialPath';
@@ -17,6 +18,21 @@ const readReturnedAuthError = (): string | null => {
 };
 
 export const LoginPage = () => {
+    // The sign-in page is always Saturday's look. A person's own palette (Narai)
+    // is theirs once they are signed in; on this page, where nobody has been
+    // identified yet, the palette left in the browser by the last person is
+    // set aside before paint and put back when the page goes away.
+    useLayoutEffect(() => {
+        const root = document.documentElement;
+        const had = root.getAttribute('data-palette');
+        root.removeAttribute('data-palette');
+        return () => {
+            const palette = useThemeStore.getState().palette;
+            if (palette === 'saturday') root.removeAttribute('data-palette');
+            else root.setAttribute('data-palette', had || palette);
+        };
+    }, []);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);

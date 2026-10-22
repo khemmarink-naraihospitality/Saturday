@@ -11,11 +11,11 @@ export const peopleOnItem = (board: { columns: Column[] } | undefined, item: Ite
 };
 
 /**
- * Who an item's notifications go to: the people in its Person column(s) who have
- * been switched on for it, person by person. Someone taken off the column is no
- * longer told, whatever the list says.
+ * Who an item's notifications go to: the people in its Person column(s), except
+ * those switched off for it. On is the default, so someone added to the column
+ * later is told; someone taken off the column is not, whatever the list says.
  */
 export const peopleToNotify = (board: { columns: Column[] } | undefined, item: Item | undefined): string[] => {
-    const on = new Set(item?.notifyUserIds || []);
-    return peopleOnItem(board, item).filter(id => on.has(id));
+    const off = new Set(item?.notifyMutedUserIds || []);
+    return peopleOnItem(board, item).filter(id => !off.has(id));
 };

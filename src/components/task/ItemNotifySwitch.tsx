@@ -19,10 +19,10 @@ const Toggle = ({ on }: { on: boolean }) => (
 );
 
 /**
- * The item's notification control, at the end of the "Waiting on" bar: off for
- * everyone unless switched on, and chosen person by person from the people in the
- * item's Person column. The people switched on hear about changes to the item in
- * the app and by email (see itemSlice: status, updates, other fields).
+ * The item's notification control, at the end of the "Waiting on" bar: on for
+ * everyone in the item's Person column unless switched off, person by person. The
+ * people who are on hear about changes to the item in the app and by email (see
+ * itemSlice: status, updates, other fields).
  */
 export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.items.some(i => i.id === itemId)));
@@ -38,8 +38,8 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
         const name = profile.full_name || profile.email || 'Unknown';
         return { id, name, email: profile.email as string | undefined, avatar: profile.avatar_url as string | undefined };
     }), [board, item, members]);
-    const on = new Set(item?.notifyUserIds || []);
-    const onCount = people.filter(p => on.has(p.id)).length;
+    const off = new Set(item?.notifyMutedUserIds || []);
+    const onCount = people.filter(p => !off.has(p.id)).length;
 
     const [open, setOpen] = useState(false);
     const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -66,8 +66,8 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
         setOpen(v => !v);
     };
 
-    const summary = onCount === 0 ? 'Off' : onCount === people.length ? 'On' : `${onCount} of ${people.length}`;
-    const active = onCount > 0;
+    const summary = people.length === 0 ? 'On' : onCount === 0 ? 'Off' : onCount === people.length ? 'On' : `${onCount} of ${people.length}`;
+    const active = people.length === 0 || onCount > 0;
     const everyoneOn = people.length > 0 && onCount === people.length;
 
     return (
@@ -107,17 +107,17 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 >
                     <div style={{ padding: '8px 10px 6px', fontSize: '12px', lineHeight: 1.4, color: 'hsl(var(--color-text-secondary))' }}>
                         <strong style={{ display: 'block', color: 'hsl(var(--color-text-primary))', fontSize: '13px' }}>Who is notified</strong>
-                        People switched on get an in-app notification and an email when this item changes.
+                        People who are on get an in-app notification and an email when this item changes. Everyone in the Person column is on unless you switch them off.
                     </div>
 
                     {people.length === 0 && (
                         <div style={{ padding: '12px 10px 14px', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
-                            No one is in this item's Person column yet. Add someone there first.
+                            No one is in this item's Person column yet. People you add there are notified automatically.
                         </div>
                     )}
 
                     {people.map(person => {
-                        const isOn = on.has(person.id);
+                        const isOn = !off.has(person.id);
                         return (
                             <button
                                 key={person.id}

@@ -235,7 +235,7 @@ export interface ItemSlice {
 
     // Selection
     toggleItemSelection: (itemId: string, selected: boolean) => void;
-    /** Switch notifications for these people on (or off) for the item; nobody is on by default. */
+    /** Switch notifications for these people on (or off) for the item; everyone in its Person column is on by default. */
     setItemNotifyPeople: (itemId: string, userIds: string[], on: boolean) => Promise<void>;
     selectItemRange: (itemId: string) => void;
     selectGroupItems: (groupId: string) => void;
@@ -403,7 +403,7 @@ export const createItemSlice: StateCreator<
                     // change is high-signal enough to warrant an email the way
                     // assignment/mention already do.
                     const { data: { user: actor } } = await supabase.auth.getUser();
-                    // Only the people switched on for this item
+                    // Everyone on the item except those switched off for it
                     if (actor && peopleToNotify(board, currentItem).length > 0) {
                         const actorName = actor.user_metadata?.full_name || actor.user_metadata?.name || actor.email?.split('@')[0] || 'Someone';
                         const assigneeIds = new Set(peopleToNotify(board, currentItem));
@@ -790,7 +790,7 @@ export const createItemSlice: StateCreator<
         // "Assignee" mirrors the convention already used for dashboard people-stats
         // (WorkspaceDashboardPage.tsx) — any people-type column's value, not just
         // one hardcoded "Person" column.
-        // Only the people switched on for this item (a @mention above always notifies).
+        // Everyone on the item except those switched off for it (a @mention above always notifies).
         const assigneeIds = new Set(peopleToNotify(board, item));
         for (const assigneeId of assigneeIds) {
             if (assigneeId === author.id || mentionedUserIds.has(assigneeId)) continue;
@@ -941,18 +941,19 @@ export const createItemSlice: StateCreator<
         const { activeBoardId } = get();
         const found = get().boards.flatMap(b => b.items).find(i => i.id === itemId);
         if (!found || userIds.length === 0) return;
-        const before = found.notifyUserIds || [];
-        const after = on ? [...new Set([...before, ...userIds])] : before.filter(id => !userIds.includes(id));
+        // What is stored is who is switched OFF
+        const before = found.notifyMutedUserIds || [];
+        const after = on ? before.filter(id => !userIds.includes(id)) : [...new Set([...before, ...userIds])];
         if (after.length === before.length && after.every(id => before.includes(id))) return;
         const apply = (ids: string[]) => set(state => ({
             boards: state.boards.map(b => ({
                 ...b,
-                items: b.items.map(i => i.id === itemId ? { ...i, notifyUserIds: ids } : i),
-                groups: b.groups.map(g => ({ ...g, items: g.items.map(i => i.id === itemId ? { ...i, notifyUserIds: ids } : i) })),
+                items: b.items.map(i => i.id === itemId ? { ...i, notifyMutedUserIds: ids } : i),
+                groups: b.groups.map(g => ({ ...g, items: g.items.map(i => i.id === itemId ? { ...i, notifyMutedUserIds: ids } : i) })),
             })),
         }));
         apply(after);
-        const { error } = await supabase.from('items').update({ notify_user_ids: after }).eq('id', itemId);
+        const { error } = await supabase.from('items').update({ notify_muted_user_ids: after }).eq('id', itemId);
         if (error) {
             console.error('[Notifications switch] Failed to save:', error);
             apply(before);
@@ -963,7 +964,7 @@ export const createItemSlice: StateCreator<
             const profile = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles;
             return profile?.full_name || profile?.email || 'Someone';
         };
-        const changed = on ? after.filter(id => !before.includes(id)) : before.filter(id => !after.includes(id));
+        const changed = on ? before.filter(id => !after.includes(id)) : after.filter(id => !before.includes(id));
         void get().logActivity(on ? 'item_notifications_on' : 'item_notifications_off', 'item', itemId, {
             board_id: activeBoardId, item_title: found.title || 'Unknown Task', person_names: changed.map(nameOf),
         });

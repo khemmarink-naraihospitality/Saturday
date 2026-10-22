@@ -24,7 +24,7 @@ const mapDbItemToLocal = (i: any, existingItem?: Item): Item => {
         boardId: i.board_id ?? existingItem?.boardId ?? '',
         values: parseSqlJson(i.values, existingItem?.values ?? {}),
         isHidden: i.is_hidden ?? existingItem?.isHidden ?? false,
-        notifyUserIds: i.notify_user_ids ?? existingItem?.notifyUserIds ?? [],
+        notifyMutedUserIds: i.notify_muted_user_ids ?? existingItem?.notifyMutedUserIds ?? [],
         updates,
         files: parseSqlJson(i.files, existingItem?.files ?? []),
         order: i.order ?? existingItem?.order ?? 0,

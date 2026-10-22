@@ -120,8 +120,8 @@ export interface Item {
     updates?: Comment[]; // For Task Sidebar
     files?: FileLink[]; // For Task Sidebar Files Tab
     isHidden?: boolean;
-    /** The people in the item's Person column who are told (in-app and by email) when it changes. Nobody unless switched on, person by person. */
-    notifyUserIds?: string[];
+    /** People in the item's Person column who have been switched OFF for its notifications. Everyone else in the column is told (in-app and by email) when it changes. */
+    notifyMutedUserIds?: string[];
     order?: number;
     createdAt?: string;
     parentId?: string; // Link to parent Item for sub-items

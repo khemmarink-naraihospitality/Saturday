@@ -329,9 +329,14 @@ const InboxFeed = () => {
     const markNotificationAsRead = useBoardStore(state => state.markNotificationAsRead);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
-    // Filter to show limited items in feed (top 5)
-    // We can assume store has them sorted
-    const feedNotifications = notifications.slice(0, 5);
+    // The feed keeps the latest 5 (the store has them newest first) but shows 3,
+    // with a button to unfold the other 2.
+    const FEED_LIMIT = 5;
+    const FEED_COLLAPSED = 3;
+    const [expanded, setExpanded] = useState(false);
+    const feedNotifications = notifications.slice(0, FEED_LIMIT);
+    const hiddenCount = Math.max(0, feedNotifications.length - FEED_COLLAPSED);
+    const visibleNotifications = expanded ? feedNotifications : feedNotifications.slice(0, FEED_COLLAPSED);
 
     useEffect(() => {
         if (user?.id) loadNotifications();
@@ -432,7 +437,7 @@ const InboxFeed = () => {
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {feedNotifications.map(n => (
+                        {visibleNotifications.map(n => (
                             <div
                                 key={n.id}
                                 onClick={() => handleNotificationClick(n)}
@@ -549,6 +554,23 @@ const InboxFeed = () => {
                                 </button>
                             </div>
                         ))}
+                        {hiddenCount > 0 && (
+                            <button
+                                onClick={() => setExpanded(e => !e)}
+                                aria-expanded={expanded}
+                                style={{
+                                    alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer',
+                                    color: 'hsl(var(--color-text-secondary))', fontSize: '14px',
+                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                    padding: '8px 16px', borderRadius: '4px', transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                {expanded ? 'Show less' : `Show ${hiddenCount} more`}
+                                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

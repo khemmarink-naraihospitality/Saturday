@@ -134,7 +134,7 @@ export const WorkspaceTable = () => {
     }, [searchQuery, workspaces]);
 
     return (
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="card-surface" style={{ overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>

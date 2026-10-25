@@ -95,13 +95,11 @@ interface StatPanelProps {
 }
 
 const StatPanel = ({ title, period, color, stats, loading }: StatPanelProps) => (
-    <div style={{
-        backgroundColor: color,
-        borderRadius: '12px',
+    <div className="admin-panel-lit" style={{
+        '--panel-color': color,
         padding: '20px 24px 24px',
-        color: 'white',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-    }}>
+        color: 'white'
+    } as React.CSSProperties}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>{title}</h3>
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>{period}</span>

@@ -63,7 +63,7 @@ export const AdminPage = () => {
     }
 
     return (
-        <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
+        <div className="admin-console" style={{ display: 'flex', height: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
             {/* Sidebar */}
             <aside style={{
                 width: '260px',
@@ -75,7 +75,7 @@ export const AdminPage = () => {
             }}>
                 <div style={{ padding: '0 24px', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '32px', height: '32px', backgroundColor: '#6366f1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '32px', height: '32px', background: 'linear-gradient(160deg, #818cf8, #4f46e5)', borderRadius: '28%', boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 14px -6px rgba(79, 70, 229, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ShieldCheck size={20} color="white" />
                         </div>
                         <span style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.5px' }}>ADMIN CONSOLE</span>
@@ -145,23 +145,13 @@ export const AdminPage = () => {
                     <div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
                             {stats.map((stat, i) => (
-                                <div key={i} style={{
-                                    backgroundColor: 'white',
+                                <div key={i} className="card-surface" style={{
                                     padding: '24px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #e2e8f0',
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '20px'
                                 }}>
-                                    <div style={{
-                                        width: '48px', height: '48px',
-                                        borderRadius: '12px',
-                                        backgroundColor: `${stat.color}15`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: stat.color
-                                    }}>
+                                    <div className="admin-tile" style={{ width: '48px', height: '48px', '--tile-color': stat.color } as React.CSSProperties}>
                                         <stat.icon size={24} />
                                     </div>
                                     <div>
@@ -221,7 +211,7 @@ export const AdminPage = () => {
 
                 {activeTab === 'settings' && (
                     <div style={{ maxWidth: '800px' }}>
-                        <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                        <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                             <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Settings size={20} />
                                 System Backup & Restore

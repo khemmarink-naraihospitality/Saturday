@@ -71,20 +71,10 @@ export const DailyActiveUsersChart = () => {
     }, [buckets]);
 
     return (
-        <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            padding: '24px',
-            marginBottom: '24px'
-        }}>
+        <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px',
-                        backgroundColor: '#6366f115', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
+                    <div className="admin-tile" style={{ width: '36px', height: '36px', '--tile-color': '#6366f1' } as React.CSSProperties}>
                         <Activity size={18} color="#6366f1" />
                     </div>
                     <div>

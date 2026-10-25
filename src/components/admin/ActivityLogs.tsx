@@ -82,7 +82,7 @@ export const ActivityLogs = () => {
     };
 
     return (
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="card-surface" style={{ overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>Recent Activity</h3>

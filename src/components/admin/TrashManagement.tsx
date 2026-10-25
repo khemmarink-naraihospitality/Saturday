@@ -103,7 +103,7 @@ export const TrashManagement = () => {
     );
 
     return (
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+        <div className="card-surface">
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Search size={18} color="#64748b" />
                 <input

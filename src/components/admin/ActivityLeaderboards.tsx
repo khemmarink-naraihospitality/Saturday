@@ -123,10 +123,7 @@ const Section = ({ title, subtitle, count, children }: { title: string; subtitle
         {/* Scrolls in both directions: down through the ranking, and sideways for the
             week columns on a narrow screen. The header is sticky so it stays readable
             the whole way down. */}
-        <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
+        <div className="card-surface" style={{
             overflowX: 'auto',
             overflowY: 'auto',
             maxHeight: `${LIST_MAX_HEIGHT}px`

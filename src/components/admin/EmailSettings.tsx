@@ -341,7 +341,7 @@ export const EmailSettings = () => {
                 </div>
             )}
 
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Server size={20} color="#6366f1" />
                     SMTP Configuration
@@ -447,7 +447,7 @@ export const EmailSettings = () => {
                 </div>
             </div>
 
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#6366f1" />
                     Test SMTP Configuration
@@ -508,7 +508,7 @@ export const EmailSettings = () => {
                 )}
             </div>
 
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#10b981" />
                     Invitation Email Template (New Users)
@@ -564,7 +564,7 @@ export const EmailSettings = () => {
                 </div>
             </div>
 
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#f59e0b" />
                     Invitation Email Template (Existing Users)
@@ -620,7 +620,7 @@ export const EmailSettings = () => {
                 </div>
             </div>
 
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#3b82f6" />
                     Item Assignment Template (Person Column)
@@ -680,7 +680,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Mention Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#f97316" />
                     Mention Email Template
@@ -744,7 +744,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Status Update Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={20} color="#6366f1" />
                     Status Update Email Template
@@ -810,7 +810,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Comment Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MessageSquare size={20} color="#64748b" />
                     Comment Email Template
@@ -874,7 +874,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Like Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ThumbsUp size={20} color="#D4A000" />
                     Like Email Template
@@ -936,7 +936,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Due Date Reminder Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CalendarClock size={20} color="#e2445c" />
                     Due Date Reminder Email Template
@@ -997,7 +997,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── PIN Reset OTP Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Lock size={20} color="#6366f1" />
                     PIN Reset OTP Template
@@ -1055,7 +1055,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Reset Password Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <KeyRound size={20} color="#6366f1" />
                     Reset Password Email Template
@@ -1106,7 +1106,7 @@ export const EmailSettings = () => {
             </div>
 
             {/* ── Access Granted Email Template ── */}
-            <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+            <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <UserPlus size={20} color="#6366f1" />
                     Access Granted Email Template

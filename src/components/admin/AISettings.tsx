@@ -87,19 +87,14 @@ export const AISettings = () => {
 
     return (
         <div style={{ maxWidth: '640px' }}>
-            <div style={{
-                backgroundColor: 'white',
-                padding: '28px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}>
+            <div className="card-surface" style={{ padding: '28px' }}>
                 {/* Header + toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
-                            width: '36px', height: '36px', borderRadius: '8px',
+                            width: '36px', height: '36px', borderRadius: '28%',
                             background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
+                            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 14px -6px rgba(107, 76, 195, 0.7)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <Sparkles size={18} color="white" />

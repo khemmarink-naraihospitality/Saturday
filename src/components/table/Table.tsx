@@ -270,7 +270,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
         >
             <div
                 ref={parentRef}
-                className="table-container"
+                className="table-container board-sheet"
                 // A stacking context of its own, so the z-indexes inside the table
                 // (the frozen header's 100, a dragged row's 99, sticky columns) only
                 // order things within the table and can't lift any of it above the
@@ -692,17 +692,17 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '6px 16px',
-                                borderRadius: '6px',
-                                border: '1px solid #c3c6d4',
-                                backgroundColor: '#ffffff',
-                                color: '#323338',
+                                borderRadius: '8px',
+                                border: '1px solid var(--card-border)',
+                                backgroundColor: 'var(--card-solid)',
+                                color: 'hsl(var(--color-text-primary))',
                                 cursor: 'pointer',
                                 transition: 'background-color 0.2s',
                                 fontWeight: 400,
                                 fontSize: '14px'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f6f8'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-row-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--card-solid)'}
                         >
                             <Plus size={16} strokeWidth={1.5} />
                             <span>Add new group</span>

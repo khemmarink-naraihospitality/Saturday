@@ -121,7 +121,8 @@ export const CalendarView = () => {
                         <ChevronLeft size={18} />
                     </button>
                     <button 
-                        style={{ fontSize: '12px', padding: '0 12px', height: '28px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', background: 'none', cursor: 'pointer' }} 
+                        className="nav-btn"
+                        style={{ width: 'auto', fontSize: '12px', padding: '0 12px' }}
                         onClick={() => setCurrentDate(new Date())}
                     >
                         Today
@@ -131,7 +132,7 @@ export const CalendarView = () => {
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', backgroundColor: '#f0f0f5', borderRadius: '6px', padding: '2px', marginLeft: '16px' }}>
+                <div style={{ display: 'flex', backgroundColor: 'var(--card-row-hover)', borderRadius: '10px', padding: '2px', marginLeft: '16px' }}>
                     {(['day', 'month', 'year'] as const).map(type => (
                         <button
                             key={type}
@@ -139,10 +140,10 @@ export const CalendarView = () => {
                             style={{
                                 border: 'none',
                                 padding: '4px 12px',
-                                borderRadius: '4px',
+                                borderRadius: '8px',
                                 fontSize: '13px',
                                 fontWeight: viewType === type ? 600 : 400,
-                                backgroundColor: viewType === type ? 'white' : 'transparent',
+                                backgroundColor: viewType === type ? 'var(--card-solid)' : 'transparent',
                                 color: viewType === type ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-tertiary))',
                                 cursor: 'pointer',
                                 boxShadow: viewType === type ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -162,7 +163,7 @@ export const CalendarView = () => {
         return (
             <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
                 <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                    <h3 style={{ borderBottom: '2px solid #6b4cc3', paddingBottom: '8px', color: '#6b4cc3' }}>
+                    <h3 style={{ borderBottom: '2px solid hsl(var(--color-brand-primary))', paddingBottom: '8px', color: 'hsl(var(--color-brand-primary))' }}>
                         Tasks for {format(currentDate, 'EEEE')}
                     </h3>
                     {dayItems.length === 0 ? (
@@ -175,20 +176,13 @@ export const CalendarView = () => {
                                     <div 
                                         key={item.id}
                                         onClick={() => setActiveItem(item.id)}
+                                        className="card-surface calendar-pick"
                                         style={{
                                             padding: '16px',
-                                            borderRadius: '8px',
-                                            border: '1px solid hsl(var(--color-border))',
-                                            backgroundColor: 'white',
-                                            cursor: 'pointer',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '12px',
-                                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                            transition: 'transform 0.1s'
+                                            gap: '12px'
                                         }}
-                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     >
                                         <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: group?.color || '#333' }} />
                                         <span style={{ fontWeight: 500 }}>{item.title}</span>
@@ -211,7 +205,7 @@ export const CalendarView = () => {
         const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
 
         return (
-            <>
+            <div className="board-sheet calendar-sheet">
                 <div className="calendar-grid-header">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                         <div key={day} className="weekday-label">{day}</div>
@@ -253,7 +247,7 @@ export const CalendarView = () => {
                         );
                     })}
                 </div>
-            </>
+            </div>
         );
     };
 
@@ -283,15 +277,8 @@ export const CalendarView = () => {
                                     setCurrentDate(month);
                                     setViewType('month');
                                 }}
-                                style={{ 
-                                    padding: '12px', 
-                                    borderRadius: '8px', 
-                                    border: '1px solid hsl(var(--color-border))',
-                                    cursor: 'pointer',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9fb'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                className="card-surface calendar-pick"
+                                style={{ padding: '12px' }}
                             >
                                 <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', textAlign: 'center' }}>
                                     {format(month, 'MMMM')}
@@ -310,8 +297,8 @@ export const CalendarView = () => {
                                                     fontSize: '9px', 
                                                     textAlign: 'center', 
                                                     padding: '2px 0',
-                                                    color: isM ? 'inherit' : '#ccc',
-                                                    backgroundColor: (isM && hasItems) ? 'rgba(107, 76, 195, 0.1)' : 'transparent',
+                                                    color: isM ? 'inherit' : 'hsl(var(--color-text-tertiary) / 0.55)',
+                                                    backgroundColor: (isM && hasItems) ? 'hsl(var(--color-brand-primary) / 0.12)' : 'transparent',
                                                     borderRadius: '2px',
                                                     fontWeight: (isM && hasItems) ? 700 : 400
                                                 }}
@@ -343,7 +330,6 @@ export const CalendarView = () => {
                     flex-direction: column;
                     padding: 24px 32px;
                     overflow: hidden;
-                    background-color: white;
                     height: 100%;
                 }
                 .calendar-header {
@@ -358,56 +344,72 @@ export const CalendarView = () => {
                     justify-content: center;
                     width: 28px;
                     height: 28px;
-                    border: 1px solid hsl(var(--color-border));
-                    border-radius: 4px;
-                    background: none;
+                    border: 1px solid var(--card-border);
+                    border-radius: 8px;
+                    background: var(--card-solid);
                     cursor: pointer;
                     color: hsl(var(--color-text-secondary));
                 }
                 .nav-btn:hover {
-                    background-color: hsl(var(--color-bg-hover));
+                    background-color: var(--card-row-hover);
+                }
+                /* The month grid sits in one sheet (styles/cards.css .board-sheet),
+                   whose edge is the grid's outer line */
+                .calendar-sheet {
+                    flex: 1;
+                    min-height: 0;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
                 }
                 .calendar-grid-header {
                     display: grid;
                     grid-template-columns: repeat(7, 1fr);
-                    border-left: 1px solid hsl(var(--color-border));
-                    border-top: 1px solid hsl(var(--color-border));
                 }
                 .weekday-label {
                     padding: 8px;
                     text-align: center;
                     font-size: 13px;
                     color: hsl(var(--color-text-tertiary));
-                    border-right: 1px solid hsl(var(--color-border));
-                    border-bottom: 1px solid hsl(var(--color-border));
-                    background-color: hsl(var(--color-bg-subtle));
+                    border-right: 1px solid var(--card-grid);
+                    border-bottom: 1px solid var(--card-border);
+                    background-color: var(--card-tray);
                     font-weight: 500;
+                }
+                .weekday-label:last-child {
+                    border-right: none;
                 }
                 .calendar-grid {
                     flex: 1;
                     display: grid;
                     grid-template-columns: repeat(7, 1fr);
                     grid-auto-rows: 1fr;
-                    border-left: 1px solid hsl(var(--color-border));
                     overflow-y: auto;
                 }
                 .calendar-day {
                     min-height: 100px;
-                    border-right: 1px solid hsl(var(--color-border));
-                    border-bottom: 1px solid hsl(var(--color-border));
+                    border-right: 1px solid var(--card-grid);
+                    border-bottom: 1px solid var(--card-grid);
                     padding: 4px;
                     display: flex;
                     flex-direction: column;
                     cursor: pointer;
                 }
+                /* The sheet's edge is the outer line: no second one on the last column or row */
+                .calendar-day:nth-child(7n) {
+                    border-right: none;
+                }
+                .calendar-day:nth-last-child(-n + 7) {
+                    border-bottom: none;
+                }
                 .calendar-day:hover {
-                    background-color: #fcfcfd;
+                    background-color: var(--card-row-hover);
                 }
                 .calendar-day.other-month {
-                    background-color: hsl(var(--color-bg-canvas));
+                    background-color: var(--card-tray);
                 }
                 .calendar-day.today {
-                    background-color: rgba(var(--color-brand-primary-rgb), 0.05);
+                    background-color: hsl(var(--color-brand-primary) / 0.06);
                 }
                 .day-number {
                     font-size: 12px;

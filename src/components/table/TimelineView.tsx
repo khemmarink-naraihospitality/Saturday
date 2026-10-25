@@ -188,23 +188,24 @@ export const TimelineView = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '4px',
-        border: '1px solid hsl(var(--color-border))',
-        background: 'white',
+        borderRadius: '8px',
+        border: '1px solid var(--card-border)',
+        background: 'var(--card-solid)',
         cursor: 'pointer',
         color: 'hsl(var(--color-text-secondary))',
         padding: '0 8px'
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white' }}>
+        // One lifted sheet (styles/cards.css .board-sheet); overflow clips the grid to its rounded corners
+        <div className="board-sheet" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             {/* Timeline Header (Navigator) */}
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px 32px',
-                borderBottom: '1px solid hsl(var(--color-border))'
+                padding: '12px 24px',
+                borderBottom: '1px solid var(--card-border)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
@@ -241,7 +242,7 @@ export const TimelineView = () => {
                         Today
                     </button>
 
-                    <div style={{ display: 'flex', backgroundColor: '#f5f6f8', borderRadius: '6px', padding: '2px', marginLeft: '16px' }}>
+                    <div style={{ display: 'flex', backgroundColor: 'var(--card-row-hover)', borderRadius: '10px', padding: '2px', marginLeft: '16px' }}>
                         {(['day', 'month', 'year'] as const).map(type => (
                             <button
                                 key={type}
@@ -249,10 +250,10 @@ export const TimelineView = () => {
                                 style={{
                                     border: 'none',
                                     padding: '4px 12px',
-                                    borderRadius: '4px',
+                                    borderRadius: '8px',
                                     fontSize: '13px',
                                     fontWeight: viewType === type ? 600 : 400,
-                                    backgroundColor: viewType === type ? 'white' : 'transparent',
+                                    backgroundColor: viewType === type ? 'var(--card-solid)' : 'transparent',
                                     color: viewType === type ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-tertiary))',
                                     cursor: 'pointer',
                                     boxShadow: viewType === type ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -271,8 +272,8 @@ export const TimelineView = () => {
                 <div style={{ display: 'flex', minWidth: 'max-content', minHeight: '100%', flexDirection: 'column', position: 'relative' }}>
                     
                     {/* Calendar Day Headers */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
-                        <div style={{ width: '200px', flexShrink: 0, borderRight: '1px solid hsl(var(--color-border))', padding: '12px 16px', fontWeight: 600, fontSize: '13px' }}>Item Name</div>
+                    <div style={{ display: 'flex', borderBottom: '1px solid var(--card-border)', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--card-solid)' }}>
+                        <div style={{ width: '200px', flexShrink: 0, borderRight: '1px solid var(--card-border)', padding: '12px 16px', fontWeight: 600, fontSize: '13px', color: 'hsl(var(--color-text-primary))' }}>Item Name</div>
                         {timeGrid.map(unit => {
                             const isCurrent = isCurrentUnit(viewType, unit);
                             return (
@@ -281,7 +282,7 @@ export const TimelineView = () => {
                                     textAlign: 'center',
                                     padding: '12px 0',
                                     fontSize: '12px',
-                                    borderRight: '1px solid hsl(var(--color-border-subtle, #eee))',
+                                    borderRight: '1px solid var(--card-grid)',
                                     color: isCurrent ? 'hsl(var(--color-brand-primary))' : 'inherit',
                                     fontWeight: isCurrent ? 700 : 400
                                 }}>
@@ -345,17 +346,17 @@ export const TimelineView = () => {
                                     key={item.id}
                                     onMouseEnter={() => setHoveredItemId(item.id)}
                                     onMouseLeave={() => setHoveredItemId(prev => (prev === item.id ? null : prev))}
-                                    style={{ display: 'flex', borderBottom: '1px solid #f5f5f5', height: `${ROW_INNER_HEIGHT}px`, alignItems: 'center' }}
+                                    style={{ display: 'flex', borderBottom: '1px solid var(--card-grid)', height: `${ROW_INNER_HEIGHT}px`, alignItems: 'center' }}
                                 >
                                     <div
                                         onClick={() => setActiveItem(item.id)}
-                                        style={{ width: `${NAME_COL_WIDTH}px`, flexShrink: 0, borderRight: '1px solid #f5f5f5', padding: '8px 16px', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer', color: 'hsl(var(--color-brand-primary))', fontWeight: 500 }}
+                                        style={{ width: `${NAME_COL_WIDTH}px`, flexShrink: 0, borderRight: '1px solid var(--card-grid)', padding: '8px 16px', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer', color: 'hsl(var(--color-brand-primary))', fontWeight: 500 }}
                                     >
                                         {item.title}
                                     </div>
                                     <div style={{ display: 'flex', position: 'relative', flex: 1 }}>
                                         {timeGrid.map(unit => (
-                                            <div key={unit.toISOString()} style={{ width: `${unitWidth}px`, height: `${ROW_INNER_HEIGHT}px`, borderRight: '1px solid #f5f5f5', flexShrink: 0 }} />
+                                            <div key={unit.toISOString()} style={{ width: `${unitWidth}px`, height: `${ROW_INNER_HEIGHT}px`, borderRight: '1px solid var(--card-grid)', flexShrink: 0 }} />
                                         ))}
 
                                         {geometry && (

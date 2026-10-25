@@ -101,7 +101,14 @@ export const BoardPage = () => {
             }}>
                 <BoardViewsToolbar />
                 
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', marginTop: '16px' }}>
+                {/* Room round the view for its sheet's shadow (styles/cards.css .board-sheet):
+                    padded out by as much as the negative margin takes back, so the view
+                    keeps the size and place it had. */}
+                <div style={{
+                    flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                    margin: '16px -12px calc(-1 * var(--spacing-board-y))',
+                    padding: '0 12px var(--spacing-board-y)'
+                }}>
                     {activeViewId === 'main_table' ? (
                         <Table boardId={activeBoardId} />
                     ) : activeViewId === 'timeline' ? (

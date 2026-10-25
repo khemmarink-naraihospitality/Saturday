@@ -481,6 +481,33 @@
     color: hsl(var(--color-text-primary));
 }
 
+/* ── Board views ────────────────────────────────────────────────────────── */
+
+/* A view's working surface as one lifted sheet: the main table, the Timeline,
+   the Calendar's month grid. It keeps the page's colour, because the table's
+   rows and sticky cells paint that colour too; the edge, the radius and the
+   shadow are what lift it. Overflow is left to each view (the table is the
+   scroll container itself). */
+.board-sheet {
+    background: hsl(var(--color-bg-canvas));
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow);
+}
+
+/* Something to pick in the Calendar: a task on the day view, a month on the
+   year view. Lifts like a board card. */
+.calendar-pick {
+    cursor: pointer;
+    transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.26s;
+}
+
+.calendar-pick:hover {
+    transform: translateY(-2px);
+    border-color: var(--card-border-hover);
+    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow-hover);
+}
+
 .board-card__star:focus-visible,
 .feed-row__dismiss:focus-visible,
 .home-more:focus-visible {
@@ -503,12 +530,14 @@
     .board-card__tile::after,
     .feed-row,
     .home-more svg,
-    .dash-widget {
+    .dash-widget,
+    .calendar-pick {
         transition: none;
     }
 
     .board-card:hover,
-    .board-card:active {
+    .board-card:active,
+    .calendar-pick:hover {
         transform: none;
     }
 }

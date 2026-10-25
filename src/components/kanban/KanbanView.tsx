@@ -137,7 +137,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
             {...attributes}
             {...listeners}
             onClick={onClick}
-            className="kanban-card"
+            className="card-surface kanban-card"
         >
             <div className="kanban-card-content">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -220,19 +220,24 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
             )}
 
             <style>{`
+                /* The card material is .card-surface (styles/cards.css); this sizes it
+                   for a column and lifts it on hover like the Home board cards. */
                 .kanban-card {
-                    background-color: white;
-                    border: 1px solid hsl(var(--color-border));
-                    border-radius: 6px;
+                    border-radius: var(--radius-md);
                     padding: 12px;
                     cursor: pointer;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-                    margin-bottom: 8px;
-                    transition: box-shadow 0.2s, border-color 0.2s;
+                    margin-bottom: 10px;
+                    overflow: hidden;
+                    transition: transform 0.24s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.24s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.24s;
                 }
                 .kanban-card:hover {
-                    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-                    border-color: hsl(var(--color-border-strong));
+                    transform: translateY(-2px);
+                    border-color: var(--card-border-hover);
+                    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow-hover);
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .kanban-card { transition: none; }
+                    .kanban-card:hover { transform: none; }
                 }
                 .kanban-card-content {
                     pointer-events: none;
@@ -246,7 +251,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     border-radius: 4px;
                 }
                 .icon-btn-small:hover {
-                    background-color: hsl(var(--color-bg-hover));
+                    background-color: var(--card-row-hover);
                     color: hsl(var(--color-text-primary));
                 }
                 .kanban-status-bar {
@@ -292,7 +297,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     min-width: 20px;
                     padding: 1px 6px;
                     border-radius: 10px;
-                    background-color: hsl(var(--color-bg-subtle));
+                    background-color: var(--card-tray);
                     color: hsl(var(--color-text-secondary));
                     font-size: 11px;
                     font-weight: 600;
@@ -302,13 +307,13 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     pointer-events: auto;
                     margin: 8px -12px -12px -12px;
                     padding: 8px 12px;
-                    border-top: 1px solid hsl(var(--color-border));
+                    border-top: 1px solid var(--card-border);
                     cursor: pointer;
                     transition: color 0.2s, background-color 0.2s;
                 }
                 .kanban-field-row-clickable:hover {
                     color: hsl(var(--color-brand-primary));
-                    background-color: hsl(var(--color-bg-hover));
+                    background-color: var(--card-row-hover);
                 }
                 .kanban-field-row-clickable:hover .kanban-field-label {
                     color: hsl(var(--color-brand-primary));
@@ -317,8 +322,8 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     pointer-events: auto;
                     margin: 0 -12px -12px -12px;
                     padding: 4px 0;
-                    border-top: 1px solid hsl(var(--color-border));
-                    background-color: hsl(var(--color-bg-canvas));
+                    border-top: 1px solid var(--card-border);
+                    background-color: var(--card-tray);
                 }
                 .kanban-subitem-row {
                     display: flex;
@@ -329,7 +334,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     transition: background-color 0.2s;
                 }
                 .kanban-subitem-row:hover {
-                    background-color: hsl(var(--color-bg-hover));
+                    background-color: var(--card-row-hover);
                 }
                 .kanban-subitem-row:hover .kanban-subitem-icon {
                     color: hsl(var(--color-brand-primary));
@@ -428,8 +433,10 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                     min-width: 260px;
                     display: flex;
                     flex-direction: column;
-                    background-color: hsl(var(--color-bg-subtle));
-                    border-radius: 8px;
+                    /* A tray the cards sit in */
+                    background: var(--card-tray);
+                    border-radius: var(--radius-lg);
+                    box-shadow: inset 0 0 0 1px var(--card-border);
                     height: 100%;
                     max-height: 100%;
                 }
@@ -460,8 +467,8 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                     margin-top: 4px;
                 }
                 .kanban-add-btn:hover {
-                    background-color: hsl(var(--color-bg-hover));
-                    border-color: hsl(var(--color-border));
+                    background-color: var(--card-row-hover);
+                    border-color: var(--card-border);
                     color: hsl(var(--color-text-secondary));
                 }
             `}</style>
@@ -761,7 +768,7 @@ export const KanbanView = () => {
                         }),
                     }}>
                         {draggingItem && (
-                            <div className="kanban-card" style={{ width: '244px', cursor: 'grabbing', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}>
+                            <div className="card-surface kanban-card" style={{ width: '244px', cursor: 'grabbing', boxShadow: 'inset 0 1px 0 var(--card-edge), var(--card-shadow-hover)' }}>
                                 <div className="kanban-card-content">
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <span style={{ fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-text-primary))' }}>

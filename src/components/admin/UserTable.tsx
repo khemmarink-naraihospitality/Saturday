@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../store/useUserStore';
 import { useBoardStore } from '../../store/useBoardStore';
-import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet, Globe, Users, ArrowRightLeft, AlertTriangle } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet, Globe, Users, ArrowRightLeft, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { CreateUserModal } from './CreateUserModal';
+import { pageButtons, pageOf } from '../../lib/pagination';
 
 interface Profile {
     id: string;
@@ -419,6 +420,19 @@ export const UserTable = () => {
             return 0;
         });
 
+    // 50 users a page. The page belongs to the search, filters and sort it was
+    // chosen under: change any of them and the list starts again at page 1.
+    // Export still takes every user that matches, not just this page.
+    const PAGE_SIZE = 50;
+    const listKey = JSON.stringify([searchQuery, columnFilters, sortConfig]);
+    const [pageState, setPageState] = useState({ key: listKey, page: 1 });
+    const shown = pageOf(filteredAndSortedProfiles, pageState.key === listKey ? pageState.page : 1, PAGE_SIZE);
+    const tableScrollRef = useRef<HTMLDivElement>(null);
+    const goToPage = (page: number) => {
+        setPageState({ key: listKey, page });
+        tableScrollRef.current?.scrollTo({ top: 0 });
+    };
+
     const exportToExcel = () => {
         const exportData = filteredAndSortedProfiles.map((p) => ({
             Name: p.full_name || 'Unknown',
@@ -588,7 +602,7 @@ export const UserTable = () => {
             </div>
 
             {/* Table */}
-            <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 340px)', minHeight: '200px' }}>
+            <div ref={tableScrollRef} style={{ overflow: 'auto', maxHeight: 'calc(100vh - 400px)', minHeight: '200px' }}>
                 {isLoading ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading...</div>
                 ) : (
@@ -676,7 +690,7 @@ export const UserTable = () => {
                             )}
                         </thead>
                         <tbody>
-                            {filteredAndSortedProfiles.map((profile, idx) => (
+                            {shown.rows.map((profile, idx) => (
                                 <tr
                                     key={profile.id}
                                     className="user-table-row"
@@ -926,6 +940,39 @@ export const UserTable = () => {
                     </table>
                 )}
             </div>
+
+            {!isLoading && filteredAndSortedProfiles.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>
+                        Showing <strong style={{ color: '#0f172a', fontWeight: 600 }}>{shown.first}–{shown.last}</strong> of {filteredAndSortedProfiles.length} users
+                    </span>
+                    {shown.pageCount > 1 && (
+                        <nav aria-label="User pages" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page - 1)} disabled={shown.page === 1} aria-label="Previous page">
+                                <ChevronLeft size={16} /> Prev
+                            </button>
+                            {pageButtons(shown.page, shown.pageCount).map((p, i) => p === 'gap'
+                                ? <span key={`gap-${i}`} className="admin-page-gap">…</span>
+                                : (
+                                    <button
+                                        key={p}
+                                        type="button"
+                                        className="admin-page-btn"
+                                        aria-current={p === shown.page ? 'page' : undefined}
+                                        aria-label={`Page ${p}`}
+                                        onClick={() => goToPage(p)}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            )}
+                            <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page + 1)} disabled={shown.page === shown.pageCount} aria-label="Next page">
+                                Next <ChevronRight size={16} />
+                            </button>
+                        </nav>
+                    )}
+                </div>
+            )}
 
             <style>{`
                 .user-table-row:hover {

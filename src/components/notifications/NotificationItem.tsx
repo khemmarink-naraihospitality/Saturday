@@ -2,8 +2,9 @@
 import { formatDistanceToNow } from 'date-fns';
 import { useBoardStore } from '../../store/useBoardStore';
 import type { Notification } from '../../types';
-import { Check, X, Bell, UserPlus, FileText, MessageSquare, ThumbsUp, CalendarClock, RefreshCw } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useState } from 'react';
+import { notificationKind } from './notificationKind';
 
 
 interface NotificationItemProps {
@@ -23,12 +24,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     const [isProcessing, setIsProcessing] = useState(false);
 
     const isInvite = notification.type === 'workspace_invite' || notification.type === 'board_invite';
-    const isAssignment = notification.type === 'assignment';
     const isMention = notification.type === 'mention';
     const isComment = notification.type === 'comment';
-    const isLike = notification.type === 'like';
-    const isDueDateReminder = notification.type === 'due_date_reminder';
-    const isStatusUpdate = notification.type === 'status_update' || notification.type === 'item_change';
 
     const handleAction = async (action: 'accept' | 'decline') => {
         setIsProcessing(true);
@@ -69,14 +66,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     };
 
     const getIcon = () => {
-        if (isInvite) return <UserPlus size={16} color="hsl(var(--color-brand-primary))" />;
-        if (isAssignment) return <FileText size={16} color="hsl(var(--color-status-green-bg))" />;
-        if (isMention) return <MessageSquare size={16} color="#f97316" />; // Keeping orange for now as no var
-        if (isComment) return <MessageSquare size={16} color="hsl(var(--color-text-secondary))" />;
-        if (isLike) return <ThumbsUp size={16} color="#D4A000" />;
-        if (isDueDateReminder) return <CalendarClock size={16} color="#e2445c" />;
-        if (isStatusUpdate) return <RefreshCw size={16} color="hsl(var(--color-brand-primary))" />;
-        return <Bell size={16} color="hsl(var(--color-text-secondary))" />;
+        const { Icon, tone } = notificationKind(notification.type);
+        return <Icon size={16} color={tone} />;
     };
 
     return (

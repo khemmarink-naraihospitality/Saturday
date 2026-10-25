@@ -2,6 +2,7 @@
 @import './variables.css';
 @import './components.css';
 @import './table.css';
+@import './home.css';
 @import './narai_crystal.css';
 
 @variant dark (&:where(.dark, .dark *));

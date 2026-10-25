@@ -1,0 +1,448 @@
+/*
+ * Home cards: the board cards (Home's Recently visited / My workspace /
+ * Favorites, and the Favorites page) and the Update feed
+ * (components/home/HomeCards.tsx, pages/HomePage.tsx).
+ *
+ * One material in every palette: a card lifted off the page by a soft, tinted
+ * shadow, with a lit top edge and a faint glow in its top-left corner. The
+ * colours are the --card-* tokens each palette sets, light and dark, in
+ * variables.css; nothing here names a palette.
+ */
+
+.home-card {
+    position: relative;
+    background: radial-gradient(130% 90% at 0% 0%, var(--card-sheen), transparent 58%), var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow);
+}
+
+/* ── Board card ─────────────────────────────────────────────────────────── */
+
+.board-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 20px 20px 16px;
+    transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.26s;
+}
+
+.board-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--card-border-hover);
+    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow-hover);
+}
+
+.board-card:active {
+    transform: translateY(-1px);
+}
+
+.board-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* The board's tile: an app icon that lights up in the open workspace's colour
+   while the card is hovered. The lit layer is faded in, since a gradient
+   cannot be animated. */
+.board-card__tile {
+    position: relative;
+    isolation: isolate;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28%;
+    background: var(--card-tile);
+    color: var(--card-tile-ink);
+    box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px var(--card-tile-ring), var(--card-tile-shadow);
+    transition: color 0.26s, box-shadow 0.26s;
+}
+
+.board-card__tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--card-tile-lit);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1px var(--card-tile-lit-ring);
+    opacity: 0;
+    transition: opacity 0.26s;
+}
+
+.board-card:hover .board-card__tile {
+    color: #ffffff;
+    box-shadow: var(--card-tile-lit-shadow);
+}
+
+.board-card:hover .board-card__tile::after {
+    opacity: 1;
+}
+
+/* The star sits above the card-wide open button (z-index 3) */
+.board-card__star {
+    position: relative;
+    z-index: 4;
+    width: 32px;
+    height: 32px;
+    margin: -4px -6px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: hsl(var(--color-text-tertiary));
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.board-card__star:hover {
+    background: var(--card-row-hover);
+    color: #f0b400;
+}
+
+.board-card__star[aria-pressed='true'] {
+    color: #ffcb00;
+}
+
+.board-card__star[aria-pressed='true'] svg {
+    fill: currentColor;
+    filter: drop-shadow(0 1px 2px rgba(214, 160, 0, 0.45));
+}
+
+.board-card__body {
+    flex: 1;
+    min-width: 0;
+    margin-top: 18px;
+}
+
+.board-card__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: hsl(var(--color-text-primary));
+}
+
+/* The whole card opens the board: the title is the button, and its ::after
+   covers the card (above the workspace badge, which raises itself to 2). */
+.board-card__open {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.board-card__open::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: var(--radius-lg);
+}
+
+.board-card:has(.board-card__open:focus-visible) {
+    outline: 2px solid hsl(var(--color-brand-primary));
+    outline-offset: 3px;
+}
+
+.board-card__lock {
+    flex-shrink: 0;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.board-card__kind {
+    margin-top: 3px;
+    font-size: 12.5px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+/* Where it lives and whose it is, as two labelled columns */
+.board-card__meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+}
+
+.board-card__meta dt {
+    margin-bottom: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.board-card__meta dd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+}
+
+.board-card__meta dd > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.board-card__avatar {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 9.5px;
+    font-weight: 700;
+    background: var(--card-tile);
+    color: var(--card-tile-ink);
+    box-shadow: inset 0 0 0 1px var(--card-tile-ring);
+}
+
+/* ── Update feed ────────────────────────────────────────────────────────── */
+
+.home-feed {
+    padding: 6px;
+}
+
+.feed-row {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 10px 14px 14px;
+    border-radius: calc(var(--radius-lg) - 6px);
+    transition: background-color 0.18s;
+}
+
+.feed-row[role='button'] {
+    cursor: pointer;
+}
+
+.feed-row[role='button']:hover {
+    background: var(--card-row-hover);
+}
+
+.feed-row:focus-visible {
+    outline: 2px solid hsl(var(--color-brand-primary));
+    outline-offset: -2px;
+}
+
+/* A hairline between rows, from where the text starts; it steps aside for a
+   highlighted row */
+.feed-row + .feed-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 68px;
+    right: 14px;
+    height: 1px;
+    background: var(--card-border);
+    transition: opacity 0.18s;
+}
+
+.feed-row[role='button']:hover::before,
+.feed-row[role='button']:hover + .feed-row::before {
+    opacity: 0;
+}
+
+/* The kind of notification as a tinted tile (--tone is set per row) */
+.feed-row__tile {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28%;
+    color: var(--tone);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 7%, transparent), color-mix(in srgb, var(--tone) 17%, transparent));
+    box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px color-mix(in srgb, var(--tone) 20%, transparent);
+}
+
+.feed-row__body {
+    flex: 1;
+    min-width: 0;
+    padding-top: 1px;
+}
+
+.feed-row__head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.feed-row__title {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.feed-row__time {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: hsl(var(--color-text-tertiary));
+    white-space: nowrap;
+}
+
+.feed-row__unread {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: hsl(var(--color-brand-primary));
+    box-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--color-brand-primary)) 16%, transparent);
+}
+
+.feed-row__text {
+    margin-top: 3px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: hsl(var(--color-text-secondary));
+    overflow-wrap: anywhere;
+}
+
+/* The words of the update a mention or an update notification is about */
+.feed-row__quote {
+    margin-top: 8px;
+    padding: 7px 12px;
+    border-left: 2px solid var(--tone);
+    border-radius: 0 10px 10px 0;
+    background: color-mix(in srgb, var(--tone) 6%, transparent);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: hsl(var(--color-text-secondary));
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.feed-row__dismiss {
+    width: 28px;
+    height: 28px;
+    margin-top: -3px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: hsl(var(--color-text-tertiary));
+    opacity: 0.55;
+    transition: opacity 0.18s, background-color 0.18s, color 0.18s;
+}
+
+.feed-row:hover .feed-row__dismiss,
+.feed-row__dismiss:focus-visible {
+    opacity: 1;
+}
+
+.feed-row__dismiss:hover {
+    background: color-mix(in srgb, hsl(var(--color-danger)) 12%, transparent);
+    color: hsl(var(--color-danger));
+}
+
+.home-feed__state {
+    padding: 28px 20px;
+    text-align: center;
+    font-size: 14px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.home-feed__state strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.home-feed__footer {
+    display: flex;
+    justify-content: center;
+    margin: 2px 8px 0;
+    padding: 6px 0 2px;
+    border-top: 1px solid var(--card-border);
+}
+
+/* ── Show all / Show N more ─────────────────────────────────────────────── */
+
+.home-more-row {
+    display: flex;
+    justify-content: center;
+}
+
+.home-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+    transition: background-color 0.18s, color 0.18s;
+}
+
+.home-more:hover {
+    background: var(--card-row-hover);
+    color: hsl(var(--color-text-primary));
+}
+
+.home-more svg {
+    transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-more[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+
+.board-card__star:focus-visible,
+.feed-row__dismiss:focus-visible,
+.home-more:focus-visible {
+    outline: 2px solid hsl(var(--color-brand-primary));
+    outline-offset: 2px;
+}
+
+/* The continuous, iOS-style corner where the browser can draw it */
+@supports (corner-shape: squircle) {
+    .board-card__tile,
+    .feed-row__tile {
+        corner-shape: squircle;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .board-card,
+    .board-card__tile,
+    .board-card__tile::after,
+    .feed-row,
+    .home-more svg {
+        transition: none;
+    }
+
+    .board-card:hover,
+    .board-card:active {
+        transform: none;
+    }
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
-import { Star, Layout, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star } from 'lucide-react';
+import { BoardCard, ShowMoreButton } from '../components/home/HomeCards';
 
 
 export const FavoritesPage = () => {
@@ -45,75 +46,15 @@ export const FavoritesPage = () => {
                     marginBottom: '20px'
                 }}>
                     {displayedBoards.length > 0 ? (
-                        displayedBoards.map(board => {
-                            const workspace = workspaces.find(w => w.id === board.workspaceId);
-                            const ownerName = workspace?.ownerName || 'Unknown Owner';
-
-                            return (
-                                <div
-                                    key={board.id}
-                                    onClick={() => setActiveBoard(board.id)}
-                                    style={{
-                                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                                        borderRadius: '12px',
-                                        padding: '24px',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        border: '1px solid hsl(var(--color-border))',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '12px',
-                                        minHeight: '140px'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                                        e.currentTarget.style.borderColor = 'hsl(var(--color-brand-primary), 0.3)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                                        e.currentTarget.style.borderColor = 'hsl(var(--color-border))';
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'hsl(var(--color-brand-light))',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'hsl(var(--color-brand-primary))'
-                                        }}>
-                                            <Layout size={22} />
-                                        </div>
-                                        <Star 
-                                            size={18} 
-                                            color="#ffcb00" 
-                                            fill="#ffcb00" 
-                                            style={{ cursor: 'pointer', transition: 'all 0.2s' }} 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleFavorite(board.id);
-                                            }}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))' }}>
-                                            {board.title}
-                                        </h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
-                                            <span>Workspace: {workspace?.title || 'Unknown Workspace'}</span>
-                                            <span>Owner: {ownerName}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
+                        displayedBoards.map(board => (
+                            <BoardCard
+                                key={board.id}
+                                board={board}
+                                workspace={workspaces.find(w => w.id === board.workspaceId)}
+                                onOpen={() => setActiveBoard(board.id)}
+                                onToggleFavorite={toggleFavorite}
+                            />
+                        ))
                     )
                         : (
                             <div style={{ 
@@ -137,29 +78,8 @@ export const FavoritesPage = () => {
                         )}
                 </div>
                 {favoritedBoards.length > 3 && (
-                    <div style={{ textAlign: 'center' }}>
-                        <button
-                            onClick={() => setShowAll(!showAll)}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'hsl(var(--color-text-secondary))',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px',
-                                padding: '8px 16px',
-                                borderRadius: '4px',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            {showAll ? 'Show less' : 'Show all'}
-                            {showAll ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
+                    <div className="home-more-row">
+                        <ShowMoreButton expanded={showAll} onToggle={() => setShowAll(!showAll)} />
                     </div>
                 )}
 

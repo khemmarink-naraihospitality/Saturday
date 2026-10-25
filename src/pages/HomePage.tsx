@@ -1,75 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { useAuth } from '../contexts/AuthContext';
-import { Clock, Layout, Star, Bell, X, Check, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Clock, Layout, Star, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
-const BoardCard = ({ board, workspace, onClick, onToggleFavorite }: any) => {
-    const ownerName = workspace?.ownerName || 'Unknown Owner';
-    return (
-        <div
-            onClick={onClick}
-            style={{
-                backgroundColor: 'hsl(var(--color-bg-surface))',
-                borderRadius: '8px',
-                padding: '24px',
-                boxShadow: 'var(--shadow-sm)',
-                border: '1px solid hsl(var(--color-border))',
-                cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                minHeight: '140px'
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-            }}
-        >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '6px',
-                    backgroundColor: 'hsl(var(--color-brand-light))',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'hsl(var(--color-brand-primary))'
-                }}>
-                    <Layout size={22} />
-                </div>
-                <Star 
-                    size={18} 
-                    color={board.isFavorite ? "#ffcb00" : "hsl(var(--color-text-tertiary))"} 
-                    fill={board.isFavorite ? "#ffcb00" : "none"}
-                    style={{ cursor: 'pointer', transition: 'all 0.2s' }} 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleFavorite(board.id);
-                    }}
-                />
-            </div>
-
-            <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 6px 0', color: 'hsl(var(--color-text-primary))', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{board.title}</span>
-                    {board.is_private && <Lock size={13} style={{ flexShrink: 0, color: 'hsl(var(--color-text-tertiary))' }} />}
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
-                    <span>Work Management</span>
-                    <span>Workspace: {workspace?.title || 'Unknown Workspace'}</span>
-                    <span>Owner: {ownerName}</span>
-                </div>
-            </div>
-        </div>
-    );
-};
+import { BoardCard, ShowMoreButton } from '../components/home/HomeCards';
+import { notificationKind } from '../components/notifications/notificationKind';
 
 export const HomePage = () => {
     const { user } = useAuth();
@@ -150,43 +85,19 @@ export const HomePage = () => {
                         gap: '24px',
                         marginBottom: '20px'
                     }}>
-                        {displayedRecentBoards.map(board => {
-                            const workspace = workspaces.find(w => w.id === board.workspaceId);
-                            return (
-                                <BoardCard 
-                                    key={board.id} 
-                                    board={board} 
-                                    workspace={workspace} 
-                                    onClick={() => setActiveBoard(board.id)} 
-                                    onToggleFavorite={toggleFavorite}
-                                />
-                            );
-                        })}
+                        {displayedRecentBoards.map(board => (
+                            <BoardCard
+                                key={board.id}
+                                board={board}
+                                workspace={workspaces.find(w => w.id === board.workspaceId)}
+                                onOpen={() => setActiveBoard(board.id)}
+                                onToggleFavorite={toggleFavorite}
+                            />
+                        ))}
                     </div>
                     {recentBoards.length > 3 && (
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={() => setShowAllRecent(!showAllRecent)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'hsl(var(--color-text-secondary))',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '4px',
-                                    padding: '8px 16px',
-                                    borderRadius: '4px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {showAllRecent ? 'Show less' : 'Show all'}
-                                {showAllRecent ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                        <div className="home-more-row">
+                            <ShowMoreButton expanded={showAllRecent} onToggle={() => setShowAllRecent(!showAllRecent)} />
                         </div>
                     )}
                 </section>
@@ -206,48 +117,24 @@ export const HomePage = () => {
                         gap: '24px',
                         marginBottom: '20px'
                     }}>
-                        {displayedWorkspaceBoards.map(board => {
-                            const workspace = workspaces.find(w => w.id === board.workspaceId);
-                            return (
-                                <BoardCard 
-                                    key={board.id} 
-                                    board={board} 
-                                    workspace={workspace} 
-                                    onClick={() => setActiveBoard(board.id)} 
-                                    onToggleFavorite={toggleFavorite}
-                                />
-                            );
-                        })}
+                        {displayedWorkspaceBoards.map(board => (
+                            <BoardCard
+                                key={board.id}
+                                board={board}
+                                workspace={workspaces.find(w => w.id === board.workspaceId)}
+                                onOpen={() => setActiveBoard(board.id)}
+                                onToggleFavorite={toggleFavorite}
+                            />
+                        ))}
                     </div>
                     {myWorkspaceBoards.length > 3 && (
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={() => setShowAllWorkspace(!showAllWorkspace)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'hsl(var(--color-text-secondary))',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '4px',
-                                    padding: '8px 16px',
-                                    borderRadius: '4px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {showAllWorkspace ? 'Show less' : 'Show all'}
-                                {showAllWorkspace ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                        <div className="home-more-row">
+                            <ShowMoreButton expanded={showAllWorkspace} onToggle={() => setShowAllWorkspace(!showAllWorkspace)} />
                         </div>
                     )}
                 </section>
             )}
-            
+
             {/* 4. Favorites */}
             {favoritedBoards.length > 0 && (
                 <section style={{ marginBottom: '40px' }}>
@@ -262,43 +149,19 @@ export const HomePage = () => {
                         gap: '24px',
                         marginBottom: '20px'
                     }}>
-                        {displayedFavoriteBoards.map(board => {
-                            const workspace = workspaces.find(w => w.id === board.workspaceId);
-                            return (
-                                <BoardCard 
-                                    key={board.id} 
-                                    board={board} 
-                                    workspace={workspace} 
-                                    onClick={() => setActiveBoard(board.id)} 
-                                    onToggleFavorite={toggleFavorite}
-                                />
-                            );
-                        })}
+                        {displayedFavoriteBoards.map(board => (
+                            <BoardCard
+                                key={board.id}
+                                board={board}
+                                workspace={workspaces.find(w => w.id === board.workspaceId)}
+                                onOpen={() => setActiveBoard(board.id)}
+                                onToggleFavorite={toggleFavorite}
+                            />
+                        ))}
                     </div>
                     {favoritedBoards.length > 3 && (
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={() => setShowAllFavorites(!showAllFavorites)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'hsl(var(--color-text-secondary))',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '4px',
-                                    padding: '8px 16px',
-                                    borderRadius: '4px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {showAllFavorites ? 'Show less' : 'Show all'}
-                                {showAllFavorites ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                        <div className="home-more-row">
+                            <ShowMoreButton expanded={showAllFavorites} onToggle={() => setShowAllFavorites(!showAllFavorites)} />
                         </div>
                     )}
                 </section>
@@ -326,6 +189,7 @@ const InboxFeed = () => {
     const setActiveBoard = useBoardStore(state => state.setActiveBoard);
     const setActiveWorkspace = useBoardStore(state => state.setActiveWorkspace);
     const setActiveItem = useBoardStore(state => state.setActiveItem);
+    const setHighlightedUpdate = useBoardStore(state => state.setHighlightedUpdate);
     const markNotificationAsRead = useBoardStore(state => state.markNotificationAsRead);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -357,12 +221,18 @@ const InboxFeed = () => {
 
     const handleMarkAsRead = (n: any) => dismissNotification(n.id);
 
+    // The same destinations as the bell's list (NotificationItem): a board-wide
+    // notification carries the board as its entity_id and must not be opened as
+    // an item, and one about an update opens the item on that very update.
     const handleNotificationClick = (n: any) => {
         if (!n.is_read) markNotificationAsRead(n.id);
 
         if (n.data?.board_id) {
             setActiveBoard(n.data.board_id);
-            if (n.entity_id) setActiveItem(n.entity_id);
+            if (n.entity_id && n.entity_id !== n.data.board_id) {
+                setActiveItem(n.entity_id);
+                setHighlightedUpdate(n.data?.update_id || null);
+            }
         } else if (n.data?.workspace_id) {
             setActiveWorkspace(n.data.workspace_id);
             navigateTo('home');
@@ -422,156 +292,140 @@ const InboxFeed = () => {
                 </button>
             </div>
 
-            <div style={{
-                backgroundColor: 'hsl(var(--color-bg-surface))',
-                borderRadius: '8px',
-                border: '1px solid hsl(var(--color-border))',
-                padding: '24px',
-                minHeight: '100px'
-            }}>
+            <div className="home-card home-feed">
                 {isLoading && feedNotifications.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>Loading updates...</div>
+                    <div className="home-feed__state">Loading updates...</div>
                 ) : feedNotifications.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'hsl(var(--color-text-secondary))', padding: '20px' }}>
-                        No feedback coming
+                    <div className="home-feed__state">
+                        <strong>You're all caught up</strong>
+                        New mentions, assignments and due dates will show up here.
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {visibleNotifications.map(n => (
-                            <div
-                                key={n.id}
-                                onClick={() => handleNotificationClick(n)}
-                                style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', borderBottom: '1px solid hsl(var(--color-border))', paddingBottom: '16px', position: 'relative', paddingRight: '24px', cursor: (n.data?.board_id || n.data?.workspace_id) ? 'pointer' : 'default' }}
-                            >
-                                <div style={{
-                                    width: '40px', height: '40px', borderRadius: '28%',
-                                    backgroundColor: 'hsl(var(--color-bg-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>
-                                    <Bell size={20} color="hsl(var(--color-text-secondary))" />
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'baseline' }}>
-                                        <span style={{ fontWeight: 600, fontSize: '15px', color: 'hsl(var(--color-text-primary))' }}>{n.title || 'Notification'}</span>
-                                        <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', marginLeft: '12px', whiteSpace: 'nowrap' }}>
-                                            {formatTime(n.created_at)}
-                                        </span>
-                                    </div>
-                                    <p style={{ margin: 0, color: 'hsl(var(--color-text-secondary))', fontSize: '14px', lineHeight: '1.5' }}>
-                                        {n.content || n.message}
-                                    </p>
-
-                                    {(n.data?.status === 'accepted' || n.data?.status === 'declined' || n.status === 'accepted' || n.status === 'declined') && (
-                                        <div style={{
-                                            padding: '10px 14px',
-                                            borderRadius: '6px',
-                                            fontSize: '13px',
-                                            fontWeight: 500,
-                                            backgroundColor: (n.data?.status || n.status) === 'accepted' ? '#effbf5' : '#fef2f2',
-                                            color: (n.data?.status || n.status) === 'accepted' ? '#0d7f52' : '#d92d20',
-                                            marginTop: '12px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            border: `1px solid ${(n.data?.status || n.status) === 'accepted' ? '#bbf7d0' : '#fecaca'}`
-                                        }}>
-                                            <span style={{ fontSize: '14px' }}>
-                                                {(n.data?.status || n.status) === 'accepted' ? <Check size={14} /> : <X size={14} />}
-                                            </span>
-                                            <span>
-                                                {(n.data?.status || n.status) === 'accepted'
-                                                    ? `Invitation accepted`
-                                                    : `Invitation declined`}
+                    <>
+                        {visibleNotifications.map(n => {
+                            const kind = notificationKind(n.type);
+                            const opens = !!(n.data?.board_id || n.data?.workspace_id);
+                            const status = n.data?.status || n.status;
+                            const settled = n.data?.status === 'accepted' || n.data?.status === 'declined' || n.status === 'accepted' || n.status === 'declined';
+                            return (
+                                <div
+                                    key={n.id}
+                                    className="feed-row"
+                                    style={{ '--tone': kind.tone } as React.CSSProperties}
+                                    role={opens ? 'button' : undefined}
+                                    tabIndex={opens ? 0 : undefined}
+                                    onClick={() => handleNotificationClick(n)}
+                                    onKeyDown={opens ? (e) => {
+                                        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                                            e.preventDefault();
+                                            handleNotificationClick(n);
+                                        }
+                                    } : undefined}
+                                >
+                                    <span className="feed-row__tile" aria-hidden="true">
+                                        <kind.Icon size={18} />
+                                    </span>
+                                    <div className="feed-row__body">
+                                        <div className="feed-row__head">
+                                            <span className="feed-row__title">{n.title || kind.label}</span>
+                                            <span className="feed-row__time">
+                                                {!n.is_read && <span className="feed-row__unread" title="Unread" />}
+                                                {formatTime(n.created_at)}
                                             </span>
                                         </div>
-                                    )}
+                                        <p className="feed-row__text">{n.content || n.message}</p>
 
-                                    {(n.type === 'workspace_invite' || n.type === 'board_invite') &&
-                                        ((n.data?.status || 'pending') === 'pending' && (!n.status || n.status === 'pending')) && (
-                                            <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onAccept(n); }}
-                                                    disabled={processingId === n.id}
-                                                    style={{
-                                                        backgroundColor: processingId === n.id ? 'hsl(var(--color-brand-primary), 0.7)' : 'hsl(var(--color-brand-primary))',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        padding: '8px 20px',
-                                                        borderRadius: '4px',
-                                                        cursor: processingId === n.id ? 'not-allowed' : 'pointer',
-                                                        fontWeight: 500,
-                                                        fontSize: '13px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        transition: 'all 0.2s'
-                                                    }}>
-                                                    {processingId === n.id ? 'Accepting...' : 'Accept'}
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onDecline(n); }}
-                                                    disabled={processingId === n.id}
-                                                    style={{
-                                                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                                                        color: 'hsl(var(--color-text-primary))',
-                                                        border: '1px solid hsl(var(--color-border))',
-                                                        padding: '8px 20px',
-                                                        borderRadius: '4px',
-                                                        cursor: processingId === n.id ? 'not-allowed' : 'pointer',
-                                                        fontWeight: 500,
-                                                        fontSize: '13px',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface-hover))'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface))'}
-                                                >
-                                                    {processingId === n.id ? 'Declining...' : 'Decline'}
-                                                </button>
+                                        {(n.type === 'mention' || n.type === 'comment') && n.data?.updatePreview && (
+                                            <div className="feed-row__quote">{n.data.updatePreview}</div>
+                                        )}
+
+                                        {settled && (
+                                            <div style={{
+                                                padding: '10px 14px',
+                                                borderRadius: '6px',
+                                                fontSize: '13px',
+                                                fontWeight: 500,
+                                                backgroundColor: status === 'accepted' ? '#effbf5' : '#fef2f2',
+                                                color: status === 'accepted' ? '#0d7f52' : '#d92d20',
+                                                marginTop: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                border: `1px solid ${status === 'accepted' ? '#bbf7d0' : '#fecaca'}`
+                                            }}>
+                                                <span style={{ fontSize: '14px' }}>
+                                                    {status === 'accepted' ? <Check size={14} /> : <X size={14} />}
+                                                </span>
+                                                <span>
+                                                    {status === 'accepted'
+                                                        ? `Invitation accepted`
+                                                        : `Invitation declined`}
+                                                </span>
                                             </div>
                                         )}
+
+                                        {(n.type === 'workspace_invite' || n.type === 'board_invite') &&
+                                            ((n.data?.status || 'pending') === 'pending' && (!n.status || n.status === 'pending')) && (
+                                                <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onAccept(n); }}
+                                                        disabled={processingId === n.id}
+                                                        style={{
+                                                            backgroundColor: processingId === n.id ? 'hsl(var(--color-brand-primary), 0.7)' : 'hsl(var(--color-brand-primary))',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            padding: '8px 20px',
+                                                            borderRadius: '8px',
+                                                            cursor: processingId === n.id ? 'not-allowed' : 'pointer',
+                                                            fontWeight: 500,
+                                                            fontSize: '13px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            transition: 'all 0.2s'
+                                                        }}>
+                                                        {processingId === n.id ? 'Accepting...' : 'Accept'}
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onDecline(n); }}
+                                                        disabled={processingId === n.id}
+                                                        style={{
+                                                            backgroundColor: 'hsl(var(--color-bg-surface))',
+                                                            color: 'hsl(var(--color-text-primary))',
+                                                            border: '1px solid hsl(var(--color-border))',
+                                                            padding: '8px 20px',
+                                                            borderRadius: '8px',
+                                                            cursor: processingId === n.id ? 'not-allowed' : 'pointer',
+                                                            fontWeight: 500,
+                                                            fontSize: '13px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface-hover))'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-surface))'}
+                                                    >
+                                                        {processingId === n.id ? 'Declining...' : 'Decline'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="feed-row__dismiss"
+                                        onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n); }}
+                                        title="Dismiss"
+                                        aria-label="Dismiss notification"
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n); }}
-                                    title="Dismiss"
-                                    style={{
-                                        position: 'absolute',
-                                        top: '0px',
-                                        right: '0px',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        color: 'hsl(var(--color-text-tertiary))',
-                                        transition: 'color 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--color-text-primary))'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))'}
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {hiddenCount > 0 && (
-                            <button
-                                onClick={() => setExpanded(e => !e)}
-                                aria-expanded={expanded}
-                                style={{
-                                    alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer',
-                                    color: 'hsl(var(--color-text-secondary))', fontSize: '14px',
-                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
-                                    padding: '8px 16px', borderRadius: '4px', transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-subtle))'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                {expanded ? 'Show less' : `Show ${hiddenCount} more`}
-                                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                            <div className="home-feed__footer">
+                                <ShowMoreButton expanded={expanded} onToggle={() => setExpanded(e => !e)} label={`Show ${hiddenCount} more`} />
+                            </div>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
         </section>

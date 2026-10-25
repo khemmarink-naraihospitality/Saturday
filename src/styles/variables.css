@@ -57,6 +57,25 @@
   --shadow-md: 0 4px 12px rgba(80, 60, 160, 0.12);
   --shadow-lg: 0 8px 24px rgba(80, 60, 160, 0.15);
 
+  /* Home cards (board cards and the Update feed, styles/home.css): a white card
+     lifted off the page by a soft tinted shadow, a faint glow in its top-left
+     corner, and an icon tile that lights up like the open workspace on hover */
+  --card-bg: #ffffff;
+  --card-border: hsl(255 30% 92.5%);
+  --card-border-hover: hsl(255 62% 86%);
+  --card-edge: #ffffff;
+  --card-shadow: 0 1px 2px rgba(45, 30, 110, 0.06), 0 6px 14px -6px rgba(45, 30, 110, 0.1), 0 20px 40px -20px rgba(70, 40, 170, 0.34);
+  --card-shadow-hover: 0 2px 4px rgba(45, 30, 110, 0.07), 0 14px 26px -12px rgba(70, 40, 170, 0.26), 0 36px 64px -28px rgba(90, 50, 210, 0.5);
+  --card-sheen: rgba(124, 63, 228, 0.07);
+  --card-row-hover: hsl(255 70% 97.6%);
+  --card-tile: linear-gradient(160deg, #ffffff 0%, #efe9ff 100%);
+  --card-tile-ink: #7c3fe4;
+  --card-tile-ring: rgba(124, 63, 228, 0.16);
+  --card-tile-shadow: 0 6px 14px -8px rgba(90, 50, 210, 0.55);
+  --card-tile-lit: linear-gradient(160deg, #9a6cf3 0%, #6a2fe0 100%);
+  --card-tile-lit-ring: rgba(255, 255, 255, 0.22);
+  --card-tile-lit-shadow: 0 10px 18px -8px rgba(100, 50, 220, 0.6);
+
   /* Spacing & Radius */
   --spacing-board-x: 40px;
   --spacing-board-y: 24px;
@@ -108,6 +127,23 @@
   --color-warning-bg: 35 78% 10%;      /* #2B1E06 */
   --color-danger: 0 80% 69%;           /* #F07070 */
   --color-danger-bg: 0 62% 11%;        /* #2B0A0A */
+
+  /* Home cards: a raised violet-black sheet with a lit top edge */
+  --card-bg: linear-gradient(180deg, hsl(255 38% 13%), hsl(255 42% 10.5%));
+  --card-border: hsl(255 30% 20%);
+  --card-border-hover: hsl(255 48% 36%);
+  --card-edge: rgba(255, 255, 255, 0.05);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 14px -6px rgba(0, 0, 0, 0.45), 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 28px 54px -24px rgba(0, 0, 0, 0.9);
+  --card-sheen: rgba(150, 100, 255, 0.1);
+  --card-row-hover: hsl(255 35% 16%);
+  --card-tile: linear-gradient(160deg, hsl(255 40% 22%), hsl(255 45% 16%));
+  --card-tile-ink: #c4a8ff;
+  --card-tile-ring: rgba(255, 255, 255, 0.08);
+  --card-tile-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+  --card-tile-lit: linear-gradient(160deg, #9a6cf3 0%, #6a2fe0 100%);
+  --card-tile-lit-ring: rgba(255, 255, 255, 0.18);
+  --card-tile-lit-shadow: 0 10px 18px -8px rgba(110, 60, 230, 0.55);
 }
 /* ── Narai palette ─────────────────────────────────────────────────────────
  * Pastel sage and grass green with forest-green ink, after the NHGOne campus
@@ -203,6 +239,24 @@
   --glass-scrim: rgba(70, 100, 60, 0.2);
   --glass-solid: #fdfffb;
   --ws-badge-radius: 28%;
+
+  /* Home cards: white paper, a green-tinted shadow, a champagne edge on hover
+     and the open workspace's forest green when the tile lights up */
+  --card-bg: linear-gradient(165deg, #ffffff 0%, #fbfdf7 100%);
+  --card-border: #e7efdd;
+  --card-border-hover: rgba(206, 182, 104, 0.6);
+  --card-edge: #ffffff;
+  --card-shadow: 0 1px 2px rgba(50, 80, 40, 0.06), 0 6px 14px -6px rgba(50, 80, 40, 0.1), 0 20px 40px -20px rgba(60, 100, 45, 0.36);
+  --card-shadow-hover: 0 2px 4px rgba(50, 80, 40, 0.07), 0 14px 26px -12px rgba(60, 100, 45, 0.26), 0 36px 64px -28px rgba(60, 100, 45, 0.5);
+  --card-sheen: rgba(156, 196, 114, 0.12);
+  --card-row-hover: hsl(86 45% 96.5%);
+  --card-tile: linear-gradient(160deg, #ffffff 0%, #eaf5d9 100%);
+  --card-tile-ink: #4f7f43;
+  --card-tile-ring: rgba(79, 127, 67, 0.16);
+  --card-tile-shadow: 0 6px 14px -8px rgba(60, 100, 45, 0.5);
+  --card-tile-lit: linear-gradient(180deg, #52903f, #3a6d2f);
+  --card-tile-lit-ring: rgba(236, 217, 150, 0.7);
+  --card-tile-lit-shadow: 0 10px 18px -8px rgba(50, 90, 35, 0.6);
 }
 
 :root[data-palette='narai'].dark {
@@ -280,4 +334,21 @@
   --glass-scrim: rgba(0, 0, 0, 0.5);
   --glass-solid: #222b1d;
   --ws-badge-radius: 28%;
+
+  /* Home cards: tinted glass, a champagne edge on hover */
+  --card-bg: linear-gradient(160deg, rgba(48, 64, 40, 0.7), rgba(28, 38, 24, 0.6));
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-border-hover: rgba(236, 217, 150, 0.35);
+  --card-edge: rgba(255, 255, 255, 0.12);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 14px -6px rgba(0, 0, 0, 0.4), 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 28px 56px -24px rgba(0, 0, 0, 0.9);
+  --card-sheen: rgba(190, 228, 160, 0.08);
+  --card-row-hover: rgba(255, 255, 255, 0.05);
+  --card-tile: linear-gradient(160deg, rgba(190, 228, 160, 0.22), rgba(140, 196, 110, 0.12));
+  --card-tile-ink: #d4ecc2;
+  --card-tile-ring: rgba(255, 255, 255, 0.12);
+  --card-tile-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+  --card-tile-lit: linear-gradient(180deg, #52903f, #3a6d2f);
+  --card-tile-lit-ring: rgba(236, 217, 150, 0.55);
+  --card-tile-lit-shadow: 0 10px 18px -8px rgba(0, 0, 0, 0.7);
 }

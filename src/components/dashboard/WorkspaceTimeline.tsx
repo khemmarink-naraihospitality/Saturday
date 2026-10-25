@@ -13,9 +13,9 @@ const navBtnStyle: CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '4px',
-    border: '1px solid hsl(var(--color-border))',
-    background: 'white',
+    borderRadius: '8px',
+    border: '1px solid var(--card-border)',
+    background: 'var(--card-solid)',
     cursor: 'pointer',
     color: 'hsl(var(--color-text-secondary))',
     padding: '0 8px'
@@ -95,14 +95,14 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
         const dates = `${format(row.start, 'd MMM yyyy')} – ${format(row.end, 'd MMM yyyy')}`;
         const where = [row.boardTitle, row.groupTitle].filter(Boolean).join(' · ');
         return (
-            <div key={row.id} style={{ display: 'flex', height: `${ROW_INNER_HEIGHT}px`, borderBottom: '1px solid #f5f5f5', alignItems: 'center' }}>
+            <div key={row.id} style={{ display: 'flex', height: `${ROW_INNER_HEIGHT}px`, borderBottom: '1px solid var(--card-grid)', alignItems: 'center' }}>
                 <div
                     onClick={() => onOpenItem(row.id)}
                     title={`${row.title}\n${where}`}
                     style={{
-                        position: 'sticky', left: 0, zIndex: 6, backgroundColor: 'white',
+                        position: 'sticky', left: 0, zIndex: 6, backgroundColor: 'var(--card-solid)',
                         width: `${NAME_COL_WIDTH}px`, flexShrink: 0, height: '100%', boxSizing: 'border-box',
-                        borderRight: '1px solid #f5f5f5', padding: '0 16px', display: 'flex', alignItems: 'center',
+                        borderRight: '1px solid var(--card-grid)', padding: '0 16px', display: 'flex', alignItems: 'center',
                         fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                         cursor: 'pointer', color: 'hsl(var(--color-brand-primary))', fontWeight: 500
                     }}
@@ -112,7 +112,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                 <div style={{
                     position: 'relative', flexShrink: 0, width: `${gridWidth}px`, height: '100%',
                     // One unit-wide line repeated, instead of a div per cell per row.
-                    backgroundImage: 'linear-gradient(to right, transparent calc(100% - 1px), #f5f5f5 calc(100% - 1px))',
+                    backgroundImage: 'linear-gradient(to right, transparent calc(100% - 1px), var(--card-grid) calc(100% - 1px))',
                     backgroundSize: `${unitWidth}px 100%`
                 }}>
                     {bar && (
@@ -147,16 +147,11 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
     };
 
     return (
-        <div style={{
-            backgroundColor: 'hsl(var(--color-bg-surface, white))',
-            borderRadius: '8px',
-            border: '1px solid hsl(var(--color-border))',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            height: '100%',
+        // The card material (styles/cards.css); overflow clips the scrolling grid to its rounded corners
+        <div className="card-surface dash-widget" style={{
             display: 'flex',
             flexDirection: 'column',
-            boxSizing: 'border-box',
-            minWidth: 0
+            overflow: 'hidden'
         }}>
             {/* Navigator. Left padding leaves room for the card's drag handle. */}
             <div className="widget-header-with-space" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px', padding: '12px 20px 12px 36px' }}>
@@ -175,15 +170,15 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                     <button onClick={() => shift(1)} style={navBtnStyle} aria-label="Next"><ChevronRight size={18} /></button>
                 </div>
                 <button onClick={() => setViewDate(new Date())} style={{ ...navBtnStyle, fontSize: '14px', padding: '0 12px' }}>Today</button>
-                <div style={{ display: 'flex', backgroundColor: '#f5f6f8', borderRadius: '6px', padding: '2px' }}>
+                <div style={{ display: 'flex', backgroundColor: 'var(--card-row-hover)', borderRadius: '10px', padding: '2px' }}>
                     {(['day', 'month', 'year'] as const).map(type => (
                         <button
                             key={type}
                             onClick={() => setViewType(type)}
                             style={{
-                                border: 'none', padding: '4px 12px', borderRadius: '4px', fontSize: '13px',
+                                border: 'none', padding: '4px 12px', borderRadius: '8px', fontSize: '13px',
                                 fontWeight: viewType === type ? 600 : 400,
-                                backgroundColor: viewType === type ? 'white' : 'transparent',
+                                backgroundColor: viewType === type ? 'var(--card-solid)' : 'transparent',
                                 color: viewType === type ? 'hsl(var(--color-text-primary))' : 'hsl(var(--color-text-tertiary))',
                                 cursor: 'pointer', boxShadow: viewType === type ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                                 textTransform: 'capitalize'
@@ -199,13 +194,13 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
             </div>
 
             {/* Grid. Capped and scrolled: a workspace's timeline can run to hundreds of rows. */}
-            {!collapsed && <div style={{ flex: 1, minHeight: 0, maxHeight: fillHeight ? undefined : '520px', overflow: 'auto', borderTop: '1px solid hsl(var(--color-border))' }}>
+            {!collapsed && <div style={{ flex: 1, minHeight: 0, maxHeight: fillHeight ? undefined : '520px', overflow: 'auto', borderTop: '1px solid var(--card-border)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'max-content', position: 'relative' }}>
-                    <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--color-border))', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' }}>
+                    <div style={{ display: 'flex', borderBottom: '1px solid var(--card-border)', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--card-solid)' }}>
                         <div style={{
-                            position: 'sticky', left: 0, zIndex: 11, backgroundColor: 'white',
+                            position: 'sticky', left: 0, zIndex: 11, backgroundColor: 'var(--card-solid)',
                             width: `${NAME_COL_WIDTH}px`, flexShrink: 0, boxSizing: 'border-box',
-                            borderRight: '1px solid hsl(var(--color-border))', padding: '12px 16px', fontWeight: 600, fontSize: '13px'
+                            borderRight: '1px solid var(--card-border)', padding: '12px 16px', fontWeight: 600, fontSize: '13px', color: 'hsl(var(--color-text-primary))'
                         }}>
                             Item Name
                         </div>
@@ -214,7 +209,7 @@ export const WorkspaceTimeline = ({ items, columns, boards, groupsByBoard, isLoa
                             return (
                                 <div key={unit.toISOString()} style={{
                                     width: `${unitWidth}px`, flexShrink: 0, boxSizing: 'border-box', textAlign: 'center', padding: '12px 0', fontSize: '12px',
-                                    borderRight: '1px solid hsl(var(--color-border-subtle, #eee))',
+                                    borderRight: '1px solid var(--card-grid)',
                                     color: isCurrent ? 'hsl(var(--color-brand-primary))' : 'inherit',
                                     fontWeight: isCurrent ? 700 : 400
                                 }}>

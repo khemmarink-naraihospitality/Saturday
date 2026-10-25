@@ -1,15 +1,17 @@
 /*
- * Home cards: the board cards (Home's Recently visited / My workspace /
- * Favorites, and the Favorites page) and the Update feed
- * (components/home/HomeCards.tsx, pages/HomePage.tsx).
+ * The card material: Home's board cards (Recently visited / My workspace /
+ * Favorites, and the Favorites page) and Update feed
+ * (components/home/HomeCards.tsx, pages/HomePage.tsx), and the workspace
+ * Dashboard's widgets (pages/WorkspaceDashboardPage.tsx,
+ * components/dashboard/WorkspaceTimeline.tsx).
  *
  * One material in every palette: a card lifted off the page by a soft, tinted
- * shadow, with a lit top edge and a faint glow in its top-left corner. The
- * colours are the --card-* tokens each palette sets, light and dark, in
- * variables.css; nothing here names a palette.
+ * shadow, with a lit top edge and a faint glow in its top-left corner
+ * (.card-surface). The colours are the --card-* tokens each palette sets,
+ * light and dark, in variables.css; nothing here names a palette.
  */
 
-.home-card {
+.card-surface {
     position: relative;
     background: radial-gradient(130% 90% at 0% 0%, var(--card-sheen), transparent 58%), var(--card-bg);
     border: 1px solid var(--card-border);
@@ -417,6 +419,68 @@
     transform: rotate(180deg);
 }
 
+/* ── Dashboard widgets ──────────────────────────────────────────────────── */
+
+/* A widget is dragged by its grip and sized by its corner, not clicked as a
+   whole, so it does not lift on hover; it only gathers a deeper shadow. */
+.dash-widget {
+    height: 100%;
+    min-width: 0;
+    transition: box-shadow 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.26s;
+}
+
+.dashboard-draggable-wrapper:hover .dash-widget {
+    border-color: var(--card-border-hover);
+    box-shadow: inset 0 1px 0 var(--card-edge), var(--card-shadow-hover);
+}
+
+/* Title row: 56px tall so its middle (28px) is where the drag grip sits; the
+   left 36px is the grip's gutter */
+.dash-widget__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 14px 0 36px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.dash-widget__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: hsl(var(--color-text-primary));
+}
+
+/* What the widget shows, as a small app-icon tile */
+.dash-widget__icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28%;
+    background: var(--card-tile);
+    color: var(--card-tile-ink);
+    box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px var(--card-tile-ring), var(--card-tile-shadow);
+}
+
+/* One big number (Total Work Task) */
+.dash-widget__figure {
+    padding: 30px 20px 34px;
+    text-align: center;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--color-text-primary));
+}
+
 .board-card__star:focus-visible,
 .feed-row__dismiss:focus-visible,
 .home-more:focus-visible {
@@ -427,7 +491,8 @@
 /* The continuous, iOS-style corner where the browser can draw it */
 @supports (corner-shape: squircle) {
     .board-card__tile,
-    .feed-row__tile {
+    .feed-row__tile,
+    .dash-widget__icon {
         corner-shape: squircle;
     }
 }
@@ -437,7 +502,8 @@
     .board-card__tile,
     .board-card__tile::after,
     .feed-row,
-    .home-more svg {
+    .home-more svg,
+    .dash-widget {
         transition: none;
     }
 

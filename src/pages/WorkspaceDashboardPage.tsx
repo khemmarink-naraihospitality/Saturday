@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ActivityLogItem, type ActivityLog } from '../components/common/ActivityLogList';
 import { buildCatCushions, NO_STATUS_KEY, NEUTRAL_CUSHION_COLOR, type CatFarmGroup } from '../lib/catFarmLayout';
 import { useBoardStore } from '../store/useBoardStore';
-import { BarChart2, ChevronDown, Clock, Filter, MoreHorizontal, GripVertical } from 'lucide-react';
+import { BarChart2, BarChart3, BatteryMedium, ChevronDown, Clock, Filter, GripVertical } from 'lucide-react';
 import { 
     DndContext, 
     closestCenter, 
@@ -343,7 +343,7 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
                     {...listeners}
                     style={{
                         position: 'absolute',
-                        top: '21px', // Center point of the header content (12px padding + ~9px half-text height)
+                        top: '28px', // The middle of the widget's 56px title row (.dash-widget__head)
                         left: '10px', 
                         transform: 'translateY(-50%)',
                         cursor: 'grab',
@@ -370,7 +370,8 @@ const DraggableDashboardWidget = ({ id, children, span, height, compact = false,
                     className="resize-handle"
                     title="Drag to resize"
                     style={{
-                        position: 'absolute', right: 2, bottom: 2, width: '18px', height: '18px',
+                        // Inset from the corner, so it sits inside the card's rounded edge.
+                        position: 'absolute', right: 6, bottom: 6, width: '18px', height: '18px',
                         cursor: 'nwse-resize', opacity: 0, transition: 'opacity 0.2s ease', zIndex: 20,
                         touchAction: 'none',
                         // Two diagonal strokes in the corner.
@@ -456,7 +457,7 @@ const StatusColumnFilter = ({ options, value, onChange, isOpen, onToggle, onClos
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    color: value ? 'hsl(var(--color-brand-primary))' : '#64748b'
+                    color: value ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))'
                 }}
             >
                 <Filter size={16} />
@@ -748,7 +749,7 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    color: value ? 'hsl(var(--color-brand-primary))' : '#64748b'
+                    color: value ? 'hsl(var(--color-brand-primary))' : 'hsl(var(--color-text-tertiary))'
                 }}
             >
                 <Filter size={16} />
@@ -1503,13 +1504,6 @@ export const WorkspaceDashboardPage = () => {
         // together, which is what they showed before filters existed.
         const stats = statsFor(statusColFilters[id] ?? null);
 
-        const headerStyle: React.CSSProperties = { 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            marginBottom: '16px',
-            paddingLeft: '36px', 
-        };
 
         switch (id) {
             case 'totalTasks': {
@@ -1521,17 +1515,10 @@ export const WorkspaceDashboardPage = () => {
                     : stats.totalTasks;
 
                 return (
-                    <div style={{
-                        backgroundColor: 'hsl(var(--color-bg-surface, white))',
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--color-border))',
-                        padding: '20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        height: '100%'
-                    }}>
-                        <div className="widget-header-with-space" style={headerStyle}>
+                    <div className="card-surface dash-widget">
+                        <div className="dash-widget__head widget-header-with-space">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                                <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'hsl(var(--color-text-primary))' }}>Total Work Task</h3>
+                                <h3 className="dash-widget__title">Total Work Task</h3>
                                 <BoardGroupFilter
                                     boards={workspaceBoards}
                                     groupsByBoard={groupsByBoard}
@@ -1542,9 +1529,9 @@ export const WorkspaceDashboardPage = () => {
                                     onClose={() => setStatusMenuFor(null)}
                                 />
                             </div>
-                            <BarChart2 size={16} color="hsl(var(--color-text-tertiary))" />
+                            <span className="dash-widget__icon" aria-hidden="true"><BarChart2 size={16} /></span>
                         </div>
-                        <div style={{ fontSize: '64px', fontWeight: '700', color: 'hsl(var(--color-text-primary))', textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+                        <div className="dash-widget__figure">
                             {taskCount}
                         </div>
                     </div>
@@ -1552,19 +1539,10 @@ export const WorkspaceDashboardPage = () => {
             }
             case 'totalStatus':
                 return (
-                    <div className="dashboard-widget" style={{
-                        backgroundColor: 'hsl(var(--color-bg-surface, white))',
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--color-border))',
-                        padding: '20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100%'
-                    }}>
-                        <div className="widget-header-with-space" style={{ ...headerStyle, borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', margin: '-20px -20px 16px -20px', padding: '12px 20px 12px 36px' }}>
+                    <div className="card-surface dash-widget" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="dash-widget__head widget-header-with-space">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Total Status</h3>
+                                <h3 className="dash-widget__title">Total Status</h3>
                                 <StatusColumnFilter
                                     options={statusColumnOptions}
                                     value={statusColFilters['totalStatus'] ?? null}
@@ -1574,20 +1552,20 @@ export const WorkspaceDashboardPage = () => {
                                     onClose={() => setStatusMenuFor(null)}
                                 />
                             </div>
-                            <MoreHorizontal size={18} color="#64748b" style={{ cursor: 'pointer' }} />
+                            <span className="dash-widget__icon" aria-hidden="true"><BatteryMedium size={16} /></span>
                         </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 20px 20px' }}>
                             <div style={{ height: '110px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                                 <div style={{ position: 'relative', width: '260px', height: '70px', display: 'flex', alignItems: 'center' }}>
                                     <div style={{ 
                                         flex: 1, 
                                         height: '74px', 
-                                        border: '4px solid #e2e8f0', 
+                                        border: '4px solid hsl(var(--color-border))', 
                                         borderRadius: '10px', 
                                         padding: '5px', 
                                         display: 'flex', 
                                         overflow: 'hidden',
-                                        backgroundColor: '#fff',
+                                        backgroundColor: 'var(--card-solid)',
                                         boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
                                     }}>
                                         {Object.values(stats.statusCounts).map((status, i) => (
@@ -1603,11 +1581,11 @@ export const WorkspaceDashboardPage = () => {
                                                 }}
                                             />
                                         ))}
-                                        {stats.totalStatusValues === 0 && <div style={{ width: '100%', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>}
+                                        {stats.totalStatusValues === 0 && <div style={{ width: '100%', backgroundColor: 'hsl(var(--color-border))', borderRadius: '4px' }}></div>}
                                     </div>
-                                    <div style={{ width: '10px', height: '38px', backgroundColor: '#e2e8f0', borderRadius: '0 6px 6px 0', marginLeft: '-1px' }} />
+                                    <div style={{ width: '10px', height: '38px', backgroundColor: 'hsl(var(--color-border))', borderRadius: '0 6px 6px 0', marginLeft: '-1px' }} />
                                 </div>
-                                <div style={{ marginTop: '12px', fontSize: '15px', color: '#1e293b', fontWeight: 600 }}>
+                                <div style={{ marginTop: '12px', fontSize: '15px', color: 'hsl(var(--color-text-primary))', fontWeight: 600 }}>
                                     {stats.completionPercent}% Done
                                 </div>
                             </div>
@@ -1621,19 +1599,14 @@ export const WorkspaceDashboardPage = () => {
                 );
             case 'catFarm':
                 return (
-                    <div style={{
-                        backgroundColor: '#fff', // White house floor
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--color-border))',
+                    <div className="card-surface dash-widget" style={{
+                        background: '#fff', // White house floor: a picture, the same in every palette
                         padding: '20px',
-                        position: 'relative',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end',
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-                        minHeight: '220px',
-                        height: '100%'
+                        minHeight: '220px'
                     }}>
                          <div style={{ position: 'absolute', top: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
                             <div className="widget-header-with-space" style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '6px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid rgba(126, 34, 206, 0.2)', display: 'flex', alignItems: 'center' }}>
@@ -1683,18 +1656,13 @@ export const WorkspaceDashboardPage = () => {
                 );
             case 'workStatusChart':
                 return (
-                    <div className="dashboard-widget" style={{
-                        backgroundColor: 'hsl(var(--color-bg-surface, white))',
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--color-border))',
-                        padding: '20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        minHeight: '340px', // slightly taller to accommodate legend
-                        height: '100%'
+                    <div className="card-surface dash-widget" style={{
+                        padding: '0 20px 20px',
+                        minHeight: '340px' // slightly taller to accommodate legend
                     }}>
-                        <div className="widget-header-with-space" style={{ ...headerStyle, borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', margin: '-20px -20px 16px -20px', padding: '12px 20px 12px 36px' }}>
+                        <div className="dash-widget__head widget-header-with-space" style={{ margin: '0 -20px 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: '#1e293b' }}>Work Status</h3>
+                                <h3 className="dash-widget__title">Work Status</h3>
                                 <StatusColumnFilter
                                     options={statusColumnOptions}
                                     value={statusColFilters['workStatusChart'] ?? null}
@@ -1704,7 +1672,7 @@ export const WorkspaceDashboardPage = () => {
                                     onClose={() => setStatusMenuFor(null)}
                                 />
                             </div>
-                            <MoreHorizontal size={18} color="#64748b" style={{ cursor: 'pointer' }} />
+                            <span className="dash-widget__icon" aria-hidden="true"><BarChart3 size={16} /></span>
                         </div>
                         
                         <div style={{ height: '260px', position: 'relative', marginTop: '20px' }}>
@@ -1722,12 +1690,12 @@ export const WorkspaceDashboardPage = () => {
                                         {/* Background Grid Lines (Fixed) */}
                                         <div style={{ position: 'absolute', top: 0, left: '40px', right: 0, bottom: '40px', pointerEvents: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', zIndex: 0 }}>
                                             {ySteps.map(val => (
-                                                <div key={val} style={{ width: '100%', borderTop: '1px solid #f1f5f9', position: 'relative' }}></div>
+                                                <div key={val} style={{ width: '100%', borderTop: '1px solid var(--card-grid)', position: 'relative' }}></div>
                                             ))}
                                         </div>
 
                                         {/* Y-axis labels (Fixed) */}
-                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', textAlign: 'right', width: '30px', zIndex: 10 }}>
+                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', textAlign: 'right', width: '30px', zIndex: 10 }}>
                                             {ySteps.map(val => (
                                                 <span key={val}>{val}</span>
                                             ))}
@@ -1737,8 +1705,8 @@ export const WorkspaceDashboardPage = () => {
                                         <div className="interesting-scroll" style={{ 
                                             height: '100%', 
                                             marginLeft: '40px', 
-                                            borderLeft: '1px solid #e2e8f0', 
-                                            borderBottom: '1px solid #e2e8f0', 
+                                            borderLeft: '1px solid hsl(var(--color-border))', 
+                                            borderBottom: '1px solid hsl(var(--color-border))', 
                                             position: 'relative',
                                             overflowX: 'auto',
                                             overflowY: 'hidden',
@@ -1757,10 +1725,10 @@ export const WorkspaceDashboardPage = () => {
 
                                                         return (
                                                             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '60px', position: 'relative' }}>
-                                                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '2px', position: 'absolute', bottom: `${Math.max(2, barHeight) + 4}px` }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'hsl(var(--color-text-primary))', marginBottom: '2px', position: 'absolute', bottom: `${Math.max(2, barHeight) + 4}px` }}>
                                                                     {status.workloadCount > 0 ? status.workloadCount : ''}
                                                                 </div>
-                                                                <div style={{ width: '100%', height: `${Math.max(2, barHeight)}px`, display: 'flex', flexDirection: 'column-reverse', borderRadius: '3px 3px 0 0', overflow: 'hidden', backgroundColor: '#f1f5f9', zIndex: 2 }}>
+                                                                <div style={{ width: '100%', height: `${Math.max(2, barHeight)}px`, display: 'flex', flexDirection: 'column-reverse', borderRadius: '3px 3px 0 0', overflow: 'hidden', backgroundColor: 'var(--card-grid)', zIndex: 2 }}>
                                                                     {sortedPeople.map(([pName, pData], j) => (
                                                                         <div 
                                                                             key={j}
@@ -1782,7 +1750,7 @@ export const WorkspaceDashboardPage = () => {
                                                                         </div>
                                                                     ))}
                                                                 </div>
-                                                                <span title={status.label} style={{ position: 'absolute', top: '100%', marginTop: '10px', fontSize: '11px', color: '#64748b', fontWeight: 600, textAlign: 'center', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                <span title={status.label} style={{ position: 'absolute', top: '100%', marginTop: '10px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', fontWeight: 600, textAlign: 'center', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                                     {status.label}
                                                                 </span>
                                                             </div>
@@ -1796,15 +1764,15 @@ export const WorkspaceDashboardPage = () => {
                         </div>
 
                         {/* People Legend */}
-                        <div style={{ display: 'flex', gap: '16px', marginTop: '32px', padding: '12px 20px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '32px', padding: '12px 20px', borderTop: '1px solid var(--card-border)', flexWrap: 'wrap', justifyContent: 'center' }}>
                             {Object.values(stats.peopleMap)
                                 .filter(person => person.name !== 'Unassigned')
                                 .sort((a, b) => b.totalTasks - a.totalTasks)
                                 .map((person, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: person.color }}></div>
-                                    <span style={{ fontSize: '11px', fontWeight: 500, color: '#475569' }}>
-                                        {person.name} <span style={{ color: '#94a3b8', fontSize: '10px' }}>({person.totalTasks})</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 500, color: 'hsl(var(--color-text-secondary))' }}>
+                                        {person.name} <span style={{ color: 'hsl(var(--color-text-tertiary))', fontSize: '10px' }}>({person.totalTasks})</span>
                                     </span>
                                 </div>
                             ))}
@@ -1839,25 +1807,15 @@ export const WorkspaceDashboardPage = () => {
                 );
             case 'boardUpdates':
                 return (
-                    <div style={{
-                        backgroundColor: 'hsl(var(--color-bg-surface, white))',
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--color-border))',
-                        padding: '20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        boxSizing: 'border-box'
-                    }}>
-                        <div className="widget-header-with-space" style={headerStyle}>
-                            <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Board Updates</h3>
-                            <Clock size={16} color="hsl(var(--color-text-tertiary))" />
+                    <div className="card-surface dash-widget" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="dash-widget__head widget-header-with-space">
+                            <h3 className="dash-widget__title">Board Updates</h3>
+                            <span className="dash-widget__icon" aria-hidden="true"><Clock size={16} /></span>
                         </div>
                         {/* Capped and scrolled rather than left to grow: grid rows size to
                             their tallest widget, so an unbounded feed would stretch the
                             Work Status chart beside it to match. */}
-                        <div style={{ flex: 1, minHeight: 0, maxHeight: layout.sizes['boardUpdates'] ? undefined : '400px', overflowY: 'auto', margin: '0 -4px', padding: '0 4px' }}>
+                        <div style={{ flex: 1, minHeight: 0, maxHeight: layout.sizes['boardUpdates'] ? undefined : '400px', overflowY: 'auto', padding: '8px 16px 12px' }}>
                             {logsLoading ? (
                                 <div style={{ padding: '24px 0', textAlign: 'center', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
                                     Loading activity…

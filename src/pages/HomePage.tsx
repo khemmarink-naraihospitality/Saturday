@@ -292,7 +292,7 @@ const InboxFeed = () => {
                 </button>
             </div>
 
-            <div className="home-card home-feed">
+            <div className="card-surface home-feed">
                 {isLoading && feedNotifications.length === 0 ? (
                     <div className="home-feed__state">Loading updates...</div>
                 ) : feedNotifications.length === 0 ? (

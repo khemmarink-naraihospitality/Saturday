@@ -18,7 +18,7 @@ export const BoardCard = ({ board, workspace, onOpen, onToggleFavorite }: {
     const ownerName = workspace?.ownerName || 'Unknown Owner';
     const ownerInitial = workspace?.ownerName ? (Array.from(workspace.ownerName.trim())[0] || '?').toUpperCase() : '?';
     return (
-        <article className="home-card board-card">
+        <article className="card-surface board-card">
             <div className="board-card__top">
                 <span className="board-card__tile" aria-hidden="true">
                     <Layout size={22} />

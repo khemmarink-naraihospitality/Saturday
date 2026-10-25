@@ -106,15 +106,7 @@ html[data-palette='narai'] .status-cell-full {
     background-image: var(--glass-gloss);
 }
 
-/* Dashboard widgets */
-html[data-palette='narai'] .dashboard-widget {
-    background: var(--glass-card) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    backdrop-filter: blur(20px) saturate(1.5);
-    border: 1px solid var(--glass-edge) !important;
-    border-radius: 28px !important;
-    box-shadow: 0 20px 40px -24px rgba(70, 110, 60, 0.28), inset 0 1px 0 var(--glass-edge) !important;
-}
+/* (Dashboard widgets and the Home cards are styles/cards.css, from the --card-* tokens) */
 
 /* The home hero cards and the item panel keep the same radius language */
 html[data-palette='narai'] input[type='text'],

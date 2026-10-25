@@ -68,6 +68,8 @@
   --card-shadow-hover: 0 2px 4px rgba(45, 30, 110, 0.07), 0 14px 26px -12px rgba(70, 40, 170, 0.26), 0 36px 64px -28px rgba(90, 50, 210, 0.5);
   --card-sheen: rgba(124, 63, 228, 0.07);
   --card-row-hover: hsl(255 70% 97.6%);
+  --card-solid: #ffffff;              /* the card as one opaque colour (sticky cells) */
+  --card-grid: hsl(255 30% 95.5%);    /* faint lines inside a card: chart and timeline grids */
   --card-tile: linear-gradient(160deg, #ffffff 0%, #efe9ff 100%);
   --card-tile-ink: #7c3fe4;
   --card-tile-ring: rgba(124, 63, 228, 0.16);
@@ -137,6 +139,8 @@
   --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 28px 54px -24px rgba(0, 0, 0, 0.9);
   --card-sheen: rgba(150, 100, 255, 0.1);
   --card-row-hover: hsl(255 35% 16%);
+  --card-solid: hsl(255 40% 11.8%);
+  --card-grid: hsl(255 28% 17%);
   --card-tile: linear-gradient(160deg, hsl(255 40% 22%), hsl(255 45% 16%));
   --card-tile-ink: #c4a8ff;
   --card-tile-ring: rgba(255, 255, 255, 0.08);
@@ -250,6 +254,8 @@
   --card-shadow-hover: 0 2px 4px rgba(50, 80, 40, 0.07), 0 14px 26px -12px rgba(60, 100, 45, 0.26), 0 36px 64px -28px rgba(60, 100, 45, 0.5);
   --card-sheen: rgba(156, 196, 114, 0.12);
   --card-row-hover: hsl(86 45% 96.5%);
+  --card-solid: #fdfefb;
+  --card-grid: #eef4e6;
   --card-tile: linear-gradient(160deg, #ffffff 0%, #eaf5d9 100%);
   --card-tile-ink: #4f7f43;
   --card-tile-ring: rgba(79, 127, 67, 0.16);
@@ -344,6 +350,8 @@
   --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 28px 56px -24px rgba(0, 0, 0, 0.9);
   --card-sheen: rgba(190, 228, 160, 0.08);
   --card-row-hover: rgba(255, 255, 255, 0.05);
+  --card-solid: #222b1d;
+  --card-grid: rgba(255, 255, 255, 0.06);
   --card-tile: linear-gradient(160deg, rgba(190, 228, 160, 0.22), rgba(140, 196, 110, 0.12));
   --card-tile-ink: #d4ecc2;
   --card-tile-ring: rgba(255, 255, 255, 0.12);

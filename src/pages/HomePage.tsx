@@ -329,10 +329,10 @@ const InboxFeed = () => {
     const markNotificationAsRead = useBoardStore(state => state.markNotificationAsRead);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
-    // The feed keeps the latest 5 (the store has them newest first) but shows 3,
-    // with a button to unfold the other 2.
+    // The feed keeps the latest 5 (the store has them newest first) but shows 1,
+    // with a button to unfold the other 4.
     const FEED_LIMIT = 5;
-    const FEED_COLLAPSED = 3;
+    const FEED_COLLAPSED = 1;
     const [expanded, setExpanded] = useState(false);
     const feedNotifications = notifications.slice(0, FEED_LIMIT);
     const hiddenCount = Math.max(0, feedNotifications.length - FEED_COLLAPSED);

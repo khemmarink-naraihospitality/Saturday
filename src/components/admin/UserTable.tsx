@@ -5,7 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { Search, RefreshCw, MoreHorizontal, Trash2, Edit3, ArrowUp, ArrowDown, ArrowUpDown, Filter, ShieldCheck, UserPlus, Lock, FileSpreadsheet, Globe, Users, ArrowRightLeft, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { CreateUserModal } from './CreateUserModal';
-import { pageButtons, pageOf } from '../../lib/pagination';
+import { pageButtons, pageContaining, pageOf } from '../../lib/pagination';
 
 interface Profile {
     id: string;
@@ -90,6 +90,10 @@ const ROLE_LABELS = {
     'it_admin': 'IT Admin',
     'super_admin': 'Super Admin'
 };
+
+// How many users a page can show; the choice is remembered in this browser
+const PAGE_SIZES = [25, 50, 100, 200];
+const PAGE_SIZE_KEY = 'adminUsersPageSize';
 
 export const UserTable = () => {
     const { currentUser } = useUserStore();
@@ -420,17 +424,42 @@ export const UserTable = () => {
             return 0;
         });
 
-    // 50 users a page. The page belongs to the search, filters and sort it was
-    // chosen under: change any of them and the list starts again at page 1.
-    // Export still takes every user that matches, not just this page.
-    const PAGE_SIZE = 50;
+    // 25, 50 (the default), 100 or 200 users a page. The page belongs to the
+    // search, filters and sort it was chosen under: change any of them and the
+    // list starts again at page 1. Export still takes every user that matches,
+    // not just this page.
+    const [pageSize, setPageSize] = useState(() => {
+        try {
+            const saved = Number(localStorage.getItem(PAGE_SIZE_KEY));
+            return PAGE_SIZES.includes(saved) ? saved : 50;
+        } catch {
+            return 50;
+        }
+    });
     const listKey = JSON.stringify([searchQuery, columnFilters, sortConfig]);
     const [pageState, setPageState] = useState({ key: listKey, page: 1 });
-    const shown = pageOf(filteredAndSortedProfiles, pageState.key === listKey ? pageState.page : 1, PAGE_SIZE);
-    const tableScrollRef = useRef<HTMLDivElement>(null);
+    const shown = pageOf(filteredAndSortedProfiles, pageState.key === listKey ? pageState.page : 1, pageSize);
+    // The table grows with its page (25 to 200 rows) and the console page
+    // scrolls, so a new page brings the top of the table back into view if it
+    // has gone above it.
+    const tableCardRef = useRef<HTMLDivElement>(null);
     const goToPage = (page: number) => {
         setPageState({ key: listKey, page });
-        tableScrollRef.current?.scrollTo({ top: 0 });
+        const card = tableCardRef.current;
+        let scroller = card?.parentElement;
+        while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) {
+            scroller = scroller.parentElement;
+        }
+        if (!card || !scroller) return;
+        const top = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 16;
+        if (scroller.scrollTop > top) scroller.scrollTo({ top });
+    };
+    // A new page size keeps the users you were looking at: it opens the page
+    // that holds the first one on screen.
+    const changePageSize = (size: number) => {
+        setPageSize(size);
+        try { localStorage.setItem(PAGE_SIZE_KEY, String(size)); } catch { /* private mode: just not remembered */ }
+        goToPage(pageContaining(shown.first, size));
     };
 
     const exportToExcel = () => {
@@ -476,7 +505,7 @@ export const UserTable = () => {
     };
 
     return (
-        <div className="card-surface">
+        <div ref={tableCardRef} className="card-surface" style={{ minWidth: 'fit-content' }}>
             {/* Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
@@ -602,7 +631,9 @@ export const UserTable = () => {
             </div>
 
             {/* Table */}
-            <div ref={tableScrollRef} style={{ overflow: 'auto', maxHeight: 'calc(100vh - 400px)', minHeight: '200px' }}>
+            {/* No scroll box of its own: the frame grows with the rows on the page, and
+                the header cells (position: sticky) stay at the top of the console page as it scrolls. */}
+            <div>
                 {isLoading ? (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading...</div>
                 ) : (
@@ -690,6 +721,13 @@ export const UserTable = () => {
                             )}
                         </thead>
                         <tbody>
+                            {filteredAndSortedProfiles.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>
+                                        {profiles.length ? 'No users match your search or filters.' : 'No users yet.'}
+                                    </td>
+                                </tr>
+                            )}
                             {shown.rows.map((profile, idx) => (
                                 <tr
                                     key={profile.id}
@@ -946,31 +984,39 @@ export const UserTable = () => {
                     <span style={{ fontSize: '13px', color: '#64748b' }}>
                         Showing <strong style={{ color: '#0f172a', fontWeight: 600 }}>{shown.first}–{shown.last}</strong> of {filteredAndSortedProfiles.length} users
                     </span>
-                    {shown.pageCount > 1 && (
-                        <nav aria-label="User pages" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page - 1)} disabled={shown.page === 1} aria-label="Previous page">
-                                <ChevronLeft size={16} /> Prev
-                            </button>
-                            {pageButtons(shown.page, shown.pageCount).map((p, i) => p === 'gap'
-                                ? <span key={`gap-${i}`} className="admin-page-gap">…</span>
-                                : (
-                                    <button
-                                        key={p}
-                                        type="button"
-                                        className="admin-page-btn"
-                                        aria-current={p === shown.page ? 'page' : undefined}
-                                        aria-label={`Page ${p}`}
-                                        onClick={() => goToPage(p)}
-                                    >
-                                        {p}
-                                    </button>
-                                )
-                            )}
-                            <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page + 1)} disabled={shown.page === shown.pageCount} aria-label="Next page">
-                                Next <ChevronRight size={16} />
-                            </button>
-                        </nav>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <label className="admin-page-size">
+                            Rows per page
+                            <select value={pageSize} onChange={(e) => changePageSize(Number(e.target.value))}>
+                                {PAGE_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
+                            </select>
+                        </label>
+                        {shown.pageCount > 1 && (
+                            <nav aria-label="User pages" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page - 1)} disabled={shown.page === 1} aria-label="Previous page">
+                                    <ChevronLeft size={16} /> Prev
+                                </button>
+                                {pageButtons(shown.page, shown.pageCount).map((p, i) => p === 'gap'
+                                    ? <span key={`gap-${i}`} className="admin-page-gap">…</span>
+                                    : (
+                                        <button
+                                            key={p}
+                                            type="button"
+                                            className="admin-page-btn"
+                                            aria-current={p === shown.page ? 'page' : undefined}
+                                            aria-label={`Page ${p}`}
+                                            onClick={() => goToPage(p)}
+                                        >
+                                            {p}
+                                        </button>
+                                    )
+                                )}
+                                <button type="button" className="admin-page-btn" onClick={() => goToPage(shown.page + 1)} disabled={shown.page === shown.pageCount} aria-label="Next page">
+                                    Next <ChevronRight size={16} />
+                                </button>
+                            </nav>
+                        )}
+                    </div>
                 </div>
             )}
 

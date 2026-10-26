@@ -29,6 +29,15 @@ export function pageOf<T>(rows: T[], page: number, pageSize: number): Page<T> {
 }
 
 /**
+ * The page that holds a given row (1-based) at a page size: what to show after
+ * the page size changes, so the first row on screen stays on screen. Row 0
+ * (an empty list) is page 1.
+ */
+export function pageContaining(row: number, pageSize: number): number {
+    return row <= 0 ? 1 : Math.floor((row - 1) / pageSize) + 1;
+}
+
+/**
  * The page buttons to draw: the first and the last page, the current one and
  * its neighbours, and a gap where pages are skipped. Seven pages or fewer are
  * all shown, and a gap never stands for a single page (that page is drawn).

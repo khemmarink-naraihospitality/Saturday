@@ -593,6 +593,41 @@
     color: #94a3b8;
 }
 
+/* "Rows per page" beside the page buttons: a native select drawn like them */
+.admin-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.admin-page-size select {
+    height: 32px;
+    padding: 0 30px 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center / 14px;
+    appearance: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: #334155;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.admin-page-size select:hover {
+    border-color: #c7d2fe;
+    background-color: #f5f7ff;
+}
+
+.admin-page-size select:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
+
 /* Something to pick in the Calendar: a task on the day view, a month on the
    year view. Lifts like a board card. */
 .calendar-pick {

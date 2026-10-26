@@ -131,8 +131,11 @@ export const AdminPage = () => {
             </aside>
 
             {/* Main Content */}
-            <main style={{ flex: 1, overflow: 'auto', padding: '32px 48px' }}>
-                <header style={{ marginBottom: '32px' }}>
+            {/* The top padding sits on the header rather than here, so a table header that
+                sticks while this scrolls (User Management) sticks flush at the top; the bottom
+                leaves room for the page bar to scroll clear of the Contact support button. */}
+            <main style={{ flex: 1, overflow: 'auto', padding: '0 48px 104px' }}>
+                <header style={{ paddingTop: '32px', marginBottom: '32px' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
                         {activeTab === 'dashboard' ? 'Overview' : activeTab === 'users' ? 'User Management' : activeTab === 'workspaces' ? 'Workspace Management' : activeTab === 'boards' ? 'Board Management' : activeTab === 'trash' ? 'Trash' : activeTab === 'email_templates' ? 'Email Settings' : activeTab === 'status_mapping' ? 'Status Mapping' : activeTab === 'due_date_reminders' ? 'Due Date Reminders' : activeTab === 'ai_settings' ? 'AI Settings' : 'Settings'}
                     </h1>
@@ -172,9 +175,7 @@ export const AdminPage = () => {
                 )}
 
                 {activeTab === 'users' && (
-                    <div style={{ height: '600px' }}>
-                        <UserTable />
-                    </div>
+                    <UserTable />
                 )}
 
                 {activeTab === 'workspaces' && (

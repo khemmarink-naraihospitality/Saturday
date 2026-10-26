@@ -3,7 +3,7 @@
  * User Management table, 50 users a page.
  * Run with:  npx tsx tests/pagination_test.ts
  */
-import { pageButtons, pageOf } from '../src/lib/pagination';
+import { pageButtons, pageContaining, pageOf } from '../src/lib/pagination';
 
 let passed = 0;
 let failed = 0;
@@ -40,6 +40,15 @@ eq('last of ten', pageButtons(10, 10), [1, 'gap', 7, 8, 9, 10]);
 eq('a gap of one page is drawn as that page (start)', pageButtons(4, 10), [1, 2, 3, 4, 5, 'gap', 10]);
 eq('a gap of one page is drawn as that page (end)', pageButtons(7, 10), [1, 'gap', 6, 7, 8, 9, 10]);
 eq('every page number is in range and in order', pageButtons(2, 30).filter(p => p !== 'gap'), [1, 2, 3, 4, 30]);
+
+// Changing the page size keeps the first user on screen in view
+eq('row 1 is always page 1', [25, 50, 100, 200].map(n => pageContaining(1, n)), [1, 1, 1, 1]);
+eq('51–100 at 50 a page, switched to 25: the page starting at 51', pageContaining(51, 25), 3);
+eq('51–100 at 50 a page, switched to 100: page 1 (1–100 holds 51)', pageContaining(51, 100), 1);
+eq('101–137 at 50 a page, switched to 25: page 5 (101–125)', pageContaining(101, 25), 5);
+eq('the last row of a page stays on that page', [pageContaining(50, 50), pageContaining(100, 50)], [1, 2]);
+eq('an empty list is page 1', pageContaining(0, 25), 1);
+eq('switching size and back lands where it began', pageOf(users, pageContaining(pageOf(users, pageContaining(51, 25), 25).first, 50), 50).first, 51);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

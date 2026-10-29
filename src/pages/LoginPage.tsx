@@ -3,6 +3,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import { supabase } from '../lib/supabase';
 import { savePendingDeepLink } from '../lib/pendingDeepLink';
 import { takeMicrosoftEntry } from '../lib/initialPath';
+import { NHG_LOGO } from '../lib/brand';
 
 // A sign-in the provider or Supabase turned down comes back to the page with
 // error_description in the query or the hash. Read it once, and tidy the URL.
@@ -18,10 +19,11 @@ const readReturnedAuthError = (): string | null => {
 };
 
 export const LoginPage = () => {
-    // The sign-in page is always Saturday's look. A person's own palette (Narai)
-    // is theirs once they are signed in; on this page, where nobody has been
-    // identified yet, the palette left in the browser by the last person is
-    // set aside before paint and put back when the page goes away.
+    // The sign-in page is always NHG's look (Narai Green and Galangal, drawn
+    // with its own colours below). A person's own palette is theirs once they
+    // are signed in; on this page, where nobody has been identified yet, the
+    // palette left in the browser by the last person is set aside before paint
+    // and put back when the page goes away.
     useLayoutEffect(() => {
         const root = document.documentElement;
         const had = root.getAttribute('data-palette');
@@ -162,8 +164,8 @@ export const LoginPage = () => {
             overflow: 'hidden',
             // Plain fallback while the video loads (or if it never can — an
             // ad blocker, a flaky connection) so the page is never blank.
-            backgroundColor: '#0f172a',
-            fontFamily: 'Inter, -apple-system, sans-serif'
+            backgroundColor: '#152A00',
+            fontFamily: '"IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif'
         }}>
             <video
                 autoPlay
@@ -189,58 +191,59 @@ export const LoginPage = () => {
             <div style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                backgroundColor: 'rgba(21, 42, 0, 0.64)',
                 zIndex: 1
             }} />
 
             <div style={{
                 position: 'relative',
                 zIndex: 2,
-                backgroundColor: 'white',
+                backgroundColor: '#fffaf0',
                 padding: '48px 40px',
-                borderRadius: '16px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                borderRadius: '2px',
+                border: '1px solid rgba(255, 239, 210, 0.22)',
+                boxShadow: '0 6px 24px rgba(0, 0, 0, 0.32)',
                 width: '100%',
                 maxWidth: '420px',
                 textAlign: 'center'
             }}>
                 {/* Logo Section */}
                 <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    {/* The Narai "N" in Galangal on a Narai Green tile, as in NHG's sidebar */}
                     <div style={{
                         width: '64px',
                         height: '64px',
-                        borderRadius: '28%',
+                        borderRadius: '2px',
                         overflow: 'hidden',
-                        marginBottom: '16px',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                        backgroundColor: '#fff',
+                        marginBottom: '20px',
+                        backgroundColor: '#152A00',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                     }}>
                         <img
-                            src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
+                            src={NHG_LOGO}
                             alt="NHG Logo"
-                            style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                            style={{ width: '58%', height: '58%', objectFit: 'contain' }}
                         />
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.025em' }}>
+                    <h1 style={{ margin: 0, fontFamily: '"Nib Pro", "IBM Plex Sans Thai", serif', fontSize: '32px', fontWeight: 400, color: '#152A00', letterSpacing: '-0.005em' }}>
                         NHG Saturday
                     </h1>
-                    <p style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
+                    <p style={{ marginTop: '10px', fontSize: '12px', color: '#656d47', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                         Login to your WorkSpace
                     </p>
                 </div>
 
                 {error && (
                     <div style={{
-                        backgroundColor: '#fef2f2',
-                        color: '#b91c1c',
+                        backgroundColor: '#ffe6e1',
+                        color: '#c70036',
                         padding: '12px',
-                        borderRadius: '8px',
+                        borderRadius: '2px',
                         marginBottom: '20px',
                         fontSize: '13px',
-                        border: '1px solid #fee2e2'
+                        border: '1px solid rgba(199, 0, 54, 0.2)'
                     }}>
                         {error}
                     </div>
@@ -254,10 +257,10 @@ export const LoginPage = () => {
                         style={{
                             width: '100%',
                             padding: '12px',
-                            backgroundColor: 'white',
-                            color: '#0f172a',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
+                            backgroundColor: '#fffaf0',
+                            color: '#152A00',
+                            border: '1px solid rgba(21, 42, 0, 0.28)',
+                            borderRadius: '2px',
                             fontSize: '15px',
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -266,10 +269,10 @@ export const LoginPage = () => {
                             justifyContent: 'center',
                             gap: '12px',
                             transition: 'background-color 0.2s',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            boxShadow: 'none'
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f6e3c1'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fffaf0'}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
                             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
@@ -282,16 +285,17 @@ export const LoginPage = () => {
                 </div>
 
                 <div style={{ position: 'relative', marginBottom: '24px' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid #e2e8f0' }}></div>
+                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid rgba(21, 42, 0, 0.14)' }}></div>
                     <span 
                         onClick={() => setShowEmailLogin(!showEmailLogin)}
                         style={{ 
                             position: 'relative', 
-                            backgroundColor: 'white', 
+ backgroundColor: '#fffaf0', 
                             padding: '0 12px', 
-                            color: '#6366f1', 
+                            color: '#152A00', 
                             fontSize: '12px', 
-                            fontWeight: 600, 
+                            fontWeight: 500, 
+                            letterSpacing: '0.1em',
                             textTransform: 'uppercase',
                             cursor: 'pointer',
                             userSelect: 'none'
@@ -311,10 +315,10 @@ export const LoginPage = () => {
                                 style={{
                                     width: '100%',
                                     padding: '12px',
-                                    backgroundColor: 'white',
-                                    color: '#0f172a',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: '8px',
+                                    backgroundColor: '#fffaf0',
+                                    color: '#152A00',
+                                    border: '1px solid rgba(21, 42, 0, 0.28)',
+                                    borderRadius: '2px',
                                     fontSize: '15px',
                                     fontWeight: 600,
                                     cursor: 'pointer',
@@ -323,10 +327,10 @@ export const LoginPage = () => {
                                     justifyContent: 'center',
                                     gap: '12px',
                                     transition: 'background-color 0.2s',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    boxShadow: 'none'
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f6e3c1'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fffaf0'}
                             >
                                 <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
                                     <path fill="#f35325" d="M1 1h10v10H1z" />
@@ -339,7 +343,7 @@ export const LoginPage = () => {
                         </div>
                         <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Your Alias Email</label>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Your Alias Email</label>
                                 <input
                                     type="email"
                                     placeholder="name@company.com"
@@ -349,17 +353,17 @@ export const LoginPage = () => {
                                     style={{
                                         width: '100%',
                                         padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '2px',
+                                        border: '1px solid rgba(21, 42, 0, 0.28)',
                                         fontSize: '15px',
                                         outline: 'none',
                                         transition: 'border-color 0.2s',
-                                        backgroundColor: '#f8fafc'
+                                        backgroundColor: '#f4f0e4'
                                     }}
                                 />
                             </div>
                             <div style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Password</label>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Password</label>
                                 <input
                                     type="password"
                                     placeholder="Enter your password"
@@ -369,11 +373,11 @@ export const LoginPage = () => {
                                     style={{
                                         width: '100%',
                                         padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '2px',
+                                        border: '1px solid rgba(21, 42, 0, 0.28)',
                                         fontSize: '15px',
                                         outline: 'none',
-                                        backgroundColor: '#f8fafc'
+                                        backgroundColor: '#f4f0e4'
                                     }}
                                 />
                             </div>
@@ -386,7 +390,7 @@ export const LoginPage = () => {
                                         setForgotResult(null);
                                         setShowForgotPassword(true);
                                     }}
-                                    style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}
+                                    style={{ background: 'none', border: 'none', color: '#152A00', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}
                                 >
                                     Forgot your password?
                                 </button>
@@ -399,15 +403,17 @@ export const LoginPage = () => {
                                     style={{
                                         width: '100%',
                                         padding: '12px',
-                                        backgroundColor: '#6366f1',
-                                        color: 'white',
+                                        backgroundColor: '#152A00',
+                                        color: '#FFEFD2',
                                         border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '15px',
-                                        fontWeight: 600,
+                                        borderRadius: '2px',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        letterSpacing: '0.1em',
+                                        textTransform: 'uppercase',
                                         cursor: loading ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
-                                        boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
+                                        boxShadow: 'none',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center'
@@ -424,7 +430,7 @@ export const LoginPage = () => {
                                 style={{
                                     background: 'none',
                                     border: 'none',
-                                    color: '#6366f1',
+                                    color: '#152A00',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                     fontWeight: 500
@@ -438,12 +444,12 @@ export const LoginPage = () => {
 
                 {showEmailLogin && showForgotPassword && (
                     <>
-                        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', textAlign: 'left' }}>
+                        <p style={{ fontSize: '13px', color: '#656d47', marginBottom: '20px', textAlign: 'left' }}>
                             Enter your alias email and we'll send a password reset link. This only works for Internal accounts — Google accounts should sign in with "Continue with Google".
                         </p>
                         <form onSubmit={handleForgotPassword} style={{ textAlign: 'left' }}>
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Your Alias Email</label>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Your Alias Email</label>
                                 <input
                                     type="email"
                                     placeholder="name@company.com"
@@ -453,24 +459,24 @@ export const LoginPage = () => {
                                     style={{
                                         width: '100%',
                                         padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '2px',
+                                        border: '1px solid rgba(21, 42, 0, 0.28)',
                                         fontSize: '15px',
                                         outline: 'none',
-                                        backgroundColor: '#f8fafc'
+                                        backgroundColor: '#f4f0e4'
                                     }}
                                 />
                             </div>
 
                             {forgotResult && (
                                 <div style={{
-                                    backgroundColor: forgotResult.type === 'success' ? '#f0fdf4' : '#fef2f2',
-                                    color: forgotResult.type === 'success' ? '#15803d' : '#b91c1c',
+                                    backgroundColor: forgotResult.type === 'success' ? '#e9f4e5' : '#ffe6e1',
+                                    color: forgotResult.type === 'success' ? '#007a56' : '#c70036',
                                     padding: '12px',
-                                    borderRadius: '8px',
+                                    borderRadius: '2px',
                                     marginBottom: '20px',
                                     fontSize: '13px',
-                                    border: `1px solid ${forgotResult.type === 'success' ? '#dcfce7' : '#fee2e2'}`
+                                    border: `1px solid ${forgotResult.type === 'success' ? 'rgba(0, 122, 86, 0.25)' : 'rgba(199, 0, 54, 0.2)'}`
                                 }}>
                                     {forgotResult.text}
                                 </div>
@@ -483,15 +489,17 @@ export const LoginPage = () => {
                                     style={{
                                         width: '100%',
                                         padding: '12px',
-                                        backgroundColor: '#6366f1',
-                                        color: 'white',
+                                        backgroundColor: '#152A00',
+                                        color: '#FFEFD2',
                                         border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '15px',
-                                        fontWeight: 600,
+                                        borderRadius: '2px',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        letterSpacing: '0.1em',
+                                        textTransform: 'uppercase',
                                         cursor: forgotLoading ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
-                                        boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
+                                        boxShadow: 'none'
                                     }}
                                 >
                                     {forgotLoading ? 'Sending...' : 'Send Reset Link'}
@@ -502,7 +510,7 @@ export const LoginPage = () => {
                         <div style={{ textAlign: 'center' }}>
                             <button
                                 onClick={() => setShowForgotPassword(false)}
-                                style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
+                                style={{ background: 'none', border: 'none', color: '#152A00', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
                             >
                                 Back to login
                             </button>

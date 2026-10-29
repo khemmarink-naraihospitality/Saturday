@@ -225,7 +225,7 @@ export const LoginPage = () => {
                         />
                     </div>
                     <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.025em' }}>
-                        NHG Saturday.com
+                        NHG Saturday
                     </h1>
                     <p style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}>
                         Log in to your workspace

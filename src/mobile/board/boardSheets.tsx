@@ -7,6 +7,7 @@ import type { FilterState } from '../../types';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, mobileToast, useBoardPeople } from '../ui';
 import { tintLabel } from '../../lib/labelTint';
 
+import { useTerms } from '../../lib/terms';
 const SheetAction = ({ icon, label, onClick, right }: { icon: ReactNode; label: ReactNode; onClick: () => void; right?: ReactNode }) => (
     <button type="button" className="m-action" onClick={onClick}>
         <span className="m-action__icon">{icon}</span>
@@ -23,6 +24,7 @@ export const BoardActionsSheet = ({ open, onClose, boardId, allCollapsed, onTogg
     allCollapsed: boolean;
     onToggleAllGroups: () => void;
 }) => {
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
     const toggleShowHiddenItems = useBoardStore(state => state.toggleShowHiddenItems);
@@ -35,7 +37,7 @@ export const BoardActionsSheet = ({ open, onClose, boardId, allCollapsed, onTogg
     };
 
     return (
-        <BottomSheet open={open} onClose={onClose} title={board?.title || 'Board'}>
+        <BottomSheet open={open} onClose={onClose} title={board?.title || t.Board}>
             <div style={{ padding: '6px 0 16px' }}>
                 <SheetAction
                     icon={<Star size={20} color={board?.isFavorite ? '#ffcb00' : undefined} fill={board?.isFavorite ? '#ffcb00' : 'none'} />}
@@ -44,13 +46,13 @@ export const BoardActionsSheet = ({ open, onClose, boardId, allCollapsed, onTogg
                 />
                 <SheetAction
                     icon={showHiddenItems ? <EyeOff size={20} /> : <Eye size={20} />}
-                    label={showHiddenItems ? 'Hide hidden items' : 'Show hidden items'}
+                    label={showHiddenItems ? `Hide hidden ${t.items}` : `Show hidden ${t.items}`}
                     onClick={() => run(toggleShowHiddenItems)}
                 />
-                <SheetAction icon={<Rows3 size={20} />} label={allCollapsed ? 'Expand all groups' : 'Collapse all groups'} onClick={() => run(onToggleAllGroups)} />
+                <SheetAction icon={<Rows3 size={20} />} label={allCollapsed ? `Expand all ${t.groups}` : `Collapse all ${t.groups}`} onClick={() => run(onToggleAllGroups)} />
                 <SheetAction
                     icon={<Link2 size={20} />}
-                    label="Copy board link"
+                    label={`Copy ${t.board} link`}
                     onClick={() => run(() => {
                         navigator.clipboard?.writeText(window.location.href)
                             .then(() => mobileToast('Link copied'))
@@ -73,6 +75,7 @@ export const BoardActionsSheet = ({ open, onClose, boardId, allCollapsed, onTogg
 
 /** "+" in the controls row: a new item in a chosen group. */
 export const NewItemSheet = ({ open, onClose, boardId }: { open: boolean; onClose: () => void; boardId: string }) => {
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const addItem = useBoardStore(state => state.addItem);
     const [title, setTitle] = useState('');
@@ -85,7 +88,8 @@ export const NewItemSheet = ({ open, onClose, boardId }: { open: boolean; onClos
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
-    const noun = board?.itemColumnTitle || 'Item';
+    // The default title is the word for the rows, whatever the board's own
+    const noun = !board?.itemColumnTitle || board.itemColumnTitle === 'Item' ? t.Item : board.itemColumnTitle;
     const add = () => {
         const text = title.trim();
         if (!text || !groupId) return;
@@ -116,7 +120,7 @@ export const NewItemSheet = ({ open, onClose, boardId }: { open: boolean; onClos
                     />
                 </label>
                 {(board?.groups?.length || 0) > 1 && (
-                    <div role="radiogroup" aria-label="Group" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div role="radiogroup" aria-label={t.Group} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {board!.groups.map(group => {
                             const selected = group.id === groupId;
                             return (

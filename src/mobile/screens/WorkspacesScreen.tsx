@@ -8,8 +8,10 @@ import { backToHome, openWorkspace } from '../nav/navigation';
 import { WorkspaceRow } from './parts';
 import { liveBoards, orderedWorkspaceTree } from './data';
 
+import { countOf, useTerms } from '../../lib/terms';
 /** Every workspace the user can see, sub-workspaces under their parent. */
 export const WorkspacesScreen = () => {
+    const t = useTerms();
     const boards = useBoardStore(state => state.boards);
     const accessible = useAccessibleWorkspaces();
     const [query, setQuery] = useState('');
@@ -30,16 +32,16 @@ export const WorkspacesScreen = () => {
 
     return (
         <div className="m-screen" data-testid="m-workspaces">
-            <ScreenHeader title="Workspaces" onBack={backToHome} />
+            <ScreenHeader title={t.Workspaces} onBack={backToHome} />
             <div className="m-scroll" style={{ padding: '0 16px 32px' }}>
                 <label className="m-field" style={{ background: 'hsl(var(--m-card))', boxShadow: 'var(--m-shadow-card)', marginBottom: 14 }}>
                     <Search size={18} />
                     <input
                         type="search"
-                        placeholder="Search workspaces"
+                        placeholder={`Search ${t.workspaces}`}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        aria-label="Search workspaces"
+                        aria-label={`Search ${t.workspaces}`}
                     />
                     {query && (
                         <button type="button" aria-label="Clear search" onClick={() => setQuery('')} style={{ display: 'flex' }}>
@@ -55,13 +57,13 @@ export const WorkspacesScreen = () => {
                                 key={workspace.id}
                                 workspace={workspace}
                                 indent={depth}
-                                meta={`${count} board${count === 1 ? '' : 's'}`}
+                                meta={countOf(count, t.board, t.boards)}
                                 onOpen={() => openWorkspace(workspace.id)}
                             />
                         );
                     })}
                     {rows.length === 0 && (
-                        <EmptyState>{q ? `No workspace matches “${query.trim()}”.` : 'You are not in any workspace yet.'}</EmptyState>
+                        <EmptyState>{q ? `No ${t.workspace} matches “${query.trim()}”.` : `You are not in any ${t.workspace} yet.`}</EmptyState>
                     )}
                 </Card>
             </div>

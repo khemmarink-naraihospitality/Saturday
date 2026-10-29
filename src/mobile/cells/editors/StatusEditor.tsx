@@ -4,6 +4,8 @@ import { BottomSheet, TextButton } from '../../ui';
 import { LabelsEditor } from './LabelsEditor';
 import type { EditorProps } from './types';
 import { tintLabel } from '../../../lib/labelTint';
+import { useNewUi } from '../../../lib/brand';
+import { StatusPill } from '../../../components/common/StatusPill';
 
 /**
  * A status — reference screenshot 21: every label as a full-width block in its
@@ -14,6 +16,8 @@ import { tintLabel } from '../../../lib/labelTint';
 export const StatusEditor = ({ open, onClose, item, column, value }: EditorProps) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const [editing, setEditing] = useState(false);
+    // NHG: each label as the pill it shows in the cell, on a plain row
+    const newUi = useNewUi();
     const options = Array.isArray(column.options) ? column.options : [];
     const current = options.find(o => o.id === value || o.label === value);
 
@@ -43,6 +47,20 @@ export const StatusEditor = ({ open, onClose, item, column, value }: EditorProps
                 <div className="m-choices" role="listbox" aria-label={column.title}>
                     {options.map(option => {
                         const selected = option.id === current?.id;
+                        if (newUi) {
+                            return (
+                                <button
+                                    key={option.id}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={selected}
+                                    className={`m-choice m-choice--pill${selected ? ' m-choice--on' : ''}`}
+                                    onClick={() => choose(option.id)}
+                                >
+                                    {option.label === 'Default' ? <span className="m-choice__blank">No label</span> : <StatusPill color={option.color} label={option.label} />}
+                                </button>
+                            );
+                        }
                         return (
                             <button
                                 key={option.id}

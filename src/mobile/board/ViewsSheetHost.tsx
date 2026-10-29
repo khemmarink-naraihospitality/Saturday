@@ -7,6 +7,8 @@ import { BottomSheet } from '../ui';
 import { VIEW_OPTIONS } from './views';
 import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
+import { useTerms } from '../../lib/terms';
+import { useNewUi } from '../../lib/brand';
 /**
  * The board's Views sheet — reference screenshot 26: a search field and the
  * board views, the current one outlined. (monday's "Build an app with vibe",
@@ -14,6 +16,8 @@ import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnable
  * a fixed set of views.)
  */
 export const ViewsSheetHost = () => {
+    const t = useTerms();
+    const newUi = useNewUi();
     const boardId = useMobileUI(state => state.viewsSheetBoardId);
     const close = useMobileUI(state => state.closeViewsSheet);
     const storedViewId = useBoardStore(state => state.boards.find(b => b.id === boardId)?.activeViewId);
@@ -28,7 +32,9 @@ export const ViewsSheetHost = () => {
 
     const q = query.trim().toLowerCase();
     // AI Summary only when switched on in Admin › AI Settings, as on desktop.
-    const views = VIEW_OPTIONS.filter(v => (v.id !== 'ai_summary' || aiEnabled === true) && (!q || v.label.toLowerCase().includes(q)));
+    // NHG calls the first view Table (src/lib/terms.ts)
+    const viewLabel = (v: { id: string; label: string }) => (v.id === 'main_table' && newUi ? t.mainTable : v.label);
+    const views = VIEW_OPTIONS.filter(v => (v.id !== 'ai_summary' || aiEnabled === true) && (!q || viewLabel(v).toLowerCase().includes(q)));
 
     return (
         <BottomSheet open={!!boardId} onClose={close} title="Views" size="tall" testId="m-views-sheet">
@@ -61,7 +67,7 @@ export const ViewsSheetHost = () => {
                                 }}
                             >
                                 <Icon size={21} strokeWidth={1.7} />
-                                <span className="m-views__name">{view.label}</span>
+                                <span className="m-views__name">{viewLabel(view)}</span>
                                 {selected && <Check size={20} strokeWidth={2.2} className="m-views__check" aria-hidden="true" />}
                             </button>
                         );

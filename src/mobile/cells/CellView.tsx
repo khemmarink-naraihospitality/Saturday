@@ -8,6 +8,9 @@ import { formatDateCell, formatTimelineRange, isOverdue } from './format';
 import { ONEDRIVE_ICON } from '../../lib/fileLinks';
 import './cells.css';
 import { tintLabel } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { priorityLevel } from '../../lib/priority';
+import { StatusPill } from '../../components/common/StatusPill';
 
 export interface CellViewProps {
     column: Column;
@@ -54,6 +57,9 @@ const toRating = (value: unknown): number => {
  */
 export const CellView = memo(({ column, value, people, variant, groupColor }: CellViewProps) => {
     const table = variant === 'table';
+    // NHG: statuses, labels and priorities as pills with a dot, timelines as a
+    // tint with a square colour edge (src/lib/brand.ts)
+    const newUi = useNewUi();
 
     switch (column.type) {
         case 'status': {
@@ -64,6 +70,12 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
                 return <span className={table ? 'm-cell-text' : 'm-detail-text'}>{String(value)}</span>;
             }
             const label = option && option.label !== 'Default' ? option.label : '';
+            if (newUi) {
+                if (!option || !label) return table ? null : <span className="m-detail-empty">—</span>;
+                return table
+                    ? <span className="m-cell-center"><StatusPill color={option.color} label={label} /></span>
+                    : <StatusPill color={option.color} label={label} />;
+            }
             if (!table) {
                 return option
                     ? <span className="m-status-pill" style={{ backgroundColor: tintLabel(option.color) }}>{label || ' '}</span>
@@ -80,6 +92,15 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
             const labels = (Array.isArray(value) ? value : value ? [value] : []).map(String);
             if (labels.length === 0) return table ? null : <span className="m-detail-empty">—</span>;
             const options = Array.isArray(column.options) ? column.options : [];
+            if (newUi) {
+                return (
+                    <span className={table ? 'm-chips m-chips--table' : 'm-chips'}>
+                        {labels.map((label, i) => (
+                            <StatusPill key={`${label}-${i}`} tag color={options.find(o => o.label === label)?.color || '#a0c4ff'} label={label} />
+                        ))}
+                    </span>
+                );
+            }
             return (
                 <span className={table ? 'm-chips m-chips--table' : 'm-chips'}>
                     {labels.map((label, i) => (
@@ -127,7 +148,9 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
             if (!range) return table ? null : <span className="m-detail-empty">—</span>;
             return (
                 <span className={table ? 'm-cell-center' : undefined}>
-                    <span className="m-timeline-pill" style={{ backgroundColor: groupColor || '#ff158a' }}>{range}</span>
+                    {newUi
+                        ? <span className="nhg-range nhg-range--phone" style={{ '--range-color': groupColor || '#ff158a' } as CSSProperties}>{range}</span>
+                        : <span className="m-timeline-pill" style={{ backgroundColor: groupColor || '#ff158a' }}>{range}</span>}
                 </span>
             );
         }
@@ -155,6 +178,13 @@ export const CellView = memo(({ column, value, people, variant, groupColor }: Ce
         }
 
         case 'priority': {
+            if (newUi) {
+                const level = priorityLevel(value);
+                if (!level) return table ? null : <span className="m-detail-empty">—</span>;
+                return table
+                    ? <span className="m-cell-center"><StatusPill color={level.color} label={level.label} /></span>
+                    : <StatusPill color={level.color} label={level.label} />;
+            }
             const rating = toRating(value);
             if (!rating && !table) return <span className="m-detail-empty">—</span>;
             return (

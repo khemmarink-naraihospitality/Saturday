@@ -6,6 +6,8 @@ import { formatNumberValue } from '../../utils/format';
 import { AvatarStack, type PersonInfo } from '../ui';
 import { parseDay } from './format';
 import { tintLabel } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { CountsText, priorityCounts, statusCounts } from '../../components/common/CountsText';
 
 const shortDay = (value: string) => {
     const date = parseDay(value) || new Date(value);
@@ -25,6 +27,24 @@ export const SummaryView = memo(({ column, items, people, color }: {
     color?: string;
 }) => {
     const agg = useMemo(() => (column.type === 'files' ? null : computeAggregates([column], items)[column.id]), [column, items]);
+    // NHG summarises in words: label counts instead of a bar, a plain date
+    // range, priorities as High / Medium / Low
+    const newUi = useNewUi();
+
+    if (newUi && column.type === 'status') {
+        if (items.length === 0) return null;
+        return <span className="m-cell-center"><CountsText parts={statusCounts(column, items.map(item => item.values[column.id]))} /></span>;
+    }
+    if (newUi && (column.type === 'date' || column.type === 'due_date' || column.type === 'timeline')) {
+        if (!agg?.min) return null;
+        const from = shortDay(agg.min);
+        const to = shortDay(agg.max || agg.min);
+        return <span className="m-cell-center"><span className="nhg-summary-range">{from === to ? from : `${from} – ${to}`}</span></span>;
+    }
+    if (newUi && column.type === 'priority') {
+        if (!agg?.count) return null;
+        return <span className="m-cell-center"><CountsText parts={priorityCounts(agg.values || [])} /></span>;
+    }
 
     switch (column.type) {
         case 'status': {

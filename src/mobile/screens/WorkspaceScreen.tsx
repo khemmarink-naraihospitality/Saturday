@@ -11,6 +11,7 @@ import { ActionRow, BoardRow } from './parts';
 import { canCreateBoardIn, liveBoards, recordWorkspaceVisit, workspaceFamily, workspaceRole } from './data';
 import { CreateSheet } from './homeSheets';
 
+import { useTerms } from '../../lib/terms';
 const FIRST_PAGE = 6;
 
 /**
@@ -18,6 +19,7 @@ const FIRST_PAGE = 6;
  * its sub-workspaces) under "Content", its dashboard, and who is in it.
  */
 export const WorkspaceScreen = () => {
+    const t = useTerms();
     const workspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspace = useBoardStore(state => state.workspaces.find(w => w.id === state.activeWorkspaceId));
     const workspaces = useBoardStore(state => state.workspaces);
@@ -74,8 +76,8 @@ export const WorkspaceScreen = () => {
     if (!workspace) {
         return (
             <div className="m-screen" data-testid="m-workspace">
-                <ScreenHeader title="Workspace" onBack={backToHome} />
-                <EmptyState title="Workspace not found">It may have been deleted, or you no longer have access.</EmptyState>
+                <ScreenHeader title={t.Workspace} onBack={backToHome} />
+                <EmptyState title={`${t.Workspace} not found`}>It may have been deleted, or you no longer have access.</EmptyState>
             </div>
         );
     }
@@ -103,7 +105,7 @@ export const WorkspaceScreen = () => {
             setSheet(null);
         } catch (err) {
             console.error('[Mobile] rename workspace failed', err);
-            mobileToast('The workspace could not be renamed.', 'error');
+            mobileToast(`The ${t.workspace} could not be renamed.`, 'error');
         }
     };
 
@@ -115,11 +117,11 @@ export const WorkspaceScreen = () => {
                 actions={(
                     <>
                         {canAddBoard && (
-                            <IconButton label="New board" size={40} onClick={() => setSheet('create')}>
+                            <IconButton label={`New ${t.board}`} size={40} onClick={() => setSheet('create')}>
                                 <Plus size={22} strokeWidth={1.9} />
                             </IconButton>
                         )}
-                        <IconButton label="Workspace actions" size={40} onClick={() => setSheet('actions')}>
+                        <IconButton label={`${t.Workspace} actions`} size={40} onClick={() => setSheet('actions')}>
                             <MoreHorizontal size={22} strokeWidth={1.9} />
                         </IconButton>
                     </>
@@ -152,13 +154,13 @@ export const WorkspaceScreen = () => {
                             <span className="m-row__tile"><DashboardGlyph size={30} /></span>
                             <span className="m-row__body">
                                 <span className="m-row__title">{workspace.title} Dashboard</span>
-                                <span className="m-row__meta">Every board in this workspace at a glance</span>
+                                <span className="m-row__meta">{`Every ${t.board} in this ${t.workspace} at a glance`}</span>
                             </span>
                         </div>
 
                         {contentBoards.length === 0 && (
-                            <EmptyState title="No boards yet">
-                                {canAddBoard ? 'Tap + to add the first board.' : 'Boards shared with you will show up here.'}
+                            <EmptyState title={`No ${t.boards} yet`}>
+                                {canAddBoard ? `Tap + to add the first ${t.board}.` : `${t.Boards} shared with you will show up here.`}
                             </EmptyState>
                         )}
                     </Card>
@@ -178,7 +180,7 @@ export const WorkspaceScreen = () => {
                 <div style={{ padding: '8px 0 16px' }}>
                     <ActionRow icon={<PieChart size={20} />} label="Open dashboard" onClick={() => { setSheet(null); afterSheetClose(() => openDashboard(workspace.id)); }} />
                     {canRename && (
-                        <ActionRow icon={<PencilLine size={20} />} label="Rename workspace" onClick={() => { setNewTitle(workspace.title); setSheet('rename'); }} />
+                        <ActionRow icon={<PencilLine size={20} />} label={`Rename ${t.workspace}`} onClick={() => { setNewTitle(workspace.title); setSheet('rename'); }} />
                     )}
                     <ActionRow icon={<Link2 size={20} />} label="Copy link" onClick={() => { setSheet(null); void copyLink(); }} />
                 </div>
@@ -187,7 +189,7 @@ export const WorkspaceScreen = () => {
             <BottomSheet
                 open={sheet === 'rename'}
                 onClose={() => setSheet(null)}
-                title="Rename workspace"
+                title={`Rename ${t.workspace}`}
                 headerRight={(
                     <PrimaryButton onClick={saveRename} disabled={!newTitle.trim()} style={{ minHeight: 38, padding: '0 16px', fontSize: 15 }}>Save</PrimaryButton>
                 )}
@@ -202,7 +204,7 @@ export const WorkspaceScreen = () => {
                             enterKeyHint="done"
                             onChange={(e) => setNewTitle(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') void saveRename(); }}
-                            aria-label="Workspace name"
+                            aria-label={`${t.Workspace} name`}
                         />
                     </label>
                 </div>
@@ -211,7 +213,7 @@ export const WorkspaceScreen = () => {
             <BottomSheet open={sheet === 'members'} onClose={() => setSheet(null)} title="Collaborators" size={members && members.length > 6 ? 'tall' : 'auto'}>
                 <div style={{ padding: '4px 20px 24px' }}>
                     {members === null && <div className="m-empty">Loading…</div>}
-                    {members?.length === 0 && <div className="m-empty">No one has been added to this workspace yet.</div>}
+                    {members?.length === 0 && <div className="m-empty">{`No one has been added to this ${t.workspace} yet.`}</div>}
                     {members?.map(person => (
                         <div key={person.id} className="m-row" style={{ minHeight: 64 }}>
                             <Avatar name={person.name} src={person.avatarUrl} size={40} />

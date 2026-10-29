@@ -14,6 +14,7 @@ import { ColumnsTab } from './ColumnsTab';
 import { FilesTab } from './FilesTab';
 import { Composer, type ComposerMode } from './Composer';
 
+import { useTerms } from '../../lib/terms';
 /** The link every notification uses for an item (itemSlice.addUpdate): the board with the item open. */
 const itemLink = (boardId: string, itemId: string) => `${window.location.origin}/?boardId=${boardId}&itemId=${itemId}`;
 
@@ -37,6 +38,7 @@ const shareItem = async (title: string, url: string) => {
 
 /** The title, renamed in place: tap, type, Enter or tap away to keep it. */
 const ItemTitle = ({ item, canEdit }: { item: Item; canEdit: boolean }) => {
+    const t = useTerms();
     const updateItemTitle = useBoardStore(state => state.updateItemTitle);
     const [editing, setEditing] = useState(false);
     const [text, setText] = useState(item.title);
@@ -76,7 +78,7 @@ const ItemTitle = ({ item, canEdit }: { item: Item; canEdit: boolean }) => {
                     if (e.key === 'Enter') { e.preventDefault(); commit(); }
                     if (e.key === 'Escape') { setText(item.title); setEditing(false); }
                 }}
-                aria-label="Item name"
+                aria-label={`${t.Item} name`}
             />
         );
     }
@@ -91,19 +93,21 @@ const ItemTitle = ({ item, canEdit }: { item: Item; canEdit: boolean }) => {
 
 /** "+ Write an update", floating over the bottom of the Updates tab (reference 19). */
 const ComposerPill = ({ itemId, onOpen }: { itemId: string; onOpen: () => void }) => {
+    const t = useTerms();
     const draft = useBoardStore(state => state.drafts[itemId] || '');
     const preview = hasHtmlContent(draft) ? previewText(draft) : '';
     return (
         <div className="m-composer-pill-wrap">
             <button type="button" className="m-composer-pill" onClick={onOpen} data-testid="m-composer-pill">
                 <span className="m-composer-pill__plus" aria-hidden="true"><Plus size={22} strokeWidth={1.8} /></span>
-                <span className={`m-truncate${preview ? ' m-composer-pill__draft' : ''}`}>{preview ? `Draft: ${preview}` : 'Write an update'}</span>
+                <span className={`m-truncate${preview ? ' m-composer-pill__draft' : ''}`}>{preview ? `Draft: ${preview}` : `Write ${t.update === 'update' ? 'an update' : `a ${t.update}`}`}</span>
             </button>
         </div>
     );
 };
 
 const ItemContent = ({ board, item }: { board: Board; item: Item }) => {
+    const t = useTerms();
     const tab = useMobileUI(state => state.itemTab);
     const setTab = useMobileUI(state => state.setItemTab);
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -162,7 +166,7 @@ const ItemContent = ({ board, item }: { board: Board; item: Item }) => {
                     ariaLabel="Item sections"
                     options={[
                         { value: 'columns', label: 'Columns' },
-                        { value: 'updates', label: updatesCount > 0 ? `Updates (${updatesCount})` : 'Updates' },
+                        { value: 'updates', label: updatesCount > 0 ? `${t.Updates} (${updatesCount})` : t.Updates },
                         { value: 'files', label: filesCount > 0 ? `Files (${filesCount})` : 'Files' },
                     ]}
                 />
@@ -191,6 +195,7 @@ const ItemActionSheets = ({ board, item, menu, setMenu }: {
     menu: 'actions' | 'delete' | null;
     setMenu: (menu: 'actions' | 'delete' | null) => void;
 }) => {
+    const t = useTerms();
     const deleteItem = useBoardStore(state => state.deleteItem);
     const restoreItem = useBoardStore(state => state.restoreItem);
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -230,7 +235,7 @@ const ItemActionSheets = ({ board, item, menu, setMenu }: {
             <BottomSheet open={menu === 'delete'} onClose={() => setMenu(null)} title={`Delete “${item.title}”?`}>
                 <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ fontSize: 15, color: 'hsl(var(--m-text-2))' }}>
-                        {item.parentId ? 'The subitem goes' : 'The item and its subitems go'} to the board's trash, where they can be restored.
+                        {item.parentId ? `The ${t.subitem} goes` : `The ${t.item} and its ${t.subitems} go`}{` to the ${t.board}'s trash, where they can be restored.`}
                     </div>
                     <PrimaryButton
                         style={{ background: 'hsl(var(--color-danger))' }}
@@ -257,6 +262,7 @@ const ItemActionSheets = ({ board, item, menu, setMenu }: {
  * history entry, so the back gesture closes it.
  */
 export const ItemSheet = () => {
+    const t = useTerms();
     const itemId = useBoardStore(state => state.activeItemId);
     // The item lives on the open board — or, while a link is still loading, on
     // whichever loaded board has it.
@@ -276,8 +282,8 @@ export const ItemSheet = () => {
     let body;
     if (!itemId) body = null;
     else if (item && board) body = <ItemContent key={item.id} board={board} item={item} />;
-    else if (!board || !board.isDataLoaded) body = <CenteredSpinner message="Loading item…" />;
-    else body = <EmptyState title="This item isn't here any more">It may have been deleted or moved to another board.</EmptyState>;
+    else if (!board || !board.isDataLoaded) body = <CenteredSpinner message={`Loading ${t.item}…`} />;
+    else body = <EmptyState title={`This ${t.item} isn't here any more`}>{`It may have been deleted or moved to another ${t.board}.`}</EmptyState>;
 
     return (
         <>
@@ -287,7 +293,7 @@ export const ItemSheet = () => {
                 size="full"
                 className="m-item-sheet"
                 testId="m-item"
-                ariaLabel={item?.title || 'Item'}
+                ariaLabel={item?.title || t.Item}
                 headerLeft={(
                     <button type="button" className="m-item__close" onClick={closeItem} aria-label="Close">
                         <X size={26} strokeWidth={1.8} />

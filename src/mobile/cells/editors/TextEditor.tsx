@@ -5,6 +5,9 @@ import { buildLinkValue, linkHref, parseLinkValue } from '../../../lib/utils';
 import { BottomSheet, PrimaryButton, TextButton } from '../../ui';
 import type { EditorProps } from './types';
 
+import { useNewUi } from '../../../lib/brand';
+import { PRIORITY_LEVELS, priorityLevel } from '../../../lib/priority';
+import { StatusPill } from '../../../components/common/StatusPill';
 // The desktop TextCell's rule for a number column: digits, one point, an optional %.
 const NUMBER_INPUT = /^[0-9]*\.?[0-9]*%?$/;
 
@@ -140,8 +143,43 @@ export const LinkEditor = ({ open, onClose, item, column, value }: EditorProps) 
 /** Priority: five big stars; the star that already holds the rating clears it (the desktop rule). */
 export const PriorityEditor = ({ open, onClose, item, column, value }: EditorProps) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
+    const newUi = useNewUi();
     const n = typeof value === 'number' ? value : parseFloat(String(value));
     const rating = Number.isFinite(n) ? Math.min(5, Math.max(0, Math.round(n))) : 0;
+
+    // NHG: High / Medium / Low (src/lib/priority.ts). Picking the level the row
+    // already has leaves its rating alone, so a 4 stays a 4.
+    if (newUi) {
+        const level = priorityLevel(value);
+        const pick = (next: number | null, id?: string) => {
+            onClose();
+            if (id && id === level?.id) return;
+            void updateItemValue(item.id, column.id, next);
+        };
+        return (
+            <BottomSheet open={open} onClose={onClose} title={column.title} testId="m-cell-editor">
+                <div className="m-choices" role="listbox" aria-label={column.title}>
+                    {PRIORITY_LEVELS.map(l => (
+                        <button
+                            key={l.id}
+                            type="button"
+                            role="option"
+                            aria-selected={level?.id === l.id}
+                            className={`m-choice m-choice--pill${level?.id === l.id ? ' m-choice--on' : ''}`}
+                            onClick={() => pick(l.rating, l.id)}
+                        >
+                            <StatusPill color={l.color} label={l.label} />
+                        </button>
+                    ))}
+                    {level && (
+                        <button type="button" className="m-choices__clear" onClick={() => pick(null)}>
+                            Clear
+                        </button>
+                    )}
+                </div>
+            </BottomSheet>
+        );
+    }
 
     const apply = (star: number) => {
         onClose();

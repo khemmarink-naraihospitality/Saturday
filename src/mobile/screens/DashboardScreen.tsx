@@ -9,6 +9,7 @@ import { afterSheetClose } from '../nav/history';
 import { WorkspaceRow } from './parts';
 import { orderedWorkspaceTree, workspacePath } from './data';
 
+import { useTerms } from '../../lib/terms';
 // The desktop dashboard page, which stacks its widgets in one column when it
 // sees a phone (useIsMobile in WorkspaceDashboardPage).
 const WorkspaceDashboardPage = lazy(() =>
@@ -17,6 +18,7 @@ const WorkspaceDashboardPage = lazy(() =>
 
 /** The Dashboard tab: the active workspace's dashboard, with a switcher in the title. */
 export const DashboardScreen = () => {
+    const t = useTerms();
     const workspace = useBoardStore(state => state.workspaces.find(w => w.id === state.activeWorkspaceId));
     const workspaces = useBoardStore(state => state.workspaces);
     const accessible = useAccessibleWorkspaces();
@@ -29,7 +31,7 @@ export const DashboardScreen = () => {
                     type="button"
                     className="m-dash-title"
                     onClick={() => setPicking(true)}
-                    aria-label="Choose workspace"
+                    aria-label={`Choose ${t.workspace}`}
                     style={{ flex: 1 }}
                 >
                     <span style={{ minWidth: 0 }}>
@@ -46,11 +48,11 @@ export const DashboardScreen = () => {
                         <WorkspaceDashboardPage key={workspace.id} />
                     </Suspense>
                 ) : (
-                    <EmptyState title="No workspace">Pick a workspace to see its dashboard.</EmptyState>
+                    <EmptyState title={`No ${t.workspace}`}>{`Pick a ${t.workspace} to see its dashboard.`}</EmptyState>
                 )}
             </div>
 
-            <BottomSheet open={picking} onClose={() => setPicking(false)} title="Workspace" size={accessible.length > 6 ? 'tall' : 'auto'}>
+            <BottomSheet open={picking} onClose={() => setPicking(false)} title={t.Workspace} size={accessible.length > 6 ? 'tall' : 'auto'}>
                 <div style={{ padding: '0 20px 24px' }}>
                     {orderedWorkspaceTree(accessible).map(({ workspace: w, depth }) => (
                         <WorkspaceRow

@@ -15,6 +15,8 @@ import { VIEW_OPTIONS } from './views';
 import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 import { StackedRowsIcon } from './icons';
 
+import { useTerms } from '../../lib/terms';
+import { useNewUi } from '../../lib/brand';
 // The other views are the desktop components, fetched only when picked.
 const TimelineView = lazy(() => import('../../components/table/TimelineView').then(m => ({ default: m.TimelineView })));
 const KanbanView = lazy(() => import('../../components/kanban/KanbanView').then(m => ({ default: m.KanbanView })));
@@ -28,6 +30,8 @@ const AISummaryView = lazy(() => import('../../components/board/AISummaryView').
  * included: a private board's content is never fetched before its PIN.
  */
 export const BoardScreen = ({ boardId }: { boardId: string }) => {
+    const t = useTerms();
+    const newUi = useNewUi();
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const loadBoardData = useBoardStore(state => state.loadBoardData);
     const toggleFavorite = useBoardStore(state => state.toggleFavorite);
@@ -71,8 +75,8 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
     if (!board) {
         return (
             <div className="m-screen m-board" data-testid="m-board">
-                <ScreenHeader title="Board" onBack={backFromBoard} />
-                <EmptyState title="Board not found">It may have been deleted, or you might not have access to it.</EmptyState>
+                <ScreenHeader title={t.Board} onBack={backFromBoard} />
+                <EmptyState title={`${t.Board} not found`}>It may have been deleted, or you might not have access to it.</EmptyState>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <PrimaryButton onClick={openHome}>Back to Home</PrimaryButton>
                 </div>
@@ -92,13 +96,13 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
     }
 
     const viewId = shownViewId(board.activeViewId, aiEnabled);
-    const viewLabel = VIEW_OPTIONS.find(v => v.id === viewId)?.label || 'Main Table';
+    const viewLabel = viewId === 'main_table' && newUi ? t.mainTable : VIEW_OPTIONS.find(v => v.id === viewId)?.label || 'Main Table';
 
     let body;
     if (!board.isDataLoaded) {
-        body = <CenteredSpinner message="Loading board…" />;
+        body = <CenteredSpinner message={`Loading ${t.board}…`} />;
     } else if (!board.groups || !board.columns) {
-        body = <EmptyState title="This board could not be read">Try again later, or open it on a computer.</EmptyState>;
+        body = <EmptyState title={`This ${t.board} could not be read`}>Try again later, or open it on a computer.</EmptyState>;
     } else if (viewId === 'main_table') {
         body = <MobileTable boardId={boardId} canEdit={canEdit} />;
     } else {
@@ -121,7 +125,7 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
                 title={board.title}
                 onBack={backFromBoard}
                 actions={(
-                    <IconButton label="Board actions" size={36} onClick={() => setSheet('actions')}>
+                    <IconButton label={`${t.Board} actions`} size={36} onClick={() => setSheet('actions')}>
                         <MoreHorizontal size={21} strokeWidth={1.9} />
                     </IconButton>
                 )}
@@ -132,14 +136,14 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
                     <span className="m-truncate">{viewLabel}</span>
                     <ChevronDown size={20} strokeWidth={1.7} />
                 </button>
-                <IconButton label={allCollapsed ? 'Expand all groups' : 'Collapse all groups'} size={36} onClick={toggleAllGroups} aria-pressed={allCollapsed}>
+                <IconButton label={allCollapsed ? `Expand all ${t.groups}` : `Collapse all ${t.groups}`} size={36} onClick={toggleAllGroups} aria-pressed={allCollapsed}>
                     <StackedRowsIcon size={21} />
                 </IconButton>
                 <IconButton label={board.isFavorite ? 'Remove from favorites' : 'Add to favorites'} size={36} onClick={() => void toggleFavorite(boardId)} aria-pressed={!!board.isFavorite}>
                     <Star size={20} strokeWidth={1.8} color={board.isFavorite ? '#ffcb00' : undefined} fill={board.isFavorite ? '#ffcb00' : 'none'} />
                 </IconButton>
                 {canEdit && (
-                    <IconButton label={`New ${board.itemColumnTitle || 'item'}`} variant="accent" size={36} onClick={() => setSheet('new')}>
+                    <IconButton label={`New ${newUi && (!board.itemColumnTitle || board.itemColumnTitle === 'Item') ? t.item : board.itemColumnTitle || 'item'}`} variant="accent" size={36} onClick={() => setSheet('new')}>
                         <Plus size={21} strokeWidth={2} />
                     </IconButton>
                 )}

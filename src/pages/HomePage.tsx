@@ -183,8 +183,9 @@ export const HomePage = () => {
 // Sub-component for Feed to handle its own logic
 const InboxFeed = () => {
     const { user } = useAuth();
-    // NHG calls the feed its Inbox
+    // NHG calls the feed its Inbox, and names kinds in its own words
     const newUi = useNewUi();
+    const t = useTerms();
     const notifications = useBoardStore(state => state.notifications || []);
     const loadNotifications = useBoardStore(state => state.loadNotifications);
     const handleAcceptInvite = useBoardStore(state => state.handleAcceptInvite);
@@ -308,7 +309,7 @@ const InboxFeed = () => {
                 ) : (
                     <>
                         {visibleNotifications.map(n => {
-                            const kind = notificationKind(n.type);
+                            const kind = notificationKind(n.type, t);
                             const opens = !!(n.data?.board_id || n.data?.workspace_id);
                             const status = n.data?.status || n.status;
                             const settled = n.data?.status === 'accepted' || n.data?.status === 'declined' || n.status === 'accepted' || n.status === 'declined';

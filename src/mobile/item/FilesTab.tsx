@@ -9,6 +9,7 @@ import type { FileLink, Item } from '../../types';
 import { BottomSheet, EmptyState, PrimaryButton } from '../ui';
 import { DRIVE_ICON, FileIcon } from '../cells/CellView';
 
+import { useTerms } from '../../lib/terms';
 const hostOf = (url: string) => {
     try {
         return new URL(url).hostname.replace(/^www\./, '');
@@ -23,6 +24,7 @@ const hostOf = (url: string) => {
  * remove one from its "…".
  */
 export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) => {
+    const t = useTerms();
     const updateItemFiles = useBoardStore(state => state.updateItemFiles);
     const { openPicker } = useGooglePicker();
     const drives = useCloudDrives();
@@ -74,7 +76,7 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
             )}
 
             {files.length === 0 ? (
-                <EmptyState title="No files yet">{canEdit ? 'Add a Google Drive or OneDrive link to share it with the team.' : 'Files added to this item will show here.'}</EmptyState>
+                <EmptyState title="No files yet">{canEdit ? 'Add a Google Drive or OneDrive link to share it with the team.' : `Files added to this ${t.item} will show here.`}</EmptyState>
             ) : (
                 <div className="m-props__card">
                     {files.map(file => (
@@ -154,7 +156,7 @@ export const FilesTab = ({ item, canEdit }: { item: Item; canEdit: boolean }) =>
                             }}
                         >
                             <span className="m-action__icon"><Trash2 size={20} /></span>
-                            <span style={{ flex: 1 }}>Remove from this item</span>
+                            <span style={{ flex: 1 }}>{`Remove from this ${t.item}`}</span>
                         </button>
                     )}
                 </div>

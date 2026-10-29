@@ -4,6 +4,7 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, Spinner, mobileToast, peopleIds, useBoardPeople } from '../../ui';
 import type { EditorProps } from './types';
 
+import { useTerms } from '../../../lib/terms';
 interface Candidate {
     id: string;
     full_name?: string | null;
@@ -21,6 +22,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * address nobody has yet is invited by email — the desktop PersonPicker's rules.
  */
 export const PeopleEditor = ({ open, onClose, board, item, column, value }: EditorProps) => {
+    const t = useTerms();
     const assignMemberToItem = useBoardStore(state => state.assignMemberToItem);
     const inviteAndAssignUser = useBoardStore(state => state.inviteAndAssignUser);
     const inviteNewEmailToItem = useBoardStore(state => state.inviteNewEmailToItem);
@@ -95,13 +97,13 @@ export const PeopleEditor = ({ open, onClose, board, item, column, value }: Edit
         const name = inviting.full_name || inviting.email || 'This person';
         return (
             // The back gesture closes the whole sheet (it owns one history entry); "Back" returns to the list.
-            <BottomSheet open={open} onClose={onClose} title="Share this board?" testId="m-cell-editor">
+            <BottomSheet open={open} onClose={onClose} title={`Share this ${t.board}?`} testId="m-cell-editor">
                 <div className="m-editor-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div className="m-invite">
                         <Avatar name={name} src={inviting.avatar_url} size={44} />
                         <div style={{ minWidth: 0 }}>
                             <div className="m-truncate" style={{ fontWeight: 600, fontSize: 16.5 }}>{name}</div>
-                            <div style={{ fontSize: 14.5, color: 'hsl(var(--m-text-2))' }}>isn't on “{board.title}” yet. Share the board to assign them.</div>
+                            <div style={{ fontSize: 14.5, color: 'hsl(var(--m-text-2))' }}>isn't on “{board.title}{`” yet. Share the ${t.board} to assign them.`}</div>
                         </div>
                     </div>
                     <div className="m-segmented" role="radiogroup" aria-label="Access">

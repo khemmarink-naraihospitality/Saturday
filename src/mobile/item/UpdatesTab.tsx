@@ -10,6 +10,7 @@ import { Avatar, AvatarStack, BottomSheet, CenteredSpinner, EmptyState, PrimaryB
 import { FileIcon } from '../cells/CellView';
 import type { ComposerMode } from './Composer';
 
+import { useTerms } from '../../lib/terms';
 interface Me {
     id: string;
     name: string;
@@ -161,6 +162,7 @@ export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleT
     /** Opens a thread (and leaves it open if it already is). */
     onExpandThread: (id: string) => void;
 }) => {
+    const t = useTerms();
     const loadItemUpdates = useBoardStore(state => state.loadItemUpdates);
     const toggleUpdateLike = useBoardStore(state => state.toggleUpdateLike);
     const deleteUpdate = useBoardStore(state => state.deleteUpdate);
@@ -216,13 +218,13 @@ export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleT
     const like = (update: Comment) => void toggleUpdateLike(item.id, update.id, { id: me.id, name: me.name });
 
     if (item.updatesLoaded === false && (item.updatesCount ?? 0) > 0) {
-        return <CenteredSpinner message="Loading updates…" />;
+        return <CenteredSpinner message={`Loading ${t.updates}…`} />;
     }
 
     return (
         <>
             {topLevel.length === 0 ? (
-                <EmptyState title="No updates yet">Share progress, mention someone or attach a file — it all lives here.</EmptyState>
+                <EmptyState title={`No ${t.updates} yet`}>Share progress, mention someone or attach a file — it all lives here.</EmptyState>
             ) : (
                 <div className="m-updates">
                     {topLevel.map(update => (
@@ -271,9 +273,9 @@ export const UpdatesTab = ({ item, people, onCompose, expandedThreads, onToggleT
                 </div>
             </BottomSheet>
 
-            <BottomSheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Delete this update?">
+            <BottomSheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title={`Delete this ${t.update}?`}>
                 <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ fontSize: 15, color: 'hsl(var(--m-text-2))' }}>It will be removed for everyone on this board.</div>
+                    <div style={{ fontSize: 15, color: 'hsl(var(--m-text-2))' }}>{`It will be removed for everyone on this ${t.board}.`}</div>
                     <PrimaryButton
                         style={{ background: 'hsl(var(--color-danger))' }}
                         onClick={() => {

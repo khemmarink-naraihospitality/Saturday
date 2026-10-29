@@ -1,5 +1,7 @@
 import { Lock, Share2, House } from 'lucide-react';
 import { colorFor } from './format';
+import { useNewUi } from '../../lib/brand';
+import { WorkspaceIcon } from '../../components/board/sidebar/SidebarIcons';
 
 /**
  * The little pictures the phone layout uses for boards, workspaces and
@@ -46,9 +48,12 @@ export const BoardGlyph = ({ size = 34, isPrivate = false, shared = false }: {
 );
 
 /** A workspace: its first letter on a colour picked from its name. */
-export const WorkspaceBadge = ({ title, size = 38, home = false }: { title: string; size?: number; home?: boolean }) => (
+export const WorkspaceBadge = ({ title, size = 38, home = false }: { title: string; size?: number; home?: boolean }) => {
+    // NHG calls workspaces Space Folders: the desktop's folder, letter on the front
+    const newUi = useNewUi();
+    return (
     <span style={{ position: 'relative', display: 'inline-flex' }}>
-        <span style={{
+        {newUi ? <WorkspaceIcon title={title} isActive={false} size={size} /> : <span style={{
             width: size,
             height: size,
             borderRadius: Math.round(size * 0.26),
@@ -62,7 +67,7 @@ export const WorkspaceBadge = ({ title, size = 38, home = false }: { title: stri
             lineHeight: 1
         }}>
             {(title.trim()[0] || '?').toUpperCase()}
-        </span>
+        </span>}
         {home && (
             <span style={{
                 position: 'absolute',
@@ -81,7 +86,8 @@ export const WorkspaceBadge = ({ title, size = 38, home = false }: { title: stri
             </span>
         )}
     </span>
-);
+    );
+};
 
 /** A dashboard: a pie with a couple of bars. */
 export const DashboardGlyph = ({ size = 34, isPrivate = false }: { size?: number; isPrivate?: boolean }) => (

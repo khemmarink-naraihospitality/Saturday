@@ -10,6 +10,7 @@ import { Avatar, BottomSheet, Card, PrimaryButton } from '../ui';
 import { openWorkspaces } from '../nav/navigation';
 import { PALETTES } from '../../lib/palettes';
 import { isNewUi } from '../../lib/brand';
+import { termsFor } from '../../lib/terms';
 import { chooseAccountPalette } from '../../lib/uiTheme';
 import { ThemeSwatch } from '../../components/common/ThemeChoice';
 
@@ -41,6 +42,7 @@ export const MoreScreen = () => {
     const toggleTheme = useThemeStore(state => state.toggleTheme);
     const palette = useThemeStore(state => state.palette);
     const newUi = isNewUi(palette);
+    const t = termsFor(palette);
     const [themeOpen, setThemeOpen] = useState(false);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const { signOut } = useAuth();
@@ -65,7 +67,7 @@ export const MoreScreen = () => {
                     </Card>
 
                     <Card className="m-menu">
-                        <MenuItem icon={<LayoutGrid size={20} />} label="Workspaces" onClick={openWorkspaces} />
+                        <MenuItem icon={<LayoutGrid size={20} />} label={t.Workspaces} onClick={openWorkspaces} />
                         <MenuItem
                             icon={<PaletteIcon size={20} />}
                             label="Theme"

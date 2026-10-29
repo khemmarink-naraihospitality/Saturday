@@ -7,8 +7,10 @@ import { openBoard } from '../nav/navigation';
 import { BoardRow } from './parts';
 import { liveBoards } from './data';
 
+import { useTerms } from '../../lib/terms';
 /** The Favorites tab: every starred board, most recently visited first. */
 export const FavoritesScreen = () => {
+    const t = useTerms();
     const boards = useBoardStore(state => state.boards);
     const workspaces = useBoardStore(state => state.workspaces);
     const sharedBoardIds = useBoardStore(state => state.sharedBoardIds);
@@ -37,7 +39,7 @@ export const FavoritesScreen = () => {
                         ))}
                         {favourites.length === 0 && (
                             <EmptyState icon={<Star size={36} color="#ffcb00" />} title="No favorites yet">
-                                Tap the star on a board to keep it here.
+                                {`Tap the star on a ${t.board} to keep it here.`}
                             </EmptyState>
                         )}
                     </Card>

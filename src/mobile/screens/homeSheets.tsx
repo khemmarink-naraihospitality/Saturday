@@ -9,8 +9,10 @@ import { afterSheetClose } from '../nav/history';
 import { ActionRow, BoardRow, WorkspaceRow } from './parts';
 import { canCreateBoardIn, canInviteTo, liveBoards, workspacePath } from './data';
 
+import { useTerms } from '../../lib/terms';
 /** Search every board and workspace the user can open. Empty query: recent boards. */
 export const SearchSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+    const t = useTerms();
     const [query, setQuery] = useState('');
     const boards = useBoardStore(state => state.boards);
     const workspaces = useBoardStore(state => state.workspaces);
@@ -51,10 +53,10 @@ export const SearchSheet = ({ open, onClose }: { open: boolean; onClose: () => v
                         autoFocus
                         type="search"
                         enterKeyHint="search"
-                        placeholder="Search boards and workspaces"
+                        placeholder={`Search ${t.boards} and ${t.workspaces}`}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        aria-label="Search boards and workspaces"
+                        aria-label={`Search ${t.boards} and ${t.workspaces}`}
                     />
                     {query && (
                         <button type="button" aria-label="Clear search" onClick={() => setQuery('')} style={{ display: 'flex' }}>
@@ -104,8 +106,10 @@ const WorkspacePicker = ({ options, value, onChange }: {
     options: { id: string; title: string; path: string }[];
     value: string | null;
     onChange: (id: string) => void;
-}) => (
-    <div role="radiogroup" aria-label="Workspace" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+}) => {
+    const t = useTerms();
+    return (
+    <div role="radiogroup" aria-label={t.Workspace} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {options.map(option => {
             const selected = option.id === value;
             return (
@@ -134,7 +138,8 @@ const WorkspacePicker = ({ options, value, onChange }: {
             );
         })}
     </div>
-);
+    );
+};
 
 type CreateStep = 'menu' | 'board' | 'workspace';
 
@@ -148,6 +153,7 @@ export const CreateSheet = ({ open, onClose, initialWorkspaceId }: {
     onClose: () => void;
     initialWorkspaceId?: string;
 }) => {
+    const t = useTerms();
     const workspaces = useBoardStore(state => state.workspaces);
     const userWorkspaceRoles = useBoardStore(state => state.userWorkspaceRoles);
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
@@ -202,7 +208,7 @@ export const CreateSheet = ({ open, onClose, initialWorkspaceId }: {
         }
     };
 
-    const title = step === 'menu' ? 'Create' : step === 'board' ? 'New board' : 'New workspace';
+    const title = step === 'menu' ? 'Create' : step === 'board' ? `New ${t.board}` : `New ${t.workspace}`;
     const canSubmit = !!name.trim() && !busy && (step === 'workspace' || !!workspaceId);
 
     return (
@@ -220,14 +226,14 @@ export const CreateSheet = ({ open, onClose, initialWorkspaceId }: {
                 <div style={{ padding: '8px 0 16px' }}>
                     <ActionRow
                         icon={<LayoutGrid size={20} />}
-                        label="New board"
+                        label={`New ${t.board}`}
                         disabled={boardTargets.length === 0}
                         onClick={() => setStep('board')}
                     />
-                    <ActionRow icon={<FolderPlus size={20} />} label="New workspace" onClick={() => setStep('workspace')} />
+                    <ActionRow icon={<FolderPlus size={20} />} label={`New ${t.workspace}`} onClick={() => setStep('workspace')} />
                     {boardTargets.length === 0 && (
                         <div style={{ padding: '4px 20px 0', fontSize: 13, color: 'hsl(var(--m-text-3))' }}>
-                            You can't add boards to any of your workspaces.
+                            {`You can't add ${t.boards} to any of your ${t.workspaces}.`}
                         </div>
                     )}
                 </div>
@@ -238,18 +244,18 @@ export const CreateSheet = ({ open, onClose, initialWorkspaceId }: {
                             autoFocus
                             type="text"
                             enterKeyHint="done"
-                            placeholder={step === 'board' ? 'Board name' : 'Workspace name'}
+                            placeholder={step === 'board' ? `${t.Board} name` : `${t.Workspace} name`}
                             value={name}
                             maxLength={120}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') void create(); }}
-                            aria-label={step === 'board' ? 'Board name' : 'Workspace name'}
+                            aria-label={step === 'board' ? `${t.Board} name` : `${t.Workspace} name`}
                         />
                     </label>
                     {step === 'board' && (
                         <>
                             <div style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'hsl(var(--m-text-3))' }}>
-                                Workspace
+                                {t.Workspace}
                             </div>
                             <WorkspacePicker options={boardTargets} value={workspaceId} onChange={setWorkspaceId} />
                         </>
@@ -262,6 +268,7 @@ export const CreateSheet = ({ open, onClose, initialWorkspaceId }: {
 
 /** Invite someone to a workspace the user owns or administers. */
 export const InviteSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+    const t = useTerms();
     const workspaces = useBoardStore(state => state.workspaces);
     const userWorkspaceRoles = useBoardStore(state => state.userWorkspaceRoles);
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
@@ -307,7 +314,7 @@ export const InviteSheet = ({ open, onClose }: { open: boolean; onClose: () => v
         <BottomSheet
             open={open}
             onClose={onClose}
-            title="Invite to workspace"
+            title={`Invite to ${t.workspace}`}
             headerRight={(
                 <PrimaryButton onClick={invite} disabled={!valid || !workspaceId || busy} style={{ minHeight: 38, padding: '0 16px', fontSize: 15 }}>
                     {busy ? 'Sending…' : 'Invite'}
@@ -331,7 +338,7 @@ export const InviteSheet = ({ open, onClose }: { open: boolean; onClose: () => v
                     />
                 </label>
                 <div style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'hsl(var(--m-text-3))' }}>
-                    Workspace
+                    {t.Workspace}
                 </div>
                 <WorkspacePicker options={targets} value={workspaceId} onChange={setWorkspaceId} />
             </div>

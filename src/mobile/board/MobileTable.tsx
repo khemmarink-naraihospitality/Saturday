@@ -15,6 +15,8 @@ import { openItem } from '../nav/navigation';
 import { GUTTER, ROW_HEIGHT, nameColumnWidth, rowOffsets, stickyGroupIndex, toTableRows, type TableRow } from './table/layout';
 import { FooterRow, GroupHeaderRow, ItemRow, SubFooterRow, SubHeaderRow, type RowContext } from './table/rows';
 
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 /** Room under the last row for the floating toolbar (BoardScreen sets the variable). */
 const BOTTOM_SPACE = 'var(--m-board-toolbar-space, 104px)';
 const RIGHT_PAD = 16;
@@ -34,6 +36,8 @@ const widthOf = (columns: Column[]) => columns.reduce((sum, col) => sum + column
  * through stays pinned to the top.
  */
 export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: boolean }) => {
+    const newUi = useNewUi();
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
@@ -154,12 +158,21 @@ export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: bo
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editing?.itemId, editing?.columnId]);
 
-    const ctx: RowContext = useMemo(() => ({
-        boardId,
-        canEdit,
-        people,
-        itemTitle: board?.itemColumnTitle || 'Item',
-    }), [boardId, canEdit, people, board?.itemColumnTitle]);
+    const ctx: RowContext = useMemo(() => {
+        const title = board?.itemColumnTitle || 'Item';
+        return {
+            boardId,
+            canEdit,
+            people,
+            // The default title is the word for the rows, whatever the board's own
+            itemTitle: title === 'Item' ? t.Item : title,
+            newUi,
+            item: t.item,
+            items: t.items,
+            subitem: t.subitem,
+            subitems: t.subitems,
+        };
+    }, [boardId, canEdit, people, board?.itemColumnTitle, newUi, t]);
 
     const onToggleExpand = useCallback((itemId: string) => toggleItemExpansion(boardId, itemId), [boardId, toggleItemExpansion]);
     const onOpen = useCallback((itemId: string) => openItem(itemId), []);
@@ -313,7 +326,7 @@ export const MobileTable = ({ boardId, canEdit }: { boardId: string; canEdit: bo
             </div>
             {noMatches && (
                 <div className="m-table__empty" role="status">
-                    <div>{searchQuery ? `No items match “${searchQuery}”` : 'No items match these filters'}</div>
+                    <div>{searchQuery ? `No ${t.items} match “${searchQuery}”` : `No ${t.items} match these filters`}</div>
                     <button
                         type="button"
                         className="m-text-btn"

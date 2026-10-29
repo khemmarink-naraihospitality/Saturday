@@ -13,6 +13,7 @@ import type { Comment, FileLink } from '../../types';
 import { Avatar, BottomSheet, PrimaryButton, TextButton, mobileToast, useBoardPeople } from '../ui';
 import { DRIVE_ICON, FileIcon } from '../cells/CellView';
 
+import { useTerms } from '../../lib/terms';
 export type ComposerMode =
     | { kind: 'new' }
     | { kind: 'reply'; parent: Comment }
@@ -85,6 +86,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
     /** After a successful post (so the screen can show a new reply). */
     onPosted?: (mode: ComposerMode) => void;
 }) => {
+    const t = useTerms();
     const addUpdate = useBoardStore(state => state.addUpdate);
     const editUpdate = useBoardStore(state => state.editUpdate);
     const setDraft = useBoardStore(state => state.setDraft);
@@ -176,7 +178,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
             }
             mobileToast(m.kind === 'reply'
                 ? 'Your reply was not saved. It is back in the box — please try again.'
-                : 'Your update was not saved. It is back in the box — please try again.', 'error');
+                : `Your ${t.update} was not saved. It is back in the box — please try again.`, 'error');
             return;
         }
         onPosted?.(m);
@@ -292,7 +294,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
         editorRef.current?.focus({ preventScroll: true });
     };
 
-    const title = shown?.kind === 'reply' ? 'Reply' : shown?.kind === 'edit' ? 'Edit update' : 'New update';
+    const title = shown?.kind === 'reply' ? 'Reply' : shown?.kind === 'edit' ? `Edit ${t.update}` : `New ${t.update}`;
     const action = shown?.kind === 'reply' ? 'Reply' : shown?.kind === 'edit' ? 'Save' : 'Post';
 
     return (
@@ -383,7 +385,7 @@ export const Composer = ({ itemId, mode, onClose, onPosted }: {
                     key={mode.kind + (mode.kind === 'reply' ? mode.parent.id : mode.kind === 'edit' ? mode.update.id : '')}
                     editorRef={editorRef}
                     initialHtml={initial.html}
-                    placeholder={mode.kind === 'reply' ? 'Write a reply and mention others with @' : 'Write an update and mention others with @'}
+                    placeholder={mode.kind === 'reply' ? 'Write a reply and mention others with @' : `Write ${t.update === 'update' ? 'an update' : `a ${t.update}`} and mention others with @`}
                     onInput={onInput}
                     onSelection={refreshFormats}
                 />

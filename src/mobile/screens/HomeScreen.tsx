@@ -11,6 +11,7 @@ import { liveBoards, mergeRecents, pagesOf, readWorkspaceVisits, type RecentEntr
 import { CreateSheet, InviteSheet, SearchSheet, useCanInviteAnywhere } from './homeSheets';
 import { DashboardArt } from './art';
 
+import { useTerms } from '../../lib/terms';
 /**
  * Home on a phone — reference screenshots 15 and 16: a greeting with search,
  * create and invite buttons, the favourite boards as a swipeable strip, the
@@ -18,6 +19,7 @@ import { DashboardArt } from './art';
  * every workspace, and the workspace dashboard.
  */
 export const HomeScreen = () => {
+    const t = useTerms();
     const user = useUserStore(state => state.currentUser);
     const boards = useBoardStore(state => state.boards);
     const workspaces = useBoardStore(state => state.workspaces);
@@ -53,7 +55,7 @@ export const HomeScreen = () => {
                         <Plus size={22} strokeWidth={1.9} />
                     </IconButton>
                     {canInvite && (
-                        <IconButton label="Invite to workspace" className="m-home-header__btn" size={40} onClick={() => setSheet('invite')}>
+                        <IconButton label={`Invite to ${t.workspace}`} className="m-home-header__btn" size={40} onClick={() => setSheet('invite')}>
                             <UserPlus size={20} strokeWidth={1.9} />
                         </IconButton>
                     )}
@@ -66,8 +68,8 @@ export const HomeScreen = () => {
                     <Card>
                         <button type="button" className="m-ws-entry" onClick={openWorkspaces}>
                             <span className="m-ws-entry__icon"><LayoutGrid size={21} strokeWidth={2} /></span>
-                            <span className="m-ws-entry__label">Workspaces</span>
-                            <ArrowButton label="All workspaces" onClick={openWorkspaces} />
+                            <span className="m-ws-entry__label">{t.Workspaces}</span>
+                            <ArrowButton label={`All ${t.workspaces}`} onClick={openWorkspaces} />
                         </button>
                     </Card>
 
@@ -96,6 +98,7 @@ export const HomeScreen = () => {
 
 /** "My favorites": a blue card with the favourite boards as a centred, snapping strip. */
 const FavoritesCard = ({ favourites }: { favourites: ReturnType<typeof liveBoards> }) => {
+    const t = useTerms();
     const workspaces = useBoardStore(state => state.workspaces);
     const { ref, page, onScroll } = usePagedScroll(favourites.length);
 
@@ -106,7 +109,7 @@ const FavoritesCard = ({ favourites }: { favourites: ReturnType<typeof liveBoard
                 <ArrowButton label="All favorites" onClick={() => openTab('favorites')} />
             </div>
             {favourites.length === 0 ? (
-                <div className="m-fav__empty">Star a board and it will be pinned here.</div>
+                <div className="m-fav__empty">{`Star a ${t.board} and it will be pinned here.`}</div>
             ) : (
                 <>
                     <div className="m-fav__track" ref={ref} onScroll={onScroll}>
@@ -140,6 +143,7 @@ const FavoritesCard = ({ favourites }: { favourites: ReturnType<typeof liveBoard
 
 /** "Recently visited": pages of three rows that snap sideways, the next page peeking in. */
 const RecentCard = ({ recents, onSeeAll }: { recents: RecentEntry[]; onSeeAll: () => void }) => {
+    const t = useTerms();
     const workspaces = useBoardStore(state => state.workspaces);
     const sharedBoardIds = useBoardStore(state => state.sharedBoardIds);
     const pages = useMemo(() => pagesOf(recents, 3), [recents]);
@@ -152,7 +156,7 @@ const RecentCard = ({ recents, onSeeAll }: { recents: RecentEntry[]; onSeeAll: (
                 <ArrowButton label="All recently visited" onClick={onSeeAll} />
             </div>
             {recents.length === 0 ? (
-                <div className="m-empty" style={{ padding: '24px 22px 12px' }}>Boards and workspaces you open show up here.</div>
+                <div className="m-empty" style={{ padding: '24px 22px 12px' }}>{`${t.Boards} and ${t.workspaces} you open show up here.`}</div>
             ) : (
                 <>
                     <div className="m-recent__pages" ref={ref} onScroll={onScroll}>

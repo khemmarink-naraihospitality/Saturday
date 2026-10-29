@@ -299,7 +299,7 @@ export const LoginPage = () => {
                             userSelect: 'none'
                         }}
                     >
-                        {showEmailLogin ? 'Hide email option' : 'Or sign in with email'}
+                        {showEmailLogin ? 'Hide email option' : 'Or sign with other option'}
                     </span>
                 </div>
 

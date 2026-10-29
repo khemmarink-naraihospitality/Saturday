@@ -198,7 +198,7 @@ export const LoginPage = () => {
             <div style={{
                 position: 'relative',
                 zIndex: 2,
-                backgroundColor: '#fffaf0',
+                backgroundColor: '#ffffff',
                 padding: '48px 40px',
                 borderRadius: '16px',
                 border: '1px solid rgba(255, 239, 210, 0.22)',
@@ -257,7 +257,7 @@ export const LoginPage = () => {
                         style={{
                             width: '100%',
                             padding: '12px',
-                            backgroundColor: '#fffaf0',
+                            backgroundColor: '#ffffff',
                             color: '#152A00',
                             border: '1px solid rgba(21, 42, 0, 0.28)',
                             borderRadius: '8px',
@@ -271,8 +271,8 @@ export const LoginPage = () => {
                             transition: 'background-color 0.2s',
                             boxShadow: 'none'
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f6e3c1'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fffaf0'}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f1'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
                             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
@@ -290,7 +290,7 @@ export const LoginPage = () => {
                         onClick={() => setShowEmailLogin(!showEmailLogin)}
                         style={{ 
                             position: 'relative', 
- backgroundColor: '#fffaf0', 
+ backgroundColor: '#ffffff', 
                             padding: '0 12px', 
                             color: '#152A00', 
                             fontSize: '13px', 
@@ -313,7 +313,7 @@ export const LoginPage = () => {
                                 style={{
                                     width: '100%',
                                     padding: '12px',
-                                    backgroundColor: '#fffaf0',
+                                    backgroundColor: '#ffffff',
                                     color: '#152A00',
                                     border: '1px solid rgba(21, 42, 0, 0.28)',
                                     borderRadius: '8px',
@@ -327,8 +327,8 @@ export const LoginPage = () => {
                                     transition: 'background-color 0.2s',
                                     boxShadow: 'none'
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f6e3c1'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fffaf0'}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f1'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                             >
                                 <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
                                     <path fill="#f35325" d="M1 1h10v10H1z" />
@@ -356,7 +356,7 @@ export const LoginPage = () => {
                                         fontSize: '15px',
                                         outline: 'none',
                                         transition: 'border-color 0.2s',
-                                        backgroundColor: '#f4f0e4'
+                                        backgroundColor: '#ffffff'
                                     }}
                                 />
                             </div>
@@ -375,7 +375,7 @@ export const LoginPage = () => {
                                         border: '1px solid rgba(21, 42, 0, 0.28)',
                                         fontSize: '15px',
                                         outline: 'none',
-                                        backgroundColor: '#f4f0e4'
+                                        backgroundColor: '#ffffff'
                                     }}
                                 />
                             </div>
@@ -459,7 +459,7 @@ export const LoginPage = () => {
                                         border: '1px solid rgba(21, 42, 0, 0.28)',
                                         fontSize: '15px',
                                         outline: 'none',
-                                        backgroundColor: '#f4f0e4'
+                                        backgroundColor: '#ffffff'
                                     }}
                                 />
                             </div>

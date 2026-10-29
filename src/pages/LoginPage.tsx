@@ -227,10 +227,10 @@ export const LoginPage = () => {
                             style={{ width: '58%', height: '58%', objectFit: 'contain' }}
                         />
                     </div>
-                    <h1 style={{ margin: 0, fontFamily: '"Nib Pro", "IBM Plex Sans Thai", serif', fontSize: '32px', fontWeight: 400, color: '#152A00', letterSpacing: '-0.005em' }}>
-                        NHG Saturday
+                    <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 400, color: '#152A00', letterSpacing: '-0.01em' }}>
+                        <strong style={{ fontWeight: 700 }}>NHG</strong> Saturday
                     </h1>
-                    <p style={{ marginTop: '10px', fontSize: '12px', color: '#656d47', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    <p style={{ marginTop: '8px', fontSize: '14px', color: '#6b7068' }}>
                         Login to your WorkSpace
                     </p>
                 </div>
@@ -293,15 +293,13 @@ export const LoginPage = () => {
  backgroundColor: '#fffaf0', 
                             padding: '0 12px', 
                             color: '#152A00', 
-                            fontSize: '12px', 
+                            fontSize: '13px', 
                             fontWeight: 500, 
-                            letterSpacing: '0.1em',
-                            textTransform: 'uppercase',
                             cursor: 'pointer',
                             userSelect: 'none'
                         }}
                     >
-                        {showEmailLogin ? 'HIDE EMAIL OPTION' : 'OR SIGN IN WITH EMAIL'}
+                        {showEmailLogin ? 'Hide email option' : 'Or sign in with email'}
                     </span>
                 </div>
 
@@ -407,10 +405,8 @@ export const LoginPage = () => {
                                         color: '#FFEFD2',
                                         border: 'none',
                                         borderRadius: '8px',
-                                        fontSize: '13px',
+                                        fontSize: '15px',
                                         fontWeight: 500,
-                                        letterSpacing: '0.1em',
-                                        textTransform: 'uppercase',
                                         cursor: loading ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
                                         boxShadow: 'none',
@@ -493,10 +489,8 @@ export const LoginPage = () => {
                                         color: '#FFEFD2',
                                         border: 'none',
                                         borderRadius: '8px',
-                                        fontSize: '13px',
+                                        fontSize: '15px',
                                         fontWeight: 500,
-                                        letterSpacing: '0.1em',
-                                        textTransform: 'uppercase',
                                         cursor: forgotLoading ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
                                         boxShadow: 'none'

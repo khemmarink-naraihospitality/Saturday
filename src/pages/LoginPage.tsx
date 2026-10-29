@@ -213,7 +213,7 @@ export const LoginPage = () => {
                     <div style={{
                         width: '64px',
                         height: '64px',
-                        borderRadius: '2px',
+                        borderRadius: '28%',
                         overflow: 'hidden',
                         marginBottom: '20px',
                         backgroundColor: '#152A00',

@@ -41,14 +41,16 @@ export const BoardViewsTabs = () => {
                 return (
                     <button
                         key={view.id}
+                        className="board-view-tab"
                         onClick={() => setActiveView(activeBoardId, view.id)}
                         style={{
                             height: '100%',
                             display: 'flex',
                             alignItems: 'center',
                             fontSize: '14px',
-                            color: isActive ? '#6b4cc3' : 'hsl(var(--color-text-secondary))',
-                            borderBottom: isActive ? '2px solid #6b4cc3' : '2px solid transparent',
+                            // The violet is Saturday's; a palette may set --color-nav-accent
+                            color: isActive ? 'var(--color-nav-accent, #6b4cc3)' : 'hsl(var(--color-text-secondary))',
+                            borderBottom: isActive ? '2px solid var(--color-nav-accent, #6b4cc3)' : '2px solid transparent',
                             cursor: 'pointer',
                             background: 'none',
                             borderTop: 'none',

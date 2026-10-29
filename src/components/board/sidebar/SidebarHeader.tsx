@@ -142,7 +142,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     }}
                 >
                     <Home size={18} />
-                    <span style={{ fontSize: '12px', fontWeight: activePage === 'home' ? 600 : 400 }}>Home</span>
+                    <span className="sidebar-nav-label" style={{ fontSize: '12px', fontWeight: activePage === 'home' ? 600 : 400 }}>Home</span>
                 </button>
 
                 <button
@@ -175,14 +175,14 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     }}
                 >
                     <Star size={18} color="#ffcb00" fill={activePage === 'favorites' ? "#ffcb00" : "none"} />
-                    <span style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
+                    <span className="sidebar-nav-label" style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
                 </button>
             </div>
 
 
             {/* Workspaces Title & Actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
+                <span className="sidebar-section-label" style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {/* More Menu (...) */}

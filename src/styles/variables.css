@@ -155,216 +155,234 @@
   --card-tile-lit-ring: rgba(255, 255, 255, 0.18);
   --card-tile-lit-shadow: 0 10px 18px -8px rgba(110, 60, 230, 0.55);
 }
-/* ── Narai palette ─────────────────────────────────────────────────────────
- * Pastel sage and grass green with forest-green ink, after the NHGOne campus
- * picture. Chosen per person (src/lib/palettes.ts); useThemeStore.setPalette
- * puts data-palette="narai" on <html>. Saturday is :root above and needs no
- * attribute. The :not(.dark) / .dark pairs keep the light block from reaching
- * the dark one whichever comes later in the cascade.
+/* ── NHG palette (id "narai") ───────────────────────────────────────────────
+ * The Narai Hospitality Group design system (narai-design-system.vercel.app,
+ * from the Narai Brand Guide v.27.08.24): Narai Green #152A00 and Galangal
+ * cream #FFEFD2, with Ginger, Pomelo, Lemongrass and Aubergine as accents;
+ * Nib Pro for headlines and IBM Plex Sans for everything else; sharp corners
+ * (0–2px), 1px hairlines, flat surfaces, two shadows only. Its app reading
+ * follows NHGOne, which is built on the same system: a Narai Green sidebar,
+ * Galangal pages, #fffaf0 tables and cards. Shown as "NHG" in the theme picker
+ * (src/lib/palettes.ts); its id, data-palette value and profiles.ui_theme value
+ * stay "narai". useThemeStore.setPalette puts data-palette="narai" on <html>;
+ * Saturday is :root above and needs no attribute. The :not(.dark) / .dark pairs
+ * keep the light block from reaching the dark one whichever comes later.
+ * The rules that reach inline styles are styles/narai_brand.css.
  * Status and dropdown colours are people's data, stored as they were picked;
- * --label-tint pulls each one toward --label-tint-base so they read as pastels
- * (src/lib/labelTint.ts). Group colours stay as chosen.
+ * --label-tint pulls each one toward --label-tint-base (src/lib/labelTint.ts).
+ * Group colours stay as chosen.
  */
 :root[data-palette='narai']:not(.dark) {
-  /* Forest green (the "NHG OPERATIONS" sign) */
-  --color-brand-primary: 104 30% 38%;  /* #4F7F43 */
-  --color-brand-hover: 104 33% 31%;
-  --color-brand-active: 104 36% 25%;
-  --color-brand-light: 86 55% 95%;     /* sage mist: selected row, active tab */
-  --color-brand-subtle: 86 48% 89%;
+  /* Narai Green: ink, primary actions; Galangal tones for selection */
+  --color-brand-primary: 90 100% 8.2%;     /* #152A00 Narai Green */
+  --color-brand-hover: 92 76% 12.9%;       /* #1f3a08 */
+  --color-brand-active: 94 61% 18%;        /* #2a4a12 */
+  --color-brand-light: 38 75% 86.1%;       /* #f6e3c1: selected row, active item */
+  --color-brand-subtle: 38 58% 80.2%;      /* #ead4af */
 
-  /* Pale grass green surfaces */
-  --color-bg: 0 0% 100%;                /* white */
-  --color-bg-canvas: 0 0% 100%;
-  --color-bg-surface: 0 0% 100%;
-  --color-bg-surface-hover: 88 30% 95.5%;
-  --color-bg-subtle: 90 30% 98.5%;      /* #FBFCF9 sidebar */
+  /* Galangal page, #fffaf0 surfaces */
+  --color-bg: 39 100% 91.2%;               /* #FFEFD2 Galangal */
+  --color-bg-canvas: 39 100% 91.2%;
+  --color-bg-surface: 40 100% 97.1%;       /* #fffaf0: cards, tables, menus */
+  --color-bg-surface-hover: 38 75% 86.1%;  /* #f6e3c1 */
+  --color-bg-subtle: 38 75% 86.1%;
+  --color-bg-base: 39 100% 91.2%;
 
-  /* Deep green-olive ink */
-  --color-text-primary: 92 24% 14%;    /* #222B1B */
-  --color-text-secondary: 92 14% 32%;
-  --color-text-tertiary: 90 10% 49%;
-  --color-text-disabled: 90 10% 49%;
+  /* Ink: Narai Green, then 66% and 50% of it (as NHGOne reads them) */
+  --color-text-primary: 90 100% 8.2%;
+  --color-text-secondary: 73 21% 35.3%;    /* #656d47 */
+  --color-text-tertiary: 63 14% 48%;       /* #8a8c69 */
+  --color-text-disabled: 55 18% 59.8%;     /* #aba886 */
 
-  --color-border: 88 26% 92%;          /* #E9F0DE */
-  --color-border-hover: 88 22% 84%;
-  --color-cell-border: 88 26% 92%;
-  --color-border-strong: 88 22% 84%;
+  /* Hairlines: Narai Green at 10–28% */
+  --color-border: 51 27% 80.2%;            /* #dad6bf */
+  --color-border-hover: 58 16% 68.6%;      /* #bcbba2 */
+  --color-cell-border: 49 26% 87.8%;       /* #e8e5d8 */
+  --color-border-strong: 58 16% 68.6%;
 
-  --color-status-gray-bg: 90 10% 58%;
+  /* Status inks and fills (NHGOne's badges) */
+  --color-success: 162 100% 23.9%;         /* #007a56 */
+  --color-success-bg: 104 41% 92.7%;       /* #e9f4e5 */
+  --color-warning: 25 100% 36.5%;          /* #ba4d00 */
+  --color-warning-bg: 39 100% 92.2%;       /* #fff1d7 */
+  --color-danger: 344 100% 39%;            /* #c70036 */
+  --color-danger-bg: 10 100% 94.1%;        /* #ffe6e1 */
+  --color-status-gray-bg: 78 11% 52.2%;    /* #8a9278 */
 
-  --gradient-brand: linear-gradient(135deg, #4f7f43, #9cc472);
-  --gradient-spectrum: linear-gradient(135deg, #5b8a4a, #466f37, #a5c86a);
-  --gradient-energy: linear-gradient(90deg, #466f37, #e9d27a);
-  --gradient-depth: linear-gradient(135deg, #24391c, #466f37);
+  /* No gradients on UI surfaces: where the app draws one, it is Narai Green */
+  --gradient-brand: linear-gradient(135deg, #152A00, #1f3a08);
+  --gradient-spectrum: linear-gradient(135deg, #152A00, #2a4a12);
+  --gradient-energy: linear-gradient(90deg, #152A00, #A76400);
+  --gradient-depth: linear-gradient(135deg, #152A00, #250719);
 
-  --color-table-header-bg: 0 0% 100%;
-  --color-group-header-bg: 0 0% 100%;
+  --color-table-header-bg: 45 42% 92.5%;   /* #f4f0e4 */
+  --color-group-header-bg: 40 100% 97.1%;
 
-  --shadow-sm: 0 1px 3px rgba(70, 110, 60, 0.07);
-  --shadow-md: 0 4px 12px rgba(70, 110, 60, 0.09);
-  --shadow-lg: 0 8px 24px rgba(70, 110, 60, 0.11);
+  /* The brand's two shadows: shadow-1 (interactive lift), shadow-2 (floating) */
+  --shadow-sm: 0 1px 0 rgba(21, 42, 0, 0.06), 0 2px 6px rgba(21, 42, 0, 0.04);
+  --shadow-md: 0 6px 24px rgba(21, 42, 0, 0.08);
+  --shadow-lg: 0 6px 24px rgba(21, 42, 0, 0.08);
 
-  /* Status / dropdown labels: pastel, with dark ink */
-  --label-tint: 68%;
-  --label-tint-base: #fcfdf6;
-  --label-text: #2a3322;
+  /* Status / dropdown labels: a soft tint of the picked colour, Narai Green ink */
+  --label-tint: 62%;
+  --label-tint-base: #fffaf0;
+  --label-text: #152A00;
 
   /* Spots that were hard-coded violet (read with the old value as fallback) */
-  --color-nav-accent: #4f7f43;
-  --color-nav-accent-bg: #eaf5d9;
-  --color-icon-accent: #5b8a4a;
-  --color-action: #4f7f43;
-  --color-action-2: #6a9d55;
-  --color-action-2-dark: #548544;
-  --color-action-2-glow: rgba(95, 147, 72, 0.26);
+  --color-nav-accent: #152A00;
+  --color-nav-accent-bg: #f6e3c1;
+  --color-icon-accent: #152A00;
+  --color-action: #152A00;
+  --color-action-2: #152A00;
+  --color-action-2-dark: #1f3a08;
+  --color-action-2-glow: rgba(21, 42, 0, 0.22);
+  --support-radius: 2px;
 
   /* Dashboard's cat-farm room */
-  --dash-wall: #f4faea;
-  --dash-wall-edge: #e6f1d2;
-  --dash-window: #86ad6c;
-  --dash-window-text: #4f7f43;
+  --dash-wall: #f6e3c1;
+  --dash-wall-edge: #ead4af;
+  --dash-window: #152A00;
+  --dash-window-text: #152A00;
 
-  /* Crystal: translucent panels over a soft green mesh, rounded like iOS
-     (styles/narai_crystal.css reads these) */
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
-  --color-bg-base: 84 50% 94%;
-  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #f7fbef 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #f1faf6 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #f9fcf0 0%, transparent 62%), linear-gradient(160deg, #ffffff, #fbfdf8);
-  --glass-panel: #ffffff;
-  /* One background: the sidebar and the margins round the white panel are the same green */
-  --glass-desk-bg: linear-gradient(180deg, #ddedca 0%, #e3f1d1 100%);
-  --glass-side: transparent;
-  --glass-pop: rgba(253, 255, 251, 0.68);
-  --glass-card: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(253, 255, 250, 0.6));
-  --glass-edge: rgba(255, 255, 255, 0.88);
-  --glass-line: rgba(140, 180, 110, 0.16);
-  --glass-shadow: 0 30px 60px -30px rgba(70, 110, 60, 0.3), 0 8px 24px -12px rgba(70, 110, 60, 0.12);
-  --glass-pop-shadow: 0 28px 60px -20px rgba(70, 110, 60, 0.3), 0 6px 16px -8px rgba(70, 110, 60, 0.12);
-  --glass-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, 0.07));
-  --glass-glint: rgba(236, 217, 150, 0.4);
-  --glass-sheen: rgba(255, 255, 255, 0.42);
-  --glass-scrim: rgba(70, 100, 60, 0.2);
-  --glass-solid: #fdfffb;
-  --ws-badge-radius: 28%;
+  /* Sharp, architectural corners; the brand's two faces */
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 0px;
+  --ws-badge-radius: 2px;
+  --font-family: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Nib Pro", "IBM Plex Sans Thai", "Forum", serif;
 
-  /* Home cards: white paper, a green-tinted shadow, a champagne edge on hover
-     and the open workspace's forest green when the tile lights up */
-  --card-bg: linear-gradient(165deg, #ffffff 0%, #fbfdf7 100%);
-  --card-border: #e7efdd;
-  --card-border-hover: rgba(206, 182, 104, 0.6);
-  --card-edge: #ffffff;
-  --card-shadow: 0 1px 2px rgba(50, 80, 40, 0.06), 0 6px 14px -6px rgba(50, 80, 40, 0.1), 0 20px 40px -20px rgba(60, 100, 45, 0.36);
-  --card-shadow-hover: 0 2px 4px rgba(50, 80, 40, 0.07), 0 14px 26px -12px rgba(60, 100, 45, 0.26), 0 36px 64px -28px rgba(60, 100, 45, 0.5);
-  --card-sheen: rgba(156, 196, 114, 0.12);
-  --card-row-hover: hsl(86 45% 96.5%);
-  --card-solid: #fdfefb;
-  --card-grid: #eef4e6;
-  --card-tray: hsl(88 36% 95.6%);
-  --card-tile: linear-gradient(160deg, #ffffff 0%, #eaf5d9 100%);
-  --card-tile-ink: #4f7f43;
-  --card-tile-ring: rgba(79, 127, 67, 0.16);
-  --card-tile-shadow: 0 6px 14px -8px rgba(60, 100, 45, 0.5);
-  --card-tile-lit: linear-gradient(180deg, #52903f, #3a6d2f);
-  --card-tile-lit-ring: rgba(236, 217, 150, 0.7);
-  --card-tile-lit-shadow: 0 10px 18px -8px rgba(50, 90, 35, 0.6);
+  /* The brand's own colours, for the rules in narai_brand.css */
+  --nhg-green: #152A00;
+  --nhg-galangal: #FFEFD2;
+  --nhg-surface: #fffaf0;
+  --nhg-ink: #152A00;
+  --nhg-on-ink: #FFEFD2;
+  --nhg-ginger: #A76400;
+  --nhg-pomelo: #E1FFB3;
+  --nhg-aubergine: #250719;
+  --nhg-hairline: rgba(21, 42, 0, 0.14);
+  --nhg-shadow-2: 0 6px 24px rgba(21, 42, 0, 0.08);
+  --nhg-scrim: rgba(21, 42, 0, 0.4);
+  --nhg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* Cards: flat with edges (solid fill, 1px hairline, no shadow); an
+     interactive one rises to shadow-1 on hover */
+  --card-bg: #fffaf0;
+  --card-border: rgba(21, 42, 0, 0.14);
+  --card-border-hover: rgba(21, 42, 0, 0.32);
+  --card-edge: transparent;
+  --card-shadow: 0 0 0 transparent;
+  --card-shadow-hover: 0 1px 0 rgba(21, 42, 0, 0.06), 0 2px 6px rgba(21, 42, 0, 0.04);
+  --card-sheen: transparent;
+  --card-row-hover: #FFEFD2;
+  --card-solid: #fffaf0;
+  --card-grid: #ece9dd;
+  --card-tray: #f6e3c1;
+  --card-tile: #f6e3c1;
+  --card-tile-ink: #152A00;
+  --card-tile-ring: rgba(21, 42, 0, 0.14);
+  --card-tile-shadow: 0 0 0 transparent;
+  --card-tile-lit: #152A00;
+  --card-tile-lit-ring: transparent;
+  --card-tile-lit-shadow: 0 0 0 transparent;
 }
 
 :root[data-palette='narai'].dark {
-  /* Deep olive */
-  --color-bg: 90 18% 8%;               /* #141810 */
-  --color-bg-canvas: 90 18% 8%;
-  --color-bg-surface: 90 15% 11%;
-  --color-bg-surface-hover: 90 12% 20%;
-  --color-bg-subtle: 90 13% 15%;
+  /* The brand's inverted surface (.narai-dark): Narai Green page, Galangal ink.
+     Primary actions turn Galangal with Narai Green text (the inverse button). */
+  --color-brand-primary: 39 100% 91.2%;    /* Galangal */
+  --color-brand-hover: 38 75% 86.1%;       /* #f6e3c1 */
+  --color-brand-active: 38 58% 80.2%;      /* #ead4af */
+  --color-brand-light: 86 49% 16.3%;       /* #2c3e15: Galangal at 10% */
+  --color-brand-subtle: 82 34% 22.5%;      /* #3f4d26 */
 
-  --color-text-primary: 84 40% 94%;
-  --color-text-secondary: 86 16% 72%;
-  --color-text-tertiary: 88 9% 48%;
-  --color-text-disabled: 88 9% 48%;
+  --color-bg: 90 100% 8.2%;                /* #152A00 */
+  --color-bg-canvas: 90 100% 8.2%;
+  --color-bg-surface: 92 85% 10.8%;        /* #1a3304 */
+  --color-bg-surface-hover: 88 58% 13.9%;  /* #25380f */
+  --color-bg-subtle: 88 58% 13.9%;
+  --color-bg-base: 90 100% 8.2%;
 
-  --color-border: 90 11% 22%;
-  --color-border-hover: 90 11% 30%;
-  --color-cell-border: 90 11% 22%;
-  --color-border-strong: 90 11% 30%;
+  --color-text-primary: 39 100% 91.2%;     /* Galangal */
+  --color-text-secondary: 52 22% 66.7%;    /* #bdb897: cream at 72% */
+  --color-text-tertiary: 63 14% 48%;       /* #8a8c69: cream at 50% */
+  --color-text-disabled: 71 19% 38.6%;
 
-  --color-brand-primary: 100 34% 40%;
-  --color-brand-hover: 92 45% 64%;
-  --color-brand-active: 92 38% 56%;
-  --color-brand-light: 100 34% 45% / 0.18;
-  --color-brand-subtle: 100 25% 25%;
+  --color-border: 82 34% 22.5%;            /* #3f4d26: cream hairline */
+  --color-border-hover: 76 24% 30.6%;
+  --color-cell-border: 85 45% 17.8%;       /* #314219 */
+  --color-border-strong: 76 24% 30.6%;
 
-  --color-status-gray-bg: 88 9% 45%;
+  --color-status-gray-bg: 63 14% 48%;
 
-  --color-table-header-bg: 90 18% 8%;
-  --color-group-header-bg: 90 18% 8%;
+  --color-table-header-bg: 92 85% 10.8%;
+  --color-group-header-bg: 92 85% 10.8%;
 
-  --gradient-brand: linear-gradient(135deg, #4f8a3e, #8db35c);
-  --gradient-spectrum: linear-gradient(135deg, #5b8a4a, #4f8a3e, #a5c86a);
-  --gradient-energy: linear-gradient(90deg, #4f8a3e, #e9d27a);
-  --gradient-depth: linear-gradient(135deg, #141810, #4f8a3e);
+  --gradient-brand: linear-gradient(135deg, #FFEFD2, #f6e3c1);
+  --gradient-spectrum: linear-gradient(135deg, #2a4a12, #1f3a08);
+  --gradient-energy: linear-gradient(90deg, #E1FFB3, #FFEFD2);
+  --gradient-depth: linear-gradient(135deg, #152A00, #250719);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 6px 24px rgba(0, 0, 0, 0.32);
 
-  --label-tint: 40%;
-  --label-tint-base: #f3f6e4;
-  --label-text: #222b1b;
+  --label-tint: 42%;
+  --label-tint-base: #FFEFD2;
+  --label-text: #152A00;
 
-  --color-nav-accent: #9cc77f;
-  --color-nav-accent-bg: hsl(100 34% 45% / 0.18);
-  --color-icon-accent: #8db35c;
-  --color-action: #4f8a3e;
-  --color-action-2: #5f9348;
-  --color-action-2-dark: #4a7737;
+  --color-nav-accent: #FFEFD2;
+  --color-nav-accent-bg: #2c3e15;
+  --color-icon-accent: #E1FFB3;
+  --color-action: #FFEFD2;
+  --color-action-2: #FFEFD2;
+  --color-action-2-dark: #f6e3c1;
   --color-action-2-glow: rgba(0, 0, 0, 0.35);
+  --support-radius: 2px;
 
-  --dash-wall: #e3efcc;
-  --dash-wall-edge: #cfe2ad;
-  --dash-window: #6f9a54;
-  --dash-window-text: #466f37;
+  /* The cat farm is a picture: its room stays light */
+  --dash-wall: #f6e3c1;
+  --dash-wall-edge: #ead4af;
+  --dash-window: #152A00;
+  --dash-window-text: #152A00;
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Noto Sans Thai', 'Helvetica Neue', sans-serif;
-  --color-bg-base: 90 18% 8%;
-  --glass-mesh: radial-gradient(55% 45% at 8% 6%, #2c4426 0%, transparent 62%), radial-gradient(45% 40% at 94% 10%, #1e3b33 0%, transparent 60%), radial-gradient(55% 55% at 78% 100%, #34421f 0%, transparent 62%), linear-gradient(160deg, #0f140c, #172010);
-  --glass-panel: linear-gradient(155deg, rgba(40, 54, 34, 0.84), rgba(22, 30, 18, 0.8));
-  --glass-side: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  --glass-pop: rgba(30, 41, 26, 0.8);
-  --glass-card: linear-gradient(160deg, rgba(48, 64, 40, 0.7), rgba(28, 38, 24, 0.6));
-  --glass-edge: rgba(255, 255, 255, 0.16);
-  --glass-line: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.75), 0 8px 24px -10px rgba(0, 0, 0, 0.4);
-  --glass-pop-shadow: 0 28px 60px -18px rgba(0, 0, 0, 0.7), 0 6px 16px -6px rgba(0, 0, 0, 0.4);
-  --glass-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, 0.12));
-  --glass-glint: rgba(236, 217, 150, 0.3);
-  --glass-sheen: rgba(255, 255, 255, 0.07);
-  --glass-scrim: rgba(0, 0, 0, 0.5);
-  --glass-solid: #222b1d;
-  --ws-badge-radius: 28%;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 0px;
+  --ws-badge-radius: 2px;
+  --font-family: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Nib Pro", "IBM Plex Sans Thai", "Forum", serif;
 
-  /* Home cards: tinted glass, a champagne edge on hover */
-  --card-bg: linear-gradient(160deg, rgba(48, 64, 40, 0.7), rgba(28, 38, 24, 0.6));
-  --card-border: rgba(255, 255, 255, 0.1);
-  --card-border-hover: rgba(236, 217, 150, 0.35);
-  --card-edge: rgba(255, 255, 255, 0.12);
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 14px -6px rgba(0, 0, 0, 0.4), 0 20px 40px -20px rgba(0, 0, 0, 0.8);
-  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 28px 56px -24px rgba(0, 0, 0, 0.9);
-  --card-sheen: rgba(190, 228, 160, 0.08);
-  --card-row-hover: rgba(255, 255, 255, 0.05);
-  --card-solid: #222b1d;
-  --card-grid: rgba(255, 255, 255, 0.06);
-  --card-tray: rgba(0, 0, 0, 0.16);
-  --card-tile: linear-gradient(160deg, rgba(190, 228, 160, 0.22), rgba(140, 196, 110, 0.12));
-  --card-tile-ink: #d4ecc2;
-  --card-tile-ring: rgba(255, 255, 255, 0.12);
-  --card-tile-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.7);
-  --card-tile-lit: linear-gradient(180deg, #52903f, #3a6d2f);
-  --card-tile-lit-ring: rgba(236, 217, 150, 0.55);
-  --card-tile-lit-shadow: 0 10px 18px -8px rgba(0, 0, 0, 0.7);
+  --nhg-green: #152A00;
+  --nhg-galangal: #FFEFD2;
+  --nhg-surface: #1a3304;
+  --nhg-ink: #FFEFD2;
+  --nhg-on-ink: #152A00;
+  --nhg-ginger: #A76400;
+  --nhg-pomelo: #E1FFB3;
+  --nhg-aubergine: #250719;
+  --nhg-hairline: rgba(255, 239, 210, 0.18);
+  --nhg-shadow-2: 0 6px 24px rgba(0, 0, 0, 0.32);
+  --nhg-scrim: rgba(0, 0, 0, 0.55);
+  --nhg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --card-bg: #1a3304;
+  --card-border: rgba(255, 239, 210, 0.18);
+  --card-border-hover: rgba(255, 239, 210, 0.34);
+  --card-edge: transparent;
+  --card-shadow: 0 0 0 transparent;
+  --card-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.28);
+  --card-sheen: transparent;
+  --card-row-hover: #25380f;
+  --card-solid: #1a3304;
+  --card-grid: #2a4016;
+  --card-tray: #102100;
+  --card-tile: #25380f;
+  --card-tile-ink: #FFEFD2;
+  --card-tile-ring: rgba(255, 239, 210, 0.18);
+  --card-tile-shadow: 0 0 0 transparent;
+  --card-tile-lit: #FFEFD2;
+  --card-tile-lit-ring: transparent;
+  --card-tile-lit-shadow: 0 0 0 transparent;
 }

@@ -3,7 +3,7 @@
 @import './components.css';
 @import './table.css';
 @import './cards.css';
-@import './narai_crystal.css';
+@import './narai_brand.css';
 
 @variant dark (&:where(.dark, .dark *));
 

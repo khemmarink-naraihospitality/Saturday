@@ -11,6 +11,7 @@ import { isBoardUnlocked } from '../../lib/boardPinUnlock';
 import { splitSharedColumns } from '../../lib/columnScope';
 import { adoptAccountPalette } from '../../lib/uiTheme';
 import { offerUndo } from '../useUndoToast';
+import { terms } from '../../lib/terms';
 
 export interface BoardSlice {
     boards: Board[];
@@ -1051,7 +1052,7 @@ export const createBoardSlice: StateCreator<
         });
         if (!options?.undo && fromWorkspaceId) {
             offerUndo(
-                `Moved board "${board?.title || 'Untitled'}" to ${titleOf(workspaceId) ? `"${titleOf(workspaceId)}"` : 'another workspace'}`,
+                `Moved ${terms().board} "${board?.title || 'Untitled'}" to ${titleOf(workspaceId) ? `"${titleOf(workspaceId)}"` : `another ${terms().workspace}`}`,
                 () => get().moveBoardToWorkspace(boardId, fromWorkspaceId, { undo: true })
             );
         }

@@ -2,6 +2,8 @@ import { Menu, Home, Star } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { useAccessibleWorkspaces } from '../../../hooks/useAccessibleWorkspaces';
 import { WorkspaceIcon } from './SidebarIcons';
+import { SidebarProfile } from './SidebarProfile';
+import { useNewUi } from '../../../lib/brand';
 
 /**
  * The collapsed state of the sidebar: an icon-only rail (Mews' left nav,
@@ -18,6 +20,8 @@ export const CollapsedSidebar = ({ onExpand }: { onExpand: () => void }) => {
     const activePage = useBoardStore(state => state.activePage);
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const setActiveWorkspace = useBoardStore(state => state.setActiveWorkspace);
+    // NHG's profile lives in the sidebar, so the rail keeps it too, at the bottom.
+    const newUi = useNewUi();
 
     const accessibleWorkspaces = useAccessibleWorkspaces();
     // Sub-workspaces stay inside their parent's expanded tree — showing them
@@ -68,6 +72,8 @@ export const CollapsedSidebar = ({ onExpand }: { onExpand: () => void }) => {
                     <span className="rail-tooltip">{ws.title}</span>
                 </button>
             ))}
+
+            {newUi && <SidebarProfile compact />}
         </aside>
     );
 };

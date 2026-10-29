@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { LayoutDashboard, Plus, Trash2, Edit2, Copy, ChevronRight, Users, MoreHorizontal, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -28,12 +28,15 @@ import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 import { BoardArchiveTrashModal } from '../BoardArchiveTrashModal';
 import { BoardIcon, WorkspaceIcon } from './SidebarIcons';
 import { SortableBoardItem } from './SortableBoardItem';
+import { useTerms } from '../../../lib/terms';
 
 interface WorkspaceListProps {
     searchQuery: string;
+    /** Scrolls with the tree, above it (NHG's Dashboard area and folders bar). */
+    top?: ReactNode;
 }
 
-export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
+export const WorkspaceList = ({ searchQuery, top }: WorkspaceListProps) => {
     const {
         boards, activeBoardId, activePage, navigateTo, addBoard, setActiveBoard, deleteBoard, updateBoard, moveBoard, duplicateBoardToWorkspace, moveBoardToWorkspace,
         workspaces, activeWorkspaceId, setActiveWorkspace, deleteWorkspace, updateWorkspace, sharedBoardIds,
@@ -42,6 +45,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
     const { currentUser } = useUserStore();
     const user = currentUser;
+    const t = useTerms();
 
     const [creatingBoardInWorkspaceId, setCreatingBoardInWorkspaceId] = useState<string | null>(null);
     const [newBoardTitle, setNewBoardTitle] = useState('');
@@ -381,7 +385,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                             <input
                                                 autoFocus
                                                 type="text"
-                                                placeholder="New Board"
+                                                placeholder={`New ${t.Board}`}
                                                 className="sidebar-item-input"
                                                 style={{ margin: 0, padding: '2px 4px', width: '100%' }}
                                                 value={newBoardTitle}
@@ -406,7 +410,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                         }}
                                     >
                                         <Plus size={14} />
-                                        <span>Add board</span>
+                                        <span>{`Add ${t.board}`}</span>
                                     </div>
                                 )}
                                 {creatingSubWorkspaceInId === ws.id ? (
@@ -417,7 +421,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                                 e.preventDefault();
                                                 if (newSubWorkspaceTitle.trim()) {
                                                     addSubWorkspace(ws.id, newSubWorkspaceTitle).catch((err) => {
-                                                        showToast(err?.message || 'Failed to create sub workspace', 'error');
+                                                        showToast(err?.message || `Failed to create sub ${t.workspace}`, 'error');
                                                     });
                                                     setNewSubWorkspaceTitle('');
                                                     setCreatingSubWorkspaceInId(null);
@@ -428,7 +432,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                             <input
                                                 autoFocus
                                                 type="text"
-                                                placeholder="New Sub Workspace"
+                                                placeholder={`New Sub ${t.Workspace}`}
                                                 className="sidebar-item-input"
                                                 style={{ margin: 0, padding: '2px 4px', width: '100%' }}
                                                 value={newSubWorkspaceTitle}
@@ -436,7 +440,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                                 onBlur={() => {
                                                     if (newSubWorkspaceTitle.trim()) {
                                                         addSubWorkspace(ws.id, newSubWorkspaceTitle).catch((err) => {
-                                                            showToast(err?.message || 'Failed to create sub workspace', 'error');
+                                                            showToast(err?.message || `Failed to create sub ${t.workspace}`, 'error');
                                                         });
                                                         setNewSubWorkspaceTitle('');
                                                     }
@@ -456,12 +460,13 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
     return (
         <div className="sidebar-content" style={{ padding: '0' }}>
+            {top}
             <div className="tree-container">
                 {filteredWorkspaces.filter(ws => !ws.parentId).map(ws => renderWorkspaceNode(ws))}
 
                 {filteredWorkspaces.length === 0 && (
                     <div style={{ padding: '32px 16px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))', fontSize: '13px' }}>
-                        No workspaces found
+                        {`No ${t.workspaces} found`}
                     </div>
                 )}
             </div>
@@ -684,7 +689,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                             setActiveWorkspaceMenu(null);
                             if (!ws) return;
                             if (ws.owner_id !== user?.id) {
-                                setPermissionDeniedMessage("Only the workspace owner can rename it. Ask the owner to make this change.");
+                                setPermissionDeniedMessage(`Only the ${t.workspace} owner can rename it. Ask the owner to make this change.`);
                                 return;
                             }
                             setEditingWorkspaceId(ws.id);
@@ -700,7 +705,7 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
                                 }
                                 setActiveWorkspaceMenu(null);
                             }}>
-                                <Plus size={14} /> Add Sub Workspace
+                                <Plus size={14} />{` Add Sub ${t.Workspace}`}
                             </div>
                         )}
                         {ws?.owner_id === user?.id && (
@@ -725,8 +730,8 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
             <ConfirmModal
                 isOpen={!!boardToDelete}
-                title="Delete Board"
-                message="Are you sure you want to delete this board? You can restore it later from this workspace's Archive/Trash."
+                title={`Delete ${t.Board}`}
+                message={`Are you sure you want to delete this ${t.board}? You can restore it later from this ${t.workspace}'s Archive/Trash.`}
                 confirmText="Delete"
                 onConfirm={() => {
                     if (boardToDelete) deleteBoard(boardToDelete);
@@ -737,9 +742,9 @@ export const WorkspaceList = ({ searchQuery }: WorkspaceListProps) => {
 
             <ConfirmModal
                 isOpen={!!workspaceToDelete}
-                title="Delete Workspace"
-                message="Are you sure you want to delete this workspace? All boards inside it will be deleted! This action cannot be undone."
-                confirmText="Delete Workspace"
+                title={`Delete ${t.Workspace}`}
+                message={`Are you sure you want to delete this ${t.workspace}? All ${t.boards} inside it will be deleted! This action cannot be undone.`}
+                confirmText={`Delete ${t.Workspace}`}
                 onConfirm={() => {
                     if (workspaceToDelete) deleteWorkspace(workspaceToDelete);
                     setWorkspaceToDelete(null);

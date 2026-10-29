@@ -10,6 +10,8 @@ import { DependencyOverlay } from './DependencyOverlay';
 import { DependenciesSection } from '../task/DependenciesSection';
 import { NAME_COL_WIDTH, ROW_INNER_HEIGHT, ROW_HEIGHT, BAR_V_INSET, type BarGeometry } from './timelineGeometry';
 import { buildTimeGrid, computeBarSpan, isCurrentUnit, todayOffset, unitWidthFor, type TimelineViewType } from '../../lib/timelineScale';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 
 export const TimelineView = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -18,6 +20,10 @@ export const TimelineView = () => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
+    // NHG's bars: a tint of the group's colour with a square edge on the left
+    // and ink text, not a filled capsule
+    const newUi = useNewUi();
+    const t = useTerms();
 
     // Navigation and View state
     const [viewDate, setViewDate] = useState(new Date());
@@ -273,7 +279,7 @@ export const TimelineView = () => {
                     
                     {/* Calendar Day Headers */}
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--card-border)', position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--card-solid)' }}>
-                        <div style={{ width: '200px', flexShrink: 0, borderRight: '1px solid var(--card-border)', padding: '12px 16px', fontWeight: 600, fontSize: '13px', color: 'hsl(var(--color-text-primary))' }}>Item Name</div>
+                        <div style={{ width: '200px', flexShrink: 0, borderRight: '1px solid var(--card-border)', padding: '12px 16px', fontWeight: 600, fontSize: '13px', color: 'hsl(var(--color-text-primary))' }}>{`${t.Item} Name`}</div>
                         {timeGrid.map(unit => {
                             const isCurrent = isCurrentUnit(viewType, unit);
                             return (
@@ -334,7 +340,7 @@ export const TimelineView = () => {
                             const target = items[targetIndex];
                             if (!target || target.id === draft.fromItemId) return;
                             const result = await addItemDependency(draft.fromItemId, target.id);
-                            if (!result.success) showToast(result.error || 'Could not link these items', 'error');
+                            if (!result.success) showToast(result.error || `Could not link these ${t.items}`, 'error');
                         }}
                         onMouseLeave={() => setLinkDraft(null)}
                     >
@@ -413,13 +419,16 @@ export const TimelineView = () => {
                                                         // here instead made the release look like a correction, since
                                                         // the drop always rounds to a column anyway.
                                                         transform: draggingItem?.id === item.id ? `translateX(${draggingItem.offsetUnits * unitWidth}px)` : undefined,
-                                                        backgroundColor: item.groupColor || 'hsl(var(--color-brand-primary))',
-                                                        borderRadius: '12px',
-                                                        opacity: draggingItem?.id === item.id ? 0.7 : 0.8,
+                                                        backgroundColor: newUi
+                                                            ? `color-mix(in srgb, ${item.groupColor || 'hsl(var(--color-brand-primary))'} 22%, hsl(var(--color-bg-surface)))`
+                                                            : item.groupColor || 'hsl(var(--color-brand-primary))',
+                                                        borderLeft: newUi ? `3px solid ${item.groupColor || 'hsl(var(--color-brand-primary))'}` : undefined,
+                                                        borderRadius: newUi ? '1px' : '12px',
+                                                        opacity: draggingItem?.id === item.id ? 0.7 : newUi ? 1 : 0.8,
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: 'white',
+                                                        justifyContent: newUi ? 'flex-start' : 'center',
+                                                        color: newUi ? 'hsl(var(--color-text-primary))' : 'white',
                                                         fontSize: '11px',
                                                         fontWeight: 500,
                                                         padding: '0 8px',
@@ -428,7 +437,9 @@ export const TimelineView = () => {
                                                         zIndex: 5,
                                                         cursor: canEdit ? 'move' : 'pointer',
                                                         transition: draggingItem?.id === item.id ? 'none' : 'opacity 0.2s',
-                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                                        boxShadow: newUi
+                                                            ? `inset 0 0 0 1px color-mix(in srgb, ${item.groupColor || 'hsl(var(--color-brand-primary))'} 35%, transparent)`
+                                                            : '0 1px 3px rgba(0,0,0,0.1)'
                                                     }}
                                                 >
                                                     {item.title}
@@ -448,7 +459,7 @@ export const TimelineView = () => {
                                                             bottom: `${BAR_V_INSET}px`,
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            color: 'rgba(255,255,255,0.85)',
+                                                            color: newUi ? 'hsl(var(--color-text-secondary))' : 'rgba(255,255,255,0.85)',
                                                             fontSize: '10px',
                                                             zIndex: 6,
                                                             pointerEvents: 'none'
@@ -467,7 +478,7 @@ export const TimelineView = () => {
                                                             bottom: `${BAR_V_INSET}px`,
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            color: 'rgba(255,255,255,0.85)',
+                                                            color: newUi ? 'hsl(var(--color-text-secondary))' : 'rgba(255,255,255,0.85)',
                                                             fontSize: '10px',
                                                             zIndex: 6,
                                                             pointerEvents: 'none'
@@ -481,7 +492,7 @@ export const TimelineView = () => {
                                                     make that row depend on this one. */}
                                                 {canEdit && (hoveredItemId === item.id || linkDraft?.fromItemId === item.id) && (
                                                     <div
-                                                        title="Drag to the item that should start after this one"
+                                                        title={`Drag to the ${t.item} that should start after this one`}
                                                         onMouseDown={(e) => {
                                                             e.stopPropagation(); // don't start a bar move
                                                             if (!rowsRef.current) return;

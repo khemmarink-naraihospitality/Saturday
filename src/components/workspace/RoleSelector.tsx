@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
+import { reword, useTerms } from '../../lib/terms';
 interface RoleSelectorProps {
     value: string;
     onChange: (role: string) => void;
@@ -11,6 +12,7 @@ interface RoleSelectorProps {
 }
 
 export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, type = 'board' }: RoleSelectorProps) => {
+    const t = useTerms();
     const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -41,6 +43,8 @@ export const RoleSelector = ({ value, onChange, disabled = false, allowedRoles, 
         admin: 'Can manage members & boards',
         owner: 'Full control'
     };
+    // NHG's words (src/lib/terms.ts)
+    for (const map of [roleLabels, roleDescriptions]) for (const k in map) map[k] = reword(map[k], t);
 
     useLayoutEffect(() => {
         if (isOpen && buttonRef.current) {

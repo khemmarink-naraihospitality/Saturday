@@ -12,6 +12,7 @@ import { offerUndo } from '../useUndoToast';
 import { useUserStore } from '../useUserStore';
 import { describeChange } from '../../lib/itemChangeText';
 import { peopleToNotify } from '../../lib/itemPeople';
+import { terms } from '../../lib/terms';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -1367,7 +1368,7 @@ export const createItemSlice: StateCreator<
         logMove('items_moved');
         const what = count === 1 ? `"${movedTitles[0]}"` : `${count} tasks`;
         offerUndo(
-            isCrossBoard ? `Moved ${what} to ${toBoardTitle ? `"${toBoardTitle}"` : 'another board'}` : `Moved ${what} to ${toGroupTitle ? `"${toGroupTitle}"` : 'another group'}`,
+            isCrossBoard ? `Moved ${what} to ${toBoardTitle ? `"${toBoardTitle}"` : `another ${terms().board}`}` : `Moved ${what} to ${toGroupTitle ? `"${toGroupTitle}"` : `another ${terms().group}`}`,
             async () => {
                 await restoreMovedRows(set, get, originals);
                 logMove('items_move_undone');

@@ -13,6 +13,8 @@ import { FilterMenu } from './FilterMenu';
 import { NumberFormatMenu } from './NumberFormatMenu';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 
 // dnd-kit's PointerSensor activates on `pointerdown`, which fires *before* the
 // `mousedown` that the resize handle listens on — so calling stopPropagation
@@ -188,6 +190,9 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
     const setColumnFilter = useBoardStore(state => state.setColumnFilter);
     const setColumnNumberFormat = useBoardStore(state => state.setColumnNumberFormat);
     const setColumnAlignment = useBoardStore(state => state.setColumnAlignment);
+    // NHG draws no colour bar beside a group's rows
+    const newUi = useNewUi();
+    const t = useTerms();
 
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeSort = activeBoard?.sort;
@@ -431,7 +436,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
             height: '34px',
             alignItems: 'center'
         }}>
-            {groupColor && (
+            {groupColor && !newUi && (
                 <div style={{
                     position: 'absolute', left: '0px', top: '0px', bottom: '0px', width: '6px',
                     backgroundColor: groupColor, zIndex: 80, borderRadius: '0px'
@@ -449,7 +454,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                 fontSize: '13px'
             }}>
                 {isSubitemHeader ? (
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Subitem</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Subitem}</span>
                 ) : isEditingItemCol ? (
                     <input
                         autoFocus
@@ -469,7 +474,8 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                         title="Double click to rename"
                         style={{ cursor: 'text', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
-                        {itemColumnTitle}
+                        {/* The default title is the word for the rows, whatever the board's own */}
+                        {itemColumnTitle === 'Item' ? t.Item : itemColumnTitle}
                     </span>
                 )}
 

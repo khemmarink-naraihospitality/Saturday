@@ -9,12 +9,14 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../ui/Toast';
 import { PrivateBoardSection } from '../board/PrivateBoardSection';
 
+import { useTerms } from '../../lib/terms';
 interface ShareBoardModalProps {
     boardId: string;
     onClose: () => void;
 }
 
 export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
+    const t = useTerms();
     const { user } = useAuth();
     const { currentUser } = useUserStore();
     const isSuperAdmin = currentUser.system_role === 'super_admin';
@@ -106,7 +108,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                 }}>
                     <div>
                         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>
-                            Share Board
+                            {`Share ${t.Board}`}
                         </h2>
                         <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
                             {board?.title}
@@ -149,7 +151,7 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                         backgroundColor: '#fef3c7',
                         borderBottom: '1px solid hsl(var(--color-border))'
                     }}>
-                        Super Admin mode: you can change or remove any member, including admins and the board owner.
+                        {`Super Admin mode: you can change or remove any member, including admins and the ${t.board} owner.`}
                     </div>
                 )}
 

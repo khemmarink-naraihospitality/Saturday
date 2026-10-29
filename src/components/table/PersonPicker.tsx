@@ -4,6 +4,7 @@ import { Check, Search, UserPlus, X } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useAuth } from '../../contexts/AuthContext';
 
+import { useTerms } from '../../lib/terms';
 interface PersonPickerProps {
     currentValue: string[]; // Array of user_ids
     position: { top: number; bottom: number; left: number; width: number };
@@ -16,6 +17,7 @@ interface PersonPickerProps {
 }
 
 export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNewEmail, onClose, boardId, itemId, columnId }: PersonPickerProps) => {
+    const t = useTerms();
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const searchUsers = useBoardStore(state => state.searchUsers);
     const inviteAndAssignUser = useBoardStore(state => state.inviteAndAssignUser);
@@ -122,7 +124,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>Share Board?</h3>
+                    <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>{`Share ${t.Board}?`}</h3>
                     <button onClick={() => setInviteCandidate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
                         <X size={16} />
                     </button>
@@ -131,7 +133,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                 <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px', lineHeight: 1.4 }}>
                     <strong>{inviteCandidate.full_name || inviteCandidate.email}</strong> is not a member of this board.
                     <br />
-                    Share this board with them to assign this item?
+                    {`Share this ${t.board} with them to assign this ${t.item}?`}
                 </p>
 
                 <div style={{ marginBottom: '16px' }}>
@@ -311,7 +313,7 @@ export const PersonPicker = ({ currentValue = [], position, onSelect, onSelectNe
                                         <div style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {user.full_name || user.email}
                                         </div>
-                                        <div style={{ fontSize: '11px', color: '#999' }}>Invite to Board</div>
+                                        <div style={{ fontSize: '11px', color: '#999' }}>{`Invite to ${t.Board}`}</div>
                                     </div>
                                     <UserPlus size={14} color="#999" />
                                 </div>

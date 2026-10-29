@@ -12,12 +12,14 @@ import { LoadingScreen } from '../components/common/LoadingScreen';
 import { PinLockScreen } from '../components/board/PinLockScreen';
 import { isBoardUnlocked } from '../lib/boardPinUnlock';
 import { shownViewId, useAiSummaryEnabled } from '../hooks/useAiSummaryEnabled';
+import { useTerms } from '../lib/terms';
 
 export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
     const loadBoardData = useBoardStore(state => state.loadBoardData);
     const aiEnabled = useAiSummaryEnabled();
+    const t = useTerms();
     const activeBoard = boards.find(b => b.id === activeBoardId);
 
     const [isUnlocked, setIsUnlocked] = useState(() => !activeBoardId || isBoardUnlocked(activeBoardId));
@@ -42,8 +44,8 @@ export const BoardPage = () => {
     if (!activeBoardId || !activeBoard) {
         return (
             <div style={{ padding: '60px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>
-                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: 'hsl(var(--color-text-primary))' }}>Board Not Found</h2>
-                <p>The board you are looking for does not exist, or you might not have access to it.</p>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: 'hsl(var(--color-text-primary))' }}>{`${t.Board} Not Found`}</h2>
+                <p>{`The ${t.board} you are looking for does not exist, or you might not have access to it.`}</p>
                 <button
                     onClick={() => useBoardStore.getState().navigateTo('home')}
                     className="btn-primary"
@@ -72,14 +74,14 @@ export const BoardPage = () => {
 
     // Safety check: Prevent white screens if the board is deleted or deeply linked incorrectly
     if (!activeBoard.isDataLoaded) {
-        return <LoadingScreen message="Loading board content..." />;
+        return <LoadingScreen message={`Loading ${t.board} content...`} />;
     }
 
     // Safety fallback for malformed board data
     if (!activeBoard.groups || !activeBoard.columns) {
         return (
              <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'hsl(var(--color-bg-base))', flexDirection: 'column', gap: '16px' }}>
-                <span style={{ color: '#ef4444', fontSize: '14px' }}>Error: Board data is incomplete.</span>
+                <span style={{ color: '#ef4444', fontSize: '14px' }}>{`Error: ${t.Board} data is incomplete.`}</span>
                 <button onClick={() => window.location.reload()} className="btn-primary" style={{ padding: '8px 16px' }}>Reload Application</button>
             </div>
         );

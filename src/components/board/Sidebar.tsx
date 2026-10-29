@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { SidebarHeader } from './sidebar/SidebarHeader';
+import { SidebarHeader, WorkspacesBar } from './sidebar/SidebarHeader';
 import { WorkspaceList } from './sidebar/WorkspaceList';
 import { CollapsedSidebar } from './sidebar/CollapsedSidebar';
+import { SidebarDashboard } from './sidebar/SidebarDashboard';
+import { SidebarProfile } from './sidebar/SidebarProfile';
+import { useNewUi } from '../../lib/brand';
 import '../../styles/sidebar_tree.css';
 
 // Width of the collapsed icon rail — fits a 40px button with 12px of
@@ -10,6 +13,9 @@ const RAIL_WIDTH = 64;
 
 export const Sidebar = () => {
     const [searchQuery, setSearchQuery] = useState('');
+    // NHG's sidebar: the Dashboard area and then the folders, scrolling together
+    // under the name, with the profile at the bottom (src/lib/brand.ts).
+    const newUi = useNewUi();
     
     const [sidebarWidth, setSidebarWidth] = useState(() => {
         const saved = localStorage.getItem('sidebarWidth');
@@ -93,9 +99,16 @@ export const Sidebar = () => {
 
                 <WorkspaceList
                     searchQuery={searchQuery}
+                    top={newUi ? (
+                        <div className="nhg-sidebar-top">
+                            <SidebarDashboard />
+                            <WorkspacesBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+                        </div>
+                    ) : undefined}
                 />
 
-                <div className="sidebar-footer">
+                <div className={newUi ? 'sidebar-footer sidebar-footer--profile' : 'sidebar-footer'}>
+                    {newUi && <SidebarProfile />}
                     <span className="footer-power">Powered by jirawat.k</span>
                 </div>
             </div>

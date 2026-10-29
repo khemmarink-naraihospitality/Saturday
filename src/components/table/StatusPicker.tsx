@@ -5,6 +5,8 @@ import type { ColumnOption } from '../../types';
 import { useBoardStore } from '../../store/useBoardStore';
 import { LABEL_COLORS, nextUniqueLabel } from '../../lib/labelColors';
 import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { StatusPill } from '../common/StatusPill';
 
 interface StatusPickerProps {
     columnId: string; // Need this for editing
@@ -19,6 +21,7 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
     const menuRef = useRef<HTMLDivElement>(null);
     const colorPaletteRef = useRef<HTMLDivElement>(null);
     const [isEditingLabels, setIsEditingLabels] = useState(false);
+    const newUi = useNewUi();
     const [pickerHeight, setPickerHeight] = useState(0);
 
     const safeOptions = Array.isArray(options) ? options : [];
@@ -344,7 +347,12 @@ export const StatusPicker = ({ columnId, options = [], onSelect, onClose, positi
                     overflowY: 'auto',
                     paddingRight: '2px'
                 }}>
-                    {safeOptions.map((opt) => (
+                    {safeOptions.map((opt) => newUi ? (
+                        // NHG: each option as the pill it will show in the cell
+                        <button key={opt.id} type="button" className="nhg-status-option" onClick={() => onSelect(opt.id)}>
+                            <StatusPill color={opt.color} label={opt.label} />
+                        </button>
+                    ) : (
                         <button
                             key={opt.id}
                             onClick={() => onSelect(opt.id)}

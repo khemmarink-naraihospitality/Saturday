@@ -1,6 +1,8 @@
 import { ChevronDown, Layout, Lock, Star } from 'lucide-react';
 import type { Board, Workspace } from '../../types';
 import { WorkspaceIcon } from '../board/sidebar/SidebarIcons';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 
 /**
  * A board as a card: Home's Recently visited / My workspace / Favorites and the
@@ -14,7 +16,9 @@ export const BoardCard = ({ board, workspace, onOpen, onToggleFavorite }: {
     onOpen: () => void;
     onToggleFavorite: (boardId: string) => void;
 }) => {
-    const workspaceTitle = workspace?.title || 'Unknown Workspace';
+    const newUi = useNewUi();
+    const t = useTerms();
+    const workspaceTitle = workspace?.title || `Unknown ${t.Workspace}`;
     const ownerName = workspace?.ownerName || 'Unknown Owner';
     const ownerInitial = workspace?.ownerName ? (Array.from(workspace.ownerName.trim())[0] || '?').toUpperCase() : '?';
     return (
@@ -38,14 +42,14 @@ export const BoardCard = ({ board, workspace, onOpen, onToggleFavorite }: {
             <div className="board-card__body">
                 <h3 className="board-card__title">
                     <button type="button" className="board-card__open" onClick={onOpen}>{board.title}</button>
-                    {board.is_private && <Lock size={13} className="board-card__lock" aria-label="Private board" />}
+                    {board.is_private && <Lock size={13} className="board-card__lock" aria-label={`Private ${t.board}`} />}
                 </h3>
-                <div className="board-card__kind">Work Management</div>
+                <div className="board-card__kind">{newUi ? t.Board : 'Work Management'}</div>
             </div>
 
             <dl className="board-card__meta">
                 <div>
-                    <dt>Workspace</dt>
+                    <dt>{t.Workspace}</dt>
                     <dd>
                         <WorkspaceIcon title={workspaceTitle} isActive={false} size={18} />
                         <span>{workspaceTitle}</span>

@@ -3,9 +3,11 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState } from 'react';
 
+import { useTerms } from '../../lib/terms';
 const WRITE_ROLES = ['member', 'editor', 'admin', 'owner'];
 
 export const BatchActionsBar = () => {
+    const t = useTerms();
     const selectedItemIds = useBoardStore(state => state.selectedItemIds);
     const clearSelection = useBoardStore(state => state.clearSelection);
     const deleteSelectedItems = useBoardStore(state => state.deleteSelectedItems);
@@ -163,7 +165,7 @@ export const BatchActionsBar = () => {
 
                             {boardsByWorkspace.length === 0 && (
                                 <div style={{ padding: '12px 10px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>
-                                    No accessible boards found.
+                                    {`No accessible ${t.boards} found.`}
                                 </div>
                             )}
 
@@ -241,7 +243,7 @@ export const BatchActionsBar = () => {
                                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.title}</span>
                                                                 </div>
                                                             ))
-                                                            : <div style={{ padding: '6px 10px 6px 30px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>No groups</div>
+                                                            : <div style={{ padding: '6px 10px 6px 30px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>{`No ${t.groups}`}</div>
                                                         : <div style={{ padding: '6px 10px 6px 30px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>Loading…</div>
                                                 )}
                                             </div>

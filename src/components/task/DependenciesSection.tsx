@@ -4,6 +4,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
 import { collectDownstream } from '../../lib/dependencyUtils';
 
+import { useTerms } from '../../lib/terms';
 interface DependenciesSectionProps {
     itemId: string;
     boardId: string;
@@ -21,6 +22,7 @@ interface DependenciesSectionProps {
  * is impossible to pick rather than rejected after the fact.
  */
 export const DependenciesSection = ({ itemId, boardId, compact = false, trailing }: DependenciesSectionProps) => {
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
     const itemDependencies = useBoardStore(state => state.itemDependencies);
     const addItemDependency = useBoardStore(state => state.addItemDependency);
@@ -79,7 +81,7 @@ export const DependenciesSection = ({ itemId, boardId, compact = false, trailing
         return () => document.removeEventListener('mousedown', onClickOutside);
     }, [isPickerOpen]);
 
-    const titleOf = (id: string) => board?.items.find(i => i.id === id)?.title || 'Unknown item';
+    const titleOf = (id: string) => board?.items.find(i => i.id === id)?.title || `Unknown ${t.item}`;
 
     const handlePick = async (predecessorId: string) => {
         setError(null);
@@ -192,7 +194,7 @@ export const DependenciesSection = ({ itemId, boardId, compact = false, trailing
                                 autoFocus
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search items on this board…"
+                                placeholder={`Search ${t.items} on this ${t.board}…`}
                                 style={{
                                     width: '100%',
                                     padding: '8px 10px',
@@ -213,7 +215,7 @@ export const DependenciesSection = ({ itemId, boardId, compact = false, trailing
                             <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
                                 {candidates.length === 0 ? (
                                     <div style={{ padding: '12px 10px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                        No eligible items
+                                        {`No eligible ${t.items}`}
                                     </div>
                                 ) : candidates.map(candidate => (
                                     <button

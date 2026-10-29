@@ -9,6 +9,7 @@ import { setLayoutOverride } from '../../hooks/useIsMobile';
 import { Avatar, BottomSheet, Card, PrimaryButton } from '../ui';
 import { openWorkspaces } from '../nav/navigation';
 import { PALETTES } from '../../lib/palettes';
+import { isNewUi } from '../../lib/brand';
 import { chooseAccountPalette } from '../../lib/uiTheme';
 import { ThemeSwatch } from '../../components/common/ThemeChoice';
 
@@ -39,6 +40,7 @@ export const MoreScreen = () => {
     const theme = useThemeStore(state => state.theme);
     const toggleTheme = useThemeStore(state => state.toggleTheme);
     const palette = useThemeStore(state => state.palette);
+    const newUi = isNewUi(palette);
     const [themeOpen, setThemeOpen] = useState(false);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const { signOut } = useAuth();
@@ -126,7 +128,7 @@ export const MoreScreen = () => {
             <BottomSheet open={confirmSignOut} onClose={() => setConfirmSignOut(false)} title="Sign out?">
                 <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ fontSize: 15, color: 'hsl(var(--m-text-2))' }}>
-                        You'll need to sign in again to use Saturday on this phone.
+                        {`You'll need to sign in again to use ${newUi ? 'NHG WorkSpace' : 'Saturday'} on this phone.`}
                     </div>
                     <PrimaryButton
                         style={{ background: 'hsl(var(--color-danger))' }}

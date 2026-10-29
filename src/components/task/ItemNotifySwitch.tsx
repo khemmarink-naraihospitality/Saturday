@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
 import { peopleOnItem } from '../../lib/itemPeople';
 
+import { useTerms } from '../../lib/terms';
 const Toggle = ({ on }: { on: boolean }) => (
     <span aria-hidden="true" style={{
         position: 'relative', width: '32px', height: '18px', borderRadius: '9px', flexShrink: 0,
@@ -25,6 +26,7 @@ const Toggle = ({ on }: { on: boolean }) => (
  * itemSlice: status, updates, other fields).
  */
 export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.items.some(i => i.id === itemId)));
     const item = board?.items.find(i => i.id === itemId);
     const members = useBoardStore(state => state.activeBoardMembers);
@@ -76,7 +78,7 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 aria-haspopup="dialog"
                 aria-expanded={open}
                 onClick={toggleOpen}
-                title="Choose who is notified (in the app and by email) about this item"
+                title={`Choose who is notified (in the app and by email) about this ${t.item}`}
                 style={{
                     marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none',
                     padding: '2px 0', cursor: 'pointer', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
@@ -105,12 +107,12 @@ export const ItemNotifySwitch = ({ itemId }: { itemId: string }) => {
                 >
                     <div style={{ padding: '8px 10px 6px', fontSize: '12px', lineHeight: 1.4, color: 'hsl(var(--color-text-secondary))' }}>
                         <strong style={{ display: 'block', color: 'hsl(var(--color-text-primary))', fontSize: '13px' }}>Who is notified</strong>
-                        People who are on get an in-app notification and an email when this item changes. Everyone in the Person column is on by default. You can only switch your own on or off.
+                        {`People who are on get an in-app notification and an email when this ${t.item} changes. Everyone in the Person column is on by default. You can only switch your own on or off.`}
                     </div>
 
                     {people.length === 0 && (
                         <div style={{ padding: '12px 10px 14px', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
-                            No one is in this item's Person column yet. People you add there are notified automatically.
+                            {`No one is in this ${t.item}'s Person column yet. People you add there are notified automatically.`}
                         </div>
                     )}
 

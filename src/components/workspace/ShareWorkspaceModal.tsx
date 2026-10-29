@@ -6,12 +6,14 @@ import { MembersList } from './MembersList';
 import { useAuth } from '../../contexts/AuthContext';
 import { showToast } from '../../utils/toast';
 
+import { useTerms } from '../../lib/terms';
 interface ShareWorkspaceModalProps {
     workspaceId: string;
     onClose: () => void;
 }
 
 export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModalProps) => {
+    const t = useTerms();
     const { user } = useAuth();
     const {
         workspaces,
@@ -128,7 +130,7 @@ export const ShareWorkspaceModal = ({ workspaceId, onClose }: ShareWorkspaceModa
                 }}>
                     <div>
                         <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>
-                            Share Workspace
+                            {`Share ${t.Workspace}`}
                         </h2>
                         <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-tertiary))' }}>
                             {workspace?.title}

@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { Star } from 'lucide-react';
 import { BoardCard, ShowMoreButton } from '../components/home/HomeCards';
+import { useTerms } from '../lib/terms';
 
 
 export const FavoritesPage = () => {
     const { boards, workspaces, setActiveBoard, toggleFavorite } = useBoardStore();
     const [showAll, setShowAll] = useState(false);
+    const t = useTerms();
 
     // Filter boards that are favorited. Deleting a board archives the row
     // rather than removing it (so Trash can restore it) — an archived board
@@ -36,7 +38,7 @@ export const FavoritesPage = () => {
             <section style={{ marginBottom: '40px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                     <Star size={20} color="#ffcb00" fill="#ffcb00" />
-                    <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Favorited Boards</h2>
+                    <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>{`Favorited ${t.Boards}`}</h2>
                 </div>
 
                 <div style={{
@@ -72,7 +74,7 @@ export const FavoritesPage = () => {
                                 <Star size={48} color="hsl(var(--color-text-tertiary))" style={{ opacity: 0.5 }} />
                                 <div>
                                     <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', marginBottom: '8px' }}>No favorites yet</h3>
-                                    <p style={{ color: 'hsl(var(--color-text-secondary))', margin: 0 }}>Start starring boards to see them here!</p>
+                                    <p style={{ color: 'hsl(var(--color-text-secondary))', margin: 0 }}>{`Start starring ${t.boards} to see them here!`}</p>
                                 </div>
                             </div>
                         )}

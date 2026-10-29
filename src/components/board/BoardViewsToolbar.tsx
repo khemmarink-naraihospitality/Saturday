@@ -5,6 +5,8 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
 import { LinkGroupModal } from './LinkGroupModal';
 import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 
 export const BoardViewsToolbar = () => {
     const addItem = useBoardStore(state => state.addItem);
@@ -12,6 +14,10 @@ export const BoardViewsToolbar = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const firstGroupId = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId)?.groups[0]?.id);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
+    // NHG puts New Item at the right-hand end of the toolbar, its menu opening
+    // below it, and uses its own words (src/lib/terms.ts)
+    const newUi = useNewUi();
+    const t = useTerms();
     
     const [showDropdown, setShowDropdown] = useState(false);
     const [showLinkGroupModal, setShowLinkGroupModal] = useState(false);
@@ -27,13 +33,13 @@ export const BoardViewsToolbar = () => {
 
     const handleAddItem = () => {
         if (activeBoardId && firstGroupId) {
-            addItem("New Item", firstGroupId);
+            addItem(`New ${t.Item}`, firstGroupId);
         }
     };
 
     const handleAddGroup = () => {
         if (activeBoardId) {
-            addGroup("Group Title");
+            addGroup(`${t.Group} Title`);
             setShowDropdown(false);
         }
     };
@@ -66,6 +72,104 @@ export const BoardViewsToolbar = () => {
         useBoardStore.getState().setBoardFilters(activeBoardId, currentFilters);
     };
 
+    // The primary action: New Item, with a menu for a new or linked group.
+    const primaryAction = (
+        <div style={{ display: 'flex', height: '32px', position: 'relative' }}>
+            <button
+                onClick={handleAddItem}
+                style={{
+                    backgroundColor: 'hsl(var(--color-brand-primary))',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px 0 0 4px',
+                    padding: '0 12px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 4px hsl(var(--color-brand-primary) / 0.15)'
+                }}
+            >
+                {`New ${t.Item}`}
+            </button>
+            <button 
+                ref={dropdownBtnRef}
+                onClick={() => setShowDropdown(!showDropdown)}
+                style={{
+                    backgroundColor: 'hsl(var(--color-brand-primary))',
+                    color: 'white',
+                    border: 'none',
+                    borderLeft: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '0 4px 4px 0',
+                    padding: '0 6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                }}
+            >
+                <ChevronDown size={16} />
+            </button>
+            
+            {showDropdown && dropdownBtnRef.current && createPortal(
+                <>
+                    <div 
+                        style={{ position: 'fixed', inset: 0, zIndex: 9998 }} 
+                        onClick={() => setShowDropdown(false)} 
+                    />
+                    <div style={newUi ? {
+                        // At the right edge there is no room beside it: open below, right-aligned
+                        position: 'fixed',
+                        top: dropdownBtnRef.current.getBoundingClientRect().bottom + 6,
+                        right: window.innerWidth - dropdownBtnRef.current.getBoundingClientRect().right,
+                        backgroundColor: 'white',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '8px',
+                        padding: '8px 0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                        zIndex: 9999,
+                        width: '220px'
+                    } : {
+                        position: 'fixed',
+                        top: dropdownBtnRef.current.getBoundingClientRect().top, // Align with top of button
+                        left: dropdownBtnRef.current.getBoundingClientRect().right + 8, // Position to the RIGHT
+                        backgroundColor: 'white',
+                        border: '1px solid hsl(var(--color-border))',
+                        borderRadius: '8px',
+                        padding: '8px 0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '4px 4px 16px rgba(0,0,0,0.15)', // Adjusted shadow for right position
+                        zIndex: 9999,
+                        width: '220px'
+                    }}>
+                        <div 
+                            onClick={handleAddGroup}
+                            style={dropdownItemStyle}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <LayoutGrid size={16} />
+                            <span>{newUi ? `New ${t.group}` : 'New group of items'}</span>
+                        </div>
+                        <div
+                            onClick={handleOpenLinkGroup}
+                            style={dropdownItemStyle}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <Link2 size={16} />
+                            <span>{`Link to other ${t.group}`}</span>
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+        </div>
+    );
+
     return (
         <>
         <div style={{
@@ -78,86 +182,7 @@ export const BoardViewsToolbar = () => {
         }}>
             {/* Toolbar Items: Primary Action & Tools */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ display: 'flex', height: '32px', position: 'relative' }}>
-                    <button
-                        onClick={handleAddItem}
-                        style={{
-                            backgroundColor: 'hsl(var(--color-brand-primary))',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px 0 0 4px',
-                            padding: '0 12px',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            boxShadow: '0 2px 4px hsl(var(--color-brand-primary) / 0.15)'
-                        }}
-                    >
-                        New Item
-                    </button>
-                    <button 
-                        ref={dropdownBtnRef}
-                        onClick={() => setShowDropdown(!showDropdown)}
-                        style={{
-                            backgroundColor: 'hsl(var(--color-brand-primary))',
-                            color: 'white',
-                            border: 'none',
-                            borderLeft: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '0 4px 4px 0',
-                            padding: '0 6px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <ChevronDown size={16} />
-                    </button>
-                    
-                    {showDropdown && dropdownBtnRef.current && createPortal(
-                        <>
-                            <div 
-                                style={{ position: 'fixed', inset: 0, zIndex: 9998 }} 
-                                onClick={() => setShowDropdown(false)} 
-                            />
-                            <div style={{
-                                position: 'fixed',
-                                top: dropdownBtnRef.current.getBoundingClientRect().top, // Align with top of button
-                                left: dropdownBtnRef.current.getBoundingClientRect().right + 8, // Position to the RIGHT
-                                backgroundColor: 'white',
-                                border: '1px solid hsl(var(--color-border))',
-                                borderRadius: '8px',
-                                padding: '8px 0',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                boxShadow: '4px 4px 16px rgba(0,0,0,0.15)', // Adjusted shadow for right position
-                                zIndex: 9999,
-                                width: '220px'
-                            }}>
-                                <div 
-                                    onClick={handleAddGroup}
-                                    style={dropdownItemStyle}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                >
-                                    <LayoutGrid size={16} />
-                                    <span>New group of items</span>
-                                </div>
-                                <div
-                                    onClick={handleOpenLinkGroup}
-                                    style={dropdownItemStyle}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                >
-                                    <Link2 size={16} />
-                                    <span>Link to other group</span>
-                                </div>
-                            </div>
-                        </>,
-                        document.body
-                    )}
-                </div>
+                {!newUi && primaryAction}
 
                 <div 
                     style={{ 
@@ -173,7 +198,7 @@ export const BoardViewsToolbar = () => {
                     <Search size={16} />
                     <input
                         type="text"
-                        placeholder="Search items..."
+                        placeholder={`Search ${t.items}...`}
                         value={useBoardStore(state => state.searchQuery)}
                         onChange={(e) => useBoardStore.getState().setSearchQuery(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
@@ -226,7 +251,7 @@ export const BoardViewsToolbar = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
                                 {/* Group Filters */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>Group</div>
+                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>{t.Group}</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                         {useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.groups.map(group => {
                                             const board = useBoardStore.getState().boards.find(b => b.id === activeBoardId);
@@ -444,7 +469,7 @@ export const BoardViewsToolbar = () => {
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <span style={{ fontSize: '13px' }}>Default (Groups)</span>
+                                <span style={{ fontSize: '13px' }}>{`Default (${t.Groups})`}</span>
                             </div>
                             {itemColumns(useBoardStore.getState().boards.find(b => b.id === activeBoardId)?.columns || []).filter(c => ['status', 'dropdown', 'people'].includes(c.type)).map(col => (
                                 <div 
@@ -477,8 +502,8 @@ export const BoardViewsToolbar = () => {
                 </div>
             </div>
 
-            {/* Right Side: Empty */}
-            <div />
+            {/* Right Side: Empty (NHG: New Item) */}
+            {newUi ? primaryAction : <div />}
         </div>
         {showLinkGroupModal && (
             <LinkGroupModal onClose={() => setShowLinkGroupModal(false)} />

@@ -25,6 +25,9 @@ import { Plus, MoreHorizontal, MessageSquare, ChevronRight, ChevronDown, CornerD
 import type { Item, Column } from '../../types';
 import { itemUpdateSummary } from '../../lib/utils';
 import { tintLabel } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
+import { StatusPill } from '../common/StatusPill';
 
 const KanbanAvatars = ({ userIds, activeBoardMembers, size = 22 }: { userIds: string[]; activeBoardMembers: any[]; size?: number }) => {
     // Same rule as the table's people cell: ids that no longer resolve to a visible
@@ -129,6 +132,8 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
 
     const statusValue = statusColumn ? item.values?.[statusColumn.id] : null;
     const statusOption = statusColumn?.options?.find(opt => opt.id === statusValue || opt.label === statusValue);
+    const newUi = useNewUi();
+    const t = useTerms();
 
     return (
         <div
@@ -149,11 +154,15 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                     </button>
                 </div>
 
-                {statusOption && (
+                {statusOption && (newUi ? (
+                    <div className="kanban-status-pill">
+                        <StatusPill color={statusOption.color} label={statusOption.label} />
+                    </div>
+                ) : (
                     <div className="kanban-status-bar" style={{ backgroundColor: tintLabel(statusOption.color) }}>
                         {statusOption.label}
                     </div>
-                )}
+                ))}
 
                 {peopleColumn && (
                     <div className="kanban-field-row">
@@ -168,7 +177,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
 
                 {itemUpdateSummary(item).count > 0 && (
                     <div className="kanban-field-row">
-                        <span className="kanban-field-label">Updates</span>
+                        <span className="kanban-field-label">{t.Updates}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
                             <MessageSquare size={12} />
                             <span>{itemUpdateSummary(item).count}</span>
@@ -186,7 +195,7 @@ const KanbanCard = ({ item, subItems, peopleColumn, statusColumn, activeBoardMem
                         onToggleExpand();
                     }}
                 >
-                    <span className="kanban-field-label">Sub-items</span>
+                    <span className="kanban-field-label">{newUi ? t.Subitems : 'Sub-items'}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         <span className="kanban-subitem-count-badge">{subItems.length}</span>
@@ -373,6 +382,7 @@ interface KanbanColumnProps {
 }
 
 const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn, statusColumn, activeBoardMembers, expandedItemIds, onToggleExpand, onAddItem, onItemClick }: KanbanColumnProps) => {
+    const t = useTerms();
     const { setNodeRef } = useSortable({
         id,
         data: {
@@ -423,7 +433,7 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
                     className="kanban-add-btn"
                 >
                     <Plus size={16} />
-                    <span>Add Item</span>
+                    <span>{`Add ${t.Item}`}</span>
                 </button>
             </div>
 
@@ -477,6 +487,7 @@ const KanbanColumn = ({ id, label, color, items, subItemsByParent, peopleColumn,
 };
 
 export const KanbanView = () => {
+    const t = useTerms();
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const boards = useBoardStore(state => state.boards);
     const addItem = useBoardStore(state => state.addItem);
@@ -717,7 +728,7 @@ export const KanbanView = () => {
     if (activeBoard.groupByColumnId && !groupingColumn) {
         return (
             <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
-                <p>No valid grouping column found for this board. Kanban view requires a Status, Dropdown, or People column.</p>
+                <p>{`No valid grouping column found for this ${t.board}. Kanban view requires a Status, Dropdown, or People column.`}</p>
             </div>
         );
     }
@@ -747,12 +758,12 @@ export const KanbanView = () => {
                             onItemClick={setActiveItem}
                             onAddItem={() => {
                                 if (!activeBoard.groupByColumnId) {
-                                    addItem("New Item", col.id);
+                                    addItem(`New ${t.Item}`, col.id);
                                     return;
                                 }
                                 const firstGroup = activeBoard.groups[0];
                                 if (firstGroup) {
-                                    addItem("New Item", firstGroup.id);
+                                    addItem(`New ${t.Item}`, firstGroup.id);
                                 }
                             }}
                         />

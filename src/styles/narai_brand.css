@@ -103,27 +103,6 @@ html[data-palette='narai'] :is(.tree-sidebar-item, .tree-node-parent, .rail-icon
     border-radius: 2px;
 }
 
-/* Workspace letters: a hairline square on the green; the open workspace is a
-   Galangal square with green ink */
-html[data-palette='narai'] .sidebar [data-ws-badge] {
-    background: transparent !important;
-    color: hsl(var(--color-text-primary)) !important;
-    box-shadow: inset 0 0 0 1px rgba(255, 239, 210, 0.34);
-}
-
-html[data-palette='narai'] .sidebar [data-ws-badge][data-ws-active='true'] {
-    background: var(--nhg-galangal) !important;
-    color: var(--nhg-green) !important;
-    box-shadow: none;
-}
-
-/* Elsewhere (a board card's workspace): a cream square with a hairline */
-html[data-palette='narai'] [data-ws-badge]:not(.sidebar *) {
-    background: hsl(var(--color-bg-subtle)) !important;
-    color: hsl(var(--color-text-primary)) !important;
-    box-shadow: inset 0 0 0 1px var(--nhg-hairline);
-}
-
 /* ── Type ──────────────────────────────────────────────────────────────── */
 
 /* Headlines in Nib Pro Regular, the display face: one weight, so a bold is

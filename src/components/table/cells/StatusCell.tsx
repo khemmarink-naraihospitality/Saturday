@@ -5,6 +5,8 @@ import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { StatusPicker } from '../StatusPicker';
 import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
+import { useNewUi } from '../../../lib/brand';
+import { StatusPill } from '../../common/StatusPill';
 
 interface StatusCellProps {
     itemId: string;
@@ -15,6 +17,7 @@ interface StatusCellProps {
 export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
+    const newUi = useNewUi();
 
     const [isEditing, setIsEditing] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
@@ -48,6 +51,19 @@ export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, val
 
     return (
         <>
+            {newUi ? (
+                // NHG: a pill with a dot on the row's own background; an empty
+                // status is an empty cell rather than a grey block
+                <div
+                    ref={cellRef}
+                    className="table-cell status-cell-pill"
+                    onClick={() => !isEditing && startEditing()}
+                >
+                    {statusOption && content
+                        ? <StatusPill color={statusOption.color} label={content} />
+                        : isHybridValue ? <span className="status-cell-pill__text">{content}</span> : null}
+                </div>
+            ) : (
             <div
                 ref={cellRef}
                 className="table-cell status-cell-full"
@@ -73,6 +89,7 @@ export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, val
             >
                 {content}
             </div>
+            )}
 
             {isEditing && pickerPos && (
                 <StatusPicker

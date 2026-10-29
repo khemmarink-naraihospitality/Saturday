@@ -7,6 +7,7 @@ import { showToast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 import { nearestSystemColor } from '../../lib/labelColors';
 
+import { useTerms } from '../../lib/terms';
 interface ImportBoardModalProps {
     onClose: () => void;
 }
@@ -399,6 +400,7 @@ const parseFiles = (val: any) => {
 };
 
 export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) => {
+    const t = useTerms();
     const [files, setFiles] = useState<File[]>([]);
     const [isParsing, setIsParsing] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
@@ -1274,15 +1276,15 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                     }}>
                         <div>
                             <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.boards}</div>
-                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Boards</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.Boards}</div>
                         </div>
                         <div>
                             <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.items}</div>
-                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Items</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.Items}</div>
                         </div>
                         <div>
                             <div style={{ fontSize: '28px', fontWeight: 700, color: '#065f46' }}>{importResults?.updates}</div>
-                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Updates</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t.Updates}</div>
                         </div>
                     </div>
                     <button
@@ -1388,7 +1390,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                     }}>Multi-File Project Import</h2>
                                     <p style={{ 
                                         margin: 0, fontSize: '13px', color: '#64748b'
-                                    }}>Import multiple files and sheets as concurrent boards</p>
+                                    }}>{`Import multiple files and sheets as concurrent ${t.boards}`}</p>
                                 </div>
                             </div>
                             <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
@@ -1433,7 +1435,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                             <WarningBanner />
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
-                                                Detected <strong>{previews.length}</strong> possible boards across <strong>{files.length}</strong> files.
+                                                Detected <strong>{previews.length}</strong>{` possible ${t.boards} across `}<strong>{files.length}</strong> files.
                                             </p>
                                             
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '12px', maxHeight: '300px', overflowY: 'auto', padding: '4px' }}>
@@ -1524,7 +1526,7 @@ export const ImportBoardModal: React.FC<ImportBoardModalProps> = ({ onClose }) =
                                 }}
                             >
                                 {isImporting ? <Loader2 className="animate-spin" size={18} /> : <Layers size={18} />}
-                                {isImporting ? `Importing ${selectedSheetIds.length} Boards...` : `Import ${selectedSheetIds.length} Boards`}
+                                {isImporting ? `Importing ${selectedSheetIds.length} ${t.Boards}...` : `Import ${selectedSheetIds.length} ${t.Boards}`}
                             </button>
                         </div>
                     </>

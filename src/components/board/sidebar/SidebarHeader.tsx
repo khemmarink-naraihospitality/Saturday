@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Archive, Home, Star, Menu } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
+import { productName, useNewUi } from '../../../lib/brand';
+import { useTerms } from '../../../lib/terms';
 
 interface SidebarHeaderProps {
     searchQuery: string;
@@ -10,44 +12,12 @@ interface SidebarHeaderProps {
 }
 
 export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }: SidebarHeaderProps) => {
-    const addWorkspace = useBoardStore(state => state.addWorkspace);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const activePage = useBoardStore(state => state.activePage);
-
-    const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
-
-    // Close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsMenuOpen(false);
-            }
-        };
-        if (isMenuOpen) document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isMenuOpen]);
-
-    const handleCreateWorkspace = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newWorkspaceTitle.trim() && !isSubmitting) {
-            setIsSubmitting(true);
-            try {
-                await addWorkspace(newWorkspaceTitle);
-                setNewWorkspaceTitle('');
-                setIsCreatingWorkspace(false);
-            } catch (error: any) {
-                console.error('[SidebarHeader] Workspace creation error:', error);
-                alert(`Failed to create workspace: ${error.message || 'Unknown error'}. Please check your internet connection or database permissions.`);
-            } finally {
-                setIsSubmitting(false);
-            }
-        }
-    };
+    // NHG moves Favorites into the sidebar's Dashboard area and the workspaces'
+    // title and search down beside their tree (Sidebar.tsx), so its header is
+    // just the name and Home.
+    const newUi = useNewUi();
 
     return (
         <div className="sidebar-header" style={{ padding: '12px 16px 0 16px', marginBottom: '0px', width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -105,7 +75,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
                         <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>
-                        <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Saturday</span>
+                        <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{productName(newUi)}</span>
                     </div>
                 </div>
             </div>
@@ -145,7 +115,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     <span className="sidebar-nav-label" style={{ fontSize: '12px', fontWeight: activePage === 'home' ? 600 : 400 }}>Home</span>
                 </button>
 
-                <button
+                {!newUi && <button
                     onClick={() => navigateTo('favorites')}
                     style={{
                         display: 'flex',
@@ -176,13 +146,63 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                 >
                     <Star size={18} color="#ffcb00" fill={activePage === 'favorites' ? "#ffcb00" : "none"} />
                     <span className="sidebar-nav-label" style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
-                </button>
+                </button>}
             </div>
 
+            {!newUi && <WorkspacesBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
+        </div>
+    );
+};
 
+/**
+ * The workspaces' title with its menu (create, Archive/Trash) and the search
+ * box. Saturday draws it at the bottom of the header; NHG's sidebar puts it
+ * under the Dashboard area, at the top of the folder tree.
+ */
+export const WorkspacesBar = ({ searchQuery, setSearchQuery }: Pick<SidebarHeaderProps, 'searchQuery' | 'setSearchQuery'>) => {
+    const addWorkspace = useBoardStore(state => state.addWorkspace);
+    const t = useTerms();
+
+    const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newWorkspaceTitle, setNewWorkspaceTitle] = useState('');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        if (isMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isMenuOpen]);
+
+    const handleCreateWorkspace = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newWorkspaceTitle.trim() && !isSubmitting) {
+            setIsSubmitting(true);
+            try {
+                await addWorkspace(newWorkspaceTitle);
+                setNewWorkspaceTitle('');
+                setIsCreatingWorkspace(false);
+            } catch (error: any) {
+                console.error('[SidebarHeader] Workspace creation error:', error);
+                alert(`Failed to create ${t.workspace}: ${error.message || 'Unknown error'}. Please check your internet connection or database permissions.`);
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
+    };
+
+    return (
+        <>
             {/* Workspaces Title & Actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', width: '100%', marginBottom: '6px' }}>
-                <span className="sidebar-section-label" style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>Workspaces</span>
+                <span className="sidebar-section-label" style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>{t.Workspaces}</span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {/* More Menu (...) */}
@@ -212,7 +232,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
                                         <Plus size={16} />
-                                        <span style={{ fontSize: '14px' }}>Create Workspace</span>
+                                        <span style={{ fontSize: '14px' }}>{`Create ${t.Workspace}`}</span>
                                     </button>
                                     <button
                                         onClick={() => { setIsMenuOpen(false); setIsArchiveModalOpen(true); }}
@@ -235,7 +255,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                 <Search size={16} style={{ color: 'hsl(var(--color-text-secondary))', marginLeft: '8px' }} />
                 <input
                     type="text"
-                    placeholder="Search workspaces..."
+                    placeholder={`Search ${t.workspaces}...`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
@@ -261,12 +281,12 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
                 }}>
                     <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '32px', width: '400px', boxShadow: 'var(--shadow-xl)' }}>
-                        <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px' }}>Create new workspace</h2>
+                        <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px' }}>{`Create new ${t.workspace}`}</h2>
                         <form onSubmit={handleCreateWorkspace}>
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Workspace title"
+                                placeholder={`${t.Workspace} title`}
                                 value={newWorkspaceTitle}
                                 onChange={(e) => setNewWorkspaceTitle(e.target.value)}
                                 style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '15px', marginBottom: '24px', outline: 'none' }}
@@ -295,6 +315,6 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };

@@ -20,6 +20,7 @@ import { takePendingDeepLink, clearPendingDeepLink } from './lib/pendingDeepLink
 import { clearBoardUnlock } from './lib/boardPinUnlock';
 import { useIsMobile } from './hooks/useIsMobile';
 import './lib/initialPath';
+import { useTerms } from './lib/terms';
 import { MobileLayoutPill } from './components/layout/MobileLayoutPill';
 
 // HomePage moved to lazy
@@ -214,6 +215,7 @@ function DeactivatedAccountPage({ onSignOut }: { onSignOut: () => void }) {
 }
 
 function MainApp() {
+  const t = useTerms();
   const activeBoardId = useBoardStore(state => state.activeBoardId);
   const activePage = useBoardStore(state => state.activePage);
   const navigateTo = useBoardStore(state => state.navigateTo);
@@ -593,7 +595,7 @@ function MainApp() {
   }, [activeWorkspaceId]);
 
   if (isLoading) {
-    return <LoadingScreen message="Loading your workspace..." />;
+    return <LoadingScreen message={`Loading your ${t.workspace}...`} />;
   }
 
   // Phones get their own layout over the same store; everything above (data

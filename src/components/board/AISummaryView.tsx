@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import type { Column, Item } from '../../types';
 import { itemColumns } from '../../lib/columnScope';
 
+import { useTerms } from '../../lib/terms';
 type Period = '1w' | '1m' | '1y' | 'all';
 
 const PERIODS: { id: Period; label: string; ms: number | null }[] = [
@@ -71,6 +72,7 @@ function buildPayload(
 }
 
 export const AISummaryView = () => {
+    const t = useTerms();
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
 
@@ -188,7 +190,7 @@ export const AISummaryView = () => {
                             margin: '0 0 0 44px',
                             lineHeight: 1.5,
                         }}>
-                            Summarize board activity
+                            {`Summarize ${t.board} activity`}
                             <span style={{ margin: '0 5px', color: 'hsl(var(--color-text-tertiary))' }}>·</span>
                             <span style={{ fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>
                                 {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
@@ -367,7 +369,7 @@ export const AISummaryView = () => {
                                 color: 'hsl(var(--color-text-primary))',
                                 margin: '0 0 5px',
                             }}>
-                                Analyzing board activity...
+                                {`Analyzing ${t.board} activity...`}
                             </p>
                             <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
                                 Gemini is reading {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} and their updates

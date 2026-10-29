@@ -12,6 +12,7 @@ import {
     TIMELINE_COLUMN_TYPES
 } from '../../lib/dependencyUtils';
 
+import { reword, terms } from '../../lib/terms';
 /**
  * Ceiling on how far one move may cascade. Cycles are rejected at creation
  * time, so this is a backstop against a loop created concurrently by two
@@ -71,25 +72,25 @@ export const createItemDependencySlice: StateCreator<
 
     addItemDependency: async (predecessorItemId, successorItemId, type = 'FS') => {
         const { activeBoardId, itemDependencies } = get();
-        if (!activeBoardId) return { success: false, error: 'No board open' };
+        if (!activeBoardId) return { success: false, error: reword('No board open', terms()) };
 
         const board = get().boards.find(b => b.id === activeBoardId);
-        if (!board) return { success: false, error: 'No board open' };
+        if (!board) return { success: false, error: reword('No board open', terms()) };
 
         if (predecessorItemId === successorItemId) {
-            return { success: false, error: "An item can't depend on itself" };
+            return { success: false, error: reword("An item can't depend on itself", terms()) };
         }
 
         const predecessor = board.items.find(i => i.id === predecessorItemId);
         const successor = board.items.find(i => i.id === successorItemId);
         if (!predecessor || !successor) {
-            return { success: false, error: 'Both items must be on this board' };
+            return { success: false, error: reword('Both items must be on this board', terms()) };
         }
 
         const boardDeps = itemDependencies.filter(d => d.boardId === activeBoardId);
 
         if (boardDeps.some(d => d.predecessorItemId === predecessorItemId && d.successorItemId === successorItemId)) {
-            return { success: false, error: 'These items are already linked' };
+            return { success: false, error: reword('These items are already linked', terms()) };
         }
 
         if (wouldCreateCycle(boardDeps, predecessorItemId, successorItemId)) {
@@ -158,22 +159,22 @@ export const createItemDependencySlice: StateCreator<
 
     updateItemDependency: async (dependencyId, predecessorItemId, successorItemId) => {
         const { activeBoardId, itemDependencies } = get();
-        if (!activeBoardId) return { success: false, error: 'No board open' };
+        if (!activeBoardId) return { success: false, error: reword('No board open', terms()) };
 
         const existingDep = itemDependencies.find(d => d.id === dependencyId);
         if (!existingDep) return { success: false, error: 'This dependency no longer exists' };
 
         const board = get().boards.find(b => b.id === activeBoardId);
-        if (!board) return { success: false, error: 'No board open' };
+        if (!board) return { success: false, error: reword('No board open', terms()) };
 
         if (predecessorItemId === successorItemId) {
-            return { success: false, error: "An item can't depend on itself" };
+            return { success: false, error: reword("An item can't depend on itself", terms()) };
         }
 
         const predecessor = board.items.find(i => i.id === predecessorItemId);
         const successor = board.items.find(i => i.id === successorItemId);
         if (!predecessor || !successor) {
-            return { success: false, error: 'Both items must be on this board' };
+            return { success: false, error: reword('Both items must be on this board', terms()) };
         }
 
         // Check against the graph as it would look with this edge already
@@ -181,7 +182,7 @@ export const createItemDependencySlice: StateCreator<
         const otherDeps = itemDependencies.filter(d => d.boardId === activeBoardId && d.id !== dependencyId);
 
         if (otherDeps.some(d => d.predecessorItemId === predecessorItemId && d.successorItemId === successorItemId)) {
-            return { success: false, error: 'These items are already linked' };
+            return { success: false, error: reword('These items are already linked', terms()) };
         }
 
         if (wouldCreateCycle(otherDeps, predecessorItemId, successorItemId)) {

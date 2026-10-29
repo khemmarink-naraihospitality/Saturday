@@ -1,5 +1,6 @@
 import { useBoardStore } from '../../store/useBoardStore';
 import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
+import { useTerms } from '../../lib/terms';
 
 const BASE_VIEWS = [
     { id: 'main_table', label: 'Main table' },
@@ -16,6 +17,7 @@ export const BoardViewsTabs = () => {
     const setActiveView = useBoardStore(state => state.setActiveView);
     // Offered only when switched on in Admin › AI Settings (the backend needs its key).
     const aiEnabled = useAiSummaryEnabled();
+    const t = useTerms();
 
     const views = aiEnabled ? [...BASE_VIEWS, AI_SUMMARY_VIEW] : BASE_VIEWS;
     const activeViewId = shownViewId(activeBoard?.activeViewId, aiEnabled);
@@ -62,7 +64,7 @@ export const BoardViewsTabs = () => {
                             marginTop: '2px' // Offset for border bottom
                         }}
                     >
-                        {view.label}
+                        {view.id === 'main_table' ? t.mainTable : view.label}
                     </button>
                 );
             })}

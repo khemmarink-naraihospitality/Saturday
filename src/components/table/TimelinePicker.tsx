@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { DependencyLinkSection } from './DependencyLinkSection';
 
+import { useTerms } from '../../lib/terms';
 interface TimelinePickerProps {
     itemId: string;
     dateRange: { from: string; to: string } | null;
@@ -17,6 +18,7 @@ interface TimelinePickerProps {
 }
 
 export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position }: TimelinePickerProps) => {
+    const t = useTerms();
     const pickerRef = useRef<HTMLDivElement>(null);
     const [style, setStyle] = useState({ top: position.top, left: position.left });
 
@@ -280,14 +282,14 @@ export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position 
                 itemId={itemId}
                 type="FS"
                 label="Finish to Start"
-                hint="When this item's dates move, the items above shift with it — each one starting after this finishes."
+                hint={`When this ${t.item}'s dates move, the ${t.items} above shift with it — each one starting after this finishes.`}
             />
 
             <DependencyLinkSection
                 itemId={itemId}
                 type="FF"
                 label="Finish to Finish"
-                hint="Same shift, but the items above are tied to this one's end date rather than its start."
+                hint={`Same shift, but the ${t.items} above are tied to this one's end date rather than its start.`}
                 matchDate={selectedRange?.to ? format(selectedRange.to, 'yyyy-MM-dd') : null}
             />
 
@@ -295,7 +297,7 @@ export const TimelinePicker = ({ itemId, dateRange, onSelect, onClose, position 
                 itemId={itemId}
                 type="SS"
                 label="Start to Start"
-                hint="Same shift again, but tied to this one's start date — the items above begin when it begins."
+                hint={`Same shift again, but tied to this one's start date — the ${t.items} above begin when it begins.`}
                 matchDate={selectedRange?.from ? format(selectedRange.from, 'yyyy-MM-dd') : null}
             />
 

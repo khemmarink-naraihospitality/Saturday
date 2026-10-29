@@ -6,6 +6,8 @@ import { usePermission } from '../../../hooks/usePermission';
 import { columnJustify, defaultColumnAlign } from '../../../lib/utils';
 import { DropdownPicker } from '../DropdownPicker';
 import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
+import { useNewUi } from '../../../lib/brand';
+import { StatusPill } from '../../common/StatusPill';
 
 interface DropdownCellProps {
     itemId: string;
@@ -16,6 +18,7 @@ interface DropdownCellProps {
 export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column, value }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
+    const newUi = useNewUi();
 
     const [isEditing, setIsEditing] = useState(false);
     const [pickerPos, setPickerPos] = useState<{ top: number, bottom: number, left: number, width: number } | null>(null);
@@ -66,6 +69,8 @@ export const DropdownCell: React.FC<DropdownCellProps> = memo(({ itemId, column,
                     selectedLabels.map((label: string, idx: number) => {
                         const options = Array.isArray(column.options) ? column.options : [];
                         const opt = options.find(o => o.label === label);
+                        // NHG: the same pill as a status, without its dot
+                        if (newUi) return <StatusPill key={idx} tag color={opt?.color || '#a0c4ff'} label={label} />;
                         return (
                             <div key={idx} style={{
                                 backgroundColor: tintLabel(opt?.color || '#a0c4ff'),

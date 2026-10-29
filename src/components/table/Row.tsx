@@ -1,11 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import type { Item, Column } from '../../types';
 import { Cell } from './Cell';
-import { GripVertical, MessageSquare, ChevronRight, ChevronDown } from 'lucide-react';
+import { GripVertical, MessageSquare, MessageCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { usePermission } from '../../hooks/usePermission';
 import { useBoardStore } from '../../store/useBoardStore';
 import { itemUpdateSummary } from '../../lib/utils';
 import { Check } from 'lucide-react';
+import { useNewUi } from '../../lib/brand';
 
 const CheckboxState = ({ itemId }: { itemId: string }) => {
     const isSelected = useBoardStore(state => state.selectedItemIds.includes(itemId));
@@ -45,6 +46,8 @@ export const Row = React.memo(({
     onToggleExpand?: () => void
 }) => {
     const { can } = usePermission();
+    // NHG draws no colour bar beside a group's rows (its header is tinted instead)
+    const newUi = useNewUi();
     const rowRef = useRef<HTMLDivElement>(null);
     const highlightedItemId = useBoardStore(state => state.highlightedItemId);
     const hasSubItems = useBoardStore(state => {
@@ -87,7 +90,7 @@ export const Row = React.memo(({
             transition: 'background-color 0.5s ease'
         }}>
             {/* Visual Left Border */}
-            {groupColor && (
+            {groupColor && !newUi && (
                 <div style={{
                     position: 'absolute',
                     left: 0,
@@ -252,13 +255,16 @@ export const Row = React.memo(({
                             useBoardStore.getState().setActiveItem(item.id);
                         });
                     }}
-                    title="Open Updates"
+                    title={newUi ? 'Open comments' : 'Open Updates'}
                     style={{
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '24px',
+                        // NHG writes the count beside the bubble, so it takes the room it needs
+                        width: newUi ? 'auto' : '24px',
+                        minWidth: newUi ? '24px' : undefined,
+                        padding: newUi ? '0 4px' : undefined,
                         height: '24px',
                         borderRadius: '4px',
                         // Blue if updates within 14 days, else gray
@@ -283,34 +289,42 @@ export const Row = React.memo(({
                         if (!updateSummary.count) e.currentTarget.style.color = 'hsl(var(--color-text-tertiary))';
                     }}
                 >
-                    <div style={{ position: 'relative', display: 'flex' }}>
-                        <MessageSquare size={18} />
+                    {newUi ? (
+                        // NHG: a round speech bubble with the count written beside it
+                        <span className="nhg-comment-btn">
+                            <MessageCircle size={16} />
+                            {updateSummary.count > 0 && <span className="nhg-comment-btn__count">{updateSummary.count}</span>}
+                        </span>
+                    ) : (
+                        <div style={{ position: 'relative', display: 'flex' }}>
+                            <MessageSquare size={18} />
 
-                        {/* Update Count Badge */}
-                        {updateSummary.count > 0 && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '-4px', // Adjusted top
-                                right: '-4px', // Adjusted right to be closer
-                                backgroundColor: 'hsl(var(--color-brand-primary))',
-                                color: 'white',
-                                fontSize: '8px', // Smaller font
-                                fontWeight: 700,
-                                width: '12px', // Fixed equal width
-                                height: '12px', // Fixed equal height
-                                borderRadius: '50%', // Perfect Circle
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: '2px solid white',
-                                boxSizing: 'content-box',
-                                zIndex: 20,
-                                lineHeight: '1' // Center vertically
-                            }}>
-                                {updateSummary.count}
-                            </div>
-                        )}
-                    </div>
+                            {/* Update Count Badge */}
+                            {updateSummary.count > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '-4px', // Adjusted top
+                                    right: '-4px', // Adjusted right to be closer
+                                    backgroundColor: 'hsl(var(--color-brand-primary))',
+                                    color: 'white',
+                                    fontSize: '8px', // Smaller font
+                                    fontWeight: 700,
+                                    width: '12px', // Fixed equal width
+                                    height: '12px', // Fixed equal height
+                                    borderRadius: '50%', // Perfect Circle
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px solid white',
+                                    boxSizing: 'content-box',
+                                    zIndex: 20,
+                                    lineHeight: '1' // Center vertically
+                                }}>
+                                    {updateSummary.count}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
 

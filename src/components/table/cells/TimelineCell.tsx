@@ -5,6 +5,7 @@ import type { Column } from '../../../types';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { usePermission } from '../../../hooks/usePermission';
 import { TimelinePicker } from '../TimelinePicker';
+import { useNewUi } from '../../../lib/brand';
 
 interface TimelineCellProps {
     itemId: string;
@@ -16,6 +17,9 @@ interface TimelineCellProps {
 export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column, value, groupColor }) => {
     const updateItemValue = useBoardStore(state => state.updateItemValue);
     const { can } = usePermission();
+    // NHG: a tinted bar with a square colour edge on the left, ink text — not a
+    // filled capsule (nhg_ui.css)
+    const newUi = useNewUi();
 
     const [isEditing, setIsEditing] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
@@ -83,7 +87,7 @@ export const TimelineCell: React.FC<TimelineCellProps> = memo(({ itemId, column,
                 }}
             >
                 {displayValue ? (
-                    <div style={{
+                    <div className={newUi ? 'nhg-range' : undefined} style={newUi ? { '--range-color': barColor } as React.CSSProperties : {
                         backgroundColor: barColor,
                         color: 'white',
                         padding: '0 12px',

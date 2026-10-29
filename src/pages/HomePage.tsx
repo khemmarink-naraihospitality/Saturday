@@ -5,9 +5,12 @@ import { Clock, Layout, Star, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { BoardCard, ShowMoreButton } from '../components/home/HomeCards';
 import { notificationKind } from '../components/notifications/notificationKind';
+import { useNewUi } from '../lib/brand';
+import { useTerms } from '../lib/terms';
 
 export const HomePage = () => {
     const { user } = useAuth();
+    const t = useTerms();
     const { boards, workspaces, setActiveBoard, toggleFavorite, activeWorkspaceId } = useBoardStore();
     const [showAllRecent, setShowAllRecent] = useState(false);
     const [showAllWorkspace, setShowAllWorkspace] = useState(false);
@@ -62,7 +65,7 @@ export const HomePage = () => {
                     {greeting}, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
                 </h1>
                 <p style={{ color: 'hsl(var(--color-text-secondary))', fontSize: '16px' }}>
-                    Quickly access your recent boards and work.
+                    {`Quickly access your recent ${t.boards} and work.`}
                 </p>
             </header>
 
@@ -108,7 +111,7 @@ export const HomePage = () => {
                 <section style={{ marginBottom: '40px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                         <Layout size={20} color="hsl(var(--color-brand-primary))" />
-                        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>My workspace</h2>
+                        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>{`My ${t.workspace}`}</h2>
                     </div>
 
                     <div style={{
@@ -170,7 +173,7 @@ export const HomePage = () => {
 
             {recentBoards.length === 0 && myWorkspaceBoards.length === 0 && (
                 <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'hsl(var(--color-bg-surface))', borderRadius: '8px', border: '1px dashed hsl(var(--color-border))' }}>
-                    <p style={{ color: 'hsl(var(--color-text-secondary))' }}>No boards found. Create or visit a board to get started!</p>
+                    <p style={{ color: 'hsl(var(--color-text-secondary))' }}>{`No ${t.boards} found. Create or visit a ${t.board} to get started!`}</p>
                 </div>
             )}
         </div>
@@ -180,6 +183,8 @@ export const HomePage = () => {
 // Sub-component for Feed to handle its own logic
 const InboxFeed = () => {
     const { user } = useAuth();
+    // NHG calls the feed its Inbox
+    const newUi = useNewUi();
     const notifications = useBoardStore(state => state.notifications || []);
     const loadNotifications = useBoardStore(state => state.loadNotifications);
     const handleAcceptInvite = useBoardStore(state => state.handleAcceptInvite);
@@ -279,7 +284,7 @@ const InboxFeed = () => {
                     }}>
                         {feedNotifications.length}
                     </div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>Update feed (Inbox)</h2>
+                    <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--color-text-primary))', margin: 0 }}>{newUi ? 'Inbox' : 'Update feed (Inbox)'}</h2>
                 </div>
                 {/* See All Button */}
                 <button
@@ -294,7 +299,7 @@ const InboxFeed = () => {
 
             <div className="card-surface home-feed">
                 {isLoading && feedNotifications.length === 0 ? (
-                    <div className="home-feed__state">Loading updates...</div>
+                    <div className="home-feed__state">{newUi ? 'Loading your inbox...' : 'Loading updates...'}</div>
                 ) : feedNotifications.length === 0 ? (
                     <div className="home-feed__state">
                         <strong>You're all caught up</strong>

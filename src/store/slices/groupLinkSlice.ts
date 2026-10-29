@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { BoardState } from '../useBoardStore';
 import type { ColumnMapEntry, Item } from '../../types';
 
+import { reword, terms } from '../../lib/terms';
 export interface GroupLinkSlice {
     linkGroupToOther: (
         sourceBoardId: string,
@@ -55,7 +56,7 @@ export const createGroupLinkSlice: StateCreator<
             .select('id')
             .or(`group_a_id.eq.${sourceGroupId},group_b_id.eq.${sourceGroupId}`);
         if (existingLinks && existingLinks.length > 0) {
-            return { success: false, error: 'This group is already linked to another group.' };
+            return { success: false, error: reword('This group is already linked to another group.', terms()) };
         }
 
         const { data: { user } } = await supabase.auth.getUser();

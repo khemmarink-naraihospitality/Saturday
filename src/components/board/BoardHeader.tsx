@@ -10,6 +10,7 @@ import { ExportBoardModal } from './ExportBoardModal';
 import { ImportBoardModal } from '../workspace/ImportBoardModal';
 
 import { BoardViewsTabs } from './BoardViewsTabs';
+import { useTerms } from '../../lib/terms';
 import { GlobalTopActions } from '../layout/GlobalTopActions';
 
 interface BoardHeaderProps {
@@ -25,6 +26,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     // Permission Hook
     const { can } = usePermission();
+    const t = useTerms();
 
     const [showShareModal, setShowShareModal] = useState(false);
     const [showActivityLog, setShowActivityLog] = useState(false);
@@ -95,7 +97,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     const handleDeleteBoard = async () => {
         if (!board) return;
-        if (confirm('Are you sure you want to delete this board? This action cannot be undone.')) {
+        if (confirm(`Are you sure you want to delete this ${t.board}? This action cannot be undone.`)) {
             await deleteBoard(board.id);
             // Navigation should be handled by the store or parent, but strictly we are checking logic here
         }
@@ -298,7 +300,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                     cursor: can('invite_members') ? 'pointer' : 'not-allowed',
                                     zIndex: 0
                                 }}
-                                title="Invite to board"
+                                title={`Invite to ${t.board}`}
                             >
                                 <Plus size={16} />
                             </button>
@@ -353,10 +355,10 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                         color: 'hsl(var(--color-text-primary))'
                                     }}>
                                         <Activity size={24} className="text-brand-primary" />
-                                        Board Activity
+                                        {`${t.Board} Activity`}
                                     </h2>
                                     <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: 'hsl(var(--color-text-secondary))', marginTop: '8px' }}>
-                                        <span>Board: {board.title}</span>
+                                        <span>{`${t.Board}: `}{board.title}</span>
                                     </div>
                                 </div>
                                 <button
@@ -463,7 +465,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <Trash2 size={14} /> Delete Board
+                                <Trash2 size={14} />{` Delete ${t.Board}`}
                             </button>
 
                             <div style={{ height: '1px', background: 'hsl(var(--color-border))', margin: '4px 0' }} />
@@ -483,7 +485,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <FileSpreadsheet size={14} /> Import Board
+                                <FileSpreadsheet size={14} />{` Import ${t.Board}`}
                             </button>
 
                             <div style={{ height: '1px', background: 'hsl(var(--color-border))', margin: '4px 0' }} />
@@ -503,7 +505,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <Download size={14} /> Export Board to Excel/CSV
+                                <Download size={14} />{` Export ${t.Board} to Excel/CSV`}
                             </button>
                         </div>
                     )}

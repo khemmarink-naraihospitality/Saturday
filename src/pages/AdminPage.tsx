@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUserStore } from '../store/useUserStore';
 import { useBoardStore } from '../store/useBoardStore';
 import { supabase } from '../lib/supabase';
+import { useNewUi } from '../lib/brand';
 import {
     LayoutDashboard, Users, Settings,
     ShieldCheck, Activity, ArrowLeft, Building2, Trello, Download, Upload, Mail, Palette, Sparkles, CalendarClock, Trash2
@@ -22,6 +23,7 @@ import { TrashManagement } from '../components/admin/TrashManagement';
 export const AdminPage = () => {
     const { currentUser } = useUserStore();
     const { navigateTo } = useBoardStore();
+    const newUi = useNewUi();
     const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'trash' | 'email_templates' | 'status_mapping' | 'due_date_reminders' | 'settings' | 'ai_settings'>('dashboard');
 
     // Real Stats State
@@ -125,7 +127,7 @@ export const AdminPage = () => {
                         style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}
                     >
                         <ArrowLeft size={16} />
-                        Back to NHG Saturday.com
+                        {newUi ? 'Back to NHG WorkSpace' : 'Back to NHG Saturday.com'}
                     </div>
                 </div>
             </aside>

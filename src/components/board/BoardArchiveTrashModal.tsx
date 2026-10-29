@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Trash2, RotateCcw, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useTerms } from '../../lib/terms';
 
 interface ArchivedGroup {
     id: string;
@@ -22,6 +23,7 @@ interface BoardArchiveTrashModalProps {
 export const BoardArchiveTrashModal = ({ boardId, onClose }: BoardArchiveTrashModalProps) => {
     const restoreGroup = useBoardStore(state => state.restoreGroup);
     const restoreItem = useBoardStore(state => state.restoreItem);
+    const t = useTerms();
     const [archivedGroups, setArchivedGroups] = useState<ArchivedGroup[]>([]);
     const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -140,11 +142,11 @@ export const BoardArchiveTrashModal = ({ boardId, onClose }: BoardArchiveTrashMo
                     ) : (
                         <>
                             <div style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-text-tertiary))', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '8px' }}>
-                                Groups
+                                {t.Groups}
                             </div>
                             {archivedGroups.length === 0 ? (
                                 <div style={{ padding: '16px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))', fontSize: '13px' }}>
-                                    No archived groups.
+                                    {`No archived ${t.groups}.`}
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
@@ -164,7 +166,7 @@ export const BoardArchiveTrashModal = ({ boardId, onClose }: BoardArchiveTrashMo
                                     {archivedItems.map(item => renderRow(
                                         item.id,
                                         item.title,
-                                        item.parent_id ? 'sub-item' : null,
+                                        item.parent_id ? (t.subitem === 'subitem' ? 'sub-item' : t.subitem) : null,
                                         () => handleRestoreItem(item.id, item.title)
                                     ))}
                                 </div>

@@ -1,5 +1,6 @@
 import { Trash2, RotateCcw, X } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useTerms } from '../../lib/terms';
 
 interface ArchiveTrashModalProps {
     onClose: () => void;
@@ -10,6 +11,7 @@ interface ArchiveTrashModalProps {
 export const ArchiveTrashModal = ({ onClose, workspaceId, workspaceTitle }: ArchiveTrashModalProps) => {
     const boards = useBoardStore(state => state.boards);
     const restoreBoard = useBoardStore(state => state.restoreBoard);
+    const t = useTerms();
 
     const archivedBoards = boards.filter((b: any) => b.is_archived && (!workspaceId || b.workspaceId === workspaceId));
 
@@ -44,7 +46,7 @@ export const ArchiveTrashModal = ({ onClose, workspaceId, workspaceTitle }: Arch
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                     {archivedBoards.length === 0 ? (
                         <div style={{ padding: '32px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>
-                            No archived boards found.
+                            {`No archived ${t.boards} found.`}
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

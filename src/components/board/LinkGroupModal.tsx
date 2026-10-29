@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
+import { useTerms } from '../../lib/terms';
 const WRITE_ROLES = ['member', 'editor', 'admin', 'owner'];
 
 interface LinkGroupModalProps {
@@ -21,6 +22,7 @@ interface SelectedSource {
 }
 
 export const LinkGroupModal = ({ onClose }: LinkGroupModalProps) => {
+    const t = useTerms();
     const { user } = useAuth();
     const boards = useBoardStore(state => state.boards);
     const workspaces = useBoardStore(state => state.workspaces);
@@ -105,7 +107,7 @@ export const LinkGroupModal = ({ onClose }: LinkGroupModalProps) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(var(--color-border))' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Link2 size={18} />
-                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Link to other group</h3>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>{`Link to other ${t.group}`}</h3>
                     </div>
                     <button onClick={onClose} className="icon-btn"><X size={20} /></button>
                 </div>
@@ -114,10 +116,10 @@ export const LinkGroupModal = ({ onClose }: LinkGroupModalProps) => {
                     {step === 'pick-group' && (
                         <>
                             <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', marginTop: 0, marginBottom: '12px' }}>
-                                Pick a group from another board to link with. Any of the source board's columns this board doesn't already have will be added automatically.
+                                {`Pick a ${t.group} from another ${t.board} to link with. Any of the source ${t.board}'s columns this ${t.board} doesn't already have will be added automatically.`}
                             </p>
                             {boardsByWorkspace.length === 0 && (
-                                <div style={{ padding: '12px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>No accessible boards found.</div>
+                                <div style={{ padding: '12px', fontSize: '13px', color: 'hsl(var(--color-text-secondary))' }}>{`No accessible ${t.boards} found.`}</div>
                             )}
                             {boardsByWorkspace.map(({ workspace, boards: wsBoards }) => (
                                 <div key={workspace.id} style={{ marginBottom: '8px' }}>
@@ -153,7 +155,7 @@ export const LinkGroupModal = ({ onClose }: LinkGroupModalProps) => {
                                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.title}</span>
                                                                 </div>
                                                             ))
-                                                            : <div style={{ padding: '6px 8px 6px 28px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>No linkable groups</div>
+                                                            : <div style={{ padding: '6px 8px 6px 28px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>{`No linkable ${t.groups}`}</div>
                                                         : <div style={{ padding: '6px 8px 6px 28px', fontSize: '12px', color: 'hsl(var(--color-text-secondary))' }}>Loading…</div>
                                                 )}
                                             </div>
@@ -167,15 +169,15 @@ export const LinkGroupModal = ({ onClose }: LinkGroupModalProps) => {
                     {step === 'confirm' && selected && (
                         <>
                             <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', marginTop: 0 }}>
-                                Linking to <strong>{selected.sourceGroupTitle}</strong> in board <strong>{selected.sourceBoardTitle}</strong>.
+                                Linking to <strong>{selected.sourceGroupTitle}</strong>{` in ${t.board} `}<strong>{selected.sourceBoardTitle}</strong>.
                             </p>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', marginTop: '12px' }}>New group name</label>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', marginTop: '12px' }}>{`New ${t.group} name`}</label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '4px', border: '1px solid hsl(var(--color-border))', fontSize: '14px', backgroundColor: 'hsl(var(--color-bg-hover))', color: 'hsl(var(--color-text-secondary))' }}>
                                 <Link2 size={14} style={{ flexShrink: 0 }} />
                                 {newGroupTitle}
                             </div>
                             <p style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', marginTop: '4px', marginBottom: '16px' }}>
-                                The linked group keeps the same name as its source so the two stay easy to identify together.
+                                {`The linked ${t.group} keeps the same name as its source so the two stay easy to identify together.`}
                             </p>
 
                             <div style={{ display: 'flex', gap: '10px', padding: '12px', borderRadius: '6px', backgroundColor: 'hsl(var(--color-bg-hover))', border: '1px solid hsl(var(--color-border))' }}>

@@ -5,6 +5,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import type { ToastType } from '../ui/Toast';
 import { PinDigitInput } from './PinDigitInput';
 
+import { useTerms } from '../../lib/terms';
 interface PrivateBoardSectionProps {
     boardId: string;
     isPrivate: boolean;
@@ -12,6 +13,7 @@ interface PrivateBoardSectionProps {
 }
 
 export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBoardSectionProps) => {
+    const t = useTerms();
     const [pendingPrivate, setPendingPrivate] = useState(isPrivate);
     const [pin, setPin] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -60,11 +62,11 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
                 try { errorBody = await (error as any).context.json(); } catch { /* body already consumed or not JSON */ }
             }
             if (error || errorBody?.error) {
-                showToast(errorBody?.error || error?.message || 'Failed to disable Private Board.', 'error');
+                showToast(errorBody?.error || error?.message || `Failed to disable Private ${t.Board}.`, 'error');
                 return;
             }
             setBoardIsPrivateLocally(false);
-            showToast('Private Board disabled.', 'success');
+            showToast(`Private ${t.Board} disabled.`, 'success');
             return;
         }
 
@@ -85,7 +87,7 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
         }
         setBoardIsPrivateLocally(true);
         setPin('');
-        showToast('PIN saved. This board is now private.', 'success');
+        showToast(`PIN saved. This ${t.board} is now private.`, 'success');
     };
 
     const showPinForm = pendingPrivate;
@@ -99,13 +101,13 @@ export const PrivateBoardSection = ({ boardId, isPrivate, showToast }: PrivateBo
                 <div>
                     <div style={{ fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Lock size={14} color="hsl(var(--color-text-secondary))" />
-                        Private Board
+                        {`Private ${t.Board}`}
                         <span style={{ fontSize: '11px', backgroundColor: 'hsl(var(--color-brand-light))', color: 'hsl(var(--color-brand-primary))', padding: '2px 6px', borderRadius: '10px' }}>
                             Owner only
                         </span>
                     </div>
                     <div style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', marginTop: '2px' }}>
-                        Requires a 6-digit PIN before anyone (including you) can open this board, once per login session.
+                        {`Requires a 6-digit PIN before anyone (including you) can open this ${t.board}, once per login session.`}
                     </div>
                 </div>
                 <button

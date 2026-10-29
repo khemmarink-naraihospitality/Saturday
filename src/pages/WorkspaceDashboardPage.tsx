@@ -23,6 +23,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../lib/supabase';
+import { useNewUi } from '../lib/brand';
+import { useTerms } from '../lib/terms';
 import { WorkspaceTimeline } from '../components/dashboard/WorkspaceTimeline';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { tintLabel } from '../lib/labelTint';
@@ -596,6 +598,7 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
     // button for a row of tools (the Timeline's).
     variant?: 'icon' | 'toolbar';
 }) => {
+    const t = useTerms();
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -663,12 +666,12 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
     const summary = (() => {
         if (!value) return null;
         const entries = Object.entries(value);
-        if (entries.length > 1) return `${entries.length} boards`;
+        if (entries.length > 1) return `${entries.length} ${t.boards}`;
         const [boardId, groups] = entries[0];
         const boardTitle = boards.find(b => b.id === boardId)?.title ?? '1 board';
         if (groups === null) return boardTitle;
         if (groups.length === 1) return groupsByBoard.get(boardId)?.find(g => g.id === groups[0])?.title ?? `${boardTitle} · 1 group`;
-        return `${boardTitle} · ${groups.length} groups`;
+        return `${boardTitle} · ${groups.length} ${t.groups}`;
     })();
 
     const menuPosition = () => {
@@ -728,7 +731,7 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
             <button
                 ref={buttonRef}
                 onClick={onToggle}
-                title={value ? `Showing: ${summary}` : 'Showing: all boards'}
+                title={value ? `Showing: ${summary}` : `Showing: all ${t.boards}`}
                 style={variant === 'toolbar' ? {
                     background: 'none',
                     border: 'none',
@@ -780,11 +783,11 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
                         overflow: 'hidden'
                     }}>
                         <div style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
-                            Boards &amp; groups
+                            {`${t.Boards} & ${t.groups}`}
                         </div>
                         <button onClick={() => onChange(null)} style={{ ...rowStyle(12, !value), borderBottom: '1px solid #f1f5f9' }} {...hover}>
                             {checkbox(value ? 'none' : 'all')}
-                            All boards
+                            {`All ${t.boards}`}
                         </button>
 
                         {/* Scrolls: a workspace can hold dozens of boards and groups. */}
@@ -799,7 +802,7 @@ const BoardGroupFilter = ({ boards, groupsByBoard, value, onChange, isOpen, onTo
                                             <button
                                                 onClick={() => toggleExpanded(board.id)}
                                                 disabled={groups.length === 0}
-                                                title={groups.length === 0 ? 'No groups' : isExpanded ? 'Hide groups' : 'Show groups'}
+                                                title={groups.length === 0 ? `No ${t.groups}` : isExpanded ? `Hide ${t.groups}` : `Show ${t.groups}`}
                                                 style={{
                                                     width: '24px',
                                                     alignSelf: 'stretch',
@@ -872,6 +875,8 @@ const parseStoredLayout = (raw: string | null): DashboardLayout => {
 };
 
 export const WorkspaceDashboardPage = () => {
+    const t = useTerms();
+    const newUi = useNewUi();
     const activeWorkspaceId = useBoardStore(state => state.activeWorkspaceId);
     const workspaces = useBoardStore(state => state.workspaces);
     const allBoards = useBoardStore(state => state.boards);
@@ -1486,7 +1491,7 @@ export const WorkspaceDashboardPage = () => {
     if (!workspace) {
         return (
             <div style={{ padding: '60px', textAlign: 'center', color: 'hsl(var(--color-text-secondary))' }}>
-                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: 'hsl(var(--color-text-primary))' }}>Workspace Not Found</h2>
+                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: 'hsl(var(--color-text-primary))' }}>{`${t.Workspace} Not Found`}</h2>
                 <button 
                     onClick={() => useBoardStore.getState().navigateTo('home')}
                     className="btn-primary" 
@@ -1809,7 +1814,7 @@ export const WorkspaceDashboardPage = () => {
                 return (
                     <div className="card-surface dash-widget" style={{ display: 'flex', flexDirection: 'column' }}>
                         <div className="dash-widget__head widget-header-with-space">
-                            <h3 className="dash-widget__title">Board Updates</h3>
+                            <h3 className="dash-widget__title">{newUi ? `${t.Board} Activity` : 'Board Updates'}</h3>
                             <span className="dash-widget__icon" aria-hidden="true"><Clock size={16} /></span>
                         </div>
                         {/* Capped and scrolled rather than left to grow: grid rows size to

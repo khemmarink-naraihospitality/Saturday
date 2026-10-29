@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Download, FileText, Table } from 'lucide-react';
 
+import { useTerms } from '../../lib/terms';
 interface ExportBoardModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -9,6 +10,7 @@ interface ExportBoardModalProps {
 }
 
 export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }: ExportBoardModalProps) => {
+    const t = useTerms();
     const [filename, setFilename] = useState(defaultFilename);
     const [format, setFormat] = useState<'csv' | 'xlsx'>('csv');
 
@@ -60,7 +62,7 @@ export const ExportBoardModal = ({ isOpen, onClose, onExport, defaultFilename }:
                 }}>
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Download size={18} className="text-brand-primary" />
-                        Export Board Data
+                        {`Export ${t.Board} Data`}
                     </h3>
                     <button
                         onClick={onClose}

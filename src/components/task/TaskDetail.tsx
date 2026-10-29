@@ -4,6 +4,8 @@ import { useUserStore } from '../../store/useUserStore';
 import { X, MessageSquare, FileText, Trash2, Plus, ExternalLink, Edit2, Paperclip, Link2, ChevronDown, ThumbsUp, Reply as ReplyIcon } from 'lucide-react';
 import { GifStickerPicker } from '../ui/GifStickerPicker';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { useNewUi } from '../../lib/brand';
+import { useTerms } from '../../lib/terms';
 import { RichTextEditor } from '../ui/RichTextEditor';
 import { fileLinkFromUrl, ONEDRIVE_ICON } from '../../lib/fileLinks';
 import { useCloudDrives } from '../../hooks/useCloudDrives';
@@ -16,6 +18,9 @@ import { displayUpdateHtml } from '../../lib/linkify';
 import { getDedupedUpdates, hasHtmlContent, repliesTo, splitThreads } from '../../lib/updates';
 
 export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () => void }) => {
+    // NHG's words for things (Task, Comment…), src/lib/terms.ts
+    const newUi = useNewUi();
+    const t = useTerms();
     const board = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
     const activeItem = board?.items.find(i => i.id === itemId);
     const addUpdate = useBoardStore(state => state.addUpdate);
@@ -217,7 +222,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                     animation: 'spin 1s linear infinite'
                 }}></div>
                 <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                <p style={{ marginTop: '16px', fontSize: '14px' }}>Loading item...</p>
+                <p style={{ marginTop: '16px', fontSize: '14px' }}>{`Loading ${t.item}...`}</p>
             </div>
         );
     }
@@ -449,7 +454,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
 
     const tabs = [
-        { id: 'updates', label: 'Updates', icon: MessageSquare },
+        { id: 'updates', label: t.Updates, icon: MessageSquare },
         { id: 'files', label: 'Files', icon: FileText }
     ] as const;
 
@@ -729,8 +734,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                         needs its own margin:auto rather than relying on the parent. */}
                                     <img src="https://cdn.monday.com/images/pulse-page-empty-state.svg" alt="No updates" style={{ width: '200px', opacity: 0.6, display: 'block', margin: '0 auto' }} />
                                 </div>
-                                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 500 }}>No updates yet for this item</h3>
-                                <p style={{ margin: 0, fontSize: '14px' }}>Be the first one to update about progress, mention someone or upload files.</p>
+                                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 500 }}>{`No ${t.updates} yet for this ${t.item}`}</h3>
+                                <p style={{ margin: 0, fontSize: '14px' }}>{newUi ? 'Be the first to comment on progress, mention someone or upload files.' : 'Be the first one to update about progress, mention someone or upload files.'}</p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1239,8 +1244,8 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
                 <ConfirmModal
                     isOpen={!!deleteConfirmId}
-                    title="Delete Update"
-                    message="Delete this update?"
+                    title={`Delete ${t.Update}`}
+                    message={`Delete this ${t.update}?`}
                     confirmText="Yes"
                     cancelText="No"
                     onConfirm={() => {

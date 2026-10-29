@@ -4,6 +4,7 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { wouldCreateCycle, resolveEndDate, resolveStartDate } from '../../lib/dependencyUtils';
 import type { DependencyType } from '../../types';
 
+import { useTerms } from '../../lib/terms';
 interface DependencyLinkSectionProps {
     itemId: string;
     type: DependencyType;
@@ -29,6 +30,7 @@ interface DependencyLinkSectionProps {
  * rejected on insert.
  */
 export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: DependencyLinkSectionProps) => {
+    const t = useTerms();
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const board = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
     const itemDependencies = useBoardStore(state => state.itemDependencies);
@@ -95,7 +97,7 @@ export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: 
         setError(null);
         const result = await addItemDependency(itemId, successorId, type);
         if (!result.success) {
-            setError(result.error || 'Could not link these items');
+            setError(result.error || `Could not link these ${t.items}`);
             return;
         }
         setIsAdding(false);
@@ -139,7 +141,7 @@ export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: 
                         >
                             <ArrowRight size={11} style={{ flexShrink: 0, color: 'hsl(var(--color-text-tertiary))' }} />
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={successorItem?.title}>
-                                {successorItem?.title || 'Unknown item'}
+                                {successorItem?.title || `Unknown ${t.item}`}
                             </span>
                             <button
                                 onClick={() => removeItemDependency(dep.id)}
@@ -169,7 +171,7 @@ export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: 
                         }}
                     >
                         <Plus size={11} />
-                        Add item
+                        {`Add ${t.item}`}
                     </button>
 
                     {isAdding && (
@@ -189,7 +191,7 @@ export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: 
                                 autoFocus
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search items on this board…"
+                                placeholder={`Search ${t.items} on this ${t.board}…`}
                                 style={{
                                     width: '100%',
                                     padding: '8px 10px',
@@ -212,10 +214,10 @@ export const DependencyLinkSection = ({ itemId, type, label, hint, matchDate }: 
                                 {candidates.length === 0 ? (
                                     <div style={{ padding: '10px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))', lineHeight: 1.5 }}>
                                         {!needsDateMatch
-                                            ? 'No eligible items'
+                                            ? `No eligible ${t.items}`
                                             : !matchDate
-                                                ? `Give this item ${edgeWord === 'end' ? 'an end' : 'a start'} date first — ${label} links items that ${edgeWord} on the same day.`
-                                                : `No other item ${edgeWord}s on ${matchDate}.`}
+                                                ? `Give this ${t.item} ${edgeWord === 'end' ? 'an end' : 'a start'} date first — ${label} links ${t.items} that ${edgeWord} on the same day.`
+                                                : `No other ${t.item} ${edgeWord}s on ${matchDate}.`}
                                     </div>
                                 ) : candidates.map(candidate => (
                                     <button

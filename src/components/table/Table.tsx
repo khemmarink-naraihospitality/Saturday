@@ -12,6 +12,8 @@ import { tableRows } from '../../lib/boardRows';
 import { itemColumns, scopeOf } from '../../lib/columnScope';
 import type { Column } from '../../types';
 import { SummaryCell } from './SummaryCell';
+import { useNewUi } from '../../lib/brand';
+import { countOf, useTerms } from '../../lib/terms';
 import {
     DndContext,
     closestCenter,
@@ -112,6 +114,10 @@ export const Table = ({ boardId }: { boardId: string }) => {
     const reorderGroups = useBoardStore(state => state.reorderGroups);
     const parentRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
+    // NHG: no colour bars down the left of a group, hairline-framed summaries
+    // that say "Total: 9 tasks", and its own words (src/lib/terms.ts)
+    const newUi = useNewUi();
+    const t = useTerms();
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
@@ -124,7 +130,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--color-text-tertiary))' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                     <div className="spinner" style={{ width: '24px', height: '24px', border: '2px solid hsl(var(--color-border))', borderTopColor: 'hsl(var(--color-brand-primary))', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                    <p style={{ fontSize: '14px' }}>Loading board content...</p>
+                    <p style={{ fontSize: '14px' }}>{`Loading ${t.board} content...`}</p>
                 </div>
                 <style>{`
                     @keyframes spin { to { transform: rotate(360deg); } }
@@ -361,7 +367,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             height: '36px',
                                                             position: 'relative',
                                                         }}>
-                                                            {vItem.groupColor && (
+                                                            {vItem.groupColor && !newUi && (
                                                                 <div style={{
                                                                     position: 'absolute',
                                                                     left: '0px',
@@ -399,7 +405,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     {can('edit_items') && (
                                                                         <input
                                                                             type="text"
-                                                                            placeholder=" + Add Item"
+                                                                            placeholder={` + Add ${t.Item}`}
                                                                             className="cell-input"
                                                                             style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', width: '100%', background: 'transparent', height: '100%' }}
                                                                             onKeyDown={(e) => {
@@ -463,19 +469,21 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                                     top: '-2px',
                                                                     backgroundColor: 'hsl(var(--color-bg-surface))',
                                                                     borderRadius: '8px 0 0 8px',
-                                                                    border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                                    border: `1px solid ${(!newUi && vItem.groupColor) || 'hsl(var(--color-border))'}`,
                                                                     borderRight: 'none',
                                                                     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                                                                     color: 'hsl(var(--color-text-secondary))',
                                                                     fontSize: '12px',
                                                                     minWidth: '100px',
                                                                 }}>
-                                                                    {board.items.filter(i => i.groupId === vItem.data.groupId).length} items
+                                                                    {newUi
+                                                                        ? `Total: ${countOf(vItem.data.count || 0, t.item, t.items)}`
+                                                                        : <>{board.items.filter(i => i.groupId === vItem.data.groupId).length} items</>}
                                                                 </div>
                                                             </div>
                                                             <div style={{
                                                                 display: 'flex',
-                                                                border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                                border: `1px solid ${(!newUi && vItem.groupColor) || 'hsl(var(--color-border))'}`,
                                                                 borderLeft: 'none',
                                                                 borderRadius: '0 8px 8px 0',
                                                                 backgroundColor: 'hsl(var(--color-bg-surface))',
@@ -527,7 +535,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                 ) : vItem.type === 'subitem-summary' ? (
                                                     // Totals for this parent's sub-items, over the sub-item columns.
                                                     <div className="table-row subitem-summary" style={{ display: 'flex', height: '40px', position: 'relative', alignItems: 'center' }}>
-                                                        {vItem.groupColor && (
+                                                        {vItem.groupColor && !newUi && (
                                                             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, zIndex: 80 }} />
                                                         )}
                                                         <div className="sticky-col" style={{
@@ -546,7 +554,9 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             fontSize: '11px',
                                                             color: 'hsl(var(--color-text-tertiary))'
                                                         }}>
-                                                            {vItem.data.count} {vItem.data.count === 1 ? 'subitem' : 'subitems'}
+                                                            {newUi
+                                                                ? countOf(vItem.data.count, t.subitem, t.subitems)
+                                                                : <>{vItem.data.count} {vItem.data.count === 1 ? 'subitem' : 'subitems'}</>}
                                                         </div>
                                                         <div style={{
                                                             display: 'flex',
@@ -555,7 +565,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             flexShrink: 0,
                                                             boxSizing: 'border-box',
                                                             overflow: 'hidden',
-                                                            border: `1px solid ${vItem.groupColor || 'hsl(var(--color-border))'}`,
+                                                            border: `1px solid ${(!newUi && vItem.groupColor) || 'hsl(var(--color-border))'}`,
                                                             borderRadius: '8px',
                                                             backgroundColor: 'hsl(var(--color-bg-surface))'
                                                         }}>
@@ -586,7 +596,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         position: 'relative',
                                                         alignItems: 'center'
                                                     }}>
-                                                        {vItem.groupColor && (
+                                                        {vItem.groupColor && !newUi && (
                                                             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', backgroundColor: vItem.groupColor, opacity: 1, zIndex: 80 }} />
                                                         )}
                                                         {/* Typed straight in, like "+ Add Item" under a group: click, type the
@@ -596,7 +606,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         {can('edit_items') && (
                                                             <input
                                                                 type="text"
-                                                                placeholder="+ Add subitem"
+                                                                placeholder={`+ Add ${t.subitem}`}
                                                                 className="cell-input"
                                                                 onKeyDown={(e) => {
                                                                     const input = e.currentTarget;
@@ -685,7 +695,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     {can('group_ungroup') && (
                         <button
                             onClick={() => {
-                                useBoardStore.getState().addGroup("Group Title");
+                                useBoardStore.getState().addGroup(`${t.Group} Title`);
                             }}
                             style={{
                                 display: 'flex',
@@ -705,7 +715,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--card-solid)'}
                         >
                             <Plus size={16} strokeWidth={1.5} />
-                            <span>Add new group</span>
+                            <span>{`Add new ${t.group}`}</span>
                         </button>
                     )}
                 </div>

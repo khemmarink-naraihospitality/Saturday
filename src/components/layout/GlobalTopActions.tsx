@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, Bell, Sun, Moon, ShieldCheck, UserCog } from 'lucide-react';
+import { Bell, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CloudStatus } from './CloudStatus';
 import { useBoardStore } from '../../store/useBoardStore';
@@ -8,19 +8,23 @@ import { useThemeStore } from '../../store/useThemeStore';
 import { NotificationItem } from '../notifications/NotificationItem';
 import { NotificationToastStack } from '../notifications/NotificationToastStack';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
+import { ProfileMenu } from './ProfileMenu';
 import { useUserStore } from '../../store/useUserStore';
+import { useNewUi } from '../../lib/brand';
 
 const selectUnreadCount = (state: ReturnType<typeof useBoardStore.getState>) =>
     state.notifications?.filter(n => !n.is_read).length || 0;
 
 export const GlobalTopActions = () => {
-    const { user, signOut } = useAuth();
+    const { user } = useAuth();
     const unreadCount = useBoardStore(selectUnreadCount);
     const loadNotifications = useBoardStore(state => state.loadNotifications);
     const navigateTo = useBoardStore(state => state.navigateTo);
 
     const { theme, toggleTheme } = useThemeStore();
     const { currentUser } = useUserStore();
+    // NHG keeps the profile at the bottom of the sidebar (SidebarProfile) instead.
+    const newUi = useNewUi();
 
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -85,11 +89,6 @@ export const GlobalTopActions = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showProfileMenu, showNotifications]);
-
-    const handleSignOut = async () => {
-        await signOut();
-        setShowProfileMenu(false);
-    };
 
     // Get user avatar or initials — currentUser.avatar reflects a manually-uploaded
     // avatar (profiles.avatar_url); falls back to the Google metadata photo.
@@ -246,7 +245,7 @@ export const GlobalTopActions = () => {
             </div>
 
             {/* Profile Dropdown */}
-            <div style={{ position: 'relative' }} ref={profileMenuRef}>
+            {!newUi && <div style={{ position: 'relative' }} ref={profileMenuRef}>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -287,120 +286,12 @@ export const GlobalTopActions = () => {
 
                 {/* Profile Dropdown Menu */}
                 {showProfileMenu && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '44px',
-                        right: 0,
-                        backgroundColor: 'hsl(var(--color-bg-surface))', // surface
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        minWidth: '240px',
-                        zIndex: 1000,
-                        border: '1px solid hsl(var(--color-border))',
-                        overflow: 'hidden'
-                    }}>
-                        {/* User Info */}
-                        <div style={{
-                            padding: '16px',
-                            borderBottom: '1px solid hsl(var(--color-border))'
-                        }}>
-                            <div style={{
-                                fontWeight: 600,
-                                fontSize: '14px',
-                                marginBottom: '4px',
-                                color: 'hsl(var(--color-text-primary))'
-                            }}>
-                                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-                            </div>
-                            <div style={{
-                                fontSize: '13px',
-                                color: 'hsl(var(--color-text-tertiary))'
-                            }}>
-                                {user?.email}
-                            </div>
-                        </div>
-                        
-                        {/* Profile Settings (all users) */}
-                        <button
-                            onClick={() => {
-                                setShowProfileMenu(false);
-                                setShowProfileSettings(true);
-                            }}
-                            style={{
-                                width: '100%',
-                                padding: '12px 16px',
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                fontSize: '14px',
-                                color: 'hsl(var(--color-text-primary))',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <UserCog size={16} style={{ color: 'var(--color-icon-accent, #6366f1)' }} />
-                            <span style={{ fontWeight: 500 }}>Profile Settings</span>
-                        </button>
-
-                        {/* Admin Console Button (Only for admins) */}
-                        {(currentUser?.system_role === 'super_admin' || currentUser?.system_role === 'it_admin') && (
-                            <button
-                                onClick={() => {
-                                    setShowProfileMenu(false);
-                                    navigateTo('admin');
-                                }}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: 'none',
-                                    backgroundColor: 'transparent',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    fontSize: '14px',
-                                    color: 'hsl(var(--color-text-primary))',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                <ShieldCheck size={16} style={{ color: 'var(--color-icon-accent, #6366f1)' }} />
-                                <span style={{ fontWeight: 500 }}>Admin Console</span>
-                            </button>
-                        )}
-
-                        <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
-
-                        {/* Logout Button */}
-                        <button
-                            onClick={handleSignOut}
-                            style={{
-                                width: '100%',
-                                padding: '12px 16px',
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                fontSize: '14px',
-                                color: 'hsl(var(--color-text-primary))',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <LogOut size={16} />
-                            <span>Log out</span>
-                        </button>
-                    </div>
+                    <ProfileMenu
+                        onClose={() => setShowProfileMenu(false)}
+                        onOpenSettings={() => setShowProfileSettings(true)}
+                    />
                 )}
-            </div>
+            </div>}
 
             {showProfileSettings && (
                 <ProfileSettingsModal onClose={() => setShowProfileSettings(false)} />

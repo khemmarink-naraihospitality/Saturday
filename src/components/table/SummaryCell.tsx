@@ -3,6 +3,25 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { formatNumberValue } from '../../utils/format';
 import type { Column } from '../../types';
 import { tintLabel } from '../../lib/labelTint';
+import { useNewUi } from '../../lib/brand';
+import { PRIORITY_LEVELS, priorityLevel } from '../../lib/priority';
+
+const shortDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+/** "● 3 Working on it, ● 6 Done": NHG's summary of labels, in words. */
+const CountsText = ({ parts }: { parts: { key: string; label: string; color: string; count: number }[] }) => {
+    if (parts.length === 0) return null;
+    return (
+        <div className="nhg-summary-text" title={parts.map(p => `${p.count} ${p.label}`).join(', ')}>
+            {parts.map((p, i) => (
+                <span key={p.key} className="nhg-summary-part">
+                    <span className="nhg-summary-dot" style={{ background: p.color }} />
+                    {p.count} {p.label}{i < parts.length - 1 ? ',' : ''}
+                </span>
+            ))}
+        </div>
+    );
+};
 
 /**
  * The summary shown for one column under a group, or under a parent's
@@ -17,6 +36,46 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
     color?: string;
 }) => {
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
+    const newUi = useNewUi();
+
+    // NHG summarises in words where Saturday draws: no status bar or date chip,
+    // and priorities as High / Medium / Low.
+    if (newUi && col.type === 'status') {
+        if (!agg || totalCount === 0) return null;
+        const counts: Record<string, number> = {};
+        (agg.values as any[]).forEach(v => {
+            const key = v || 'default';
+            counts[key] = (counts[key] || 0) + 1;
+        });
+        const options = Array.isArray(col.options) ? col.options : [];
+        let notSet = counts['default'] || 0;
+        const parts = options.flatMap(opt => {
+            const count = counts[opt.id] || counts[opt.label] || 0;
+            if (!count) return [];
+            // The blank "Default" label reads as not set, as its cell does
+            if (opt.label === 'Default') { notSet += count; return []; }
+            return [{ key: opt.id, label: opt.label, color: opt.color, count }];
+        });
+        if (notSet) parts.push({ key: 'not-set', label: 'not set', color: '#c4c4c4', count: notSet });
+        return <CountsText parts={parts} />;
+    }
+    if (newUi && (col.type === 'date' || col.type === 'due_date' || col.type === 'timeline')) {
+        if (!agg || !agg.min) return null;
+        const d1 = shortDate(agg.min);
+        const d2 = shortDate(agg.max);
+        return <span className="nhg-summary-range">{d1 === d2 ? d1 : `${d1} – ${d2}`}</span>;
+    }
+    if (newUi && col.type === 'priority') {
+        if (!agg?.count) return null;
+        const ratings: number[] = Array.isArray(agg.values) ? agg.values : [];
+        const parts = PRIORITY_LEVELS.map(level => ({
+            key: level.id,
+            label: level.label,
+            color: level.color,
+            count: ratings.filter(r => priorityLevel(r)?.id === level.id).length,
+        })).filter(p => p.count > 0);
+        return <CountsText parts={parts} />;
+    }
 
     return (
         <>

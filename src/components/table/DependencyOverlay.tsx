@@ -3,6 +3,7 @@ import type { ItemDependency } from '../../types';
 import { buildDependencyPath, buildFinishToFinishPath, buildStartToStartPath, wouldCreateCycle } from '../../lib/dependencyUtils';
 import { NAME_COL_WIDTH, ROW_HEIGHT, type BarGeometry } from './timelineGeometry';
 
+import { useTerms } from '../../lib/terms';
 const ARROW_COLOR = '#5b5b7b';
 
 interface DependencyOverlayProps {
@@ -182,6 +183,7 @@ interface DependencyEditPopoverProps {
  * an existing link, or remove it, without leaving the Timeline.
  */
 const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRemove, onClose }: DependencyEditPopoverProps) => {
+    const t = useTerms();
     const [predecessorId, setPredecessorId] = useState(dep.predecessorItemId);
     const [successorId, setSuccessorId] = useState(dep.successorItemId);
     const [openField, setOpenField] = useState<'predecessor' | 'successor' | null>(null);
@@ -189,7 +191,7 @@ const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRem
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const itemTitle = (id: string) => items.find(i => i.id === id)?.title || 'Unknown item';
+    const itemTitle = (id: string) => items.find(i => i.id === id)?.title || `Unknown ${t.item}`;
 
     // The graph as it would look with this edge already removed, so
     // re-pointing an end doesn't see the edge fighting itself.
@@ -276,7 +278,7 @@ const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRem
                         autoFocus
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search items…"
+                        placeholder={`Search ${t.items}…`}
                         style={{
                             width: '100%',
                             padding: '7px 9px',
@@ -291,7 +293,7 @@ const DependencyEditPopover = ({ dep, x, y, items, dependencies, onUpdate, onRem
                     <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
                         {candidatesFor(field).length === 0 ? (
                             <div style={{ padding: '9px', fontSize: '11px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                No eligible items
+                                {`No eligible ${t.items}`}
                             </div>
                         ) : candidatesFor(field).map(candidate => (
                             <button

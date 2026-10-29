@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { RefreshCw } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
+import { useNewUi } from '../../lib/brand';
+import { reword, useTerms } from '../../lib/terms';
 
 export interface ActivityLogListProps {
     scope: 'global' | 'board' | 'item';
@@ -80,10 +82,16 @@ const ACTION_LABELS: Record<string, string> = {
 // context; the board's own panel doesn't need it.
 export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: ActivityLog; onClickTask: (id: string) => void; boardName?: string }) => {
     const [imgError, setImgError] = useState(false);
+    // NHG's words (Space, Task Group, Comment…), src/lib/terms.ts
+    const newUi = useNewUi();
+    const t = useTerms();
 
     const { action_type, metadata, actor_name, actor_email, actor_avatar, created_at } = log;
     // const Icon = ACTION_ICONS[action_type] || User; // Default fallback? Activity symbol maybe
-    const label = ACTION_LABELS[action_type] || action_type.replace(/_/g, ' ');
+    const label = reword(
+        newUi && action_type === 'item_comment_added' ? 'Comment Posted' : ACTION_LABELS[action_type] || action_type.replace(/_/g, ' '),
+        t
+    );
 
     // Helper: Truncate
     const truncate = (str: string, length: number = 50) => {
@@ -162,7 +170,7 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                     </span>
                 );
             case 'item_created':
-                return <span>Created task <strong>{itemTitle}</strong> in group <strong>{meta.group_title || 'Unknown Group'}</strong></span>;
+                return <span>Created task <strong>{itemTitle}</strong>{` in ${t.group} `}<strong>{meta.group_title || `Unknown ${t.Group}`}</strong></span>;
             case 'item_renamed':
                 return <span>Renamed task to <strong>{itemTitle}</strong></span>;
             case 'item_deleted':
@@ -174,11 +182,11 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
             case 'item_assigned':
                 return <span>Assigned a task</span>;
             case 'group_restored':
-                return <span>Restored group <strong>{meta.group_title}</strong></span>;
+                return <span>{`Restored ${t.group} `}<strong>{meta.group_title}</strong></span>;
             case 'group_linked':
-                return <span>Linked group <strong>{meta.group_title}</strong> to another board</span>;
+                return <span>{`Linked ${t.group} `}<strong>{meta.group_title}</strong>{` to another ${t.board}`}</span>;
             case 'group_unlinked':
-                return <span>Unlinked group <strong>{meta.group_title}</strong></span>;
+                return <span>{`Unlinked ${t.group} `}<strong>{meta.group_title}</strong></span>;
             case 'items_moved':
             case 'items_move_undone': {
                 const undone = action_type === 'items_move_undone';
@@ -193,9 +201,9 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                     <span>
                         {undone ? 'Put back ' : 'Moved '}{list}
                         {undone
-                            ? (sameBoard ? <> to {fromGroups ? <>group <strong>{fromGroups}</strong></> : 'their previous group'}</> : <> to <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null}, from <strong>{meta.to_board_title}</strong></>)
+                            ? (sameBoard ? <> to {fromGroups ? <>{`${t.group} `}<strong>{fromGroups}</strong></> : `their previous ${t.group}`}</> : <> to <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null}, from <strong>{meta.to_board_title}</strong></>)
                             : (sameBoard
-                                ? <> {fromGroups ? <>from group <strong>{fromGroups}</strong> </> : null}to {meta.as_subitems ? 'sub-items' : <>group <strong>{meta.to_group_title}</strong></>}</>
+                                ? <> {fromGroups ? <>{`from ${t.group} `}<strong>{fromGroups}</strong> </> : null}to {meta.as_subitems ? reword('sub-items', t) : <>{`${t.group} `}<strong>{meta.to_group_title}</strong></>}</>
                                 : <> from <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null} to <strong>{meta.to_board_title}</strong>{meta.to_group_title ? <> › <strong>{meta.to_group_title}</strong></> : null}</>)}
                     </span>
                 );
@@ -208,25 +216,25 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
             }
             case 'board_moved':
             case 'board_move_undone':
-                return <span>{action_type === 'board_moved' ? 'Moved' : 'Moved back'} board <strong>{meta.board_title}</strong>{meta.from_workspace_title ? <> from workspace <strong>{meta.from_workspace_title}</strong></> : null}{meta.to_workspace_title ? <> to <strong>{meta.to_workspace_title}</strong></> : null}</span>;
+                return <span>{action_type === 'board_moved' ? 'Moved' : 'Moved back'}{` ${t.board} `}<strong>{meta.board_title}</strong>{meta.from_workspace_title ? <>{` from ${t.workspace} `}<strong>{meta.from_workspace_title}</strong></> : null}{meta.to_workspace_title ? <> to <strong>{meta.to_workspace_title}</strong></> : null}</span>;
             case 'board_deleted':
-                return <span>Deleted board <strong>{meta.board_title}</strong></span>;
+                return <span>{`Deleted ${t.board} `}<strong>{meta.board_title}</strong></span>;
             case 'board_restored':
-                return <span>Restored board <strong>{meta.board_title}</strong></span>;
+                return <span>{`Restored ${t.board} `}<strong>{meta.board_title}</strong></span>;
             case 'board_created':
-                return <span>Created board <strong>{meta.board_title}</strong></span>;
+                return <span>{`Created ${t.board} `}<strong>{meta.board_title}</strong></span>;
             case 'workspace_renamed':
-                return <span>Renamed workspace from <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
+                return <span>{`Renamed ${t.workspace} from `}<strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
             case 'member_role_updated':
                 return <span>Updated a member's role to <strong>{meta.new_role}</strong></span>;
             case 'member_removed':
                 return <span>Removed a member</span>;
             case 'workspace_ownership_transferred':
-                return <span>Transferred workspace ownership</span>;
+                return <span>{`Transferred ${t.workspace} ownership`}</span>;
             case 'column_renamed':
                 return <span>Renamed column <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
             case 'item_comment_added':
-                return <span>Posted an update on <strong>{itemTitle}</strong></span>;
+                return <span>{newUi ? 'Posted a comment on ' : 'Posted an update on '}<strong>{itemTitle}</strong></span>;
             case 'item_mention':
                 return (
                     <span>

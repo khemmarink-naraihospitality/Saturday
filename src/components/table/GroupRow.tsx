@@ -6,6 +6,8 @@ import { usePermission } from '../../hooks/usePermission';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { supabase } from '../../lib/supabase';
 import { GROUP_COLORS, PALETTE_WIDTH, palettePosition } from '../../lib/labelColors';
+import { useNewUi } from '../../lib/brand';
+import { countOf, useTerms } from '../../lib/terms';
 
 export const GroupRow = ({ 
     data, 
@@ -25,6 +27,11 @@ export const GroupRow = ({
     const updateGroupColor = useBoardStore(state => state.updateGroupColor);
     const unlinkGroup = useBoardStore(state => state.unlinkGroup);
     const { can } = usePermission();
+    // NHG: no colour bar down the left; the whole header row is tinted with the
+    // group's colour instead, and its name is that colour deepened toward ink
+    // (nhg_ui.css).
+    const newUi = useNewUi();
+    const t = useTerms();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(data.title);
@@ -51,9 +58,9 @@ export const GroupRow = ({
                 ? await supabase.from('workspaces').select('title').eq('id', boardRow.workspace_id).single()
                 : { data: null };
             setLinkedNames({
-                workspaceTitle: workspaceRow?.title || 'Unknown workspace',
-                boardTitle: boardRow?.title || 'Unknown board',
-                groupTitle: groupRow?.title || 'Unknown group'
+                workspaceTitle: workspaceRow?.title || `Unknown ${t.workspace}`,
+                boardTitle: boardRow?.title || `Unknown ${t.board}`,
+                groupTitle: groupRow?.title || `Unknown ${t.group}`
             });
         }
     };
@@ -74,16 +81,17 @@ export const GroupRow = ({
     };
 
     return (
-        <div style={{
+        <div className={newUi ? 'nhg-group-head' : undefined} style={{
             display: 'flex',
             alignItems: 'center',
             height: '100%',
             position: 'relative',
-            backgroundColor: 'hsl(var(--color-bg-canvas))',
+            backgroundColor: newUi ? undefined : 'hsl(var(--color-bg-canvas))',
             width: '100%', // Group row spans the whole table row width
+            ...(newUi ? { '--group-color': groupColor || data.color || '#579bfc' } as React.CSSProperties : {})
         }}>
             {/* Visual Left Border */}
-            {(groupColor || data.color || '#579bfc') && (
+            {!newUi && (groupColor || data.color || '#579bfc') && (
                 <div style={{
                     position: 'absolute',
                     left: 0,
@@ -126,7 +134,7 @@ export const GroupRow = ({
                 position: 'sticky',
                 left: 0,
                 zIndex: 60,
-                backgroundColor: 'hsl(var(--color-bg-canvas))',
+                backgroundColor: newUi ? 'transparent' : 'hsl(var(--color-bg-canvas))',
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
@@ -160,7 +168,7 @@ export const GroupRow = ({
                             zIndex: 2,
                             opacity: 0
                         }}
-                        title="Change Group Color"
+                        title={`Change ${t.Group} Color`}
                     />
 
                     <div
@@ -247,17 +255,18 @@ export const GroupRow = ({
                     />
                 ) : (
                     <span
+                        className={newUi ? 'nhg-group-head__name' : undefined}
                         style={{
                             fontSize: '15px',
                             fontWeight: 600,
-                            color: data.color || '#579bfc',
+                            color: newUi ? undefined : (data.color || '#579bfc'),
                             cursor: can('group_ungroup') ? 'text' : 'default',
                             whiteSpace: 'nowrap'
                         }}
                         onDoubleClick={() => {
                             if (can('group_ungroup')) setIsEditing(true);
                         }}
-                        title={can('group_ungroup') ? "Double click to rename group" : "Read only"}
+                        title={can('group_ungroup') ? `Double click to rename ${t.group}` : "Read only"}
                     >
                         {data.title}
                     </span>
@@ -268,7 +277,7 @@ export const GroupRow = ({
                         ref={linkIconRef}
                         onClick={(e) => { e.stopPropagation(); handleOpenLinkPopover(); }}
                         style={{ display: 'flex', alignItems: 'center', marginLeft: '6px', cursor: 'pointer', color: 'hsl(var(--color-text-tertiary))' }}
-                        title="This group is linked"
+                        title={`This ${t.group} is linked`}
                     >
                         <Link2 size={13} />
                     </div>
@@ -308,7 +317,7 @@ export const GroupRow = ({
                 )}
 
                 <span style={{ fontSize: '13px', color: 'hsl(var(--color-text-tertiary))', marginLeft: '8px' }}>
-                    {data.count} items
+                    {newUi ? countOf(data.count, t.item, t.items) : <>{data.count} items</>}
                 </span>
 
                 {can('group_ungroup') && (
@@ -316,7 +325,7 @@ export const GroupRow = ({
                         <button
                             onClick={() => data.linkedGroupId ? setShowLinkedDeleteBlocked(true) : setShowDeleteConfirm(true)}
                             className="icon-btn"
-                            title={data.linkedGroupId ? "Unlink before deleting" : "Delete Group"}
+                            title={data.linkedGroupId ? "Unlink before deleting" : `Delete ${t.Group}`}
                         >
                             <Trash2 size={14} />
                         </button>
@@ -329,8 +338,8 @@ export const GroupRow = ({
 
             <ConfirmModal
                 isOpen={showDeleteConfirm}
-                title="Delete Group"
-                message={`Are you sure you want to delete "${data.title}"? You can restore it (and its items) later from this board's Archive/Trash.`}
+                title={`Delete ${t.Group}`}
+                message={`Are you sure you want to delete "${data.title}"? You can restore it (and its ${t.items}) later from this ${t.board}'s Archive/Trash.`}
                 confirmText="Delete"
                 onConfirm={() => {
                     deleteGroup(data.id);
@@ -341,8 +350,8 @@ export const GroupRow = ({
 
             <ConfirmModal
                 isOpen={showLinkedDeleteBlocked}
-                title="This Group is Linked"
-                message={`"${data.title}" is linked to another group. Unlink it first, then you can delete it.`}
+                title={`This ${t.Group} is Linked`}
+                message={`"${data.title}" is linked to another ${t.group}. Unlink it first, then you can delete it.`}
                 confirmText="Unlink Now"
                 onConfirm={() => {
                     unlinkGroup(data.id);

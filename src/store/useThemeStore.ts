@@ -22,11 +22,16 @@ const applyTheme = (theme: Theme) => {
     }
 };
 
+// The page's own title (index.html), for switching back from NHG's.
+const BASE_TITLE = document.title;
+
 // Saturday is the stylesheet's own :root, so it needs no attribute at all —
-// the page looks exactly as it did before palettes existed.
+// the page looks exactly as it did before palettes existed. NHG also names
+// the product NHG WorkSpace (src/lib/brand.ts), the tab's title included.
 const applyPalette = (palette: PaletteId) => {
     if (palette === 'saturday') document.documentElement.removeAttribute('data-palette');
     else document.documentElement.setAttribute('data-palette', palette);
+    document.title = palette === 'narai' ? 'NHG WorkSpace' : BASE_TITLE;
 };
 
 export const useThemeStore = create<ThemeState>()(

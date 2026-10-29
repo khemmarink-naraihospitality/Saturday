@@ -1,0 +1,585 @@
+/*
+ * NHG's New UI: the pieces that are laid out differently under NHG, not just
+ * coloured differently (src/lib/brand.ts says which). The components render
+ * these classes only under NHG; the rules that reach shared markup are scoped
+ * under html[data-palette='narai'] like the rest of narai_brand.css, so
+ * Saturday is untouched.
+ */
+
+/* ── Overlays opened from the sidebar ──────────────────────────────────── */
+
+/* The sidebar re-declares the colour tokens for its green (narai_brand.css).
+   A menu or dialog opened from inside it is a page surface, so it takes the
+   page's tokens back: --page-* hold them, resolved on <html>. */
+html[data-palette='narai'] {
+    --page-text-primary: var(--color-text-primary);
+    --page-text-secondary: var(--color-text-secondary);
+    --page-text-tertiary: var(--color-text-tertiary);
+    --page-text-disabled: var(--color-text-disabled);
+    --page-brand-primary: var(--color-brand-primary);
+    --page-brand-hover: var(--color-brand-hover);
+    --page-brand-light: var(--color-brand-light);
+    --page-brand-subtle: var(--color-brand-subtle);
+    --page-bg-canvas: var(--color-bg-canvas);
+    --page-bg-surface: var(--color-bg-surface);
+    --page-bg-surface-hover: var(--color-bg-surface-hover);
+    --page-bg-subtle: var(--color-bg-subtle);
+    --page-border: var(--color-border);
+    --page-border-hover: var(--color-border-hover);
+    --page-nav-accent: var(--color-nav-accent);
+    --page-nav-accent-bg: var(--color-nav-accent-bg);
+    --page-icon-accent: var(--color-icon-accent);
+}
+
+html[data-palette='narai'] .sidebar :is([style*="position: fixed"], .nhg-on-page) {
+    --color-text-primary: var(--page-text-primary);
+    --color-text-secondary: var(--page-text-secondary);
+    --color-text-tertiary: var(--page-text-tertiary);
+    --color-text-disabled: var(--page-text-disabled);
+    --color-brand-primary: var(--page-brand-primary);
+    --color-brand-hover: var(--page-brand-hover);
+    --color-brand-light: var(--page-brand-light);
+    --color-brand-subtle: var(--page-brand-subtle);
+    --color-bg-canvas: var(--page-bg-canvas);
+    --color-bg-surface: var(--page-bg-surface);
+    --color-bg-surface-hover: var(--page-bg-surface-hover);
+    --color-bg-subtle: var(--page-bg-subtle);
+    --color-border: var(--page-border);
+    --color-border-hover: var(--page-border-hover);
+    --color-nav-accent: var(--page-nav-accent);
+    --color-nav-accent-bg: var(--page-nav-accent-bg);
+    --color-icon-accent: var(--page-icon-accent);
+    color: hsl(var(--color-text-primary));
+}
+
+/* ── Sidebar: Dashboard area ───────────────────────────────────────────── */
+
+.nhg-sidebar-top {
+    padding: 4px 16px 0;
+}
+
+.nhg-dash {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 16px;
+}
+
+.nhg-dash__label {
+    padding: 4px 4px 8px;
+}
+
+.nhg-dash__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: hsl(var(--color-text-primary));
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 140ms var(--nhg-ease);
+}
+
+.nhg-dash__head:hover {
+    background: hsl(var(--color-bg-surface-hover));
+}
+
+.nhg-dash__icon {
+    flex-shrink: 0;
+    color: hsl(var(--color-text-secondary));
+}
+
+.nhg-dash__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nhg-dash__count {
+    font-size: 11px;
+    color: hsl(var(--color-text-tertiary));
+    font-variant-numeric: tabular-nums;
+}
+
+.nhg-dash__chevron {
+    flex-shrink: 0;
+    color: hsl(var(--color-text-tertiary));
+    transition: transform 140ms var(--nhg-ease);
+}
+
+.nhg-dash__head.is-open .nhg-dash__chevron {
+    transform: rotate(90deg);
+}
+
+/* The open list hangs off a hairline under its heading's icon */
+.nhg-dash__list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 2px 0 8px 20px;
+}
+
+.nhg-dash__list::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 2px;
+    bottom: 8px;
+    width: 1px;
+    background: hsl(var(--color-border));
+}
+
+.nhg-dash__board {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: hsl(var(--color-text-secondary));
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 140ms var(--nhg-ease), color 140ms var(--nhg-ease);
+}
+
+.nhg-dash__board:hover {
+    background: hsl(var(--color-bg-surface-hover));
+    color: hsl(var(--color-text-primary));
+}
+
+.nhg-dash__board.is-active {
+    background: var(--color-nav-accent-bg);
+    color: var(--color-nav-accent);
+    font-weight: 500;
+}
+
+.nhg-dash__board-icon {
+    flex-shrink: 0;
+}
+
+.nhg-dash__board-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nhg-dash__empty {
+    padding: 4px 8px 2px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.nhg-dash__more {
+    align-self: flex-start;
+    margin: 4px 0 0 8px;
+    padding: 2px 0;
+    border: none;
+    background: none;
+    color: hsl(var(--color-text-secondary));
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.nhg-dash__more:hover {
+    color: hsl(var(--color-text-primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* ── Sidebar: Space Folders ────────────────────────────────────────────── */
+
+/* A folder in cream outline on the green, its letter on the front; the open
+   one is filled Galangal with a green letter. On a page (a board card's
+   folder) it is ink on cream. */
+html[data-palette='narai'] [data-ws-folder] {
+    color: hsl(var(--color-text-secondary));
+    transition: color 140ms var(--nhg-ease);
+}
+
+html[data-palette='narai'] [data-ws-folder] .ws-folder__shape {
+    fill: transparent;
+    transition: fill 140ms var(--nhg-ease);
+}
+
+html[data-palette='narai'] [data-ws-folder] .ws-folder__initial {
+    fill: hsl(var(--color-text-primary));
+    font-family: var(--font-family);
+}
+
+html[data-palette='narai'] [data-ws-folder][data-ws-active='true'] {
+    color: var(--nhg-galangal);
+}
+
+html[data-palette='narai'] [data-ws-folder][data-ws-active='true'] .ws-folder__shape {
+    fill: var(--nhg-galangal);
+}
+
+html[data-palette='narai'] [data-ws-folder][data-ws-active='true'] .ws-folder__initial {
+    fill: var(--nhg-green);
+}
+
+html[data-palette='narai'] .tree-node-parent:hover [data-ws-folder] {
+    color: hsl(var(--color-text-primary));
+}
+
+/* ── Sidebar: profile ──────────────────────────────────────────────────── */
+
+html[data-palette='narai'] .sidebar-footer--profile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    text-align: left;
+}
+
+html[data-palette='narai'] .sidebar-footer--profile .footer-power {
+    margin: 0;
+    text-align: center;
+}
+
+.nhg-profile {
+    position: relative;
+}
+
+.nhg-profile--compact {
+    margin-top: auto;
+}
+
+.nhg-profile__button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: hsl(var(--color-text-primary));
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 140ms var(--nhg-ease);
+}
+
+.nhg-profile__button:hover,
+.nhg-profile__button[aria-expanded='true'] {
+    background: hsl(var(--color-bg-surface-hover));
+}
+
+.nhg-profile--compact .nhg-profile__button {
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    justify-content: center;
+}
+
+.nhg-profile__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--nhg-galangal);
+    color: var(--nhg-green);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.nhg-profile__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.nhg-profile__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.nhg-profile__name {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nhg-profile__role {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-secondary));
+}
+
+.nhg-profile__caret {
+    flex-shrink: 0;
+    color: hsl(var(--color-text-tertiary));
+}
+
+/* Opened upwards it is as wide as the profile, however narrow the sidebar */
+.nhg-profile .nhg-on-page {
+    min-width: 0 !important;
+}
+
+.nhg-profile--compact .nhg-on-page {
+    min-width: 240px !important;
+}
+
+/* ── Status labels ─────────────────────────────────────────────────────── */
+
+/* A pill with a dot in the label's colour (StatusPill). The tint and the ink
+   are mixed from that colour toward the page, so any colour reads in light
+   and dark. --pill is set inline from the stored colour. */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    min-width: 0;
+    height: 22px;
+    padding: 0 10px 0 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pill) 14%, var(--nhg-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pill) 45%, transparent);
+    color: color-mix(in srgb, var(--pill) 30%, var(--nhg-ink));
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.status-pill__dot {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--pill);
+}
+
+.status-pill__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-pill--tag {
+    height: 20px;
+    padding: 0 8px;
+    font-size: 11px;
+}
+
+/* The table cell that holds one (two classes, to win over .table-cell:first-child) */
+.table-cell.status-cell-pill {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+}
+
+.status-cell-pill__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: hsl(var(--color-text-primary));
+}
+
+/* The status picker's options: the pill itself on a quiet row */
+.nhg-status-option {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    height: 32px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 140ms var(--nhg-ease);
+}
+
+.nhg-status-option:hover {
+    background: hsl(var(--color-bg-surface-hover));
+}
+
+.kanban-status-pill {
+    display: flex;
+    margin: 2px 0;
+}
+
+/* ── Task groups ───────────────────────────────────────────────────────── */
+
+/* No colour bar down the left: the header row is tinted with the group's
+   colour, edge to edge, and the name is that colour deepened toward ink.
+   --group-color is set inline from the group. */
+.nhg-group-head {
+    background: color-mix(in srgb, var(--group-color) 13%, hsl(var(--color-bg-canvas)));
+    box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--group-color) 32%, transparent);
+    border-radius: 2px 2px 0 0;
+}
+
+.nhg-group-head__name {
+    color: color-mix(in srgb, var(--group-color) 58%, var(--nhg-ink));
+}
+
+/* The summary under a group, in words */
+.nhg-summary-text {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.3;
+    color: hsl(var(--color-text-secondary));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nhg-summary-part + .nhg-summary-part {
+    margin-left: 6px;
+}
+
+.nhg-summary-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 4px;
+    border-radius: 50%;
+    vertical-align: 1px;
+}
+
+.nhg-summary-range {
+    font-size: 12px;
+    color: hsl(var(--color-text-primary));
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Rows ──────────────────────────────────────────────────────────────── */
+
+/* The comment button beside a task's name: a round bubble, its count written
+   beside it rather than in a badge */
+.nhg-comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    line-height: 1;
+}
+
+.nhg-comment-btn__count {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A timeline value: a tint of the group's colour with a square edge of it on
+   the left and ink text, where Saturday has a filled capsule */
+.nhg-range {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90%;
+    height: 20px;
+    padding: 0 10px;
+    overflow: hidden;
+    border-left: 3px solid var(--range-color);
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--range-color) 16%, hsl(var(--color-bg-surface)));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--range-color) 30%, transparent);
+    color: hsl(var(--color-text-primary));
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Priority as a word, and the menu it opens */
+.table-cell.nhg-priority-cell {
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    padding: 0 8px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.nhg-priority-menu {
+    position: fixed;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--nhg-hairline);
+    border-radius: 2px;
+    background: hsl(var(--color-bg-surface));
+    box-shadow: var(--nhg-shadow-2);
+}
+
+.nhg-priority-menu__clear {
+    margin-top: 2px;
+    padding: 8px 6px 4px;
+    border: none;
+    border-top: 1px solid var(--nhg-hairline);
+    background: none;
+    color: hsl(var(--color-text-secondary));
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-align: left;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.nhg-priority-menu__clear:hover {
+    color: hsl(var(--color-text-primary));
+}
+
+/* Thin-line symbols: Lucide drawn finer than its default at the larger sizes */
+html[data-palette='narai'] :is(svg.lucide, svg[stroke='currentColor']):is([width='15'], [width='16'], [width='17'], [width='18'], [width='19'], [width='20'], [width='22'], [width='24']):not(.admin-console *) {
+    stroke-width: 1.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nhg-dash__chevron,
+    .nhg-dash__head,
+    .nhg-dash__board,
+    .nhg-profile__button {
+        transition: none;
+    }
+}

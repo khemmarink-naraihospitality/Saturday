@@ -55,9 +55,9 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                         overflow: 'hidden'
                     }}
                 >
+                    {/* The Narai "N" (NHG_LOGO) in Galangal on a Narai Green tile. NHG draws it
+                        straight on its green sidebar; Saturday's light sidebar needs the tile. */}
                     {newUi ? (
-                        // NHG's mark is Galangal on transparent, drawn straight on the
-                        // green sidebar rather than on a white tile
                         <img
                             className="nhg-logo"
                             src={NHG_LOGO}
@@ -65,24 +65,19 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                             style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }}
                         />
                     ) : (
-                    <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '28%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                        backgroundColor: 'white',
-                        flexShrink: 0
-                    }}>
-                        <img
-                            src="https://guideline.lubd.com/wp-content/uploads/2025/11/NHG128-1.png"
-                            alt="Logo"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        />
-                    </div>
+                        <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '28%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            backgroundColor: '#152A00',
+                            flexShrink: 0
+                        }}>
+                            <img src={NHG_LOGO} alt="NHG" style={{ width: '62%', height: '62%', objectFit: 'contain' }} />
+                        </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
                         <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>

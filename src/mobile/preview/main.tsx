@@ -10,7 +10,7 @@
  * board-scrolled, sheet-status, sheet-date, sheet-files, sheet-date2,
  * sheet-timeline, sheet-views, workspaces, favorites, notifications, more,
  * dashboard, item-columns, item-files, board-large (4,800 rows, for speed).
- * Add &theme=dark for the dark theme, &palette=narai for the Narai palette.
+ * Add &theme=dark for the dark theme, &palette=narai for the Narai palette (shown as "NHG").
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';

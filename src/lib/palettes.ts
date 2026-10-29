@@ -26,8 +26,10 @@ export const PALETTES: Palette[] = [
         swatch: { canvas: '#ffffff', sidebar: '#f0eef8', line: '#e4e1f0', brand: '#7c3fe4', brandSoft: '#f0eeff', accent: '#c03fe4', text: '#1a1728' },
     },
     {
+        // Shown as "NHG". The id stays 'narai': it is what accounts have saved
+        // (profiles.ui_theme) and what the stylesheets select on (data-palette).
         id: 'narai',
-        name: 'Narai',
+        name: 'NHG',
         blurb: 'Crystal glass in pale sage green',
         swatch: { canvas: '#ffffff', sidebar: '#dfeecd', line: '#e9f0de', brand: '#4f7f43', brandSoft: '#eaf5d9', accent: '#9cc472', text: '#222b1b' },
     },

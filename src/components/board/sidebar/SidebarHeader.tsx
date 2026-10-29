@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Archive, Home, Star, Menu } from 'lucide-react';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
-import { productName, useNewUi } from '../../../lib/brand';
+import { NHG_LOGO, productName, useNewUi } from '../../../lib/brand';
 import { useTerms } from '../../../lib/terms';
 
 interface SidebarHeaderProps {
@@ -55,6 +55,16 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                         overflow: 'hidden'
                     }}
                 >
+                    {newUi ? (
+                        // NHG's mark is Galangal on transparent, drawn straight on the
+                        // green sidebar rather than on a white tile
+                        <img
+                            className="nhg-logo"
+                            src={NHG_LOGO}
+                            alt="NHG"
+                            style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }}
+                        />
+                    ) : (
                     <div style={{
                         width: '28px',
                         height: '28px',
@@ -73,6 +83,7 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
                     </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
                         <span style={{ fontSize: '16px', fontWeight: 800, color: 'hsl(var(--color-text-primary))', letterSpacing: '-0.5px' }}>NHG</span>
                         <span style={{ fontSize: '16px', fontWeight: 400, color: 'hsl(var(--color-text-secondary))', letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{productName(newUi)}</span>

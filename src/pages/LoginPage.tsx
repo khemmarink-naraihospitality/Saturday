@@ -228,7 +228,7 @@ export const LoginPage = () => {
                         />
                     </div>
                     <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 400, color: '#152A00', letterSpacing: '-0.01em' }}>
-                        <strong style={{ fontWeight: 700 }}>NHG</strong> SaturdaySpace
+                        <strong style={{ fontWeight: 700 }}>NHG</strong> WorkSpace
                     </h1>
                     <p style={{ marginTop: '8px', fontSize: '14px', color: '#6b7068' }}>
                         Login to your WorkSpace

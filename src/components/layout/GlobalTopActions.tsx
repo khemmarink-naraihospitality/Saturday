@@ -7,10 +7,6 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { NotificationItem } from '../notifications/NotificationItem';
 import { NotificationToastStack } from '../notifications/NotificationToastStack';
-import { ProfileSettingsModal } from './ProfileSettingsModal';
-import { ProfileMenu } from './ProfileMenu';
-import { useUserStore } from '../../store/useUserStore';
-import { useNewUi } from '../../lib/brand';
 
 const selectUnreadCount = (state: ReturnType<typeof useBoardStore.getState>) =>
     state.notifications?.filter(n => !n.is_read).length || 0;
@@ -22,14 +18,8 @@ export const GlobalTopActions = () => {
     const navigateTo = useBoardStore(state => state.navigateTo);
 
     const { theme, toggleTheme } = useThemeStore();
-    const { currentUser } = useUserStore();
-    // NHG keeps the profile at the bottom of the sidebar (SidebarProfile) instead.
-    const newUi = useNewUi();
 
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-    const [showProfileSettings, setShowProfileSettings] = useState(false);
-    const profileMenuRef = useRef<HTMLDivElement>(null);
     const notificationMenuRef = useRef<HTMLDivElement>(null);
 
     const notifications = useBoardStore(state => state.notifications || []);
@@ -73,27 +63,19 @@ export const GlobalTopActions = () => {
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-                setShowProfileMenu(false);
-            }
             if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target as Node) && !(event.target as Element).closest('.notification-bell-btn')) {
                 setShowNotifications(false);
             }
         };
 
-        if (showProfileMenu || showNotifications) {
+        if (showNotifications) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showProfileMenu, showNotifications]);
-
-    // Get user avatar or initials — currentUser.avatar reflects a manually-uploaded
-    // avatar (profiles.avatar_url); falls back to the Google metadata photo.
-    const userAvatar = currentUser.avatar?.startsWith('http') ? currentUser.avatar : user?.user_metadata?.avatar_url;
-    const userInitials = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U').charAt(0).toUpperCase();
+    }, [showNotifications]);
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -243,59 +225,6 @@ export const GlobalTopActions = () => {
 
                 <NotificationToastStack toasts={toastQueue} onRemove={removeToast} />
             </div>
-
-            {/* Profile Dropdown */}
-            {!newUi && <div style={{ position: 'relative' }} ref={profileMenuRef}>
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '28%',
-                        border: '1px solid hsl(var(--color-border))',
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                        backgroundColor: userAvatar ? 'transparent' : 'hsl(var(--color-brand-primary))',
-                        color: 'white',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 0
-                    }}
-                    title={user?.email || 'Profile'}
-                >
-                    {userAvatar ? (
-                        <img
-                            src={userAvatar}
-                            alt="Profile"
-                            referrerPolicy="no-referrer"
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                            }}
-                        />
-                    ) : (
-                        userInitials
-                    )}
-                </motion.button>
-
-                {/* Profile Dropdown Menu */}
-                {showProfileMenu && (
-                    <ProfileMenu
-                        onClose={() => setShowProfileMenu(false)}
-                        onOpenSettings={() => setShowProfileSettings(true)}
-                    />
-                )}
-            </div>}
-
-            {showProfileSettings && (
-                <ProfileSettingsModal onClose={() => setShowProfileSettings(false)} />
-            )}
         </div>
     );
 };

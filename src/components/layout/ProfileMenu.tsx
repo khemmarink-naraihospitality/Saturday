@@ -5,11 +5,10 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
 
 /**
- * The account menu: who is signed in, Profile Settings, the Admin Console for
- * admins, Log out. Saturday opens it below the avatar at the top right
- * (GlobalTopActions); NHG's profile sits at the bottom of the sidebar
- * (SidebarProfile), so there it opens upwards — or to the right of the
- * collapsed rail — and also offers the Trash.
+ * The account menu: who is signed in, Profile Settings, Trash, the Admin
+ * Console for admins, Log out. It opens from the profile at the bottom of the
+ * sidebar (SidebarProfile): upwards, or to the right of the collapsed rail.
+ * 'below' is for an avatar at the top of a page.
  */
 export const ProfileMenu = ({ placement = 'below', onClose, onOpenSettings, onOpenTrash }: {
     placement?: 'below' | 'above' | 'right';

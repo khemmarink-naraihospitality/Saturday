@@ -12,9 +12,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 /**
- * NHG's profile, at the bottom of the sidebar instead of the top bar (the
- * avatar there is hidden under NHG). The menu is the top bar's, plus the
- * Trash. `compact` is the collapsed rail: the avatar alone, menu to its right.
+ * The signed-in person, at the bottom of the sidebar above "Powered by" (the
+ * top bar has no avatar): picture, name and role, opening the account menu —
+ * Profile Settings, Trash, Admin Console, Log out — upwards. `compact` is the
+ * collapsed rail: the avatar alone, menu to its right.
  */
 export const SidebarProfile = ({ compact = false }: { compact?: boolean }) => {
     const { user } = useAuth();
@@ -40,25 +41,25 @@ export const SidebarProfile = ({ compact = false }: { compact?: boolean }) => {
     const role = ROLE_LABEL[currentUser.system_role || ''] || 'Member';
 
     return (
-        <div className={`nhg-profile${compact ? ' nhg-profile--compact' : ''}`} ref={ref}>
+        <div className={`sidebar-profile${compact ? ' sidebar-profile--compact' : ''}`} ref={ref}>
             <button
                 type="button"
-                className="nhg-profile__button"
+                className="sidebar-profile__button"
                 onClick={() => setOpen(!open)}
                 aria-expanded={open}
                 aria-haspopup="menu"
                 title={user?.email || 'Profile'}
             >
-                <span className="nhg-profile__avatar">
+                <span className="sidebar-profile__avatar">
                     {avatar ? <img src={avatar} alt="" referrerPolicy="no-referrer" /> : initial}
                 </span>
                 {!compact && (
                     <>
-                        <span className="nhg-profile__text">
-                            <span className="nhg-profile__name">{name}</span>
-                            <span className="nhg-profile__role">{role}</span>
+                        <span className="sidebar-profile__text">
+                            <span className="sidebar-profile__name">{name}</span>
+                            <span className="sidebar-profile__role">{role}</span>
                         </span>
-                        <ChevronsUpDown size={14} className="nhg-profile__caret" />
+                        <ChevronsUpDown size={14} className="sidebar-profile__caret" />
                     </>
                 )}
             </button>

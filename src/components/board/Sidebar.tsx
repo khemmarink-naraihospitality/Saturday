@@ -14,7 +14,8 @@ const RAIL_WIDTH = 64;
 export const Sidebar = () => {
     const [searchQuery, setSearchQuery] = useState('');
     // NHG's sidebar: the Dashboard area and then the folders, scrolling together
-    // under the name, with the profile at the bottom (src/lib/brand.ts).
+    // under the name (src/lib/brand.ts). Both palettes keep the profile at the
+    // bottom, above "Powered by".
     const newUi = useNewUi();
     
     const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -107,8 +108,8 @@ export const Sidebar = () => {
                     ) : undefined}
                 />
 
-                <div className={newUi ? 'sidebar-footer sidebar-footer--profile' : 'sidebar-footer'}>
-                    {newUi && <SidebarProfile />}
+                <div className="sidebar-footer sidebar-footer--profile">
+                    <SidebarProfile />
                     <span className="footer-power">Powered by jirawat.k</span>
                 </div>
             </div>

@@ -244,111 +244,28 @@ html[data-palette='narai'] .tree-node-parent:hover [data-ws-folder] {
 
 /* ── Sidebar: profile ──────────────────────────────────────────────────── */
 
-html[data-palette='narai'] .sidebar-footer--profile {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px 12px;
-    text-align: left;
-}
-
-html[data-palette='narai'] .sidebar-footer--profile .footer-power {
-    margin: 0;
-    text-align: center;
-}
-
-.nhg-profile {
-    position: relative;
-}
-
-.nhg-profile--compact {
-    margin-top: auto;
-}
-
-.nhg-profile__button {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 6px;
-    border: none;
+/* The profile at the bottom of the sidebar (sidebar_tree.css) in the brand's
+   way: a Galangal square with a green initial, sharp corners, the role in
+   tracked capitals */
+html[data-palette='narai'] .sidebar-profile__button {
     border-radius: 2px;
-    background: transparent;
-    color: hsl(var(--color-text-primary));
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 140ms var(--nhg-ease);
 }
 
-.nhg-profile__button:hover,
-.nhg-profile__button[aria-expanded='true'] {
-    background: hsl(var(--color-bg-surface-hover));
-}
-
-.nhg-profile--compact .nhg-profile__button {
-    width: 40px;
-    height: 40px;
-    padding: 4px;
-    justify-content: center;
-}
-
-.nhg-profile__avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    overflow: hidden;
+html[data-palette='narai'] .sidebar-profile__avatar {
     border-radius: 2px;
     background: var(--nhg-galangal);
     color: var(--nhg-green);
-    font-size: 13px;
-    font-weight: 600;
+    box-shadow: none;
 }
 
-.nhg-profile__avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.nhg-profile__text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-    line-height: 1.3;
-}
-
-.nhg-profile__name {
-    overflow: hidden;
-    font-size: 13px;
+html[data-palette='narai'] .sidebar-profile__name {
     font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.nhg-profile__role {
+html[data-palette='narai'] .sidebar-profile__role {
     font-size: 10.5px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: hsl(var(--color-text-secondary));
-}
-
-.nhg-profile__caret {
-    flex-shrink: 0;
-    color: hsl(var(--color-text-tertiary));
-}
-
-/* Opened upwards it is as wide as the profile, however narrow the sidebar */
-.nhg-profile .nhg-on-page {
-    min-width: 0 !important;
-}
-
-.nhg-profile--compact .nhg-on-page {
-    min-width: 240px !important;
 }
 
 /* ── Status labels ─────────────────────────────────────────────────────── */
@@ -578,8 +495,7 @@ html[data-palette='narai'] :is(svg.lucide, svg[stroke='currentColor']):is([width
 @media (prefers-reduced-motion: reduce) {
     .nhg-dash__chevron,
     .nhg-dash__head,
-    .nhg-dash__board,
-    .nhg-profile__button {
+    .nhg-dash__board {
         transition: none;
     }
 }

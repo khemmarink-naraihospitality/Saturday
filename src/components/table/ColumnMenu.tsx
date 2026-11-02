@@ -10,7 +10,8 @@ import {
     Check,
     Hash,
     AlignLeft,
-    BellRing
+    BellRing,
+    Sigma
 } from 'lucide-react';
 import type { ColumnType } from '../../types';
 import { COLUMN_FORMAT_TITLES } from './NumberFormatMenu';
@@ -29,6 +30,7 @@ interface ColumnMenuProps {
     onDelete: () => void;
     onNumberFormat?: () => void;
     onNotificationSettings?: () => void;
+    onEditFormula?: () => void;
 }
 
 import { usePermission } from '../../hooks/usePermission';
@@ -47,12 +49,14 @@ export const ColumnMenu = ({
     onDelete,
     onNumberFormat,
     onNotificationSettings,
+    onEditFormula,
 }: ColumnMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { can } = usePermission();
 
-    // Filter/Sort enabled for: Status, Date, Due Date, Dropdown, Checkbox
-    const isSortFilterEnabled = ['status', 'date', 'due_date', 'dropdown', 'checkbox'].includes(columnType);
+    // Filter/Sort enabled for: Status, Date, Due Date, Dropdown, Checkbox, and
+    // Formula (by each row's result)
+    const isSortFilterEnabled = ['status', 'date', 'due_date', 'dropdown', 'checkbox', 'formula'].includes(columnType);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -159,11 +163,18 @@ export const ColumnMenu = ({
                     }} />
 
                     <div className="menu-group">
+                        {columnType === 'formula' && onEditFormula && (
+                            <MenuItem
+                                icon={<Sigma size={16} />}
+                                label="Edit formula"
+                                onClick={() => { onEditFormula(); onClose(); }}
+                            />
+                        )}
                         {COLUMN_FORMAT_TITLES[columnType] && onNumberFormat && (
                             <MenuItem
                                 // Number's menu carries formats and currency too;
                                 // every other type gets alignment alone.
-                                icon={columnType === 'number' ? <Hash size={16} /> : <AlignLeft size={16} />}
+                                icon={columnType === 'number' || columnType === 'formula' ? <Hash size={16} /> : <AlignLeft size={16} />}
                                 label={COLUMN_FORMAT_TITLES[columnType]}
                                 onClick={() => { onNumberFormat(); onClose(); }}
                             />

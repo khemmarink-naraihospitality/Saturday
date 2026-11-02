@@ -1,4 +1,4 @@
-export type ColumnType = 'text' | 'long_text' | 'status' | 'date' | 'due_date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files' | 'priority';
+export type ColumnType = 'text' | 'long_text' | 'status' | 'date' | 'due_date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files' | 'priority' | 'formula';
 
 export interface ColumnOption {
     id: string;
@@ -33,6 +33,69 @@ export interface Column {
     numberAlign?: 'left' | 'center' | 'right'; // For Number columns - undefined means Center
     scope?: ColumnScope; // undefined = 'item'
     groupId?: string; // set exactly when scope is 'subitem': the group whose sub-items it heads
+    formula?: FormulaConfig; // Formula columns: what each row shows (columns.formula)
+}
+
+/*
+ * A Formula column stores no values: each row's result is worked out from the
+ * row's other columns (src/lib/formula). Two ways to say what:
+ *  - 'calc': an expression, monday.com style — {Price} * {Quantity},
+ *    IF({Timeline#End} < TODAY(), "Overdue", "On track"). Columns are stored
+ *    by id ({#<id>} / {#<id>:end}), so renaming one doesn't break it.
+ *  - 'rules': If / Then / Else built from choices — IF Timeline has passed
+ *    AND Status is not Done THEN show the label "Overdue" (red) ELSE show Status.
+ */
+export type FormulaPart = 'start' | 'end' | 'days';
+
+export type FormulaConditionOp =
+    | 'empty' | 'not_empty'
+    | 'is' | 'is_not' | 'contains' | 'not_contains'
+    | 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
+    | 'past' | 'today' | 'future' | 'next_days' | 'overdue_by' | 'before' | 'after' | 'on'
+    | 'checked' | 'unchecked'
+    | 'includes' | 'not_includes';
+
+/** Compare with another column of the row instead of a typed value. */
+export interface FormulaColumnRef { column: string; part?: FormulaPart }
+
+export interface FormulaCondition {
+    id: string;
+    /** A column of the same set, or 'name' for the item's own name. */
+    columnId: string;
+    /** Which date of a Timeline (default: its end). */
+    part?: FormulaPart;
+    op: FormulaConditionOp;
+    /** Option ids (Status), labels (Dropdown), user ids (Person), a text, a number, a "YYYY-MM-DD" date, a day count, or another column. */
+    value?: string | number | string[] | FormulaColumnRef | null;
+}
+
+export type FormulaOutcome =
+    | { kind: 'label'; text: string; color: string }
+    | { kind: 'text'; text: string }
+    | { kind: 'number'; value: number }
+    | { kind: 'column'; columnId: string; part?: FormulaPart }
+    | { kind: 'calc'; expr: string }
+    | { kind: 'empty' };
+
+export interface FormulaRule {
+    id: string;
+    /** Every condition must hold ('all', AND) or any one of them ('any', OR). */
+    match: 'all' | 'any';
+    conditions: FormulaCondition[];
+    then: FormulaOutcome;
+}
+
+export interface FormulaConfig {
+    mode: 'calc' | 'rules';
+    expr?: string;
+    /** Checked top to bottom; the first that holds decides. */
+    rules?: FormulaRule[];
+    /** When no rule holds. */
+    otherwise?: FormulaOutcome;
+    /** Decimals for a number result; undefined = as needed, up to 2. */
+    decimals?: number;
+    /** Colours for text results, drawn as labels: { "Overdue": "#E53935" }. */
+    labelColors?: Record<string, string>;
 }
 
 // ItemValue stores dynamic column data

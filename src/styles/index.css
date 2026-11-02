@@ -5,6 +5,7 @@
 @import './cards.css';
 @import './narai_brand.css';
 @import './nhg_ui.css';
+@import './formula.css';
 
 @variant dark (&:where(.dark, .dark *));
 

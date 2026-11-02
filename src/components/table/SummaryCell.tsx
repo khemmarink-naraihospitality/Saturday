@@ -5,6 +5,7 @@ import type { Column } from '../../types';
 import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
 import { CountsText, priorityCounts, statusCounts } from '../common/CountsText';
+import { formatFormulaDate, formatFormulaNumber, type FormulaSummary } from '../../lib/formula';
 
 const shortDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -22,6 +23,8 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
 }) => {
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const newUi = useNewUi();
+
+    if (col.type === 'formula') return <FormulaSummaryCell col={col} agg={agg as FormulaSummary | undefined} totalCount={totalCount} color={color} newUi={newUi} />;
 
     // NHG summarises in words where Saturday draws: no status bar or date chip,
     // and priorities as High / Medium / Low.
@@ -256,5 +259,61 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
                 );
             })()}
         </>
+    );
+};
+
+const NEXT_AGGREGATION = { sum: 'avg', avg: 'min', min: 'max', max: 'count', count: 'sum', none: 'sum' } as const;
+
+/**
+ * A Formula column's summary, from its rows' results (summarizeFormula): a
+ * total (click to switch to average, min, max, count) when they are numbers, a
+ * status bar — NHG: counts in words — when they are labels, a date range when
+ * they are dates. Text results have nothing to add up and show nothing.
+ */
+const FormulaSummaryCell = ({ col, agg, totalCount, color, newUi }: {
+    col: Column;
+    agg: FormulaSummary | undefined;
+    totalCount: number;
+    color?: string;
+    newUi: boolean;
+}) => {
+    if (!agg || agg.kind === 'none' || agg.kind === 'count') return null;
+
+    if (agg.kind === 'labels') {
+        if (newUi) return <CountsText parts={agg.parts} />;
+        const total = Math.max(totalCount, agg.count + agg.empty, 1);
+        return (
+            <div style={{ width: '100%', height: '24px', display: 'flex', borderRadius: '6px', overflow: 'hidden' }}>
+                {agg.parts.map(p => (
+                    <div key={p.key} style={{ width: `${(p.count / total) * 100}%`, height: '100%', backgroundColor: tintLabel(p.color) }} title={`${p.label}: ${p.count}`} />
+                ))}
+                {agg.empty > 0 && <div style={{ width: `${(agg.empty / total) * 100}%`, height: '100%', backgroundColor: tintLabel('#c4c4c4') }} title={`Empty: ${agg.empty}`} />}
+            </div>
+        );
+    }
+
+    if (agg.kind === 'dates') {
+        const d1 = formatFormulaDate(agg.min);
+        const d2 = formatFormulaDate(agg.max);
+        if (newUi) return <span className="nhg-summary-range">{d1 === d2 ? d1 : `${d1} – ${d2}`}</span>;
+        return <div style={{ background: color || 'hsl(var(--color-brand-primary))', color: 'white', fontSize: '11px', padding: '4px 12px', borderRadius: '6px', whiteSpace: 'nowrap' }}>{d1 === d2 ? d1 : `${d1} - ${d2}`}</div>;
+    }
+
+    const aggregation = col.aggregation && col.aggregation !== 'none' ? col.aggregation : 'sum';
+    const values = agg.values;
+    const result = aggregation === 'count' ? values.length
+        : aggregation === 'avg' ? agg.sum / values.length
+            : aggregation === 'min' ? Math.min(...values)
+                : aggregation === 'max' ? Math.max(...values)
+                    : agg.sum;
+    return (
+        <div
+            onClick={() => useBoardStore.getState().setColumnAggregation(col.id, NEXT_AGGREGATION[aggregation])}
+            className="formula-summary"
+            title="Click to change aggregation"
+        >
+            <span>{aggregation === 'count' ? result : formatFormulaNumber(result, col)}</span>
+            <span className="formula-summary__label">{aggregation}</span>
+        </div>
     );
 };

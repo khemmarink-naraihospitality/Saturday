@@ -72,7 +72,7 @@ const carryValues = async (set: any, get: () => BoardState, boardId: string, mov
         const { error } = await supabase.from('columns').insert(added.map(c => ({
             id: c.id, board_id: boardId, title: c.title, type: c.type, order: c.order, width: c.width,
             options: c.options || [], aggregation: c.aggregation, number_format: c.numberFormat,
-            currency_code: c.currencyCode, number_align: c.numberAlign,
+            currency_code: c.currencyCode, number_align: c.numberAlign, formula: c.formula ?? null,
             scope: c.scope === 'subitem' ? 'subitem' : 'item', group_id: c.scope === 'subitem' ? c.groupId : null
         })));
         if (error) console.error('[carryValues] Failed to add columns:', error);

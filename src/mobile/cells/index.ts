@@ -5,6 +5,6 @@
  * what is exported here.
  */
 export { CellView, type CellViewProps } from './CellView';
-export { activateCell, isDirectToggle } from './activateCell';
+export { activateCell, isDirectToggle, isComputed } from './activateCell';
 export { columnWidthFor, NAME_COLUMN_WIDTH, NAME_COLUMN_MIN_WIDTH, UPDATES_COLUMN_WIDTH } from './columnWidths';
 export { SummaryView } from './SummaryView';

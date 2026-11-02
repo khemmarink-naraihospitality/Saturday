@@ -12,6 +12,7 @@ export const columnWidthFor = (column: Column): number => {
     switch (column.type) {
         case 'status':
         case 'dropdown':
+        case 'formula':
             return 152;
         case 'people':
             return 84;

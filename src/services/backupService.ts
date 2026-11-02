@@ -2,6 +2,8 @@ import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { parseLinkValue } from '../lib/utils';
 import { splitSharedColumns } from '../lib/columnScope';
+import { evaluateColumn, formulaExportValue, formulaFromRow, remapFormula, todayDay } from '../lib/formula';
+import type { Column } from '../types';
 // xlsx is loaded lazily on-demand inside exportBoardData() to avoid bundling it at startup
 
 export const backupService = {
@@ -95,6 +97,10 @@ export const backupService = {
                         const newId = uuidv4();
                         columnIdMap.set(c.id, newId);
                         return { ...c, id: newId, board_id: newBoardId, group_id: c.group_id ? (groupIdMap.get(c.group_id) ?? null) : null };
+                    });
+                    // A Formula column names its columns by id: point it at the new ones.
+                    mappedColumns.forEach((c: any) => {
+                        if (c.formula) c.formula = remapFormula(formulaFromRow(c.formula), id => columnIdMap.get(id)) ?? null;
                     });
 
                     // Sub-items point at their parent by id, and every item gets a new
@@ -225,6 +231,29 @@ export const backupService = {
             // 2. Map Helpers
             const groupMap = new Map(groups.map(g => [g.id, g.title]));
             const userMap = new Map(profiles?.map(p => [p.id, p.full_name || p.email]) || []);
+
+            // Formula columns store no values: their cells are worked out here,
+            // as the board shows them, from the row's other columns (its set).
+            const asColumn = (c: any): Column => ({
+                id: c.id, title: c.title, type: c.type, order: c.order,
+                options: typeof c.options === 'string' ? JSON.parse(c.options || '[]') : (c.options || []),
+                numberFormat: c.number_format || undefined, currencyCode: c.currency_code || undefined,
+                scope: c.scope === 'subitem' ? 'subitem' : 'item', groupId: c.group_id || undefined,
+                formula: formulaFromRow(c.formula),
+            });
+            const allColumns: Column[] = (columns || []).map(asColumn);
+            const formulaCtx = { today: todayDay(), personName: (id: string) => userMap.get(id) || undefined };
+            const parentGroupOf = new Map<string, string>(items.map((i: any) => [i.id, i.group_id]));
+            const formulaValue = (col: any, item: any) => {
+                const column = allColumns.find(c => c.id === col.id);
+                if (!column) return '';
+                const siblings = column.scope === 'subitem'
+                    ? allColumns.filter(c => c.scope === 'subitem' && c.groupId === column.groupId)
+                    : allColumns.filter(c => c.scope !== 'subitem');
+                // A sub-item column only has results on its own group's sub-items.
+                if (column.scope === 'subitem' && (!item.parent_id || parentGroupOf.get(item.parent_id) !== column.groupId)) return '';
+                return formulaExportValue(evaluateColumn(column, { title: item.title || '', values: item.values || {} }, siblings, formulaCtx));
+            };
 
             // Helper: Get Label for Status/Dropdown
             const getOptionLabel = (col: any, val: any) => {
@@ -381,6 +410,7 @@ export const backupService = {
                     const values = item.values || {};
                     colMetas.forEach(m => {
                         if (!m.column) { out.push(''); return; }
+                        if (m.column.type === 'formula') { out.push(formulaValue(m.column, item)); return; }
                         const val = values[m.column.id];
 
                         if (m.isTimeline) {
@@ -515,6 +545,7 @@ export const backupService = {
                 // Map dynamic column values
                 const colValues = rowColumns.map(col => {
                     if (!col) return '';
+                    if (col.type === 'formula') return formulaValue(col, item);
                     const val = (item.values || item.column_values || {})[col.id];
 
                     if (val === null || val === undefined) return '';

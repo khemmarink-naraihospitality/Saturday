@@ -8,6 +8,7 @@ import { parseDay } from './format';
 import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
 import { CountsText, priorityCounts, statusCounts } from '../../components/common/CountsText';
+import { FormulaSummaryView } from './FormulaView';
 
 const shortDay = (value: string) => {
     const date = parseDay(value) || new Date(value);
@@ -26,10 +27,13 @@ export const SummaryView = memo(({ column, items, people, color }: {
     /** The group's colour, for date and timeline ranges. */
     color?: string;
 }) => {
-    const agg = useMemo(() => (column.type === 'files' ? null : computeAggregates([column], items)[column.id]), [column, items]);
+    // A Formula column's summary needs the row's other columns: FormulaSummaryView.
+    const agg = useMemo(() => (column.type === 'files' || column.type === 'formula' ? null : computeAggregates([column], items)[column.id]), [column, items]);
     // NHG summarises in words: label counts instead of a bar, a plain date
     // range, priorities as High / Medium / Low
     const newUi = useNewUi();
+
+    if (column.type === 'formula') return <FormulaSummaryView column={column} items={items} color={color} />;
 
     if (newUi && column.type === 'status') {
         if (items.length === 0) return null;

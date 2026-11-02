@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight, MessageCircle, MessageCirclePlus, Plus } from 'lucide-react';
 import type { Column, Item } from '../../../types';
-import { CellView, SummaryView, activateCell, columnWidthFor, UPDATES_COLUMN_WIDTH } from '../../cells';
+import { CellView, SummaryView, activateCell, columnWidthFor, isComputed, UPDATES_COLUMN_WIDTH } from '../../cells';
 import type { PersonInfo } from '../../ui';
 import { GUTTER } from './layout';
 import { useNewUi } from '../../../lib/brand';
@@ -152,14 +152,16 @@ export const ItemRow = memo(({ item, columns, ctx, groupColor, isSub, subCount, 
         <UpdatesCell count={updatesCount} onOpen={() => onOpenUpdates(item.id)} />
         {columns.map(col => {
             const value = item.values[col.id];
+            // A Formula column is worked out, not typed: no tap target.
+            const editable = ctx.canEdit && !isComputed(col);
             return (
                 <div
                     key={col.id}
                     className={`m-tr__cell${col.type === 'status' ? ' m-tr__cell--status' : ''}${col.id === editingColumnId ? ' m-tr__cell--editing' : ''}`}
                     style={{ width: columnWidthFor(col) }}
-                    onClick={ctx.canEdit ? () => activateCell({ boardId: ctx.boardId, itemId: item.id, column: col, value }) : undefined}
-                    role={ctx.canEdit ? 'button' : undefined}
-                    aria-label={ctx.canEdit ? `${col.title}: edit` : undefined}
+                    onClick={editable ? () => activateCell({ boardId: ctx.boardId, itemId: item.id, column: col, value }) : undefined}
+                    role={editable ? 'button' : undefined}
+                    aria-label={editable ? `${col.title}: edit` : undefined}
                 >
                     <CellView column={col} value={value} item={item} people={ctx.people} variant="table" groupColor={groupColor} />
                 </div>

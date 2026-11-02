@@ -1,15 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Type, Users, Calendar, CalendarClock, CheckSquare, Hash, Link2, ArrowDownCircle, PieChart, CalendarRange, FileText, Star } from 'lucide-react';
+import { Type, Users, Calendar, CalendarClock, CheckSquare, Hash, Link2, ArrowDownCircle, PieChart, CalendarRange, FileText, Star, Sigma } from 'lucide-react';
 
 interface AddColumnMenuProps {
-    onSelect: (type: 'text' | 'status' | 'date' | 'due_date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files' | 'priority') => void;
+    onSelect: (type: 'text' | 'status' | 'date' | 'due_date' | 'number' | 'dropdown' | 'checkbox' | 'link' | 'people' | 'timeline' | 'files' | 'priority' | 'formula') => void;
     onClose: () => void;
     position: { top: number; bottom: number; left: number };
 }
 
 export const AddColumnMenu = ({ onSelect, onClose, position }: AddColumnMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
+    const [query, setQuery] = useState('');
 
     // Handle click outside
     useEffect(() => {
@@ -35,7 +36,11 @@ export const AddColumnMenu = ({ onSelect, onClose, position }: AddColumnMenuProp
         { id: 'checkbox', label: 'Checkbox', color: '#579bfc', icon: CheckSquare },
         { id: 'link', label: 'Link', icon: Link2, color: '#579bfc' },
         { id: 'files', label: 'Files', icon: FileText, color: '#0073ea' },
+        { id: 'formula', label: 'Formula', icon: Sigma, color: '#784BD1', keywords: 'calculate math sum if then else condition overdue' },
     ];
+    // The search box narrows the list by name (or, for Formula, by what it does).
+    const q = query.trim().toLowerCase();
+    const shown = items.filter(item => !q || item.label.toLowerCase().includes(q) || (item.keywords || '').includes(q));
 
     return createPortal(
         <div
@@ -60,6 +65,12 @@ export const AddColumnMenu = ({ onSelect, onClose, position }: AddColumnMenuProp
                 <input
                     type="text"
                     placeholder="Search or describe your column"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' && shown.length > 0) onSelect(shown[0].id as any);
+                        if (e.key === 'Escape') onClose();
+                    }}
                     style={{
                         width: '100%',
                         padding: '8px 12px',
@@ -82,7 +93,10 @@ export const AddColumnMenu = ({ onSelect, onClose, position }: AddColumnMenuProp
                     gridTemplateColumns: '1fr 1fr',
                     gap: '12px'
                 }}>
-                    {items.map((item) => (
+                    {shown.length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', fontSize: '13px', color: 'hsl(var(--color-text-tertiary))', padding: '4px' }}>No column type matches</div>
+                    )}
+                    {shown.map((item) => (
                         <div
                             key={item.id}
                             onClick={() => onSelect(item.id as any)}

@@ -7,6 +7,7 @@ import { createColumnSlice, type ColumnSlice } from './slices/columnSlice';
 import { createMemberSlice, type MemberSlice } from './slices/memberSlice';
 import { createGroupLinkSlice, type GroupLinkSlice } from './slices/groupLinkSlice';
 import { createItemDependencySlice, type ItemDependencySlice } from './slices/itemDependencySlice';
+import { setFormulaPeopleSource } from '../lib/formula';
 
 export type BoardState = BoardSlice & WorkspaceSlice & ItemSlice & GroupSlice & ColumnSlice & MemberSlice & GroupLinkSlice & ItemDependencySlice & {};
 
@@ -20,3 +21,6 @@ export const useBoardStore = create<BoardState>()((...a) => ({
     ...createGroupLinkSlice(...a),
     ...createItemDependencySlice(...a),
 }));
+
+// {Person} in a formula reads names from the open board's members.
+setFormulaPeopleSource(() => useBoardStore.getState().activeBoardMembers || []);

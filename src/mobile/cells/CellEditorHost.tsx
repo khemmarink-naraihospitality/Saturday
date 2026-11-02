@@ -52,6 +52,9 @@ export const CellEditorHost = () => {
         case 'checkbox':
             // Ticked in place (activateCell); nothing to show.
             return null;
+        case 'formula':
+            // Worked out from the row: nothing to edit.
+            return null;
         default:
             return <TextEditor key={key} {...props} />;
     }

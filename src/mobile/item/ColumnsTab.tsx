@@ -1,11 +1,11 @@
 import { lazy, Suspense, useMemo } from 'react';
 import {
-    AlignLeft, Calendar, CalendarClock, CheckSquare, ChevronDownSquare, CircleDot, GanttChart, Hash, Link2, Paperclip, Star, Type, Users,
+    AlignLeft, Calendar, CalendarClock, CheckSquare, ChevronDownSquare, CircleDot, GanttChart, Hash, Link2, Paperclip, Sigma, Star, Type, Users,
     type LucideIcon,
 } from 'lucide-react';
 import type { Board, Column, ColumnType, Item } from '../../types';
 import { itemColumns, subitemColumns } from '../../lib/columnScope';
-import { CellView, activateCell } from '../cells';
+import { CellView, activateCell, isComputed } from '../cells';
 import type { PersonInfo } from '../ui';
 
 // The desktop dependency chips work as they are; fetched with this tab only.
@@ -25,6 +25,7 @@ const TYPE_ICON: Partial<Record<ColumnType, LucideIcon>> = {
     link: Link2,
     files: Paperclip,
     priority: Star,
+    formula: Sigma,
 };
 
 /**
@@ -65,7 +66,7 @@ export const ColumnsTab = ({ board, item, canEdit, people, groupColor }: {
                                 </span>
                             </>
                         );
-                        return canEdit ? (
+                        return canEdit && !isComputed(column) ? (
                             <button
                                 key={column.id}
                                 type="button"

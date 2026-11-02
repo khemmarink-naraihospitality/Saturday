@@ -11,6 +11,7 @@ import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
 import { priorityLevel } from '../../lib/priority';
 import { StatusPill } from '../../components/common/StatusPill';
+import { FormulaView } from './FormulaView';
 
 export interface CellViewProps {
     column: Column;
@@ -55,13 +56,17 @@ const toRating = (value: unknown): number => {
  * timeline pill… The rules (what counts as empty, which colours, how dates and
  * numbers read) are the desktop cells' — only the sizes are the phone's.
  */
-export const CellView = memo(({ column, value, people, variant, groupColor }: CellViewProps) => {
+export const CellView = memo(({ column, value, item, people, variant, groupColor }: CellViewProps) => {
     const table = variant === 'table';
     // NHG: statuses, labels and priorities as pills with a dot, timelines as a
     // tint with a square colour edge (src/lib/brand.ts)
     const newUi = useNewUi();
 
     switch (column.type) {
+        case 'formula':
+            // Worked out from the row's other columns; nothing stored to draw.
+            return <FormulaView column={column} item={item} variant={variant} />;
+
         case 'status': {
             const options = Array.isArray(column.options) ? column.options : [];
             const option = options.find(o => o.id === value || o.label === value);

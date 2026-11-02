@@ -345,6 +345,7 @@ export const Row = React.memo(({
                             value={item.values[col.id]}
                             groupColor={groupColor} 
                             isSubItem={isSubItem}
+                            item={col.type === 'formula' ? item : undefined}
                         />
                     </div>
                 ))

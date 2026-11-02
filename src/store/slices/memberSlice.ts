@@ -6,6 +6,7 @@ import type { BoardState } from '../useBoardStore';
 import type { Item } from '../../types';
 import { clearBoardUnlock } from '../../lib/boardPinUnlock';
 import { mapDbDependency } from './itemDependencySlice';
+import { formulaFromRow } from '../../lib/formula';
 
 // Helper to map DB item to Store type
 const parseSqlJson = (val: any, fallback: any) => {
@@ -612,8 +613,12 @@ export const createMemberSlice: StateCreator<
                                         order: column.order,
                                         width: column.width,
                                         options,
+                                        numberFormat: column.number_format || undefined,
+                                        currencyCode: column.currency_code || undefined,
+                                        numberAlign: column.number_align || undefined,
                                         scope: column.scope === 'subitem' ? 'subitem' : 'item',
-                                        groupId: column.group_id || undefined
+                                        groupId: column.group_id || undefined,
+                                        formula: formulaFromRow(column.formula)
                                     });
                                 }
                             } else if (payload.eventType === 'UPDATE') {
@@ -624,6 +629,10 @@ export const createMemberSlice: StateCreator<
                                     order: column.order,
                                     width: column.width,
                                     options,
+                                    // A row from an older payload without these keeps what we had.
+                                    ...('number_format' in column ? { numberFormat: column.number_format || undefined, currencyCode: column.currency_code || undefined } : {}),
+                                    ...('number_align' in column ? { numberAlign: column.number_align || undefined } : {}),
+                                    ...('formula' in column ? { formula: formulaFromRow(column.formula) } : {}),
                                     scope: column.scope === 'subitem' ? 'subitem' : 'item',
                                     groupId: column.group_id || undefined
                                 } : c);

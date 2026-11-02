@@ -232,3 +232,23 @@
     font-size: 15.5px;
     min-width: 0;
 }
+
+/* Formula results (FormulaView): a label as a pill inside the cell — some rows
+   of the column show labels and others text, so not the full-bleed block — and
+   an error in the danger colour. */
+.m-app .m-formula-pill {
+    min-width: 0;
+    max-width: calc(100% - 16px);
+    min-height: 30px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.m-app .m-formula-error,
+.m-portal .m-formula-error {
+    gap: 4px;
+    color: hsl(var(--color-danger));
+    font-size: 14px;
+    font-weight: 600;
+}

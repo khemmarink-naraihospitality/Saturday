@@ -1,4 +1,5 @@
 import type { Item, Group } from '../types';
+import { formulaContext, summarizeFormula } from '../lib/formula';
 
 // The item columns' header is one frozen bar drawn once above the whole table
 // (Table.tsx), not a virtual row repeated per group, so there's no 'header' type
@@ -22,7 +23,7 @@ export interface VirtualItemData {
 }
 
 /** Column types whose group summary shows something; the rest have no summary cell. */
-export const SUMMARIZABLE_TYPES = ['number', 'status', 'date', 'due_date', 'timeline', 'priority', 'people', 'files'];
+export const SUMMARIZABLE_TYPES = ['number', 'status', 'date', 'due_date', 'timeline', 'priority', 'people', 'files', 'formula'];
 
 /**
  * Per-column roll-up of a set of rows — what the summary rows under a group and
@@ -32,9 +33,16 @@ export const SUMMARIZABLE_TYPES = ['number', 'status', 'date', 'due_date', 'time
  */
 export const computeAggregates = (columns: any[], rows: Item[]): Record<string, any> => {
     const aggregates: Record<string, any> = {};
+    // One context for every Formula column of this set: today's date, people's names.
+    let ctx: ReturnType<typeof formulaContext> | null = null;
     columns.forEach(col => {
         const vals = rows.map(i => i.values[col.id]);
-        if (col.type === 'number') {
+        if (col.type === 'formula') {
+            // A Formula column stores nothing: its summary is of the rows'
+            // results, which read the set's other columns (`columns`).
+            ctx = ctx || formulaContext();
+            aggregates[col.id] = summarizeFormula(col, rows, columns, ctx);
+        } else if (col.type === 'number') {
             const numValues = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
             aggregates[col.id] = { sum: numValues.reduce((a, b) => a + b, 0), values: numValues, count: numValues.length };
         } else if (col.type === 'date' || col.type === 'due_date') {

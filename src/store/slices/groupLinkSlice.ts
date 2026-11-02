@@ -5,6 +5,7 @@ import type { BoardState } from '../useBoardStore';
 import type { ColumnMapEntry, Item } from '../../types';
 
 import { reword, terms } from '../../lib/terms';
+import { formulaFromRow, remapFormula } from '../../lib/formula';
 export interface GroupLinkSlice {
     linkGroupToOther: (
         sourceBoardId: string,
@@ -69,7 +70,7 @@ export const createGroupLinkSlice: StateCreator<
         // values translate correctly even though the option ids differ.
         const { data: sourceColumns, error: sourceColumnsError } = await supabase
             .from('columns')
-            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope, group_id')
+            .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope, group_id, formula')
             .eq('board_id', sourceBoardId)
             .order('order');
 
@@ -156,6 +157,22 @@ export const createGroupLinkSlice: StateCreator<
                 group_id: newGroupId
             };
         });
+
+        // Cloned Formula columns name their columns by id: point them at this
+        // board's columns (and this board's Status options, matched by label).
+        const sourceById = new Map((sourceColumns || []).map(sc => [sc.id, sc]));
+        const remapCloned = <T extends { id: string }>(row: T): T => {
+            const source = (sourceColumns || []).find(sc => columnMapSourceToCurrent[sc.id]?.targetColumnId === row.id);
+            if (!source || source.type !== 'formula') return row;
+            const formula = remapFormula(
+                formulaFromRow(source.formula),
+                id => columnMapSourceToCurrent[id]?.targetColumnId,
+                (columnId, optionId) => sourceById.has(columnId) ? columnMapSourceToCurrent[columnId]?.optionMap?.[optionId] : undefined
+            );
+            return { ...row, formula: formula ?? null };
+        };
+        newColumnRows.splice(0, newColumnRows.length, ...newColumnRows.map(remapCloned));
+        newSubitemColumnRows.splice(0, newSubitemColumnRows.length, ...newSubitemColumnRows.map(remapCloned));
 
         if (newColumnRows.length > 0) {
             const { error: insertColumnsError } = await supabase.from('columns').insert(newColumnRows);
@@ -308,7 +325,8 @@ export const createGroupLinkSlice: StateCreator<
             currencyCode: c.currency_code,
             numberAlign: c.number_align || undefined,
             scope: c.scope as 'item' | 'subitem',
-            groupId: 'group_id' in c ? c.group_id : undefined
+            groupId: 'group_id' in c ? c.group_id : undefined,
+            formula: 'formula' in c ? formulaFromRow(c.formula) : undefined
         }));
         const newColumnIds = new Set(newColumns.map(c => c.id));
         const allNewItems = [...newTopLevelItems, ...newSubItems];

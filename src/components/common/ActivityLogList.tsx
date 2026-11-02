@@ -64,6 +64,7 @@ const ACTION_LABELS: Record<string, string> = {
     column_created: 'Column Added',
     column_deleted: 'Column Deleted',
     column_renamed: 'Column Renamed',
+    column_formula_changed: 'Formula Changed',
 
     item_created: 'Task Created',
     item_deleted: 'Task Deleted',
@@ -233,6 +234,8 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 return <span>{`Transferred ${t.workspace} ownership`}</span>;
             case 'column_renamed':
                 return <span>Renamed column <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
+            case 'column_formula_changed':
+                return <span>Changed the formula of <strong>{meta.column_title}</strong></span>;
             case 'item_comment_added':
                 return <span>{newUi ? 'Posted a comment on ' : 'Posted an update on '}<strong>{itemTitle}</strong></span>;
             case 'item_mention':

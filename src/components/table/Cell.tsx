@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { Column } from '../../types';
+import type { Column, Item } from '../../types';
 import { StatusCell } from './cells/StatusCell';
 import { TextCell } from './cells/TextCell';
 import { DateCell } from './cells/DateCell';
@@ -10,6 +10,7 @@ import { CheckboxCell } from './cells/CheckboxCell';
 import { DropdownCell } from './cells/DropdownCell';
 import { LinkCell } from './cells/LinkCell';
 import { PriorityCell } from './cells/PriorityCell';
+import { FormulaCell } from './cells/FormulaCell';
 
 export const Cell = memo(({ 
     itemId, 
@@ -17,15 +18,23 @@ export const Cell = memo(({
     column, 
     value, 
     groupColor,
-    isSubItem
+    isSubItem,
+    item
 }: { 
     itemId: string, 
     boardId: string,
     column: Column, 
     value: any,
     groupColor?: string,
-    isSubItem?: boolean
+    isSubItem?: boolean,
+    // The whole row, passed for Formula columns only (they read the row's
+    // other values); other cells stay memoised on their own value.
+    item?: Item
 }) => {
+    if (column.type === 'formula') {
+        return item ? <FormulaCell item={item} column={column} /> : <div className="table-cell" />;
+    }
+
     // Hybrid Rendering Logic: Switch types for Sub-items in certain columns
     if (isSubItem) {
         if (column.title === 'SOR Complete') {

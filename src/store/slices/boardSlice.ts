@@ -12,6 +12,7 @@ import { splitSharedColumns } from '../../lib/columnScope';
 import { adoptAccountPalette } from '../../lib/uiTheme';
 import { offerUndo } from '../useUndoToast';
 import { terms } from '../../lib/terms';
+import { formulaFromRow, remapFormula } from '../../lib/formula';
 
 export interface BoardSlice {
     boards: Board[];
@@ -592,7 +593,7 @@ export const createBoardSlice: StateCreator<
                 { data: dependencies }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
-                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id, formula').eq('board_id', boardId).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, notify_muted_user_ids, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)
@@ -685,7 +686,8 @@ export const createBoardSlice: StateCreator<
                             currencyCode: c.currency_code,
                             numberAlign: c.number_align || undefined,
                             scope: c.scope === 'subitem' ? 'subitem' as const : 'item' as const,
-                            groupId: c.group_id || undefined
+                            groupId: c.group_id || undefined,
+                            formula: formulaFromRow(c.formula)
                         };
                     }),
                     groups: bGroups.map(g => {
@@ -903,6 +905,10 @@ export const createBoardSlice: StateCreator<
                 columnIdMap[c.id] = newId;
                 return { ...c, id: newId, board_id: newBoardId, groupId: c.scope === 'subitem' ? groupIdMap[c.groupId!] : undefined };
             });
+        // A formula names its columns by id; the copy's point at the copy's columns.
+        newColumns.forEach(c => {
+            if (c.formula) c.formula = remapFormula(c.formula, id => columnIdMap[id]);
+        });
 
         // Sub-items point at their parent by id, and every item gets a new one, so
         // the parent link has to be translated too. Copying it as it was left the
@@ -945,8 +951,12 @@ export const createBoardSlice: StateCreator<
                 order: c.order,
                 width: c.width,
                 aggregation: c.aggregation,
+                numberFormat: c.numberFormat,
+                currencyCode: c.currencyCode,
+                numberAlign: c.numberAlign,
                 scope: c.scope,
-                groupId: c.groupId
+                groupId: c.groupId,
+                formula: c.formula
             })),
             groups: newGroups.map(g => ({
                 id: g.id,
@@ -992,8 +1002,12 @@ export const createBoardSlice: StateCreator<
                     order: c.order,
                     width: c.width || 140,
                     options: c.options ? JSON.stringify(c.options) : '{}',
+                    number_format: c.numberFormat ?? null,
+                    currency_code: c.currencyCode ?? null,
+                    number_align: c.numberAlign ?? null,
                     scope: c.scope === 'subitem' ? 'subitem' : 'item',
-                    group_id: c.scope === 'subitem' ? c.groupId : null
+                    group_id: c.scope === 'subitem' ? c.groupId : null,
+                    formula: c.formula ?? null
                 })));
             }
 

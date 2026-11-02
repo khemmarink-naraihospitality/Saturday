@@ -15,6 +15,9 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { NotificationSettingsModal } from '../notifications/NotificationSettingsModal';
 import { useNewUi } from '../../lib/brand';
 import { useTerms } from '../../lib/terms';
+import { FormulaEditor } from '../formula/FormulaEditor';
+import { formulaCell, formulaContext, formulaRows } from '../../lib/formula';
+import { siblingColumns } from '../../lib/columnScope';
 
 // dnd-kit's PointerSensor activates on `pointerdown`, which fires *before* the
 // `mousedown` that the resize handle listens on — so calling stopPropagation
@@ -56,7 +59,8 @@ const SortableHeaderCell = ({
     editValue,
     setEditValue,
     saveTitle,
-    handleKeyDown
+    handleKeyDown,
+    openFormula
 }: any) => {
     const {
         attributes,
@@ -105,6 +109,23 @@ const SortableHeaderCell = ({
                     title={canManage ? "Double click to rename" : "Read only"}
                     style={{ cursor: canManage ? 'text' : 'default', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 >
+                    {col.type === 'formula' && (canManage ? (
+                        <button
+                            type="button"
+                            data-no-dnd="true"
+                            className={`col-fx-badge${col.formula ? '' : ' col-fx-badge--unset'}`}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onDoubleClick={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); openFormula(col.id); }}
+                            title={col.formula ? 'Edit formula' : 'Set the formula'}
+                            aria-label={col.formula ? `Edit the formula of ${col.title}` : `Set the formula of ${col.title}`}
+                        >
+                            {col.formula ? 'ƒx' : 'ƒx ?'}
+                        </button>
+                    ) : (
+                        <span className="col-fx-badge" title="Formula: worked out from this row's other columns">ƒx</span>
+                    ))}
                     {col.title}
                 </span>
             )}
@@ -211,6 +232,9 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
     const [showAddMenu, setShowAddMenu] = React.useState(false);
     const addBtnRef = React.useRef<HTMLButtonElement>(null);
 
+    // The Formula column whose formula is being edited (opens when one is added).
+    const [formulaColId, setFormulaColId] = React.useState<string | null>(null);
+
     const [insertColIndex, setInsertColIndex] = React.useState<number | null>(null);
     const [addMenuPos, setAddMenuPos] = React.useState<{ top: number, bottom: number, left: number } | null>(null);
 
@@ -264,10 +288,13 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
             'files': 'Files',
             'link': 'Link',
             'dropdown': 'Dropdown',
-            'priority': 'Priority'
+            'priority': 'Priority',
+            'formula': 'Formula'
         };
         const newTitle = typeMap[type] || "New Column";
-        addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined, scope, scope === 'subitem' ? groupId : undefined);
+        const added = addColumn(newTitle, type, insertColIndex !== null ? insertColIndex : undefined, scope, scope === 'subitem' ? groupId : undefined);
+        // A new Formula column has nothing to show until it has a formula.
+        if (type === 'formula') added.then(id => { if (id) setFormulaColId(id); });
         setShowAddMenu(false);
         setInsertColIndex(null);
         setAddMenuPos(null);
@@ -402,6 +429,17 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
 
     const filterOptions = useMemo(() => {
         if (!activeFilterColumn) return [];
+        if (activeFilterColumn.type === 'formula' && activeBoard) {
+            // The results as their cells show them; labels keep their colour.
+            const siblings = siblingColumns(activeBoard.columns, activeFilterColumn);
+            const ctx = formulaContext();
+            const seen = new Map<string, { id: string; label: string; color?: string }>();
+            formulaRows(activeBoard, activeFilterColumn).forEach(item => {
+                const d = formulaCell(activeFilterColumn, item, siblings, ctx);
+                if (d.kind !== 'empty' && !seen.has(d.text)) seen.set(d.text, { id: d.text, label: d.text, color: d.kind === 'label' ? d.color : undefined });
+            });
+            return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+        }
         if (activeFilterColumn.type === 'status' || activeFilterColumn.type === 'dropdown') {
             return (activeFilterColumn.options || []).map((opt: any) => ({ ...opt, id: opt.label }));
         }
@@ -414,7 +452,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
             if (val) values.add(String(val));
         });
         return Array.from(values).sort().map(v => ({ id: v, label: v }));
-    }, [activeFilterColumn, items]);
+    }, [activeFilterColumn, items, activeBoard]);
 
     const activeFilterValues = useMemo(() => {
         if (!activeFilterColumn) return [];
@@ -511,6 +549,7 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                             setEditValue={setEditValue}
                             saveTitle={saveTitle}
                             handleKeyDown={handleKeyDown}
+                            openFormula={setFormulaColId}
                         />
                     ))}
                 </SortableContext>
@@ -588,7 +627,15 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                             setShowNotificationSettings(true);
                             setActiveMenuColId(null);
                         }}
+                        onEditFormula={() => {
+                            setFormulaColId(activeMenuColId);
+                            setActiveMenuColId(null);
+                        }}
                     />
+                )}
+
+                {formulaColId && activeBoard && (
+                    <FormulaEditor boardId={activeBoard.id} columnId={formulaColId} onClose={() => setFormulaColId(null)} />
                 )}
 
                 {showNotificationSettings && (

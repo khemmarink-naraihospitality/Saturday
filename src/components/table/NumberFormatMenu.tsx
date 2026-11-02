@@ -25,7 +25,8 @@ export const COLUMN_FORMAT_TITLES: Record<string, string> = {
     text: 'Text Format',
     long_text: 'Text Format',
     date: 'Date Format',
-    due_date: 'Date Format'
+    due_date: 'Date Format',
+    formula: 'Number Format'
 };
 
 export const NumberFormatMenu = ({
@@ -37,7 +38,8 @@ export const NumberFormatMenu = ({
     onSetAlign
 }: NumberFormatMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
-    const isNumber = column.type === 'number';
+    // A Formula column's number results use the same formats.
+    const isNumber = column.type === 'number' || column.type === 'formula';
     const currentFormat = column.numberFormat || 'number';
     const currentAlign = column.numberAlign || defaultColumnAlign(column.type);
 

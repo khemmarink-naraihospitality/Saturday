@@ -1,7 +1,8 @@
 import type { Board, Item } from '../types';
 import { linkDisplayText } from './utils';
 import { groupItems, type VirtualItemData } from '../utils/grouping';
-import { itemColumns, subitemColumns } from './columnScope';
+import { itemColumns, subitemColumns, siblingColumns } from './columnScope';
+import { compareFormulaDisplays, formulaCell, formulaContext, type FormulaDisplay } from './formula';
 
 /**
  * A board's items as its table lists them: the search box, hidden items, the
@@ -25,6 +26,20 @@ export const filterAndSortItems = (
         items = items.filter(item => !item.isHidden);
     }
 
+    // Formula columns store nothing: filters and sorts read each row's result
+    // (as its cell shows it), worked out once per row and column here.
+    const ctx = formulaContext();
+    const formulaResults = new Map<string, Map<string, FormulaDisplay>>();
+    const formulaResult = (columnId: string, item: Item): FormulaDisplay | null => {
+        const col = board.columns.find(c => c.id === columnId);
+        if (!col || col.type !== 'formula') return null;
+        let results = formulaResults.get(columnId);
+        if (!results) formulaResults.set(columnId, results = new Map());
+        let hit = results.get(item.id);
+        if (!hit) results.set(item.id, hit = formulaCell(col, item, siblingColumns(board.columns, col), ctx));
+        return hit;
+    };
+
     // 2. Column Filter and Group Filter
     if (board.filters && board.filters.length > 0) {
         board.filters.forEach(filter => {
@@ -33,6 +48,9 @@ export const filterAndSortItems = (
                     if (filter.columnId === '__group__') {
                         return filter.values.includes(item.groupId);
                     }
+
+                    const formula = formulaResult(filter.columnId, item);
+                    if (formula) return filter.values.includes(formula.text);
 
                     const val = item.values[filter.columnId];
 
@@ -58,7 +76,16 @@ export const filterAndSortItems = (
     if (board.sort) {
         const { columnId, direction } = board.sort;
         const col = board.columns.find(c => c.id === columnId);
-        if (col && direction) {
+        if (col && direction && col.type === 'formula') {
+            items.sort((a, b) => {
+                const ra = formulaResult(columnId, a)!;
+                const rb = formulaResult(columnId, b)!;
+                // Rows with no result stay at the bottom either way.
+                if ((ra.kind === 'empty') !== (rb.kind === 'empty')) return ra.kind === 'empty' ? 1 : -1;
+                const c = compareFormulaDisplays(ra, rb);
+                return direction === 'asc' ? c : -c;
+            });
+        } else if (col && direction) {
             items.sort((a, b) => {
                 let valA = a.values[columnId];
                 let valB = b.values[columnId];

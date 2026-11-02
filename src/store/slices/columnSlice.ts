@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Column, ColumnType, ColumnScope } from '../../types';
+import type { Column, ColumnType, ColumnScope, FormulaConfig } from '../../types';
 import type { BoardState } from '../useBoardStore';
 import { getDefaultStatusOptions } from '../../lib/statusDefaults';
 import { itemColumns, subitemColumns, siblingColumns, replaceSet } from '../../lib/columnScope';
@@ -12,7 +12,8 @@ export interface ColumnSlice {
     // scope: which rows show it — the main header adds 'item' columns, a sub-item
     // header 'subitem' ones for its group (groupId). index is a position within
     // that set (the columns under the same header); omitted, it goes last.
-    addColumn: (title: string, type: ColumnType, index?: number, scope?: ColumnScope, groupId?: string) => Promise<void>;
+    // Resolves to the new column's id (undefined when nothing was added).
+    addColumn: (title: string, type: ColumnType, index?: number, scope?: ColumnScope, groupId?: string) => Promise<string | undefined>;
     deleteColumn: (columnId: string) => Promise<void>;
     updateColumnTitle: (columnId: string, newTitle: string) => Promise<void>;
     updateColumnWidth: (columnId: string, width: number) => void;
@@ -26,6 +27,8 @@ export interface ColumnSlice {
     setColumnAggregation: (columnId: string, type: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'none') => void;
     setColumnNumberFormat: (columnId: string, format: 'number' | 'percent' | 'currency', currencyCode?: string) => Promise<void>;
     setColumnAlignment: (columnId: string, align: 'left' | 'center' | 'right') => Promise<void>;
+    // A Formula column's definition, with the number format its results use.
+    setColumnFormula: (columnId: string, formula: FormulaConfig, format?: { numberFormat?: 'number' | 'percent' | 'currency'; currencyCode?: string }) => Promise<boolean>;
     // Board View Settings
     updateBoardItemColumnTitle: (newTitle: string) => void;
     updateBoardItemColumnWidth: (width: number) => void;
@@ -44,12 +47,12 @@ export const createColumnSlice: StateCreator<
 > = (set, get) => ({
     addColumn: async (title, type, index, scope = 'item', groupId) => {
         const { activeBoardId } = get();
-        if (!activeBoardId) return;
+        if (!activeBoardId) return undefined;
         const board = get().boards.find(b => b.id === activeBoardId);
-        if (!board) return;
+        if (!board) return undefined;
         // A sub-item column always belongs to a group; without one there is
         // nowhere it could be shown.
-        if (scope === 'subitem' && !groupId) return;
+        if (scope === 'subitem' && !groupId) return undefined;
         const newColId = uuidv4();
         const siblings = scope === 'subitem' ? subitemColumns(board.columns, groupId) : itemColumns(board.columns);
         const insertAt = index !== undefined ? Math.max(0, Math.min(index, siblings.length)) : siblings.length;
@@ -86,7 +89,7 @@ export const createColumnSlice: StateCreator<
             set(state => ({
                 boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.filter(c => c.id !== newColId) } : b)
             }));
-            return;
+            return undefined;
         }
 
         await supabase.rpc('reorder_columns', {
@@ -99,6 +102,7 @@ export const createColumnSlice: StateCreator<
             column_title: title,
             column_type: type
         });
+        return newColId;
     },
 
     deleteColumn: async (columnId) => {
@@ -215,8 +219,13 @@ export const createColumnSlice: StateCreator<
             order: sourceIndex + 2,
             width: newCol.width,
             options: newOptions,
+            number_format: newCol.numberFormat ?? null,
+            currency_code: newCol.currencyCode ?? null,
+            number_align: newCol.numberAlign ?? null,
             scope: newCol.scope === 'subitem' ? 'subitem' : 'item',
-            group_id: newCol.scope === 'subitem' ? newCol.groupId : null
+            group_id: newCol.scope === 'subitem' ? newCol.groupId : null,
+            // The copy sits in the same set, so the same column ids still apply.
+            formula: newCol.formula ?? null
         });
 
         await supabase.rpc('reorder_columns', {
@@ -259,6 +268,41 @@ export const createColumnSlice: StateCreator<
             } : b)
         }));
         await supabase.from('columns').update({ number_align: align }).eq('id', columnId);
+    },
+
+    setColumnFormula: async (columnId, formula, format) => {
+        const { activeBoardId } = get();
+        if (!activeBoardId) return false;
+        const board = get().boards.find(b => b.id === activeBoardId);
+        const before = board?.columns.find(c => c.id === columnId);
+        if (!before) return false;
+        const numberFormat = format?.numberFormat ?? before.numberFormat;
+        const currencyCode = numberFormat === 'currency' ? (format?.currencyCode ?? before.currencyCode) : undefined;
+        const apply = (c: Column): Column => c.id === columnId ? { ...c, formula, numberFormat, currencyCode } : c;
+
+        // Marked as ours so the realtime echo of this write can't land on top
+        // of a second save made right after it.
+        set(state => ({
+            boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.map(apply) } : b),
+            lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [columnId]: Date.now() }
+        }));
+        const { error } = await supabase.from('columns').update({
+            formula,
+            number_format: numberFormat ?? null,
+            currency_code: currencyCode ?? null
+        }).eq('id', columnId);
+        if (error) {
+            console.error('[setColumnFormula] Failed to save the formula:', error);
+            set(state => ({
+                boards: state.boards.map(b => b.id === activeBoardId ? { ...b, columns: b.columns.map(c => c.id === columnId ? before : c) } : b)
+            }));
+            return false;
+        }
+        get().logActivity('column_formula_changed', 'board', activeBoardId, {
+            board_id: activeBoardId,
+            column_title: before.title
+        });
+        return true;
     },
 
     addColumnOption: async (columnId, label, color) => {

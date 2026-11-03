@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../../store/useThemeStore';
-import { useNewUi } from '../../lib/brand';
 import { PopupPanel } from './PopupPanel';
 
 // The support cat: the original is purple (hosted by the guideline site); under
@@ -17,7 +16,6 @@ export const ContactSupportButton = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const palette = useThemeStore(state => state.palette);
-    const newUi = useNewUi();
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
@@ -34,26 +32,23 @@ export const ContactSupportButton = () => {
     };
 
     const handleClick = () => {
-        if (newUi) setShowForm(true);
-        else window.open(SUPPORT_FORM, '_blank');
+        setShowForm(true);
     };
 
     return (
         <>
-        {newUi && (
-            <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact support" width={760}>
-                <div className="nhg-support">
+        <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact support" width={760}>
+                <div className="app-support">
                     <iframe
-                        className="nhg-support__form"
+                        className="app-support__form"
                         title="Support request form"
                         src={SUPPORT_FORM.replace('usp=header', 'embedded=true')}
                     />
-                    <a className="nhg-support__open" href={SUPPORT_FORM} target="_blank" rel="noopener noreferrer">
+                    <a className="app-support__open" href={SUPPORT_FORM} target="_blank" rel="noopener noreferrer">
                         Form not loading? Open it in a new tab <ExternalLink size={14} aria-hidden="true" />
                     </a>
                 </div>
-            </PopupPanel>
-        )}
+        </PopupPanel>
         <AnimatePresence>
             {isVisible && (
                 <motion.div

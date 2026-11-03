@@ -424,7 +424,7 @@ html[data-palette='narai'] .home-more:hover {
 }
 
 /* ── Popup: a centred glass sheet (PopupPanel) ─────────────────────────── */
-html[data-palette='narai'] .nhg-popup-veil {
+html[data-palette='narai'] .app-popup-veil {
     position: fixed;
     inset: 0;
     z-index: 10000;
@@ -435,15 +435,15 @@ html[data-palette='narai'] .nhg-popup-veil {
     background: var(--nhg-scrim);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
-    animation: nhg-popup-fade 0.18s ease-out;
+    animation: app-popup-fade 0.18s ease-out;
 }
 
-html[data-palette='narai'] .nhg-popup-veil.is-closing {
+html[data-palette='narai'] .app-popup-veil.is-closing {
     opacity: 0;
     transition: opacity 0.18s ease-in;
 }
 
-html[data-palette='narai'] .nhg-popup {
+html[data-palette='narai'] .app-popup {
     width: 100%;
     max-height: min(86vh, 820px);
     display: flex;
@@ -458,14 +458,14 @@ html[data-palette='narai'] .nhg-popup {
     backdrop-filter: blur(24px) saturate(150%);
     outline: none;
     overflow: hidden;
-    animation: nhg-popup-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation: app-popup-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-html[data-palette='narai'].dark .nhg-popup {
+html[data-palette='narai'].dark .app-popup {
     box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 239, 210, 0.08);
 }
 
-html[data-palette='narai'] .nhg-popup__head {
+html[data-palette='narai'] .app-popup__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -473,14 +473,14 @@ html[data-palette='narai'] .nhg-popup__head {
     padding: 22px 28px 14px;
 }
 
-html[data-palette='narai'] .nhg-popup__titles {
+html[data-palette='narai'] .app-popup__titles {
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-html[data-palette='narai'] .nhg-popup__eyebrow {
+html[data-palette='narai'] .app-popup__eyebrow {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.14em;
@@ -491,7 +491,7 @@ html[data-palette='narai'] .nhg-popup__eyebrow {
     white-space: nowrap;
 }
 
-html[data-palette='narai'] .nhg-popup__title {
+html[data-palette='narai'] .app-popup__title {
     margin: 0;
     font-family: var(--font-display);
     font-size: 28px;
@@ -501,7 +501,7 @@ html[data-palette='narai'] .nhg-popup__title {
     color: hsl(var(--color-text-primary));
 }
 
-html[data-palette='narai'] .nhg-popup__close {
+html[data-palette='narai'] .app-popup__close {
     width: 40px;
     height: 40px;
     flex-shrink: 0;
@@ -516,12 +516,12 @@ html[data-palette='narai'] .nhg-popup__close {
     transition: background-color 0.15s, color 0.15s;
 }
 
-html[data-palette='narai'] .nhg-popup__close:hover {
+html[data-palette='narai'] .app-popup__close:hover {
     background: var(--glass-chip-hover);
     color: hsl(var(--color-text-primary));
 }
 
-html[data-palette='narai'] .nhg-popup__body {
+html[data-palette='narai'] .app-popup__body {
     flex: 1;
     min-height: 0;
     height: min(64vh, 640px);
@@ -531,29 +531,29 @@ html[data-palette='narai'] .nhg-popup__body {
     border-top: 1px solid var(--paper-row-line);
 }
 
-@keyframes nhg-popup-fade { from { opacity: 0; } }
-@keyframes nhg-popup-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
+@keyframes app-popup-fade { from { opacity: 0; } }
+@keyframes app-popup-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
 
 @media (prefers-reduced-motion: reduce) {
-    html[data-palette='narai'] .nhg-popup-veil,
-    html[data-palette='narai'] .nhg-popup { animation: none; }
-    html[data-palette='narai'] .nhg-popup-veil.is-closing { transition: none; }
+    html[data-palette='narai'] .app-popup-veil,
+    html[data-palette='narai'] .app-popup { animation: none; }
+    html[data-palette='narai'] .app-popup-veil.is-closing { transition: none; }
 }
 
 /* The activity list inside paints its own white and grey: on the popup it
    sits on the sheet instead */
-html[data-palette='narai'] .nhg-popup__body :is([style*="background-color: white"], [style*="background-color: rgb(247, 249, 250)"]) {
+html[data-palette='narai'] .app-popup__body :is([style*="background-color: white"], [style*="background-color: rgb(247, 249, 250)"]) {
     background-color: transparent !important;
 }
 
 /* A popup whose content brings its own header and close button (an item's
    comments, the notifications page): the sheet is just its frame */
-html[data-palette='narai'] .nhg-popup--bare {
+html[data-palette='narai'] .app-popup--bare {
     height: min(88vh, 860px);
     max-height: none;
 }
 
-html[data-palette='narai'] .nhg-popup--bare .nhg-popup__body {
+html[data-palette='narai'] .app-popup--bare .app-popup__body {
     height: auto;
     padding: 0;
     border-top: none;
@@ -561,12 +561,12 @@ html[data-palette='narai'] .nhg-popup--bare .nhg-popup__body {
 }
 
 /* What it holds paints its own surface: it sits on the sheet instead */
-html[data-palette='narai'] .nhg-popup--bare .nhg-popup__body :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"]):not(button, input, textarea, [contenteditable], [style*="box-shadow"], [style*="border-radius"]) {
+html[data-palette='narai'] .app-popup--bare .app-popup__body :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"]):not(button, input, textarea, [contenteditable], [style*="box-shadow"], [style*="border-radius"]) {
     background-color: transparent !important;
 }
 
 /* Contact support: the form in the popup */
-html[data-palette='narai'] .nhg-support {
+html[data-palette='narai'] .app-support {
     flex: 1;
     min-height: 0;
     display: flex;
@@ -575,7 +575,7 @@ html[data-palette='narai'] .nhg-support {
     padding-top: 12px;
 }
 
-html[data-palette='narai'] .nhg-support__form {
+html[data-palette='narai'] .app-support__form {
     flex: 1;
     min-height: 0;
     width: 100%;
@@ -584,7 +584,7 @@ html[data-palette='narai'] .nhg-support__form {
     background: #fff;
 }
 
-html[data-palette='narai'] .nhg-support__open {
+html[data-palette='narai'] .app-support__open {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
@@ -595,7 +595,7 @@ html[data-palette='narai'] .nhg-support__open {
     text-underline-offset: 3px;
 }
 
-html[data-palette='narai'] .nhg-support__open:hover {
+html[data-palette='narai'] .app-support__open:hover {
     color: hsl(var(--color-text-primary));
     text-decoration: underline;
 }
@@ -621,7 +621,7 @@ html[data-palette='narai'] .rte .rte-actions [title='Insert GIF or Sticker'] {
 
 /* The popup is wider than the side panel was, so its columns are too; with the
    attach row now in the toolbar, Save keeps to the right of the text box */
-html[data-palette='narai'] .nhg-popup--bare .item-tab-column {
+html[data-palette='narai'] .app-popup--bare .item-tab-column {
     max-width: 860px !important;
 }
 
@@ -636,7 +636,7 @@ html[data-palette='narai'] .rte-toolbar {
 
 /* The sheet takes focus when it opens (so Escape and the keyboard work); that
    focus isn't drawn as a ring round the whole sheet */
-html[data-palette='narai'] .nhg-popup:focus,
-html[data-palette='narai'] .nhg-popup:focus-visible {
+html[data-palette='narai'] .app-popup:focus,
+html[data-palette='narai'] .app-popup:focus-visible {
     outline: none !important;
 }

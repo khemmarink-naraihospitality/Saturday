@@ -1,0 +1,159 @@
+/*
+ * The popup (PopupPanel): a centred sheet over a veil, used for Space Activity,
+ * an item's comments, Notifications and Contact support. This is the base, in
+ * the colour tokens every palette defines; NHG's glass version of it is at the
+ * end of nhg_glass.css (scoped under html[data-palette='narai'], so it wins).
+ */
+
+.app-popup-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--nhg-scrim, rgba(17, 12, 38, 0.45));
+    animation: app-popup-fade 0.18s ease-out;
+}
+
+.app-popup-veil.is-closing {
+    opacity: 0;
+    transition: opacity 0.18s ease-in;
+}
+
+.app-popup {
+    width: 100%;
+    max-height: min(86vh, 820px);
+    display: flex;
+    flex-direction: column;
+    background: hsl(var(--color-bg-surface));
+    border: 1px solid hsl(var(--color-border));
+    border-radius: 16px;
+    box-shadow: 0 30px 80px -20px rgba(30, 20, 80, 0.45), 0 2px 8px rgba(30, 20, 80, 0.1);
+    outline: none;
+    overflow: hidden;
+    color: hsl(var(--color-text-primary));
+    animation: app-popup-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-popup--bare {
+    height: min(88vh, 860px);
+    max-height: none;
+}
+
+.app-popup__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px 14px;
+}
+
+.app-popup__titles {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.app-popup__eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-popup__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: hsl(var(--color-text-primary));
+}
+
+.app-popup__close {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--color-text-secondary));
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.app-popup__close:hover {
+    background: hsl(var(--color-bg-surface-hover));
+    color: hsl(var(--color-text-primary));
+}
+
+.app-popup__body {
+    flex: 1;
+    min-height: 0;
+    height: min(64vh, 640px);
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px 22px;
+    border-top: 1px solid hsl(var(--color-border));
+}
+
+.app-popup--bare .app-popup__body {
+    height: auto;
+    padding: 0;
+    border-top: none;
+    overflow: hidden;
+}
+
+/* The popup is wider than the side panel was, so its columns are too */
+.app-popup--bare .item-tab-column {
+    max-width: 860px !important;
+}
+
+.app-support {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+}
+
+.app-support__form {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border: 1px solid hsl(var(--color-border));
+    border-radius: 10px;
+    background: #fff;
+}
+
+.app-support__open {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+    text-underline-offset: 3px;
+}
+
+.app-support__open:hover {
+    color: hsl(var(--color-text-primary));
+    text-decoration: underline;
+}
+
+@keyframes app-popup-fade { from { opacity: 0; } }
+@keyframes app-popup-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .app-popup-veil, .app-popup { animation: none; }
+    .app-popup-veil.is-closing { transition: none; }
+}

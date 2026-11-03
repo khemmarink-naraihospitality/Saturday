@@ -603,3 +603,11 @@ html[data-palette='narai'] .kanban-card {
 html[data-palette='narai'] .kanban-column-header {
     font-family: var(--font-display);
 }
+
+/* The Share chip carries an inline action colour, which the brand rules for
+   "anything filled with the brand colour" would paint with green ink (dark
+   mode) — it is a glass chip, so its ink is the page's text colour */
+html[data-palette='narai'] button.bh-share.glass-chip,
+html[data-palette='narai'].dark button.bh-share.glass-chip {
+    color: hsl(var(--color-text-primary)) !important;
+}

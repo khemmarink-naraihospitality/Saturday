@@ -1,9 +1,8 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { useThemeStore } from '../store/useThemeStore';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { savePendingDeepLink } from '../lib/pendingDeepLink';
 import { takeMicrosoftEntry } from '../lib/initialPath';
-import { NHG_LOGO } from '../lib/brand';
+import { AuthCard, AuthField } from '../components/auth/AuthCard';
 
 // A sign-in the provider or Supabase turned down comes back to the page with
 // error_description in the query or the hash. Read it once, and tidy the URL.
@@ -19,22 +18,6 @@ const readReturnedAuthError = (): string | null => {
 };
 
 export const LoginPage = () => {
-    // The sign-in page is always NHG's look (Narai Green and Galangal, drawn
-    // with its own colours below). A person's own palette is theirs once they
-    // are signed in; on this page, where nobody has been identified yet, the
-    // palette left in the browser by the last person is set aside before paint
-    // and put back when the page goes away.
-    useLayoutEffect(() => {
-        const root = document.documentElement;
-        const had = root.getAttribute('data-palette');
-        root.removeAttribute('data-palette');
-        return () => {
-            const palette = useThemeStore.getState().palette;
-            if (palette === 'saturday') root.removeAttribute('data-palette');
-            else root.setAttribute('data-palette', had || palette);
-        };
-    }, []);
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -155,363 +138,123 @@ export const LoginPage = () => {
     };
 
     return (
-        <div style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            overflow: 'hidden',
-            // Plain fallback while the video loads (or if it never can — an
-            // ad blocker, a flaky connection) so the page is never blank.
-            backgroundColor: '#152A00',
-            fontFamily: '"IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif'
-        }}>
-            <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    zIndex: 0
-                }}
-            >
-                <source src="https://naraihospitalitygroup.com/wp-content/uploads/2024/10/narai-video-banner-compressed.webm" type="video/webm" />
-                <source src="https://naraihospitalitygroup.com/wp-content/uploads/2024/11/Narai_Header-2.mp4" type="video/mp4" />
-            </video>
+        <AuthCard title="NHG WorkSpace" subtitle="Login to your WorkSpace">
+            {error && <div className="auth-message" role="alert">{error}</div>}
 
-            {/* Darkens the video so the white card keeps the same contrast it had
-                against the old plain gradient, regardless of how bright any given
-                frame of the footage is. */}
-            <div style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: 'rgba(21, 42, 0, 0.64)',
-                zIndex: 1
-            }} />
+            <button type="button" className="auth-btn auth-btn--secondary" onClick={handleGoogleLogin}>
+                <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                </svg>
+                Continue with Google
+            </button>
 
-            <div style={{
-                position: 'relative',
-                zIndex: 2,
-                backgroundColor: '#ffffff',
-                padding: '48px 40px',
-                borderRadius: '16px',
-                border: '1px solid rgba(255, 239, 210, 0.22)',
-                boxShadow: '0 6px 24px rgba(0, 0, 0, 0.32)',
-                width: '100%',
-                maxWidth: '420px',
-                textAlign: 'center'
-            }}>
-                {/* Logo Section */}
-                <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    {/* The Narai "N" in Galangal on a Narai Green tile, as in NHG's sidebar */}
-                    <div style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '28%',
-                        overflow: 'hidden',
-                        marginBottom: '20px',
-                        backgroundColor: '#152A00',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <img
-                            src={NHG_LOGO}
-                            alt="NHG Logo"
-                            style={{ width: '58%', height: '58%', objectFit: 'contain' }}
-                        />
-                    </div>
-                    <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 400, color: '#152A00', letterSpacing: '-0.01em' }}>
-                        <strong style={{ fontWeight: 700 }}>NHG</strong> WorkSpace
-                    </h1>
-                    <p style={{ marginTop: '8px', fontSize: '14px', color: '#6b7068' }}>
-                        Login to your WorkSpace
-                    </p>
-                </div>
-
-                {error && (
-                    <div style={{
-                        backgroundColor: '#ffe6e1',
-                        color: '#c70036',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        marginBottom: '20px',
-                        fontSize: '13px',
-                        border: '1px solid rgba(199, 0, 54, 0.2)'
-                    }}>
-                        {error}
-                    </div>
-                )}
-
-                {/* Google Login (Now First) */}
-                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
-                    <button
-                        onClick={handleGoogleLogin}
-                        type="button"
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            backgroundColor: '#ffffff',
-                            color: '#152A00',
-                            border: '1px solid rgba(21, 42, 0, 0.28)',
-                            borderRadius: '8px',
-                            fontSize: '15px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '12px',
-                            transition: 'background-color 0.2s',
-                            boxShadow: 'none'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f1'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 48 48">
-                            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-                        </svg>
-                        Continue with Google
-                    </button>
-                </div>
-
-                <div style={{ position: 'relative', marginBottom: '24px' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid rgba(21, 42, 0, 0.14)' }}></div>
-                    <span 
-                        onClick={() => setShowEmailLogin(!showEmailLogin)}
-                        style={{ 
-                            position: 'relative', 
- backgroundColor: '#ffffff', 
-                            padding: '0 12px', 
-                            color: '#152A00', 
-                            fontSize: '13px', 
-                            fontWeight: 500, 
-                            cursor: 'pointer',
-                            userSelect: 'none'
-                        }}
-                    >
-                        {showEmailLogin ? 'Hide email option' : 'Or sign with other option'}
-                    </span>
-                </div>
-
-                {showEmailLogin && !showForgotPassword && (
-                    <>
-                        {/* Microsoft (Entra ID): under the email option for now, until it is rolled out */}
-                        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                            <button
-                                onClick={handleMicrosoftLogin}
-                                type="button"
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    backgroundColor: '#ffffff',
-                                    color: '#152A00',
-                                    border: '1px solid rgba(21, 42, 0, 0.28)',
-                                    borderRadius: '8px',
-                                    fontSize: '15px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '12px',
-                                    transition: 'background-color 0.2s',
-                                    boxShadow: 'none'
-                                }}
-                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f1'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
-                                    <path fill="#f35325" d="M1 1h10v10H1z" />
-                                    <path fill="#81bc06" d="M12 1h10v10H12z" />
-                                    <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                                    <path fill="#ffba08" d="M12 12h10v10H12z" />
-                                </svg>
-                                Continue with Microsoft
-                            </button>
-                        </div>
-                        <form onSubmit={handleEmailLogin} style={{ textAlign: 'left' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Your Alias Email</label>
-                                <input
-                                    type="email"
-                                    placeholder="name@company.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid rgba(21, 42, 0, 0.28)',
-                                        fontSize: '15px',
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s',
-                                        backgroundColor: '#ffffff'
-                                    }}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Password</label>
-                                <input
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid rgba(21, 42, 0, 0.28)',
-                                        fontSize: '15px',
-                                        outline: 'none',
-                                        backgroundColor: '#ffffff'
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{ textAlign: 'right', marginBottom: '20px' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForgotEmail(email);
-                                        setForgotResult(null);
-                                        setShowForgotPassword(true);
-                                    }}
-                                    style={{ background: 'none', border: 'none', color: '#152A00', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: 0 }}
-                                >
-                                    Forgot your password?
-                                </button>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        backgroundColor: '#152A00',
-                                        color: '#FFEFD2',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '15px',
-                                        fontWeight: 500,
-                                        cursor: loading ? 'not-allowed' : 'pointer',
-                                        transition: 'all 0.2s',
-                                        boxShadow: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                >
-                                    {loading ? 'Processing...' : 'Log In'}
-                                </button>
-                            </div>
-                        </form>
-
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={() => window.open('https://rebrand.ly/nhgcts', '_blank')}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#152A00',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: 500
-                                }}
-                            >
-                                Need an account? Sign Up
-                            </button>
-                        </div>
-                    </>
-                )}
-
-                {showEmailLogin && showForgotPassword && (
-                    <>
-                        <p style={{ fontSize: '13px', color: '#656d47', marginBottom: '20px', textAlign: 'left' }}>
-                            Enter your alias email and we'll send a password reset link. This only works for Internal accounts — Google accounts should sign in with "Continue with Google".
-                        </p>
-                        <form onSubmit={handleForgotPassword} style={{ textAlign: 'left' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#152A00' }}>Your Alias Email</label>
-                                <input
-                                    type="email"
-                                    placeholder="name@company.com"
-                                    value={forgotEmail}
-                                    onChange={(e) => setForgotEmail(e.target.value)}
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 14px',
-                                        borderRadius: '8px',
-                                        border: '1px solid rgba(21, 42, 0, 0.28)',
-                                        fontSize: '15px',
-                                        outline: 'none',
-                                        backgroundColor: '#ffffff'
-                                    }}
-                                />
-                            </div>
-
-                            {forgotResult && (
-                                <div style={{
-                                    backgroundColor: forgotResult.type === 'success' ? '#e9f4e5' : '#ffe6e1',
-                                    color: forgotResult.type === 'success' ? '#007a56' : '#c70036',
-                                    padding: '12px',
-                                    borderRadius: '8px',
-                                    marginBottom: '20px',
-                                    fontSize: '13px',
-                                    border: `1px solid ${forgotResult.type === 'success' ? 'rgba(0, 122, 86, 0.25)' : 'rgba(199, 0, 54, 0.2)'}`
-                                }}>
-                                    {forgotResult.text}
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                                <button
-                                    type="submit"
-                                    disabled={forgotLoading}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        backgroundColor: '#152A00',
-                                        color: '#FFEFD2',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '15px',
-                                        fontWeight: 500,
-                                        cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                                        transition: 'all 0.2s',
-                                        boxShadow: 'none'
-                                    }}
-                                >
-                                    {forgotLoading ? 'Sending...' : 'Send Reset Link'}
-                                </button>
-                            </div>
-                        </form>
-
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={() => setShowForgotPassword(false)}
-                                style={{ background: 'none', border: 'none', color: '#152A00', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
-                            >
-                                Back to login
-                            </button>
-                        </div>
-                    </>
-                )}
+            <div className="auth-divider">
+                <button
+                    type="button"
+                    className="auth-link"
+                    onClick={() => setShowEmailLogin(!showEmailLogin)}
+                    aria-expanded={showEmailLogin}
+                >
+                    {showEmailLogin ? 'Hide email option' : 'Or sign with other option'}
+                </button>
             </div>
-        </div>
+
+            {showEmailLogin && !showForgotPassword && (
+                <>
+                    {/* Microsoft (Entra ID): under the email option for now, until it is rolled out */}
+                    <button type="button" className="auth-btn auth-btn--secondary" onClick={handleMicrosoftLogin}>
+                        <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
+                            <path fill="#f35325" d="M1 1h10v10H1z" />
+                            <path fill="#81bc06" d="M12 1h10v10H12z" />
+                            <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                            <path fill="#ffba08" d="M12 12h10v10H12z" />
+                        </svg>
+                        Continue with Microsoft
+                    </button>
+
+                    <form className="auth-form" onSubmit={handleEmailLogin}>
+                        <AuthField
+                            id="login-email"
+                            label="Your Alias Email"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="name@company.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <AuthField
+                            id="login-password"
+                            label="Password"
+                            type="password"
+                            autoComplete="current-password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <div className="auth-row auth-row--end">
+                            <button
+                                type="button"
+                                className="auth-link"
+                                onClick={() => {
+                                    setForgotEmail(email);
+                                    setForgotResult(null);
+                                    setShowForgotPassword(true);
+                                }}
+                            >
+                                Forgot your password?
+                            </button>
+                        </div>
+                        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+                            {loading ? 'Processing...' : 'Log In'}
+                        </button>
+                    </form>
+
+                    <div className="auth-row">
+                        <button type="button" className="auth-link" onClick={() => window.open('https://rebrand.ly/nhgcts', '_blank')}>
+                            Need an account? Sign Up
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {showEmailLogin && showForgotPassword && (
+                <>
+                    <p className="auth-note">
+                        Enter your alias email and we'll send a password reset link. This only works for Internal accounts — Google accounts should sign in with "Continue with Google".
+                    </p>
+                    <form className="auth-form" onSubmit={handleForgotPassword}>
+                        <AuthField
+                            id="forgot-email"
+                            label="Your Alias Email"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="name@company.com"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            required
+                        />
+                        {forgotResult && (
+                            <div className={`auth-message${forgotResult.type === 'success' ? ' auth-message--ok' : ''}`} role={forgotResult.type === 'success' ? 'status' : 'alert'}>
+                                {forgotResult.text}
+                            </div>
+                        )}
+                        <button type="submit" className="auth-btn auth-btn--primary" disabled={forgotLoading}>
+                            {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                        </button>
+                    </form>
+
+                    <div className="auth-row">
+                        <button type="button" className="auth-link" onClick={() => setShowForgotPassword(false)}>
+                            Back to login
+                        </button>
+                    </div>
+                </>
+            )}
+        </AuthCard>
     );
 };

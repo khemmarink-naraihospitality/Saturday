@@ -1,0 +1,296 @@
+/*
+ * The sign-in card (AuthCard): frosted glass over the company's banner
+ * footage. Fixed colours rather than palette tokens — it is shown before
+ * anyone is identified, so it is always the brand's own look.
+ *   #152A00 Narai Green (primary, text) · #FFEFD2 Galangal (text on green)
+ *   #FFFAF0 at 74% the glass · #6b7068 muted text · #c70036 on #ffe6e1 errors
+ */
+
+.auth-page {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow-x: hidden;
+    background-color: #FFEFD2;
+    font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', system-ui, -apple-system, sans-serif;
+    color: #152A00;
+}
+
+.auth-page__video {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #FFEFD2;
+    pointer-events: none;
+}
+
+/* ── The card ───────────────────────────────────────────────────────── */
+
+.auth-card {
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 420px;
+    padding: 48px 40px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background-color: rgba(255, 250, 240, 0.74);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+    backdrop-filter: blur(28px) saturate(1.6);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 0 0 1px rgba(21, 42, 0, 0.06),
+        0 30px 70px -24px rgba(21, 42, 0, 0.55);
+}
+
+/* No frosted glass to be had: a solid sheet instead */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .auth-card { background-color: #FFFAF0; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .auth-card {
+        background-color: #FFFAF0;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+.auth-card__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.auth-card__logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+    border-radius: 28%;
+    background-color: #152A00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.auth-card__logo img {
+    width: 58%;
+    height: 58%;
+    object-fit: contain;
+}
+
+.auth-card__title {
+    margin: 0;
+    font-family: inherit;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #152A00;
+    white-space: nowrap;
+}
+
+.auth-card__title strong {
+    font-weight: 700;
+}
+
+.auth-card__subtitle {
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #6b7068;
+}
+
+.auth-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────── */
+
+.auth-field__label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #152A00;
+}
+
+.auth-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid rgba(21, 42, 0, 0.22);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #152A00;
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.4;
+    outline: none;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-input::placeholder {
+    color: rgba(21, 42, 0, 0.35);
+}
+
+.auth-input:focus,
+.auth-input:focus-visible {
+    background-color: #ffffff;
+    border-color: #152A00;
+    box-shadow: 0 0 0 2px rgba(21, 42, 0, 0.15);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+
+.auth-btn {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #FFFAF0, 0 0 0 4px #152A00;
+}
+
+.auth-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.auth-btn svg {
+    flex-shrink: 0;
+}
+
+.auth-btn--primary {
+    border: 1px solid #152A00;
+    background-color: #152A00;
+    color: #FFEFD2;
+    font-weight: 500;
+}
+
+.auth-btn--primary:hover:not(:disabled) {
+    background-color: #1f3a08;
+    border-color: #1f3a08;
+}
+
+.auth-btn--secondary {
+    border: 1px solid rgba(21, 42, 0, 0.22);
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #152A00;
+    font-weight: 600;
+}
+
+.auth-btn--secondary:hover:not(:disabled) {
+    background-color: #ffffff;
+}
+
+.auth-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #152A00;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-underline-offset: 3px;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+.auth-link:focus-visible {
+    outline: 2px solid #152A00;
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+/* A line either side of a text link: "— Or sign in another way —" */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: rgba(21, 42, 0, 0.16);
+}
+
+.auth-row {
+    display: flex;
+    justify-content: center;
+}
+
+.auth-row--end {
+    justify-content: flex-end;
+    margin-top: -8px;
+}
+
+/* ── Messages ───────────────────────────────────────────────────────── */
+
+.auth-message {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    border: 1px solid rgba(199, 0, 54, 0.2);
+    background-color: #ffe6e1;
+    color: #c70036;
+}
+
+.auth-message--ok {
+    border-color: rgba(0, 122, 86, 0.25);
+    background-color: #e9f4e5;
+    color: #007a56;
+}
+
+.auth-note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b7068;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-input,
+    .auth-btn { transition: none; }
+}

@@ -2,7 +2,7 @@
  * Formula columns: the cell and summary in the table, the ƒx mark in the
  * column header, and the formula editor (src/components/formula). Colours come
  * from the palette tokens, so Saturday, NHG, light and dark all follow; NHG's
- * own shape (sharp corners, tracked capitals, its button inks) is at the end.
+ * own shape (its fonts, tracked capitals, its button inks) is at the end.
  */
 
 /* ── In the table ─────────────────────────────────────────────────────── */
@@ -1646,7 +1646,7 @@ button.fx-join--or {
 }
 
 /* ── NHG ─────────────────────────────────────────────────────────────── */
-/* The brand's sheet: #fffaf0 with hairlines, corners of 2px, shadow 2, its
+/* The brand's sheet: warm white with hairlines and a soft shadow, its
    ink at 66% / 50%, tracked capitals for labels and the primary action. */
 
 :root[data-palette='narai'] .fx-dialog {
@@ -1656,10 +1656,6 @@ button.fx-join--or {
     --fx-brand-soft: hsl(var(--color-brand-primary) / 0.07);
     --fx-brand-ring: hsl(var(--color-brand-primary) / 0.18);
     --fx-on-brand: var(--nhg-on-ink, #FFEFD2);
-    --fx-r-lg: 2px;
-    --fx-r: 2px;
-    --fx-r-sm: 2px;
-    --fx-r-xs: 2px;
     --fx-shadow: 0 24px 60px -24px rgba(21, 42, 0, 0.4), 0 2px 6px rgba(21, 42, 0, 0.06);
     --fx-pop-shadow: 0 6px 24px rgba(21, 42, 0, 0.12);
     --fx-c-fn: #8a4b00;
@@ -1687,7 +1683,6 @@ button.fx-join--or {
 }
 
 :root[data-palette='narai'] .fx-head__tile {
-    border-radius: 2px;
     background: hsl(var(--color-brand-primary));
     color: var(--nhg-on-ink, #FFEFD2);
     box-shadow: none;
@@ -1704,12 +1699,9 @@ button.fx-join--or {
     letter-spacing: 0;
 }
 
-:root[data-palette='narai'] :is(.fx-mode__icon, .fx-ref__icon, .fx-cond__icon, .fx-kind, .fx-seg__btn, .fx-chip, .fx-rule__tag, .fx-join, .fx-result--label, .fx-quick__chip, .fx-preview__today, .fx-tok--ref, .fx-color-btn__dot, .fx-palette__swatch, .fx-chip button) {
-    border-radius: 2px;
-}
+
 
 :root[data-palette='narai'] .fx-popover {
-    border-radius: 2px;
     background: hsl(var(--color-bg-surface));
     box-shadow: 0 6px 24px rgba(21, 42, 0, 0.12);
 }
@@ -1738,6 +1730,3 @@ button.fx-join--or {
     transform: none;
 }
 
-:root[data-palette='narai'] .col-fx-badge {
-    border-radius: 2px;
-}

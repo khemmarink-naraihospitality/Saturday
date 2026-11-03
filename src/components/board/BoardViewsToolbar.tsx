@@ -74,7 +74,7 @@ export const BoardViewsToolbar = () => {
 
     // The primary action: New Item, with a menu for a new or linked group.
     const primaryAction = (
-        <div style={{ display: 'flex', height: '32px', position: 'relative' }}>
+        <div className="board-primary-action" style={{ display: 'flex', height: '32px', position: 'relative' }}>
             <button
                 onClick={handleAddItem}
                 style={{

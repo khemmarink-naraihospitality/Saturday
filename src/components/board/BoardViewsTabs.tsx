@@ -1,6 +1,11 @@
 import { useBoardStore } from '../../store/useBoardStore';
 import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 import { useTerms } from '../../lib/terms';
+import { useNewUi } from '../../lib/brand';
+import { Calendar, Columns3, GanttChart, Sparkles, Table2, type LucideIcon } from 'lucide-react';
+
+// NHG draws each view as a pill with its symbol
+const VIEW_ICON: Record<string, LucideIcon> = { main_table: Table2, timeline: GanttChart, kanban: Columns3, calendar: Calendar, ai_summary: Sparkles };
 
 const BASE_VIEWS = [
     { id: 'main_table', label: 'Main table' },
@@ -18,6 +23,7 @@ export const BoardViewsTabs = () => {
     // Offered only when switched on in Admin › AI Settings (the backend needs its key).
     const aiEnabled = useAiSummaryEnabled();
     const t = useTerms();
+    const newUi = useNewUi();
 
     const views = aiEnabled ? [...BASE_VIEWS, AI_SUMMARY_VIEW] : BASE_VIEWS;
     const activeViewId = shownViewId(activeBoard?.activeViewId, aiEnabled);
@@ -25,7 +31,7 @@ export const BoardViewsTabs = () => {
     if (!activeBoardId) return null;
 
     return (
-        <div style={{
+        <div className="board-view-tabs" style={{
             display: 'flex',
             alignItems: 'center',
             padding: '0 24px',
@@ -43,7 +49,7 @@ export const BoardViewsTabs = () => {
                 return (
                     <button
                         key={view.id}
-                        className="board-view-tab"
+                        className={`board-view-tab${isActive ? ' is-active' : ''}`}
                         onClick={() => setActiveView(activeBoardId, view.id)}
                         style={{
                             height: '100%',
@@ -64,7 +70,8 @@ export const BoardViewsTabs = () => {
                             marginTop: '2px' // Offset for border bottom
                         }}
                     >
-                        {view.id === 'main_table' ? t.mainTable : view.label}
+                        {newUi && VIEW_ICON[view.id] && (() => { const Icon = VIEW_ICON[view.id]; return <Icon size={14} style={{ marginRight: '7px' }} aria-hidden="true" />; })()}
+                        {newUi && view.id === 'ai_summary' ? 'AI Summary' : view.id === 'main_table' ? t.mainTable : view.label}
                     </button>
                 );
             })}

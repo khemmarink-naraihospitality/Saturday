@@ -181,12 +181,12 @@
   --color-brand-subtle: 38 58% 80.2%;      /* #ead4af */
 
   /* Galangal page, #fffaf0 surfaces */
-  --color-bg: 39 100% 91.2%;               /* #FFEFD2 Galangal */
-  --color-bg-canvas: 39 100% 91.2%;
+  --color-bg: 42 63% 94.7%;                /* #faf5e9: the page, a light Galangal */
+  --color-bg-canvas: 42 63% 94.7%;
   --color-bg-surface: 40 100% 97.1%;       /* #fffaf0: cards, tables, menus */
   --color-bg-surface-hover: 38 75% 86.1%;  /* #f6e3c1 */
   --color-bg-subtle: 38 75% 86.1%;
-  --color-bg-base: 39 100% 91.2%;
+  --color-bg-base: 42 63% 94.7%;
 
   /* Ink: Narai Green, then 66% and 50% of it (as NHGOne reads them) */
   --color-text-primary: 90 100% 8.2%;
@@ -218,10 +218,10 @@
   --color-table-header-bg: 45 42% 92.5%;   /* #f4f0e4 */
   --color-group-header-bg: 40 100% 97.1%;
 
-  /* The brand's two shadows: shadow-1 (interactive lift), shadow-2 (floating) */
-  --shadow-sm: 0 1px 0 rgba(21, 42, 0, 0.06), 0 2px 6px rgba(21, 42, 0, 0.04);
-  --shadow-md: 0 6px 24px rgba(21, 42, 0, 0.08);
-  --shadow-lg: 0 6px 24px rgba(21, 42, 0, 0.08);
+  /* Soft, green-tinted shadows: resting, raised, floating */
+  --shadow-sm: 0 1px 2px rgba(21, 42, 0, 0.05), 0 4px 12px -6px rgba(21, 42, 0, 0.12);
+  --shadow-md: 0 2px 6px rgba(21, 42, 0, 0.05), 0 12px 28px -14px rgba(21, 42, 0, 0.28);
+  --shadow-lg: 0 2px 8px rgba(21, 42, 0, 0.06), 0 24px 60px -24px rgba(21, 42, 0, 0.38);
 
   /* Status / dropdown labels: a soft tint of the picked colour, Narai Green ink */
   --label-tint: 62%;
@@ -233,10 +233,11 @@
   --color-nav-accent-bg: #f6e3c1;
   --color-icon-accent: #152A00;
   --color-action: #152A00;
-  --color-action-2: #152A00;
-  --color-action-2-dark: #1f3a08;
-  --color-action-2-glow: rgba(21, 42, 0, 0.22);
-  --support-radius: 2px;
+  /* Contact support: Ginger amber */
+  --color-action-2: #B5651D;
+  --color-action-2-dark: #8e4c12;
+  --color-action-2-glow: rgba(181, 101, 29, 0.32);
+  --support-radius: 8px;
 
   /* Dashboard's cat-farm room */
   --dash-wall: #f6e3c1;
@@ -244,10 +245,10 @@
   --dash-window: #152A00;
   --dash-window-text: #152A00;
 
-  /* Sharp, architectural corners; the brand's two faces */
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 0px;
+  /* Soft corners (after the NHG Tasks mock-up); the brand's two faces */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
   --font-family: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Nib Pro", "IBM Plex Sans Thai", "Forum", serif;
 
@@ -260,27 +261,33 @@
   --nhg-ginger: #A76400;
   --nhg-pomelo: #E1FFB3;
   --nhg-aubergine: #250719;
-  --nhg-hairline: rgba(21, 42, 0, 0.14);
-  --nhg-shadow-2: 0 6px 24px rgba(21, 42, 0, 0.08);
-  --nhg-scrim: rgba(21, 42, 0, 0.4);
+  --nhg-hairline: rgba(21, 42, 0, 0.1);
+  --nhg-shadow-2: 0 2px 8px rgba(21, 42, 0, 0.06), 0 24px 60px -20px rgba(21, 42, 0, 0.32);
+  --nhg-scrim: rgba(236, 229, 208, 0.55);
+  /* The shell: a cream backdrop holding two floating panels, the green
+     sidebar and the page with its warm wash */
+  --nhg-backdrop: #ebe5d1;
+  --nhg-page: linear-gradient(140deg, #fdfaf2 0%, #faf5e9 45%, #f2eed6 100%);
+  --nhg-sidebar: linear-gradient(172deg, #35532a 0%, #29471f 42%, #1d3913 100%);
+  --nhg-sidebar-active: rgba(255, 255, 255, 0.13);
+  --nhg-sidebar-line: rgba(255, 255, 255, 0.18);
   --nhg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  /* Cards: flat with edges (solid fill, 1px hairline, no shadow); an
-     interactive one rises to shadow-1 on hover */
-  --card-bg: #fffaf0;
-  --card-border: rgba(21, 42, 0, 0.14);
-  --card-border-hover: rgba(21, 42, 0, 0.32);
-  --card-edge: transparent;
-  --card-shadow: 0 0 0 transparent;
-  --card-shadow-hover: 0 1px 0 rgba(21, 42, 0, 0.06), 0 2px 6px rgba(21, 42, 0, 0.04);
+  /* Cards: a warm white sheet lifted on a soft green-tinted shadow */
+  --card-bg: #fffdf8;
+  --card-border: rgba(21, 42, 0, 0.06);
+  --card-border-hover: rgba(21, 42, 0, 0.14);
+  --card-edge: rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 1px 2px rgba(21, 42, 0, 0.04), 0 10px 26px -14px rgba(21, 42, 0, 0.24);
+  --card-shadow-hover: 0 2px 4px rgba(21, 42, 0, 0.05), 0 18px 36px -16px rgba(21, 42, 0, 0.32);
   --card-sheen: transparent;
-  --card-row-hover: #FFEFD2;
-  --card-solid: #fffaf0;
-  --card-grid: #ece9dd;
-  --card-tray: #f6e3c1;
-  --card-tile: #f6e3c1;
+  --card-row-hover: #fbf3e0;
+  --card-solid: #fffdf8;
+  --card-grid: #efeadb;
+  --card-tray: #f3ecda;
+  --card-tile: #f4efe3;
   --card-tile-ink: #152A00;
-  --card-tile-ring: rgba(21, 42, 0, 0.14);
+  --card-tile-ring: rgba(21, 42, 0, 0.08);
   --card-tile-shadow: 0 0 0 transparent;
   --card-tile-lit: #152A00;
   --card-tile-lit-ring: transparent;
@@ -335,10 +342,10 @@
   --color-nav-accent-bg: #2c3e15;
   --color-icon-accent: #E1FFB3;
   --color-action: #FFEFD2;
-  --color-action-2: #FFEFD2;
-  --color-action-2-dark: #f6e3c1;
+  --color-action-2: #c47a2c;
+  --color-action-2-dark: #9a5b1c;
   --color-action-2-glow: rgba(0, 0, 0, 0.35);
-  --support-radius: 2px;
+  --support-radius: 8px;
 
   /* The cat farm is a picture: its room stays light */
   --dash-wall: #f6e3c1;
@@ -346,9 +353,9 @@
   --dash-window: #152A00;
   --dash-window-text: #152A00;
 
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 0px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
   --font-family: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Nib Pro", "IBM Plex Sans Thai", "Forum", serif;
 
@@ -360,17 +367,22 @@
   --nhg-ginger: #A76400;
   --nhg-pomelo: #E1FFB3;
   --nhg-aubergine: #250719;
-  --nhg-hairline: rgba(255, 239, 210, 0.18);
-  --nhg-shadow-2: 0 6px 24px rgba(0, 0, 0, 0.32);
-  --nhg-scrim: rgba(0, 0, 0, 0.55);
+  --nhg-hairline: rgba(255, 239, 210, 0.14);
+  --nhg-shadow-2: 0 2px 8px rgba(0, 0, 0, 0.3), 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  --nhg-scrim: rgba(5, 12, 0, 0.55);
+  --nhg-backdrop: #0a1500;
+  --nhg-page: linear-gradient(140deg, #1b330b 0%, #152A00 55%, #112400 100%);
+  --nhg-sidebar: linear-gradient(172deg, #25431b 0%, #1a3511 45%, #112a07 100%);
+  --nhg-sidebar-active: rgba(255, 239, 210, 0.12);
+  --nhg-sidebar-line: rgba(255, 239, 210, 0.16);
   --nhg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  --card-bg: #1a3304;
-  --card-border: rgba(255, 239, 210, 0.18);
-  --card-border-hover: rgba(255, 239, 210, 0.34);
-  --card-edge: transparent;
-  --card-shadow: 0 0 0 transparent;
-  --card-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.28);
+  --card-bg: #1b3507;
+  --card-border: rgba(255, 239, 210, 0.1);
+  --card-border-hover: rgba(255, 239, 210, 0.24);
+  --card-edge: rgba(255, 239, 210, 0.06);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 26px -14px rgba(0, 0, 0, 0.6);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.3), 0 18px 36px -16px rgba(0, 0, 0, 0.7);
   --card-sheen: transparent;
   --card-row-hover: #25380f;
   --card-solid: #1a3304;

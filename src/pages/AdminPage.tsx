@@ -80,7 +80,7 @@ export const AdminPage = () => {
                         <div style={{ width: '32px', height: '32px', background: 'linear-gradient(160deg, #818cf8, #4f46e5)', borderRadius: '28%', boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 14px -6px rgba(79, 70, 229, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ShieldCheck size={20} color="white" />
                         </div>
-                        <span style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.5px' }}>ADMIN CONSOLE</span>
+                        <span className="admin-brand" style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.5px' }}>{newUi ? 'Admin Console' : 'ADMIN CONSOLE'}</span>
                     </div>
                     <div style={{ marginTop: '8px', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Super Admin Access

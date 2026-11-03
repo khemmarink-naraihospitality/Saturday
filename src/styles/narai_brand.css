@@ -3,17 +3,18 @@
  *
  * After the Narai Hospitality Group design system
  * (narai-design-system.vercel.app, from the Narai Brand Guide v.27.08.24),
- * read the way NHGOne reads it as an app: a Narai Green sidebar, Galangal cream
- * pages, #fffaf0 tables and cards, Nib Pro headlines, IBM Plex Sans text,
- * tracked capitals for labels and actions, sharp corners (0–2px), 1px
- * hairlines, flat surfaces and only two shadows. The colours are the tokens in
+ * drawn after the NHG Tasks mock-up (3 Nov 2026): a cream backdrop holding two
+ * floating panels — a Narai Green sidebar and a page with a warm Galangal wash
+ * — warm white cards lifted on soft green-tinted shadows, rounded corners
+ * (8–14px), pill tabs and toolbar buttons, Nib Pro headlines, IBM Plex Sans
+ * text and tracked capitals for small labels. The colours are the tokens in
  * the NHG blocks of variables.css (light and dark); the phone's half is the NHG
  * section of src/mobile/mobile.css. Saturday is untouched: every rule here is
  * scoped under html[data-palette='narai'].
  *
  * Most of the app styles itself inline, so some rules reach inline styles by
- * attribute ([style*=…]) and use !important to win. The Admin Console keeps its
- * own look in every palette and is left out of all of them.
+ * attribute ([style*=…]) and use !important to win. The Admin Console has its
+ * own NHG block at the end; it is left out of the rules above it.
  */
 
 /* Nib Pro, the brand's headline face (one weight), self-hosted from the
@@ -30,28 +31,52 @@
 
 /* ── Shell ─────────────────────────────────────────────────────────────── */
 
-/* A Narai Green sidebar beside a Galangal page, edge to edge (no floating panel) */
+/* A cream backdrop holding two floating panels: the green sidebar and the page */
 html[data-palette='narai'] .app-container {
-    background: var(--nhg-green) !important;
+    background: var(--nhg-backdrop) !important;
     border-radius: 0 !important;
-}
-
-html[data-palette='narai'].dark .app-container {
-    background: #0f2000 !important;
 }
 
 html[data-palette='narai'] .sidebar {
-    background: transparent;
+    position: relative;
+    height: auto !important;
+    align-self: stretch;
+    margin: 10px 0 10px 10px;
+    border-radius: 18px;
+    background: var(--nhg-sidebar);
+    box-shadow: 0 2px 6px rgba(21, 42, 0, 0.12), 0 18px 40px -22px rgba(21, 42, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    overflow: hidden;
 }
 
 html[data-palette='narai'] .app-main {
-    margin: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    margin: 10px !important;
+    border-radius: 18px !important;
+    background: var(--nhg-page) !important;
+    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
 }
 
 html[data-palette='narai'].dark .app-main {
-    border-left: 1px solid var(--nhg-hairline);
+    box-shadow: 0 16px 40px -24px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 239, 210, 0.06) !important;
+}
+
+/* The page's wash shows through: bars and wrappers that paint the page colour
+   step aside (a view's sheet, sticky cells and anything floating keep theirs) */
+html[data-palette='narai'] .app-main [style*="background-color: hsl(var(--color-bg-canvas))"]:not(.board-sheet, .board-sheet *, [style*="position: sticky"], [style*="position: fixed"], [style*="position: absolute"], [style*="box-shadow"]) {
+    background-color: transparent !important;
+}
+
+html[data-palette='narai'] .app-main .top-bar {
+    border-bottom-color: transparent !important;
+}
+
+/* The top bar's title is a breadcrumb: small tracked capitals */
+html[data-palette='narai'] .app-main h1.top-bar__title {
+    font-family: var(--font-family) !important;
+    font-size: 10.5px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary)) !important;
 }
 
 /* The sidebar is the brand's inverted surface: Galangal ink on Narai Green.
@@ -82,12 +107,17 @@ html[data-palette='narai'].dark .sidebar {
     --color-bg-canvas: 92 100% 6.3%;
 }
 
-/* The sidebar's own labels as the brand sets them: tracked capitals */
-html[data-palette='narai'] .sidebar :is(.sidebar-nav-label, .sidebar-section-label) {
-    font-size: 11px !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.1em;
+/* Section labels in small tracked capitals; the links themselves in words */
+html[data-palette='narai'] .sidebar .sidebar-section-label {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
+}
+
+html[data-palette='narai'] .sidebar .sidebar-nav-label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
 }
 
 html[data-palette='narai'] .sidebar .sidebar-section-label {
@@ -99,8 +129,25 @@ html[data-palette='narai'] .sidebar :is([style*="background-color: hsl(var(--col
     color: var(--nhg-green) !important;
 }
 
+/* Rows are soft pills; the open one is a lighter glass pill with a fine edge */
 html[data-palette='narai'] :is(.tree-sidebar-item, .tree-node-parent, .rail-icon-btn, .sidebar-item, .sidebar-item-action) {
-    border-radius: 2px;
+    border-radius: 9px;
+}
+
+html[data-palette='narai'] .sidebar {
+    --color-nav-accent-bg: var(--nhg-sidebar-active);
+    --color-brand-light: var(--nhg-sidebar-active);
+}
+
+html[data-palette='narai'] .sidebar :is(.tree-sidebar-item, .tree-node-parent, .sidebar-item).active,
+html[data-palette='narai'] .sidebar [aria-current='page'] {
+    box-shadow: inset 0 0 0 1px var(--nhg-sidebar-line);
+}
+
+html[data-palette='narai'] .sidebar input {
+    border-radius: 10px !important;
+    background: rgba(0, 0, 0, 0.12) !important;
+    border-color: var(--nhg-sidebar-line) !important;
 }
 
 /* ── Type ──────────────────────────────────────────────────────────────── */
@@ -130,17 +177,43 @@ html[data-palette='narai'] .table-header-cell :is(input, textarea) {
     text-transform: none;
 }
 
+/* A board's views as pills; the open one filled Narai Green */
 html[data-palette='narai'] .board-view-tab {
-    font-size: 11.5px !important;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border: 1px solid transparent !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    color: hsl(var(--color-text-secondary)) !important;
+}
+
+html[data-palette='narai'] .board-view-tab:hover {
+    background: rgba(21, 42, 0, 0.05) !important;
+}
+
+html[data-palette='narai'] .board-view-tab.is-active {
+    background: var(--nhg-green) !important;
+    color: var(--nhg-galangal) !important;
+    box-shadow: 0 6px 14px -8px rgba(21, 42, 0, 0.6);
+}
+
+html[data-palette='narai'].dark .board-view-tab.is-active {
+    background: var(--nhg-galangal) !important;
+    color: var(--nhg-green) !important;
+}
+
+html[data-palette='narai'] .board-view-tabs {
+    height: 46px !important;
+    min-height: 46px !important;
+    gap: 4px !important;
+    border-bottom: none !important;
 }
 
 html[data-palette='narai'] .home-more {
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border-radius: 2px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border-radius: 999px;
 }
 
 /* Fresh moments in Pomelo: selected text */
@@ -152,16 +225,13 @@ html[data-palette='narai'] ::selection {
 /* ── Actions and fields ────────────────────────────────────────────────── */
 
 /* The brand's primary button: Narai Green (Galangal in dark mode) with the
-   other colour as ink, sharp corners, tracked capitals, no gloss */
-html[data-palette='narai'] :is(button, a):is([style*="background-color: hsl(var(--color-brand-primary))"], [style*="background-color: hsl(var(--color-brand-hover))"], [style*="background-color: var(--color-action"]):not(.admin-console *, .sidebar *) {
+   other colour as ink, no gloss, words as written */
+html[data-palette='narai'] :is(button, a):is([style*="background-color: hsl(var(--color-brand-primary))"], [style*="background-color: hsl(var(--color-brand-hover))"], [style*="background-color: var(--color-action,"]):not(.admin-console *, .sidebar *) {
     background-image: none !important;
     color: var(--nhg-on-ink) !important;
     border-color: transparent !important;
-    border-radius: 2px !important;
-    box-shadow: none !important;
+    box-shadow: 0 6px 14px -8px rgba(21, 42, 0, 0.55) !important;
     font-weight: 500 !important;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
 }
 
 /* In dark mode the brand colour is Galangal: anything filled with it takes
@@ -174,8 +244,8 @@ html[data-palette='narai'].dark :is([style*="background-color: hsl(var(--color-b
     stroke: currentColor;
 }
 
-html[data-palette='narai'] :is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select):not(.admin-console *) {
-    border-radius: 2px;
+html[data-palette='narai'] :is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select):not(.admin-console *, .cell-input, .table-cell *) {
+    border-radius: 10px;
 }
 
 html[data-palette='narai'] :is(button, a, [role='button'], [tabindex]):focus-visible:not(.admin-console *) {
@@ -183,37 +253,23 @@ html[data-palette='narai'] :is(button, a, [role='button'], [tabindex]):focus-vis
     outline-offset: 2px;
 }
 
-/* ── Corners ───────────────────────────────────────────────────────────── */
-
-/* Sharp, architectural corners: a rounded corner set inline becomes 2px. Pills
-   and circles (999px, 50%) stay, as the brand keeps them for tag chips, toggles
-   and avatars; a switch keeps its pill. */
-html[data-palette='narai'] :is([style*="border-radius: 3px;"], [style*="border-radius: 4px;"], [style*="border-radius: 5px;"], [style*="border-radius: 6px;"], [style*="border-radius: 7px;"], [style*="border-radius: 8px;"], [style*="border-radius: 10px;"], [style*="border-radius: 12px;"], [style*="border-radius: 14px;"], [style*="border-radius: 16px;"], [style*="border-radius: 18px;"], [style*="border-radius: 20px;"], [style*="border-radius: 24px;"]):not(.admin-console *, [role='switch']) {
-    border-radius: 2px !important;
-}
-
-/* The inbox count, the Home tiles and the dashboard's icon tiles are squares */
-html[data-palette='narai'] div[style*="width: 24px"][style*="height: 24px"][style*="border-radius: 28%"][style*="background-color: hsl(var(--color-brand-primary))"],
-html[data-palette='narai'] :is(.board-card__tile, .feed-row__tile, .dash-widget__icon) {
-    border-radius: 2px !important;
-}
-
 /* ── Floating surfaces ─────────────────────────────────────────────────── */
 
-/* Menus, pickers and dialogs: a #fffaf0 sheet with a hairline and shadow-2,
-   no blur. Matched on the background colour and on a real shadow (0.1 and
+/* Menus, pickers and dialogs: a warm white sheet, rounded, on a soft shadow. Matched on the background colour and on a real shadow (0.1 and
    up). Not the main panel, the item side panel, a button, a sticky row or a
    box holding an image. */
 html[data-palette='narai'] :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"], [style*="background-color: rgb(255, 255, 255)"])[style*="box-shadow"]:not(.app-main, .side-panel-content, button, [style*="position: sticky"], :has(> img), .admin-console *):is([style*="rgba(0, 0, 0, 0.1"], [style*="rgba(0, 0, 0, 0.2"], [style*="rgba(0, 0, 0, 0.3"], [style*="rgba(0, 0, 0, 0.4"]) {
-    background: hsl(var(--color-bg-surface)) !important;
+    background: var(--card-bg) !important;
     border: 1px solid var(--nhg-hairline) !important;
-    border-radius: 2px !important;
+    border-radius: 14px !important;
     box-shadow: var(--nhg-shadow-2) !important;
 }
 
-/* The veil behind a dialog: Narai Green, not black */
+/* The veil behind a dialog: a Galangal frost over the page, not black */
 html[data-palette='narai'] [style*="position: fixed"][style*="rgba(0, 0, 0, 0.5)"]:not(.admin-console *) {
     background: var(--nhg-scrim) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
 }
 
 /* ── Boards ────────────────────────────────────────────────────────────── */
@@ -228,10 +284,54 @@ html[data-palette='narai'].dark .board-sheet {
     --color-bg-canvas: 92 85% 10.8%;
 }
 
-/* Flat with edges: cards don't lift; an interactive one gathers shadow-1 */
+/* Cards rest lifted and gather a little more shadow on hover, without moving */
 html[data-palette='narai'] :is(.board-card, .calendar-pick, .kanban-card):hover,
 html[data-palette='narai'] :is(.board-card, .calendar-pick, .kanban-card):active {
     transform: none;
+}
+
+/* Share: a white pill on the page, not a filled button */
+html[data-palette='narai'] .board-share-btn {
+    background: var(--card-bg) !important;
+    color: hsl(var(--color-text-primary)) !important;
+    border: 1px solid rgba(21, 42, 0, 0.1) !important;
+    border-radius: 999px !important;
+    padding: 6px 14px !important;
+    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 6px 14px -8px rgba(21, 42, 0, 0.35) !important;
+}
+
+html[data-palette='narai'].dark .board-share-btn {
+    border-color: var(--nhg-hairline) !important;
+}
+
+/* New task: one green pill, its menu half split off by a fine line */
+html[data-palette='narai'] .board-primary-action > button:first-child {
+    border-radius: 999px 0 0 999px !important;
+    padding: 0 14px 0 16px !important;
+}
+
+html[data-palette='narai'] .board-primary-action > button:nth-child(2) {
+    border-radius: 0 999px 999px 0 !important;
+    padding: 0 10px 0 8px !important;
+}
+
+/* Kanban: the status as a small solid tag in capitals */
+html[data-palette='narai'] .kanban-status-pill .status-pill {
+    height: 19px;
+    padding: 0 7px;
+    gap: 0;
+    border-radius: 4px;
+    background: var(--pill) !important;
+    color: #fff !important;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: none !important;
+}
+
+html[data-palette='narai'] .kanban-status-pill .status-pill__dot {
+    display: none;
 }
 
 html[data-palette='narai'] .board-card:hover .board-card__tile {
@@ -270,3 +370,98 @@ html[data-palette='narai'] [style*="background: rgb(156, 163, 175)"]:not(.admin-
 html[data-palette='narai'].dark [style*="border: 2px solid white"] {
     border-color: hsl(var(--color-bg-canvas)) !important;
 }
+
+html[data-palette='narai'] .kanban-field-label {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* ── Admin Console ─────────────────────────────────────────────────────── */
+
+/* Under NHG the console is the same shell as the app: a green sidebar panel
+   and a warm page on the cream backdrop, NHG's cards, type and inks. Its
+   slate colours are set inline, so they are reached by value. Saturday's
+   console keeps its own slate-and-indigo look. */
+html[data-palette='narai'] .admin-console {
+    background: var(--nhg-backdrop) !important;
+    font-family: var(--font-family) !important;
+    --card-bg: #fffdf8;
+    --card-border: rgba(21, 42, 0, 0.06);
+    --card-border-hover: rgba(21, 42, 0, 0.14);
+    --card-edge: rgba(255, 255, 255, 0.9);
+    --card-shadow: 0 1px 2px rgba(21, 42, 0, 0.04), 0 10px 26px -14px rgba(21, 42, 0, 0.24);
+    --card-shadow-hover: 0 2px 4px rgba(21, 42, 0, 0.05), 0 18px 36px -16px rgba(21, 42, 0, 0.32);
+    --card-sheen: transparent;
+    --card-row-hover: #fbf3e0;
+    --radius-lg: 14px;
+}
+
+html[data-palette='narai'] .admin-console > aside {
+    margin: 10px 0 10px 10px;
+    border-radius: 18px;
+    background: var(--nhg-sidebar) !important;
+    box-shadow: 0 2px 6px rgba(21, 42, 0, 0.12), 0 18px 40px -22px rgba(21, 42, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-palette='narai'] .admin-console > aside nav > div {
+    margin: 2px 12px;
+    padding: 10px 12px !important;
+    border-left: none !important;
+    border-radius: 10px;
+    color: rgba(255, 239, 210, 0.82) !important;
+}
+
+html[data-palette='narai'] .admin-console > aside nav > div[style*="background-color: rgb(51, 65, 85)"] {
+    background: var(--nhg-sidebar-active) !important;
+    box-shadow: inset 0 0 0 1px var(--nhg-sidebar-line);
+    color: #FFEFD2 !important;
+}
+
+html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(160deg, #818cf8"], [style*="rgb(129, 140, 248)"]) {
+    background: #FFEFD2 !important;
+    box-shadow: none !important;
+}
+
+html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(160deg, #818cf8"], [style*="rgb(129, 140, 248)"]) svg {
+    stroke: #152A00;
+}
+
+html[data-palette='narai'] .admin-console .admin-brand {
+    font-family: var(--font-display);
+    font-size: 19px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    color: #FFEFD2;
+}
+
+html[data-palette='narai'] .admin-console > aside [style*="border-top: 1px solid rgb(51, 65, 85)"] {
+    border-top-color: var(--nhg-sidebar-line) !important;
+}
+
+html[data-palette='narai'] .admin-console > aside :is([style*="color: rgb(148, 163, 184)"], [style*="color: rgb(203, 213, 225)"]) {
+    color: rgba(255, 239, 210, 0.7) !important;
+}
+
+html[data-palette='narai'] .admin-console > main {
+    margin: 10px;
+    border-radius: 18px;
+    background: var(--nhg-page);
+    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+html[data-palette='narai'] .admin-console > main :is(h1, h2, h3) {
+    font-family: var(--font-display) !important;
+    font-weight: 400 !important;
+    font-synthesis: none;
+}
+
+html[data-palette='narai'] .admin-console > main [style*="color: rgb(15, 23, 42)"] { color: #152A00 !important; }
+html[data-palette='narai'] .admin-console > main [style*="color: rgb(30, 41, 59)"] { color: #152A00 !important; }
+html[data-palette='narai'] .admin-console > main [style*="color: rgb(100, 116, 139)"] { color: #656d47 !important; }
+html[data-palette='narai'] .admin-console > main [style*="color: rgb(148, 163, 184)"] { color: #8a8c69 !important; }
+
+/* The two Basic stats panels: Narai Green and Ginger amber */
+html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#4f46e5"] { --panel-color: #1d3913 !important; }
+html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#047857"] { --panel-color: #8a5212 !important; }

@@ -49,14 +49,16 @@ export const HomePage = () => {
 
 
 
-    // Greeting based on time
+    // Greeting based on time (NHG adds the date above it)
+    const newUi = useNewUi();
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
     return (
         <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
             <header style={{ marginBottom: '40px' }}>
-                <h1 style={{
+                {newUi && <p className="nhg-eyebrow">{`${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} · Overview`}</p>}
+                <h1 className="home-greeting" style={{
                     fontSize: '32px',
                     fontWeight: 600,
                     color: 'hsl(var(--color-text-primary))',

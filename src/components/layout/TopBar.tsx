@@ -1,5 +1,6 @@
 import { GlobalTopActions } from './GlobalTopActions';
 import { useBoardStore } from '../../store/useBoardStore';
+import { productName, useNewUi } from '../../lib/brand';
 
 export const TopBar = () => {
     const activePage = useBoardStore(state => state.activePage);
@@ -8,9 +9,11 @@ export const TopBar = () => {
     
     // Find active workspace or fallback to the first one available
     const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+    // NHG reads the title as a breadcrumb: "NHG WorkSpace · Home", "Folder · Dashboard"
+    const newUi = useNewUi();
 
     return (
-        <div style={{
+        <div className="top-bar" style={{
             height: '50px',
             width: '100%',
             // Same reasoning as BoardHeader: this sits at the top of the floating
@@ -30,13 +33,15 @@ export const TopBar = () => {
             {/* Left side: Title (only for dashboard or home) */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 {(activePage === 'dashboard' || activePage === 'home') && (
-                    <h1 style={{ 
+                    <h1 className="top-bar__title" style={{ 
                         fontSize: '18px', 
                         fontWeight: 600, 
                         color: 'hsl(var(--color-text-primary))', 
                         margin: 0 
                     }}>
-                        {activeWorkspace?.title || 'Finance'} Dashboard
+                        {newUi
+                            ? (activePage === 'home' ? `NHG ${productName(true)} · Home` : `${activeWorkspace?.title || 'Finance'} · Dashboard`)
+                            : <>{activeWorkspace?.title || 'Finance'} Dashboard</>}
                     </h1>
                 )}
             </div>

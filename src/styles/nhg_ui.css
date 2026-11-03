@@ -76,7 +76,7 @@ html[data-palette='narai'] .sidebar :is([style*="position: fixed"], .nhg-on-page
     width: 100%;
     padding: 7px 8px;
     border: none;
-    border-radius: 2px;
+    border-radius: 9px;
     background: transparent;
     color: hsl(var(--color-text-primary));
     font: inherit;
@@ -145,7 +145,7 @@ html[data-palette='narai'] .sidebar :is([style*="position: fixed"], .nhg-on-page
     width: 100%;
     padding: 5px 8px;
     border: none;
-    border-radius: 2px;
+    border-radius: 9px;
     background: transparent;
     color: hsl(var(--color-text-secondary));
     font: inherit;
@@ -244,18 +244,18 @@ html[data-palette='narai'] .tree-node-parent:hover [data-ws-folder] {
 
 /* ── Sidebar: profile ──────────────────────────────────────────────────── */
 
-/* The profile at the bottom of the sidebar (sidebar_tree.css) in the brand's
-   way: a Galangal square with a green initial, sharp corners, the role in
+/* The profile at the bottom of the sidebar (sidebar_tree.css): a round
+   Galangal avatar with a green initial and a fine light ring, the role in
    tracked capitals */
 html[data-palette='narai'] .sidebar-profile__button {
-    border-radius: 2px;
+    border-radius: 12px;
 }
 
 html[data-palette='narai'] .sidebar-profile__avatar {
-    border-radius: 2px;
+    border-radius: 50%;
     background: var(--nhg-galangal);
     color: var(--nhg-green);
-    box-shadow: none;
+    box-shadow: 0 0 0 2px var(--nhg-sidebar-line);
 }
 
 html[data-palette='narai'] .sidebar-profile__name {
@@ -342,7 +342,7 @@ html[data-palette='narai'] .sidebar-profile__role {
     height: 32px;
     padding: 0 6px;
     border: none;
-    border-radius: 2px;
+    border-radius: 9px;
     background: transparent;
     cursor: pointer;
     transition: background-color 140ms var(--nhg-ease);
@@ -365,7 +365,7 @@ html[data-palette='narai'] .sidebar-profile__role {
 .nhg-group-head {
     background: color-mix(in srgb, var(--group-color) 13%, hsl(var(--color-bg-canvas)));
     box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--group-color) 32%, transparent);
-    border-radius: 2px 2px 0 0;
+    border-radius: 12px 12px 0 0;
 }
 
 .nhg-group-head__name {
@@ -433,7 +433,7 @@ html[data-palette='narai'] .sidebar-profile__role {
     padding: 0 10px;
     overflow: hidden;
     border-left: 3px solid var(--range-color);
-    border-radius: 1px;
+    border-radius: 4px;
     background: color-mix(in srgb, var(--range-color) 16%, hsl(var(--color-bg-surface)));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--range-color) 30%, transparent);
     color: hsl(var(--color-text-primary));
@@ -462,7 +462,7 @@ html[data-palette='narai'] .sidebar-profile__role {
     gap: 2px;
     padding: 6px;
     border: 1px solid var(--nhg-hairline);
-    border-radius: 2px;
+    border-radius: 9px;
     background: hsl(var(--color-bg-surface));
     box-shadow: var(--nhg-shadow-2);
 }
@@ -499,3 +499,29 @@ html[data-palette='narai'] :is(svg.lucide, svg[stroke='currentColor']):is([width
         transition: none;
     }
 }
+
+/* ── After the NHG Tasks mock-up (3 Nov 2026) ──────────────────────────── */
+
+/* A small line of tracked capitals above a page's title: the date on Home,
+   "Folder · Space" on a board. Rendered only under NHG. */
+.nhg-eyebrow {
+    display: block;
+    margin: 0 0 6px;
+    font-family: var(--font-family);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+}
+
+html[data-palette='narai'] .home-greeting {
+    font-size: 34px !important;
+    line-height: 1.12;
+}
+
+html[data-palette='narai'] .board-title {
+    font-size: 26px !important;
+    line-height: 1.15;
+}
+

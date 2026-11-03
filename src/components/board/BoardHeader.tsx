@@ -12,6 +12,7 @@ import { ImportBoardModal } from '../workspace/ImportBoardModal';
 import { BoardViewsTabs } from './BoardViewsTabs';
 import { useTerms } from '../../lib/terms';
 import { GlobalTopActions } from '../layout/GlobalTopActions';
+import { useNewUi } from '../../lib/brand';
 
 interface BoardHeaderProps {
     boardId: string;
@@ -23,6 +24,9 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     const deleteBoard = useBoardStore(state => state.deleteBoard);
     const activeBoardMembers = useBoardStore(state => state.activeBoardMembers);
     const board = boards.find(b => b.id === boardId);
+    // NHG: a small "Folder · Space" line above the title
+    const newUi = useNewUi();
+    const workspaceTitle = useBoardStore(state => state.workspaces.find(w => w.id === board?.workspaceId)?.title);
 
     // Permission Hook
     const { can } = usePermission();
@@ -149,7 +153,9 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         />
                     ) : (
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                            {newUi && <span className="nhg-eyebrow">{`${workspaceTitle || t.Workspace} · ${t.Board}`}</span>}
                             <h1
+                                className="board-title"
                                 onClick={() => can('create_board') && setIsEditing(true)}
                                 style={{
                                     fontSize: '18px',
@@ -390,6 +396,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                 </div>
 
                 <button
+                    className="board-share-btn"
                     onClick={() => can('invite_members') && setShowShareModal(true)}
                     style={{
                         display: 'flex',

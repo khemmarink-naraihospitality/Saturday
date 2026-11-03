@@ -120,7 +120,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
     // of the white card.
     return (
         <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>
-            <header style={{
+            <header className="bh" style={{
                 minHeight: '56px',
                 display: 'flex',
                 alignItems: 'center',
@@ -321,7 +321,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                 {/* Activity Log */}
                 <div style={{ position: 'relative' }}>
                     <motion.button
-                        className="btn-ghost"
+                        className="btn-ghost bh-icon-btn"
                         onClick={() => setShowActivityLog(!showActivityLog)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -396,7 +396,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                 </div>
 
                 <button
-                    className="board-share-btn"
+                    className="board-share-btn bh-share glass-chip"
                     onClick={() => can('invite_members') && setShowShareModal(true)}
                     style={{
                         display: 'flex',
@@ -422,7 +422,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                 {/* More Menu */}
                 <div style={{ position: 'relative' }} ref={menuRef}>
                     <button
-                        className="btn-ghost"
+                        className="btn-ghost bh-icon-btn"
                         style={{ padding: '8px', background: showMenu ? 'hsl(var(--color-bg-subtle))' : 'transparent' }}
                         onClick={() => setShowMenu(!showMenu)}
                     >
@@ -546,7 +546,8 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
             {showImportModal && <ImportBoardModal onClose={() => setShowImportModal(false)} />}
             </header>
-            <BoardViewsTabs />
+            {/* NHG draws the views inside the command bar (BoardViewsToolbar) */}
+            {!newUi && <BoardViewsTabs />}
         </div>
     );
 };

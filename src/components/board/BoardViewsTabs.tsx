@@ -30,6 +30,30 @@ export const BoardViewsTabs = () => {
 
     if (!activeBoardId) return null;
 
+    // NHG: a glass segmented control, each view a pill with its symbol
+    if (newUi) {
+        return (
+            <div className="seg glass-chip" role="tablist" aria-label="Views">
+                {views.map(view => {
+                    const isActive = activeViewId === view.id;
+                    const Icon = VIEW_ICON[view.id];
+                    return (
+                        <button
+                            key={view.id}
+                            role="tab"
+                            aria-selected={isActive}
+                            className={`seg-btn${isActive ? ' is-active' : ''}`}
+                            onClick={() => setActiveView(activeBoardId, view.id)}
+                        >
+                            {Icon && <Icon size={14} aria-hidden="true" />}
+                            {view.id === 'ai_summary' ? 'AI Summary' : view.id === 'main_table' ? t.mainTable : view.label}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="board-view-tabs" style={{
             display: 'flex',
@@ -70,8 +94,7 @@ export const BoardViewsTabs = () => {
                             marginTop: '2px' // Offset for border bottom
                         }}
                     >
-                        {newUi && VIEW_ICON[view.id] && (() => { const Icon = VIEW_ICON[view.id]; return <Icon size={14} style={{ marginRight: '7px' }} aria-hidden="true" />; })()}
-                        {newUi && view.id === 'ai_summary' ? 'AI Summary' : view.id === 'main_table' ? t.mainTable : view.label}
+                        {view.id === 'main_table' ? t.mainTable : view.label}
                     </button>
                 );
             })}

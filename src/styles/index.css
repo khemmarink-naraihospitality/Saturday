@@ -6,6 +6,7 @@
 @import './narai_brand.css';
 @import './nhg_ui.css';
 @import './nhg_glass.css';
+@import './nhg_board.css';
 @import './formula.css';
 
 @variant dark (&:where(.dark, .dark *));

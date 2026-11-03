@@ -117,39 +117,6 @@ html[data-palette='narai'] .table-header-cell :is(input, textarea) {
     text-transform: none;
 }
 
-/* A board's views as pills; the open one filled Narai Green */
-html[data-palette='narai'] .board-view-tab {
-    height: 30px !important;
-    margin: 0 !important;
-    padding: 0 14px !important;
-    border: 1px solid transparent !important;
-    border-radius: 999px !important;
-    font-size: 13px !important;
-    color: hsl(var(--color-text-secondary)) !important;
-}
-
-html[data-palette='narai'] .board-view-tab:hover {
-    background: rgba(21, 42, 0, 0.05) !important;
-}
-
-html[data-palette='narai'] .board-view-tab.is-active {
-    background: var(--nhg-green) !important;
-    color: var(--nhg-galangal) !important;
-    box-shadow: 0 6px 14px -8px rgba(21, 42, 0, 0.6);
-}
-
-html[data-palette='narai'].dark .board-view-tab.is-active {
-    background: var(--nhg-galangal) !important;
-    color: var(--nhg-green) !important;
-}
-
-html[data-palette='narai'] .board-view-tabs {
-    height: 46px !important;
-    min-height: 46px !important;
-    gap: 4px !important;
-    border-bottom: none !important;
-}
-
 html[data-palette='narai'] .home-more {
     font-size: 12.5px;
     font-weight: 500;
@@ -228,31 +195,6 @@ html[data-palette='narai'].dark .board-sheet {
 html[data-palette='narai'] :is(.board-card, .calendar-pick, .kanban-card):hover,
 html[data-palette='narai'] :is(.board-card, .calendar-pick, .kanban-card):active {
     transform: none;
-}
-
-/* Share: a white pill on the page, not a filled button */
-html[data-palette='narai'] .board-share-btn {
-    background: var(--card-bg) !important;
-    color: hsl(var(--color-text-primary)) !important;
-    border: 1px solid rgba(21, 42, 0, 0.1) !important;
-    border-radius: 999px !important;
-    padding: 6px 14px !important;
-    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 6px 14px -8px rgba(21, 42, 0, 0.35) !important;
-}
-
-html[data-palette='narai'].dark .board-share-btn {
-    border-color: var(--nhg-hairline) !important;
-}
-
-/* New task: one green pill, its menu half split off by a fine line */
-html[data-palette='narai'] .board-primary-action > button:first-child {
-    border-radius: 999px 0 0 999px !important;
-    padding: 0 14px 0 16px !important;
-}
-
-html[data-palette='narai'] .board-primary-action > button:nth-child(2) {
-    border-radius: 0 999px 999px 0 !important;
-    padding: 0 10px 0 8px !important;
 }
 
 /* Kanban: the status as a small solid tag in capitals */

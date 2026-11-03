@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { itemColumns } from '../../lib/columnScope';
-import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff, Link2 } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, LayoutPanelLeft, ChevronDown, LayoutGrid, Eye, EyeOff, Link2, Plus } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { createPortal } from 'react-dom';
 import { LinkGroupModal } from './LinkGroupModal';
+import { BoardViewsTabs } from './BoardViewsTabs';
 import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
 import { useTerms } from '../../lib/terms';
@@ -74,10 +75,10 @@ export const BoardViewsToolbar = () => {
 
     // The primary action: New Item, with a menu for a new or linked group.
     const primaryAction = (
-        <div className="board-primary-action" style={{ display: 'flex', height: '32px', position: 'relative' }}>
+        <div className={newUi ? 'cmd-add' : 'board-primary-action'} style={newUi ? { position: 'relative' } : { display: 'flex', height: '32px', position: 'relative' }}>
             <button
                 onClick={handleAddItem}
-                style={{
+                style={newUi ? undefined : {
                     backgroundColor: 'hsl(var(--color-brand-primary))',
                     color: 'white',
                     border: 'none',
@@ -91,12 +92,15 @@ export const BoardViewsToolbar = () => {
                     boxShadow: '0 2px 4px hsl(var(--color-brand-primary) / 0.15)'
                 }}
             >
+                {newUi && <Plus size={16} strokeWidth={2.4} aria-hidden="true" />}
                 {`New ${t.Item}`}
             </button>
             <button 
                 ref={dropdownBtnRef}
+                className={newUi ? 'cmd-add-more' : undefined}
+                aria-label={newUi ? 'More ways to add' : undefined}
                 onClick={() => setShowDropdown(!showDropdown)}
-                style={{
+                style={newUi ? undefined : {
                     backgroundColor: 'hsl(var(--color-brand-primary))',
                     color: 'white',
                     border: 'none',
@@ -172,7 +176,7 @@ export const BoardViewsToolbar = () => {
 
     return (
         <>
-        <div style={{
+        <div className={newUi ? 'cmd-bar' : undefined} style={newUi ? undefined : {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -180,12 +184,17 @@ export const BoardViewsToolbar = () => {
             marginTop: '16px', // Gap above toolbar
             backgroundColor: 'hsl(var(--color-bg-canvas))',
         }}>
+            {/* NHG: one command bar — the views, then search, tools and New Task */}
+            {newUi && <BoardViewsTabs />}
+            {newUi && <div className="cmd-spacer" />}
+
             {/* Toolbar Items: Primary Action & Tools */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={newUi ? { display: 'contents' } : { display: 'flex', alignItems: 'center', gap: '16px' }}>
                 {!newUi && primaryAction}
 
                 <div 
-                    style={{ 
+                    className={newUi ? 'cmd-search glass-chip' : undefined}
+                    style={newUi ? undefined : { 
                         ...toolbarItemStyle, 
                         padding: '0 8px', 
                         gap: '4px',
@@ -195,15 +204,16 @@ export const BoardViewsToolbar = () => {
                         transition: 'all 0.2s'
                     }}
                 >
-                    <Search size={16} />
+                    <Search size={newUi ? 15 : 16} />
                     <input
                         type="text"
+                        aria-label={`Search ${t.items}`}
                         placeholder={`Search ${t.items}...`}
                         value={useBoardStore(state => state.searchQuery)}
                         onChange={(e) => useBoardStore.getState().setSearchQuery(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
                         onBlur={() => setIsSearchFocused(false)}
-                        style={{
+                        style={newUi ? undefined : {
                             border: 'none',
                             background: 'none',
                             outline: 'none',
@@ -216,14 +226,17 @@ export const BoardViewsToolbar = () => {
                 </div>
                 
 
+                {/* NHG: the four tools sit together in one glass capsule */}
+                <div className={newUi ? 'cmd-tools glass-chip' : undefined} style={newUi ? undefined : { display: 'contents' }}>
                 <div 
                     ref={filterBtnRef}
-                    style={toolbarItemStyle}
+                    className={newUi ? 'cmd-tool' : undefined}
+                    style={newUi ? undefined : toolbarItemStyle}
                     onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
-                    <Filter size={16} />
+                    <Filter size={newUi ? 15 : 16} />
                     <span>Filter</span>
-                    <ChevronDown size={14} />
+                    {!newUi && <ChevronDown size={14} />}
                 </div>
 
                 {showFilterDropdown && filterBtnRef.current && activeBoardId && createPortal(
@@ -364,10 +377,11 @@ export const BoardViewsToolbar = () => {
 
                 <div 
                     ref={sortBtnRef}
-                    style={toolbarItemStyle}
+                    className={newUi ? 'cmd-tool' : undefined}
+                    style={newUi ? undefined : toolbarItemStyle}
                     onClick={() => setShowSortDropdown(!showSortDropdown)}
                 >
-                    <ArrowUpDown size={16} />
+                    <ArrowUpDown size={newUi ? 15 : 16} />
                     <span>Sort</span>
                 </div>
 
@@ -432,10 +446,11 @@ export const BoardViewsToolbar = () => {
 
                 <div 
                     ref={groupByBtnRef}
-                    style={toolbarItemStyle}
+                    className={newUi ? 'cmd-tool' : undefined}
+                    style={newUi ? undefined : toolbarItemStyle}
                     onClick={() => setShowGroupByDropdown(!showGroupByDropdown)}
                 >
-                    <LayoutPanelLeft size={16} />
+                    <LayoutPanelLeft size={newUi ? 15 : 16} />
                     <span>Group by</span>
                 </div>
 
@@ -494,11 +509,13 @@ export const BoardViewsToolbar = () => {
                 )}
 
                 <div 
-                    style={toolbarItemStyle}
+                    className={newUi ? 'cmd-tool' : undefined}
+                    style={newUi ? undefined : toolbarItemStyle}
                     onClick={() => useBoardStore.getState().toggleShowHiddenItems()}
                 >
-                    {useBoardStore(state => state.showHiddenItems) ? <Eye size={16} /> : <EyeOff size={16} />}
+                    {useBoardStore(state => state.showHiddenItems) ? <Eye size={newUi ? 15 : 16} /> : <EyeOff size={newUi ? 15 : 16} />}
                     <span>Hide</span>
+                </div>
                 </div>
             </div>
 

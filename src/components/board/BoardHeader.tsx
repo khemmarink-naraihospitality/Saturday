@@ -239,10 +239,10 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                     {/* Search removed per user request */}
                 </div>
 
-                <div style={{ height: '24px', width: '1px', background: 'hsl(var(--color-border))', margin: '0 8px' }} />
+                <div className="bh-members-divider" style={{ height: '24px', width: '1px', background: 'hsl(var(--color-border))', margin: '0 8px' }} />
 
-                {/* Members Display */}
-                <div style={{ display: 'flex', marginRight: '8px', alignItems: 'center' }}>
+                {/* Members Display (NHG leaves it out: Share lists the members and invites) */}
+                <div className="bh-members" style={{ display: 'flex', marginRight: '8px', alignItems: 'center' }}>
                     {activeBoardMembers.length > 0 ? (
                         <>
                             {displayMembers.map((member, index) => {

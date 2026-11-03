@@ -611,3 +611,10 @@ html[data-palette='narai'] button.bh-share.glass-chip,
 html[data-palette='narai'].dark button.bh-share.glass-chip {
     color: hsl(var(--color-text-primary)) !important;
 }
+
+/* The board header carries no member avatars or "+" under NHG: the Share chip
+   already lists who is on the board and invites people */
+html[data-palette='narai'] .bh-members,
+html[data-palette='narai'] .bh-members-divider {
+    display: none !important;
+}

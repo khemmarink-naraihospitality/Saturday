@@ -12,18 +12,23 @@ const CLOSE_MS = 180;
  * click on the veil, and gives focus back to what opened it.
  * Styles: nhg_glass.css (.nhg-popup*).
  */
-export const PopupPanel = ({ isOpen, onClose, eyebrow, title, children, width = 720 }: {
+export const PopupPanel = ({ isOpen, onClose, eyebrow, title, children, width = 720, bare = false }: {
     isOpen: boolean;
     onClose: () => void;
     eyebrow?: string;
     title: string;
     children: ReactNode;
     width?: number;
+    /** The content brings its own header and close button (an item's comments, the notifications page): the sheet is just its frame. */
+    bare?: boolean;
 }) => {
     const [mounted, setMounted] = useState(isOpen);
     const [closing, setClosing] = useState(false);
     const opener = useRef<Element | null>(null);
     const sheet = useRef<HTMLDivElement>(null);
+    // Held through the exit animation: the parent usually passes nothing once closed
+    const lastChildren = useRef<ReactNode>(children);
+    if (isOpen) lastChildren.current = children;
 
     useEffect(() => {
         if (isOpen) {
@@ -59,23 +64,26 @@ export const PopupPanel = ({ isOpen, onClose, eyebrow, title, children, width = 
         >
             <div
                 ref={sheet}
-                className="nhg-popup"
+                className={`nhg-popup${bare ? ' nhg-popup--bare' : ''}`}
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="nhg-popup-title"
+                aria-labelledby={bare ? undefined : 'nhg-popup-title'}
+                aria-label={bare ? title : undefined}
                 tabIndex={-1}
                 style={{ maxWidth: width }}
             >
-                <header className="nhg-popup__head">
-                    <div className="nhg-popup__titles">
-                        {eyebrow && <span className="nhg-popup__eyebrow">{eyebrow}</span>}
-                        <h2 id="nhg-popup-title" className="nhg-popup__title">{title}</h2>
-                    </div>
-                    <button type="button" className="nhg-popup__close" onClick={onClose} aria-label="Close">
-                        <X size={18} />
-                    </button>
-                </header>
-                <div className="nhg-popup__body">{children}</div>
+                {!bare && (
+                    <header className="nhg-popup__head">
+                        <div className="nhg-popup__titles">
+                            {eyebrow && <span className="nhg-popup__eyebrow">{eyebrow}</span>}
+                            <h2 id="nhg-popup-title" className="nhg-popup__title">{title}</h2>
+                        </div>
+                        <button type="button" className="nhg-popup__close" onClick={onClose} aria-label="Close">
+                            <X size={18} />
+                        </button>
+                    </header>
+                )}
+                <div className="nhg-popup__body">{isOpen ? children : lastChildren.current}</div>
             </div>
         </div>,
         document.body

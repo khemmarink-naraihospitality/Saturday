@@ -545,3 +545,98 @@ html[data-palette='narai'] .nhg-popup__body {
 html[data-palette='narai'] .nhg-popup__body :is([style*="background-color: white"], [style*="background-color: rgb(247, 249, 250)"]) {
     background-color: transparent !important;
 }
+
+/* A popup whose content brings its own header and close button (an item's
+   comments, the notifications page): the sheet is just its frame */
+html[data-palette='narai'] .nhg-popup--bare {
+    height: min(88vh, 860px);
+    max-height: none;
+}
+
+html[data-palette='narai'] .nhg-popup--bare .nhg-popup__body {
+    height: auto;
+    padding: 0;
+    border-top: none;
+    overflow: hidden;
+}
+
+/* What it holds paints its own surface: it sits on the sheet instead */
+html[data-palette='narai'] .nhg-popup--bare .nhg-popup__body :is([style*="background-color: hsl(var(--color-bg-surface))"], [style*="background-color: hsl(var(--color-bg-canvas))"], [style*="background-color: white"]):not(button, input, textarea, [contenteditable], [style*="box-shadow"], [style*="border-radius"]) {
+    background-color: transparent !important;
+}
+
+/* Contact support: the form in the popup */
+html[data-palette='narai'] .nhg-support {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+}
+
+html[data-palette='narai'] .nhg-support__form {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px;
+    background: #fff;
+}
+
+html[data-palette='narai'] .nhg-support__open {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+    text-underline-offset: 3px;
+}
+
+html[data-palette='narai'] .nhg-support__open:hover {
+    color: hsl(var(--color-text-primary));
+    text-decoration: underline;
+}
+
+/* The comment editor: its attach row (@, attach, emoji, Drive) sits at the end
+   of the formatting toolbar instead of under the text, and GIF is left out.
+   The toolbar keeps room for it so the two never overlap. */
+html[data-palette='narai'] .rte-toolbar {
+    padding-right: 150px !important;
+}
+
+html[data-palette='narai'] .rte .rte-actions {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    height: 28px;
+    z-index: 2;
+}
+
+html[data-palette='narai'] .rte .rte-actions [title='Insert GIF or Sticker'] {
+    display: none !important;
+}
+
+/* The popup is wider than the side panel was, so its columns are too; with the
+   attach row now in the toolbar, Save keeps to the right of the text box */
+html[data-palette='narai'] .nhg-popup--bare .item-tab-column {
+    max-width: 860px !important;
+}
+
+html[data-palette='narai'] .rte .rte-actions ~ div:last-child {
+    margin-left: auto;
+}
+
+html[data-palette='narai'] .rte-toolbar {
+    padding-left: 8px !important;
+    padding-right: 140px !important;
+}
+
+/* The sheet takes focus when it opens (so Escape and the keyboard work); that
+   focus isn't drawn as a ring round the whole sheet */
+html[data-palette='narai'] .nhg-popup:focus,
+html[data-palette='narai'] .nhg-popup:focus-visible {
+    outline: none !important;
+}

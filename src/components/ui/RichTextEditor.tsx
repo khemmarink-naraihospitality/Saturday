@@ -692,7 +692,7 @@ export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHe
     ];
 
     return (
-        <div style={{
+        <div className="rte" style={{
             display: 'flex',
             flexDirection: 'column',
             border: '1px solid hsl(var(--color-border))',
@@ -704,7 +704,7 @@ export const RichTextEditor = ({ value, onChange, footer, id, placeholder, minHe
             position: 'relative'
         }}>
             {/* Toolbar */}
-            <div style={{
+            <div className="rte-toolbar" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '2px',

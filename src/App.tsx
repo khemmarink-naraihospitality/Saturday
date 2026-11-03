@@ -8,6 +8,8 @@ import { useUserStore } from './store/useUserStore';
 
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { SidePanel } from './components/ui/SidePanel';
+import { PopupPanel } from './components/ui/PopupPanel';
+import { useNewUi } from './lib/brand';
 import { ContactSupportButton } from './components/ui/ContactSupportButton';
 import { UndoToastHost } from './components/ui/UndoToastHost';
 import { TaskDetail } from './components/task/TaskDetail';
@@ -219,6 +221,8 @@ function MainApp() {
   const activeBoardId = useBoardStore(state => state.activeBoardId);
   const activePage = useBoardStore(state => state.activePage);
   const navigateTo = useBoardStore(state => state.navigateTo);
+  // NHG opens the item and the notifications in centred popups (PopupPanel)
+  const newUi = useNewUi();
 
   const boards = useBoardStore(state => state.boards);
   const activeItemId = useBoardStore(state => state.activeItemId);
@@ -645,11 +649,27 @@ function MainApp() {
             </Suspense>
           </div>
         ) : activePage === 'notifications' ? (
+          newUi ? (
+            // NHG: Notifications is a popup over the home page it was opened from
+            <>
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <Suspense fallback={<PageLoader />}>
+                  <HomePage />
+                </Suspense>
+              </div>
+              <PopupPanel isOpen bare title="Notifications" width={860} onClose={() => navigateTo('home')}>
+                <Suspense fallback={<PageLoader />}>
+                  <NotificationPage />
+                </Suspense>
+              </PopupPanel>
+            </>
+          ) : (
           <div style={{ flex: 1, overflow: 'auto' }}>
             <Suspense fallback={<PageLoader />}>
               <NotificationPage />
             </Suspense>
           </div>
+          )
         ) : activePage === 'favorites' ? (
           <div style={{ flex: 1, overflow: 'auto' }}>
             <Suspense fallback={<PageLoader />}>
@@ -673,10 +693,16 @@ function MainApp() {
           </div>
         )}
 
-        {/* Task Detail Side Panel */}
-        <SidePanel isOpen={!!activeItemId} onClose={() => setActiveItem(null)}>
-          {activeItemId && <TaskDetail itemId={activeItemId} onClose={() => setActiveItem(null)} />}
-        </SidePanel>
+        {/* Task Detail: a side panel, and under NHG a centred popup */}
+        {newUi ? (
+          <PopupPanel isOpen={!!activeItemId} bare title="Task" width={980} onClose={() => setActiveItem(null)}>
+            {activeItemId && <TaskDetail itemId={activeItemId} onClose={() => setActiveItem(null)} />}
+          </PopupPanel>
+        ) : (
+          <SidePanel isOpen={!!activeItemId} onClose={() => setActiveItem(null)}>
+            {activeItemId && <TaskDetail itemId={activeItemId} onClose={() => setActiveItem(null)} />}
+          </SidePanel>
+        )}
 
         {/* BatchActionsBar moved to BoardPage */}
 

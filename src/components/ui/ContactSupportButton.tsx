@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../../store/useThemeStore';
+import { useNewUi } from '../../lib/brand';
+import { PopupPanel } from './PopupPanel';
 
 // The support cat: the original is purple (hosted by the guideline site); under
 // Narai it is the same picture recoloured white with brown patches.
 const SUPPORT_CAT = 'https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru.png';
 const SUPPORT_CAT_NARAI = '/support-cat-narai.png';
 
+// The support request form (a Google Form); NHG shows it inside a popup
+const SUPPORT_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header';
+
 export const ContactSupportButton = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const palette = useThemeStore(state => state.palette);
+    const newUi = useNewUi();
+    const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
         // Show after a slight delay for better UX
@@ -27,10 +34,26 @@ export const ContactSupportButton = () => {
     };
 
     const handleClick = () => {
-        window.open('https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header', '_blank');
+        if (newUi) setShowForm(true);
+        else window.open(SUPPORT_FORM, '_blank');
     };
 
     return (
+        <>
+        {newUi && (
+            <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact support" width={760}>
+                <div className="nhg-support">
+                    <iframe
+                        className="nhg-support__form"
+                        title="Support request form"
+                        src={SUPPORT_FORM.replace('usp=header', 'embedded=true')}
+                    />
+                    <a className="nhg-support__open" href={SUPPORT_FORM} target="_blank" rel="noopener noreferrer">
+                        Form not loading? Open it in a new tab <ExternalLink size={14} aria-hidden="true" />
+                    </a>
+                </div>
+            </PopupPanel>
+        )}
         <AnimatePresence>
             {isVisible && (
                 <motion.div
@@ -136,5 +159,6 @@ export const ContactSupportButton = () => {
                 </motion.div>
             )}
         </AnimatePresence>
+        </>
     );
 };

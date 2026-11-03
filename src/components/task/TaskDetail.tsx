@@ -575,7 +575,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
             {/* Content */}
             <div style={{ flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'hsl(var(--color-bg-canvas))' }}>
                 {activeTab === 'updates' && (
-                    <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+                    <div className="item-tab-column" style={{ maxWidth: '700px', margin: '0 auto' }}>
                         {/* Input Area (New WYSIWYG) */}
                         <div style={{ marginBottom: '32px' }}>
                             <RichTextEditor
@@ -636,7 +636,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                         {/* Action bar */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
                                             {/* Left: action buttons */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                            <div className="rte-actions" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                 {/* @ mention */}
                                                 <button
                                                     onMouseDown={(e) => { e.preventDefault(); insertIntoEditor(`update-input-${itemId}`, '@'); }}
@@ -886,7 +886,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
 
                                                                 {/* Edit action bar */}
                                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                    <div className="rte-actions" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                                         {/* @ mention */}
                                                                         <button
                                                                             onMouseDown={(e) => { e.preventDefault(); insertIntoEditor('edit-update-input', '@'); }}
@@ -1139,7 +1139,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                                         </div>
                                                                     )}
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px' }}>
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                                        <div className="rte-actions" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                                                             {/* @ mention */}
                                                                             <button
                                                                                 onMouseDown={(e) => { e.preventDefault(); insertIntoReply(update.id, '@'); }}
@@ -1256,7 +1256,7 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                 />
 
                 {activeTab === 'files' && (
-                    <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+                    <div className="item-tab-column" style={{ maxWidth: '700px', margin: '0 auto' }}>
                         <div style={{ marginBottom: '24px' }}>
                             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Files</h3>
 

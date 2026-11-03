@@ -422,3 +422,126 @@ html[data-palette='narai'] .home-more {
 html[data-palette='narai'] .home-more:hover {
     background: var(--glass-chip-hover);
 }
+
+/* ── Popup: a centred glass sheet (PopupPanel) ─────────────────────────── */
+html[data-palette='narai'] .nhg-popup-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--nhg-scrim);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    animation: nhg-popup-fade 0.18s ease-out;
+}
+
+html[data-palette='narai'] .nhg-popup-veil.is-closing {
+    opacity: 0;
+    transition: opacity 0.18s ease-in;
+}
+
+html[data-palette='narai'] .nhg-popup {
+    width: 100%;
+    max-height: min(86vh, 820px);
+    display: flex;
+    flex-direction: column;
+    background:
+        radial-gradient(90% 40% at 0% 0%, rgba(167, 100, 0, 0.06), transparent 60%),
+        hsl(var(--paper) / 0.94);
+    border: 1px solid var(--glass-pop-edge);
+    border-radius: 24px;
+    box-shadow: 0 40px 90px -30px rgba(21, 42, 0, 0.55), 0 2px 8px rgba(21, 42, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    outline: none;
+    overflow: hidden;
+    animation: nhg-popup-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html[data-palette='narai'].dark .nhg-popup {
+    box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 239, 210, 0.08);
+}
+
+html[data-palette='narai'] .nhg-popup__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 28px 14px;
+}
+
+html[data-palette='narai'] .nhg-popup__titles {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+html[data-palette='narai'] .nhg-popup__eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html[data-palette='narai'] .nhg-popup__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    color: hsl(var(--color-text-primary));
+}
+
+html[data-palette='narai'] .nhg-popup__close {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--color-text-secondary));
+    background: var(--glass-chip);
+    border: 1px solid var(--glass-chip-edge);
+    box-shadow: var(--glass-chip-shadow);
+    transition: background-color 0.15s, color 0.15s;
+}
+
+html[data-palette='narai'] .nhg-popup__close:hover {
+    background: var(--glass-chip-hover);
+    color: hsl(var(--color-text-primary));
+}
+
+html[data-palette='narai'] .nhg-popup__body {
+    flex: 1;
+    min-height: 0;
+    height: min(64vh, 640px);
+    display: flex;
+    flex-direction: column;
+    padding: 0 28px 24px;
+    border-top: 1px solid var(--paper-row-line);
+}
+
+@keyframes nhg-popup-fade { from { opacity: 0; } }
+@keyframes nhg-popup-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-palette='narai'] .nhg-popup-veil,
+    html[data-palette='narai'] .nhg-popup { animation: none; }
+    html[data-palette='narai'] .nhg-popup-veil.is-closing { transition: none; }
+}
+
+/* The activity list inside paints its own white and grey: on the popup it
+   sits on the sheet instead */
+html[data-palette='narai'] .nhg-popup__body :is([style*="background-color: white"], [style*="background-color: rgb(247, 249, 250)"]) {
+    background-color: transparent !important;
+}

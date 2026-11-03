@@ -6,6 +6,7 @@ import { usePermission } from '../../hooks/usePermission';
 import { ActivityLogList } from '../common/ActivityLogList';
 import { ShareBoardModal } from '../workspace/ShareBoardModal';
 import { SidePanel } from '../ui/SidePanel';
+import { PopupPanel } from '../ui/PopupPanel';
 import { ExportBoardModal } from './ExportBoardModal';
 import { ImportBoardModal } from '../workspace/ImportBoardModal';
 
@@ -338,61 +339,78 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
                         <Activity size={16} />
                     </motion.button>
 
-                    <SidePanel isOpen={showActivityLog} onClose={() => setShowActivityLog(false)} width="600px">
-                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            {/* Header matching TaskDetail styles */}
-                            <div style={{
-                                padding: '24px 32px',
-                                borderBottom: '1px solid hsl(var(--color-border))',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                justifyContent: 'space-between',
-                                backgroundColor: 'hsl(var(--color-bg-surface))',
-                                flexShrink: 0
-                            }}>
-                                <div>
-                                    <h2 style={{
-                                        margin: 0,
-                                        fontSize: '24px',
-                                        fontWeight: 600,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        color: 'hsl(var(--color-text-primary))'
-                                    }}>
-                                        <Activity size={24} className="text-brand-primary" />
-                                        {`${t.Board} Activity`}
-                                    </h2>
-                                    <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: 'hsl(var(--color-text-secondary))', marginTop: '8px' }}>
-                                        <span>{`${t.Board}: `}{board.title}</span>
+                    {newUi ? (
+                        // NHG: a centred popup rather than a side panel
+                        <PopupPanel
+                            isOpen={showActivityLog}
+                            onClose={() => setShowActivityLog(false)}
+                            eyebrow={board.title}
+                            title={`${t.Board} Activity`}
+                        >
+                            <ActivityLogList
+                                scope="board"
+                                targetId={boardId}
+                                showHeader={false}
+                                onClose={() => setShowActivityLog(false)}
+                            />
+                        </PopupPanel>
+                    ) : (
+                        <SidePanel isOpen={showActivityLog} onClose={() => setShowActivityLog(false)} width="600px">
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                {/* Header matching TaskDetail styles */}
+                                <div style={{
+                                    padding: '24px 32px',
+                                    borderBottom: '1px solid hsl(var(--color-border))',
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    justifyContent: 'space-between',
+                                    backgroundColor: 'hsl(var(--color-bg-surface))',
+                                    flexShrink: 0
+                                }}>
+                                    <div>
+                                        <h2 style={{
+                                            margin: 0,
+                                            fontSize: '24px',
+                                            fontWeight: 600,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            color: 'hsl(var(--color-text-primary))'
+                                        }}>
+                                            <Activity size={24} className="text-brand-primary" />
+                                            {`${t.Board} Activity`}
+                                        </h2>
+                                        <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: 'hsl(var(--color-text-secondary))', marginTop: '8px' }}>
+                                            <span>{`${t.Board}: `}{board.title}</span>
+                                        </div>
                                     </div>
+                                    <button
+                                        onClick={() => setShowActivityLog(false)}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '8px',
+                                            borderRadius: '4px',
+                                            color: 'hsl(var(--color-text-tertiary))'
+                                        }}
+                                    >
+                                        <X size={24} />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setShowActivityLog(false)}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '8px',
-                                        borderRadius: '4px',
-                                        color: 'hsl(var(--color-text-tertiary))'
-                                    }}
-                                >
-                                    <X size={24} />
-                                </button>
+    
+                                {/* Content */}
+                                <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 32px' }}>
+                                    <ActivityLogList
+                                        scope="board"
+                                        targetId={boardId}
+                                        showHeader={false}
+                                        onClose={() => setShowActivityLog(false)}
+                                    />
+                                </div>
                             </div>
-
-                            {/* Content */}
-                            <div style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 32px' }}>
-                                <ActivityLogList
-                                    scope="board"
-                                    targetId={boardId}
-                                    showHeader={false}
-                                    onClose={() => setShowActivityLog(false)}
-                                />
-                            </div>
-                        </div>
-                    </SidePanel>
+                        </SidePanel>
+                    )}
                 </div>
 
                 <button

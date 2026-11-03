@@ -385,6 +385,10 @@ html[data-palette='narai'] .kanban-field-label {
    slate colours are set inline, so they are reached by value. Saturday's
    console keeps its own slate-and-indigo look. */
 html[data-palette='narai'] .admin-console {
+    /* The console's sidebar is Ginger amber (NHGOne's /admin does the same),
+       so it reads as a different place from the app's Narai Green */
+    --nhg-admin-sidebar: linear-gradient(172deg, #a2630f 0%, #8a520c 45%, #6f410a 100%);
+    --nhg-admin-sidebar-shadow: rgba(80, 45, 5, 0.6);
     background: var(--nhg-backdrop) !important;
     font-family: var(--font-family) !important;
     --card-bg: #fffdf8;
@@ -401,8 +405,8 @@ html[data-palette='narai'] .admin-console {
 html[data-palette='narai'] .admin-console > aside {
     margin: 10px 0 10px 10px;
     border-radius: 18px;
-    background: var(--nhg-sidebar) !important;
-    box-shadow: 0 2px 6px rgba(21, 42, 0, 0.12), 0 18px 40px -22px rgba(21, 42, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: var(--nhg-admin-sidebar) !important;
+    box-shadow: 0 2px 6px rgba(80, 45, 5, 0.14), 0 18px 40px -22px var(--nhg-admin-sidebar-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 html[data-palette='narai'] .admin-console > aside nav > div {
@@ -425,7 +429,7 @@ html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(1
 }
 
 html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(160deg, #818cf8"], [style*="rgb(129, 140, 248)"]) svg {
-    stroke: #152A00;
+    stroke: #8a520c;
 }
 
 html[data-palette='narai'] .admin-console .admin-brand {
@@ -465,3 +469,15 @@ html[data-palette='narai'] .admin-console > main [style*="color: rgb(148, 163, 1
 /* The two Basic stats panels: Narai Green and Ginger amber */
 html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#4f46e5"] { --panel-color: #1d3913 !important; }
 html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#047857"] { --panel-color: #8a5212 !important; }
+
+/* The console is a light page in dark mode too (its cards and inks are fixed
+   light values), so its backdrop and page stay light rather than following
+   NHG's green dark surface */
+html[data-palette='narai'].dark .admin-console {
+    background: #ebe5d1 !important;
+}
+
+html[data-palette='narai'].dark .admin-console > main {
+    background: linear-gradient(140deg, #fdfaf2 0%, #faf5e9 45%, #f2eed6 100%);
+    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}

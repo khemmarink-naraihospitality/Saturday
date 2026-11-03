@@ -181,12 +181,12 @@
   --color-brand-subtle: 38 58% 80.2%;      /* #ead4af */
 
   /* Galangal page, #fffaf0 surfaces */
-  --color-bg: 42 63% 94.7%;                /* #faf5e9: the page, a light Galangal */
-  --color-bg-canvas: 42 63% 94.7%;
+  --color-bg: 39 100% 91.2%;               /* #FFEFD2 Galangal (PMS 9142C): the ground */
+  --color-bg-canvas: 39 100% 91.2%;
   --color-bg-surface: 40 100% 97.1%;       /* #fffaf0: cards, tables, menus */
   --color-bg-surface-hover: 38 75% 86.1%;  /* #f6e3c1 */
   --color-bg-subtle: 38 75% 86.1%;
-  --color-bg-base: 42 63% 94.7%;
+  --color-bg-base: 39 100% 91.2%;
 
   /* Ink: Narai Green, then 66% and 50% of it (as NHGOne reads them) */
   --color-text-primary: 90 100% 8.2%;
@@ -263,11 +263,11 @@
   --nhg-aubergine: #250719;
   --nhg-hairline: rgba(21, 42, 0, 0.1);
   --nhg-shadow-2: 0 2px 8px rgba(21, 42, 0, 0.06), 0 24px 60px -20px rgba(21, 42, 0, 0.32);
-  --nhg-scrim: rgba(236, 229, 208, 0.55);
+  --nhg-scrim: rgba(255, 239, 210, 0.6);
   /* The shell: a cream backdrop holding two floating panels, the green
      sidebar and the page with its warm wash */
-  --nhg-backdrop: #ebe5d1;
-  --nhg-page: linear-gradient(140deg, #fdfaf2 0%, #faf5e9 45%, #f2eed6 100%);
+  --nhg-backdrop: #efdfbd;
+  --nhg-page: #FFEFD2;
   --nhg-sidebar: linear-gradient(172deg, #35532a 0%, #29471f 42%, #1d3913 100%);
   --nhg-sidebar-active: rgba(255, 255, 255, 0.13);
   --nhg-sidebar-line: rgba(255, 255, 255, 0.18);
@@ -281,11 +281,11 @@
   --card-shadow: 0 1px 2px rgba(21, 42, 0, 0.04), 0 10px 26px -14px rgba(21, 42, 0, 0.24);
   --card-shadow-hover: 0 2px 4px rgba(21, 42, 0, 0.05), 0 18px 36px -16px rgba(21, 42, 0, 0.32);
   --card-sheen: transparent;
-  --card-row-hover: #fbf3e0;
+  --card-row-hover: #fff4de;
   --card-solid: #fffdf8;
-  --card-grid: #efeadb;
-  --card-tray: #f3ecda;
-  --card-tile: #f4efe3;
+  --card-grid: #f1e2c3;
+  --card-tray: #f9e6c4;
+  --card-tile: #f6e3c1;
   --card-tile-ink: #152A00;
   --card-tile-ring: rgba(21, 42, 0, 0.08);
   --card-tile-shadow: 0 0 0 transparent;

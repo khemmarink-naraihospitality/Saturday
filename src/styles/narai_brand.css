@@ -401,7 +401,7 @@ html[data-palette='narai'] .admin-console {
     --card-shadow: 0 1px 2px rgba(21, 42, 0, 0.04), 0 10px 26px -14px rgba(21, 42, 0, 0.24);
     --card-shadow-hover: 0 2px 4px rgba(21, 42, 0, 0.05), 0 18px 36px -16px rgba(21, 42, 0, 0.32);
     --card-sheen: transparent;
-    --card-row-hover: #fbf3e0;
+    --card-row-hover: #fff4de;
     --radius-lg: 14px;
 }
 
@@ -477,10 +477,10 @@ html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#047857"] { -
    light values), so its backdrop and page stay light rather than following
    NHG's green dark surface */
 html[data-palette='narai'].dark .admin-console {
-    background: #ebe5d1 !important;
+    background: #efdfbd !important;
 }
 
 html[data-palette='narai'].dark .admin-console > main {
-    background: linear-gradient(140deg, #fdfaf2 0%, #faf5e9 45%, #f2eed6 100%);
+    background: #FFEFD2;
     box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }

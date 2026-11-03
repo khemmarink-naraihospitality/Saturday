@@ -274,7 +274,7 @@ html[data-palette='narai'] .admin-console {
     /* The Daily Active Users bars: Lemongrass #AAA024 (PMS 7745C) */
     --admin-bar: #AAA024;
     --admin-bar-soft: #d6cf6a;
-    background: var(--nhg-backdrop) !important;
+    background: var(--glass-backdrop) !important;
     font-family: var(--font-family) !important;
     --card-bg: #fffdf8;
     --card-border: rgba(21, 42, 0, 0.06);
@@ -288,8 +288,8 @@ html[data-palette='narai'] .admin-console {
 }
 
 html[data-palette='narai'] .admin-console > aside {
-    margin: 10px 0 10px 10px;
-    border-radius: 18px;
+    margin: 12px;
+    border-radius: 24px;
     background: var(--nhg-admin-sidebar) !important;
     box-shadow: 0 2px 6px rgba(37, 7, 25, 0.16), 0 18px 40px -22px var(--nhg-admin-sidebar-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -334,10 +334,11 @@ html[data-palette='narai'] .admin-console > aside :is([style*="color: rgb(148, 1
 }
 
 html[data-palette='narai'] .admin-console > main {
-    margin: 10px;
-    border-radius: 18px;
-    background: var(--nhg-page);
-    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    margin: 12px 12px 12px 0;
+    border-radius: 24px;
+    background: var(--glass-panel);
+    border: 1px solid var(--glass-panel-edge);
+    box-shadow: var(--glass-panel-shadow);
 }
 
 html[data-palette='narai'] .admin-console > main :is(h1, h2, h3) {
@@ -359,10 +360,15 @@ html[data-palette='narai'] .admin-console .admin-panel-lit[style*="#047857"] { -
    light values), so its backdrop and page stay light rather than following
    NHG's green dark surface */
 html[data-palette='narai'].dark .admin-console {
-    background: #efdfbd !important;
+    background:
+        radial-gradient(42% 38% at 6% 10%, rgba(170, 160, 36, 0.40), transparent 70%),
+        radial-gradient(36% 34% at 97% 4%, rgba(167, 100, 0, 0.30), transparent 70%),
+        radial-gradient(48% 42% at 80% 98%, rgba(225, 255, 179, 0.60), transparent 70%),
+        linear-gradient(160deg, #fff3dc 0%, #FFEFD2 52%, #f6e3c1 100%) !important;
 }
 
 html[data-palette='narai'].dark .admin-console > main {
-    background: #FFEFD2;
-    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    background: rgba(255, 239, 210, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 30px 70px -36px rgba(21, 42, 0, 0.45), 0 2px 8px rgba(21, 42, 0, 0.05);
 }

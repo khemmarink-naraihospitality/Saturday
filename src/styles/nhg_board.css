@@ -224,12 +224,22 @@ html[data-palette='narai'] .menu-item:hover {
 }
 
 /* ── Table: the frozen header as a pill bar ───────────────────────────── */
-html[data-palette='narai'] .board-sheet {
+/* The table's sheet is bare (its cards carry the chrome); the other views —
+   Timeline, Calendar — sit in one paper frame */
+html[data-palette='narai'] .board-sheet.table-container {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     padding: 0 !important;
+}
+
+html[data-palette='narai'] .board-sheet:not(.table-container) {
+    background: hsl(var(--paper)) !important;
+    border: 1px solid var(--paper-edge) !important;
+    border-radius: 20px !important;
+    box-shadow: var(--paper-shadow) !important;
+    overflow: hidden;
 }
 
 html[data-palette='narai'] .table-container {

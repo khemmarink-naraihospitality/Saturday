@@ -6,7 +6,7 @@ import { usePermission } from '../../../hooks/usePermission';
 import { StatusPicker } from '../StatusPicker';
 import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
 import { useNewUi } from '../../../lib/brand';
-import { StatusPill } from '../../common/StatusPill';
+import { StatusBlock } from '../../common/StatusPill';
 
 interface StatusCellProps {
     itemId: string;
@@ -52,16 +52,16 @@ export const StatusCell: React.FC<StatusCellProps> = memo(({ itemId, column, val
     return (
         <>
             {newUi ? (
-                // NHG: a pill with a dot on the row's own background; an empty
-                // status is an empty cell rather than a grey block
+                // NHG: a rounded rectangle in the label's colour filling the cell
+                // (an empty status is the same block in grey)
                 <div
                     ref={cellRef}
-                    className="table-cell status-cell-pill"
+                    className="table-cell status-cell-pill status-cell-block"
                     onClick={() => !isEditing && startEditing()}
                 >
-                    {statusOption && content
-                        ? <StatusPill color={statusOption.color} label={content} />
-                        : isHybridValue ? <span className="status-cell-pill__text">{content}</span> : null}
+                    {isHybridValue
+                        ? <span className="status-cell-pill__text">{content}</span>
+                        : <StatusBlock color={statusOption?.color} label={statusOption && content ? content : undefined} />}
                 </div>
             ) : (
             <div

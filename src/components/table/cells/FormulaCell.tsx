@@ -8,7 +8,7 @@ import { siblingColumns } from '../../../lib/columnScope';
 import { columnJustify } from '../../../lib/utils';
 import { tintLabel, LABEL_TEXT } from '../../../lib/labelTint';
 import { useNewUi } from '../../../lib/brand';
-import { StatusPill } from '../../common/StatusPill';
+import { StatusBlock } from '../../common/StatusPill';
 
 /**
  * A Formula column's cell: the row's result, worked out from its other columns
@@ -31,8 +31,8 @@ export const FormulaCell = memo(({ item, column }: { item: Item; column: Column 
 
     if (display.kind === 'label') {
         return newUi ? (
-            <div className="table-cell status-cell-pill formula-cell--readonly">
-                <StatusPill color={display.color!} label={display.text} />
+            <div className="table-cell status-cell-pill status-cell-block formula-cell--readonly">
+                <StatusBlock color={display.color} label={display.text} />
             </div>
         ) : (
             <div

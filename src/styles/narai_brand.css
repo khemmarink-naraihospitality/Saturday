@@ -385,10 +385,10 @@ html[data-palette='narai'] .kanban-field-label {
    slate colours are set inline, so they are reached by value. Saturday's
    console keeps its own slate-and-indigo look. */
 html[data-palette='narai'] .admin-console {
-    /* The console's sidebar is Ginger amber (NHGOne's /admin does the same),
-       so it reads as a different place from the app's Narai Green */
-    --nhg-admin-sidebar: linear-gradient(172deg, #a2630f 0%, #8a520c 45%, #6f410a 100%);
-    --nhg-admin-sidebar-shadow: rgba(80, 45, 5, 0.6);
+    /* The console's sidebar is Aubergine (#250719, PMS 262C), so it reads as
+       a different place from the app's Narai Green */
+    --nhg-admin-sidebar: linear-gradient(172deg, #3f1230 0%, #2f0b22 42%, #250719 100%);
+    --nhg-admin-sidebar-shadow: rgba(37, 7, 25, 0.62);
     background: var(--nhg-backdrop) !important;
     font-family: var(--font-family) !important;
     --card-bg: #fffdf8;
@@ -406,7 +406,7 @@ html[data-palette='narai'] .admin-console > aside {
     margin: 10px 0 10px 10px;
     border-radius: 18px;
     background: var(--nhg-admin-sidebar) !important;
-    box-shadow: 0 2px 6px rgba(80, 45, 5, 0.14), 0 18px 40px -22px var(--nhg-admin-sidebar-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 6px rgba(37, 7, 25, 0.16), 0 18px 40px -22px var(--nhg-admin-sidebar-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 html[data-palette='narai'] .admin-console > aside nav > div {
@@ -429,7 +429,7 @@ html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(1
 }
 
 html[data-palette='narai'] .admin-console > aside :is([style*="linear-gradient(160deg, #818cf8"], [style*="rgb(129, 140, 248)"]) svg {
-    stroke: #8a520c;
+    stroke: #250719;
 }
 
 html[data-palette='narai'] .admin-console .admin-brand {

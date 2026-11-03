@@ -4,7 +4,7 @@ import { formatNumberValue } from '../../utils/format';
 import type { Column } from '../../types';
 import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
-import { CountsText, priorityCounts, statusCounts } from '../common/CountsText';
+import { CountsText, statusCounts } from '../common/CountsText';
 import { formatFormulaDate, formatFormulaNumber, type FormulaSummary } from '../../lib/formula';
 
 const shortDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -37,10 +37,6 @@ export const SummaryCell = ({ col, agg, totalCount, color }: {
         const d1 = shortDate(agg.min);
         const d2 = shortDate(agg.max);
         return <span className="nhg-summary-range">{d1 === d2 ? d1 : `${d1} – ${d2}`}</span>;
-    }
-    if (newUi && col.type === 'priority') {
-        if (!agg?.count) return null;
-        return <CountsText parts={priorityCounts(Array.isArray(agg.values) ? agg.values : [])} />;
     }
 
     return (

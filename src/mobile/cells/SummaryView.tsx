@@ -7,7 +7,7 @@ import { AvatarStack, type PersonInfo } from '../ui';
 import { parseDay } from './format';
 import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
-import { CountsText, priorityCounts, statusCounts } from '../../components/common/CountsText';
+import { CountsText, statusCounts } from '../../components/common/CountsText';
 import { FormulaSummaryView } from './FormulaView';
 
 const shortDay = (value: string) => {
@@ -44,10 +44,6 @@ export const SummaryView = memo(({ column, items, people, color }: {
         const from = shortDay(agg.min);
         const to = shortDay(agg.max || agg.min);
         return <span className="m-cell-center"><span className="nhg-summary-range">{from === to ? from : `${from} – ${to}`}</span></span>;
-    }
-    if (newUi && column.type === 'priority') {
-        if (!agg?.count) return null;
-        return <span className="m-cell-center"><CountsText parts={priorityCounts(agg.values || [])} /></span>;
     }
 
     switch (column.type) {

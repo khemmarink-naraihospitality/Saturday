@@ -9,7 +9,6 @@ import { ONEDRIVE_ICON } from '../../lib/fileLinks';
 import './cells.css';
 import { tintLabel } from '../../lib/labelTint';
 import { useNewUi } from '../../lib/brand';
-import { priorityLevel } from '../../lib/priority';
 import { StatusPill } from '../../components/common/StatusPill';
 import { FormulaView } from './FormulaView';
 
@@ -183,13 +182,6 @@ export const CellView = memo(({ column, value, item, people, variant, groupColor
         }
 
         case 'priority': {
-            if (newUi) {
-                const level = priorityLevel(value);
-                if (!level) return table ? null : <span className="m-detail-empty">—</span>;
-                return table
-                    ? <span className="m-cell-center"><StatusPill color={level.color} label={level.label} /></span>
-                    : <StatusPill color={level.color} label={level.label} />;
-            }
             const rating = toRating(value);
             if (!rating && !table) return <span className="m-detail-empty">—</span>;
             return (

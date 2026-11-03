@@ -31,39 +31,7 @@
 
 /* ── Shell ─────────────────────────────────────────────────────────────── */
 
-/* A cream backdrop holding two floating panels: the green sidebar and the page */
-html[data-palette='narai'] .app-container {
-    background: var(--nhg-backdrop) !important;
-    border-radius: 0 !important;
-}
-
-html[data-palette='narai'] .sidebar {
-    position: relative;
-    height: auto !important;
-    align-self: stretch;
-    margin: 10px 0 10px 10px;
-    border-radius: 18px;
-    background: var(--nhg-sidebar);
-    box-shadow: 0 2px 6px rgba(21, 42, 0, 0.12), 0 18px 40px -22px rgba(21, 42, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-}
-
-html[data-palette='narai'] .app-main {
-    margin: 10px !important;
-    border-radius: 18px !important;
-    background: var(--nhg-page) !important;
-    box-shadow: 0 1px 2px rgba(21, 42, 0, 0.05), 0 16px 40px -24px rgba(21, 42, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
-}
-
-html[data-palette='narai'].dark .app-main {
-    box-shadow: 0 16px 40px -24px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 239, 210, 0.06) !important;
-}
-
-/* The page's wash shows through: bars and wrappers that paint the page colour
-   step aside (a view's sheet, sticky cells and anything floating keep theirs) */
-html[data-palette='narai'] .app-main [style*="background-color: hsl(var(--color-bg-canvas))"]:not(.board-sheet, .board-sheet *, [style*="position: sticky"], [style*="position: fixed"], [style*="position: absolute"], [style*="box-shadow"]) {
-    background-color: transparent !important;
-}
+/* The shell — backdrop, frosted main panel, dark glass sidebar — is nhg_glass.css */
 
 html[data-palette='narai'] .app-main .top-bar {
     border-bottom-color: transparent !important;
@@ -77,34 +45,6 @@ html[data-palette='narai'] .app-main h1.top-bar__title {
     letter-spacing: 0.14em !important;
     text-transform: uppercase;
     color: hsl(var(--color-text-tertiary)) !important;
-}
-
-/* The sidebar is the brand's inverted surface: Galangal ink on Narai Green.
-   Its colour tokens are re-declared for everything inside it, so the tree, the
-   search box and the rail follow without touching their code. */
-html[data-palette='narai'] .sidebar {
-    --color-text-primary: 39 100% 91.2%;
-    --color-text-secondary: 52 22% 66.7%;
-    --color-text-tertiary: 63 14% 48%;
-    --color-text-disabled: 71 19% 38.6%;
-    --color-brand-primary: 39 100% 91.2%;
-    --color-brand-hover: 38 75% 86.1%;
-    --color-brand-light: 86 49% 16.3%;
-    --color-brand-subtle: 82 34% 22.5%;
-    --color-bg-canvas: 90 100% 8.2%;
-    --color-bg-surface: 88 58% 13.9%;
-    --color-bg-surface-hover: 88 58% 13.9%;
-    --color-bg-subtle: 92 85% 10.8%;
-    --color-border: 82 34% 22.5%;
-    --color-border-hover: 76 24% 30.6%;
-    --color-nav-accent: #FFEFD2;
-    --color-nav-accent-bg: #2c3e15;
-    --color-icon-accent: #FFEFD2;
-    color: hsl(var(--color-text-primary));
-}
-
-html[data-palette='narai'].dark .sidebar {
-    --color-bg-canvas: 92 100% 6.3%;
 }
 
 /* Section labels in small tracked capitals; the links themselves in words */

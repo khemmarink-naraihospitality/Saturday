@@ -222,3 +222,374 @@ html[data-palette='narai'] .menu-item {
 html[data-palette='narai'] .menu-item:hover {
     background: hsl(var(--color-text-primary) / 0.06);
 }
+
+/* ── Table: the frozen header as a pill bar ───────────────────────────── */
+html[data-palette='narai'] .board-sheet {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+}
+
+html[data-palette='narai'] .table-container {
+    background: transparent;
+}
+
+/* The bar's chrome is a ::before starting at the horizontal scroll offset, like
+   the group cards below, so its rounded left end stays in view when scrolled */
+html[data-palette='narai'] .table-header-row {
+    background: transparent !important;
+    border: none !important;
+    isolation: isolate;
+    height: 36px !important;
+    width: max-content;
+}
+
+html[data-palette='narai'] .table-header-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--table-sx, 0px);
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+    box-sizing: border-box;
+    background: hsl(var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 16px;
+}
+
+html[data-palette='narai'] .table-header-row > .sticky-col {
+    border-radius: 16px 0 0 16px;
+    background: hsl(var(--paper)) !important;
+    border-left: 1px solid var(--paper-edge) !important;
+    border-top: 1px solid var(--paper-edge);
+    border-bottom: 1px solid var(--paper-edge);
+    box-sizing: border-box;
+    height: 100%;
+    padding-left: 18px !important;
+}
+
+html[data-palette='narai'] .table-header-cell,
+html[data-palette='narai'] .table-header-row > .sticky-col {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary)) !important;
+    border-right: none !important;
+}
+
+/* No vertical grid lines in the body: rows separate with a soft hairline */
+html[data-palette='narai'] .table-col {
+    border-right: none;
+}
+
+html[data-palette='narai'] .gcard .table-row {
+    background-color: transparent;
+    border-bottom: 1px solid var(--paper-row-line);
+}
+
+html[data-palette='narai'] .gcard .table-row:hover {
+    background-color: hsl(var(--color-text-primary) / 0.025);
+}
+
+/* ── Group cards ───────────────────────────────────────────────────────
+ * A virtualised table can't wrap a group's rows in one element, so each row
+ * draws its own slice of the card: the group header is the top, item and
+ * sub-item rows the sides, the add-item foot the bottom. The slice's chrome
+ * is a ::before that starts at the horizontal scroll offset (--table-sx,
+ * set by Table.tsx), so the card's left edge and rounded corners stay at the
+ * visible left edge when the table is scrolled sideways. The frozen first
+ * column's cells sit on top of that edge, so they repeat it themselves. */
+html[data-palette='narai'] .gcard {
+    position: relative;
+    isolation: isolate;
+}
+
+html[data-palette='narai'] .gcard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--table-sx, 0px);
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+    box-sizing: border-box;
+    background: hsl(var(--paper));
+    border-left: 1px solid var(--paper-edge);
+    border-right: 1px solid var(--paper-edge);
+}
+
+html[data-palette='narai'] .gcard-top::before {
+    border-top: 1px solid var(--paper-edge);
+    border-radius: 16px 16px 0 0;
+    background: hsl(var(--paper-head));
+    border-bottom: 1px solid var(--paper-row-line);
+}
+
+html[data-palette='narai'] .gcard-top.is-collapsed::before {
+    border-bottom: 1px solid var(--paper-edge);
+    border-radius: 16px;
+    box-shadow: var(--paper-shadow);
+}
+
+html[data-palette='narai'] .gcard-bottom::before {
+    border-bottom: 1px solid var(--paper-edge);
+    border-radius: 0 0 16px 16px;
+    box-shadow: var(--paper-shadow);
+}
+
+/* The frozen item cell of item and sub-item rows: the card's left edge, on paper */
+html[data-palette='narai'] .gcard .table-row > .sticky-col {
+    border-left: 1px solid var(--paper-edge);
+    background: hsl(var(--paper)) !important;
+}
+
+/* A right-edge shadow on the frozen first column so scrolling cells tuck behind it */
+html[data-palette='narai'] .table-header-row > .sticky-col::after,
+html[data-palette='narai'] .gcard .table-row > .sticky-col::after,
+html[data-palette='narai'] .gh-sticky::after,
+html[data-palette='narai'] .gf-add::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -12px;
+    width: 12px;
+    pointer-events: none;
+    background: linear-gradient(to right, hsl(var(--color-text-primary) / 0.08) 0%, hsl(var(--color-text-primary) / 0.03) 45%, transparent 100%);
+    border-left: 1px solid var(--paper-edge);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+html[data-palette='narai'] .table-container[data-scrolled-x='true'] .table-header-row > .sticky-col::after,
+html[data-palette='narai'] .table-container[data-scrolled-x='true'] .gcard .table-row > .sticky-col::after,
+html[data-palette='narai'] .table-container[data-scrolled-x='true'] .gh-sticky::after,
+html[data-palette='narai'] .table-container[data-scrolled-x='true'] .gf-add::after {
+    opacity: 1;
+}
+
+html[data-palette='narai'] .gh-sticky {
+    position: sticky;
+    left: 0;
+    z-index: 60;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 22px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: hsl(var(--paper-head));
+    border-left: 1px solid var(--paper-edge);
+    border-top: 1px solid var(--paper-edge);
+    border-bottom: 1px solid var(--paper-row-line);
+    border-radius: 16px 0 0 0;
+}
+
+html[data-palette='narai'] .gcard-top.is-collapsed .gh-sticky {
+    border-radius: 16px 0 0 16px;
+    border-bottom-color: var(--paper-edge);
+}
+
+html[data-palette='narai'] .gh-chevron {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--color-text-secondary));
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+}
+
+html[data-palette='narai'] .gh-chevron:hover {
+    background: hsl(var(--color-text-primary) / 0.07);
+}
+
+html[data-palette='narai'] .gh-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px hsl(var(--paper-head)), 0 0 0 4px currentColor;
+    cursor: pointer;
+}
+
+html[data-palette='narai'] .gh-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: hsl(var(--color-text-primary));
+    white-space: nowrap;
+}
+
+html[data-palette='narai'] .gh-title-input {
+    font-family: var(--font-display);
+    font-size: 18px;
+    background: hsl(var(--paper));
+    border: 1px solid hsl(var(--color-border-strong));
+    border-radius: 8px;
+    padding: 0 6px;
+    outline: none;
+    color: hsl(var(--color-text-primary));
+}
+
+html[data-palette='narai'] .gh-count {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: hsl(var(--color-text-secondary));
+    background: hsl(var(--color-text-primary) / 0.06);
+    white-space: nowrap;
+}
+
+html[data-palette='narai'] .gh-actions {
+    display: inline-flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+html[data-palette='narai'] .gcard-top:hover .gh-actions {
+    opacity: 1;
+}
+
+html[data-palette='narai'] .gh-icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--color-text-tertiary));
+}
+
+html[data-palette='narai'] .gh-icon-btn:hover {
+    background: hsl(var(--color-text-primary) / 0.07);
+    color: hsl(var(--color-text-primary));
+}
+
+html[data-palette='narai'] .gh-drag {
+    position: absolute;
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: hsl(var(--color-text-tertiary));
+    opacity: 0;
+    transition: opacity 0.15s;
+    cursor: grab;
+    display: flex;
+    padding: 4px 0;
+}
+
+html[data-palette='narai'] .gcard-top:hover .gh-drag {
+    opacity: 1;
+}
+
+html[data-palette='narai'] .gh-summary {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: hsl(var(--color-text-secondary));
+}
+
+/* The add line at the foot of each card */
+html[data-palette='narai'] .gf-add {
+    position: sticky;
+    left: 0;
+    z-index: 55;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 22px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: hsl(var(--paper));
+    border-left: 1px solid var(--paper-edge);
+    border-bottom: 1px solid var(--paper-edge);
+    border-radius: 0 0 0 16px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+html[data-palette='narai'] .gf-add input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    width: 100%;
+    height: 30px;
+    color: hsl(var(--color-text-primary));
+    padding: 0 8px;
+    border-radius: 8px;
+}
+
+html[data-palette='narai'] .gf-add input::placeholder {
+    color: hsl(var(--color-text-tertiary));
+}
+
+html[data-palette='narai'] .gf-add input:focus {
+    background: hsl(var(--color-text-primary) / 0.04);
+}
+
+/* Row affordances that only appear when needed */
+html[data-palette='narai'] .row-checkbox {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+html[data-palette='narai'] .table-row:hover .row-checkbox,
+html[data-palette='narai'] .table-row.selected .row-checkbox {
+    opacity: 1;
+}
+
+html[data-palette='narai'] .new-group-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--color-text-primary));
+    transition: background-color 0.15s;
+}
+
+html[data-palette='narai'] .new-group-btn:hover {
+    background: var(--glass-chip-hover);
+}
+
+/* ── Kanban on glass ──────────────────────────────────────────────────── */
+html[data-palette='narai'] .kanban-column {
+    background: var(--glass-chip) !important;
+    box-shadow: inset 0 0 0 1px var(--glass-chip-edge), var(--glass-chip-shadow) !important;
+    border-radius: 20px !important;
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+}
+
+html[data-palette='narai'] .kanban-card {
+    background: hsl(var(--paper)) !important;
+    border: 1px solid var(--paper-edge) !important;
+    border-radius: 14px !important;
+}
+
+html[data-palette='narai'] .kanban-column-header {
+    font-family: var(--font-display);
+}

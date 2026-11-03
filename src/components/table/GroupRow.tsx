@@ -8,19 +8,27 @@ import { supabase } from '../../lib/supabase';
 import { GROUP_COLORS, PALETTE_WIDTH, palettePosition } from '../../lib/labelColors';
 import { useNewUi } from '../../lib/brand';
 import { countOf, useTerms } from '../../lib/terms';
+import { SummaryCell } from './SummaryCell';
+import type { Column } from '../../types';
 
 export const GroupRow = ({ 
     data, 
     groupColor,
     isCollapsed, 
     onToggle,
-    dragHandleProps
+    dragHandleProps,
+    columns,
+    itemColumnWidth
 }: { 
     data: any, 
     groupColor?: string,
     isCollapsed: boolean, 
     onToggle: () => void,
-    dragHandleProps?: any
+    dragHandleProps?: any,
+    // NHG draws the header as the top of the group's card, with the column
+    // roll-ups on it while collapsed
+    columns?: Column[],
+    itemColumnWidth?: number
 }) => {
     const updateGroupTitle = useBoardStore(state => state.updateGroupTitle);
     const deleteGroup = useBoardStore(state => state.deleteGroup);
@@ -79,6 +87,179 @@ export const GroupRow = ({
             setIsEditing(false);
         }
     };
+
+    if (newUi) {
+        const color = groupColor || data.color || '#579bfc';
+        return (
+            <div
+                className={`gcard gcard-top${isCollapsed ? ' is-collapsed' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', height: '100%', position: 'relative', width: '100%', boxSizing: 'border-box' }}
+            >
+                {/* The group's identity: a colour dot, its name and how many it holds */}
+                <div className="gh-sticky" style={{ width: `${itemColumnWidth || 370}px` }}>
+                    {can('group_ungroup') && (
+                        <div {...dragHandleProps} className="gh-drag" title={`Drag to reorder ${t.group}`}>
+                            <GripVertical size={14} />
+                        </div>
+                    )}
+                    <button
+                        onClick={onToggle}
+                        className="gh-chevron"
+                        aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${data.title}`}
+                        aria-expanded={!isCollapsed}
+                    >
+                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    <div
+                        ref={colorBtnRef}
+                        className="gh-dot"
+                        role="button"
+                        aria-label={`Change ${t.group} colour`}
+                        title={can('group_ungroup') ? `Change ${t.group} colour` : undefined}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (can('group_ungroup')) setShowColorPicker(!showColorPicker);
+                        }}
+                        style={{ backgroundColor: color, color }}
+                    />
+                    {showColorPicker && colorBtnRef.current && createPortal(
+                        <>
+                            <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setShowColorPicker(false)} />
+                            <div className="glass-pop" style={{
+                                position: 'fixed',
+                                ...palettePosition(colorBtnRef.current),
+                                padding: '12px',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(10, 1fr)',
+                                gap: '4px',
+                                zIndex: 9999,
+                                width: `${PALETTE_WIDTH}px`,
+                                boxSizing: 'border-box'
+                            }}>
+                                {GROUP_COLORS.map(c => (
+                                    <div
+                                        key={c}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateGroupColor(data.id, c);
+                                            setShowColorPicker(false);
+                                        }}
+                                        style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            backgroundColor: c,
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            boxShadow: data.color === c ? '0 0 0 2px hsl(var(--paper)), 0 0 0 3.5px hsl(var(--color-text-primary))' : 'none'
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </>,
+                        document.body
+                    )}
+                    {isEditing ? (
+                        <input
+                            autoFocus
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            onBlur={handleSave}
+                            onKeyDown={handleKeyDown}
+                            className="gh-title-input"
+                        />
+                    ) : (
+                        <span
+                            className="gh-title"
+                            style={{ cursor: can('group_ungroup') ? 'text' : 'default', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}
+                            onDoubleClick={() => { if (can('group_ungroup')) setIsEditing(true); }}
+                            title={can('group_ungroup') ? 'Double-click to rename' : undefined}
+                        >
+                            {data.title}
+                        </span>
+                    )}
+                    <span className="gh-count">{data.count}</span>
+                    {data.linkedGroupId && (
+                        <div
+                            ref={linkIconRef}
+                            onClick={(e) => { e.stopPropagation(); handleOpenLinkPopover(); }}
+                            className="gh-icon-btn"
+                            style={{ cursor: 'pointer' }}
+                            title={`This ${t.group} is linked`}
+                        >
+                            <Link2 size={13} />
+                        </div>
+                    )}
+                    {showLinkPopover && linkIconRef.current && createPortal(
+                        <>
+                            <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setShowLinkPopover(false)} />
+                            <div className="glass-pop" style={{
+                                position: 'fixed',
+                                top: linkIconRef.current.getBoundingClientRect().bottom + 6,
+                                left: linkIconRef.current.getBoundingClientRect().left,
+                                padding: '14px',
+                                zIndex: 9999,
+                                width: '240px',
+                                fontSize: '13px'
+                            }}>
+                                <div style={{ color: 'hsl(var(--color-text-secondary))', marginBottom: '10px' }}>
+                                    Linked to <br />
+                                    <strong style={{ color: 'hsl(var(--color-text-primary))' }}>{linkedNames ? `${linkedNames.workspaceTitle} / ${linkedNames.boardTitle} / ${linkedNames.groupTitle}` : 'Loading…'}</strong>
+                                </div>
+                                {can('group_ungroup') && (
+                                    <button
+                                        onClick={() => { unlinkGroup(data.id); setShowLinkPopover(false); }}
+                                        className="chip-toggle"
+                                        style={{ color: 'hsl(var(--color-danger))' }}
+                                    >
+                                        Unlink
+                                    </button>
+                                )}
+                            </div>
+                        </>,
+                        document.body
+                    )}
+                    {can('group_ungroup') && (
+                        <div className="gh-actions">
+                            <button
+                                onClick={() => data.linkedGroupId ? setShowLinkedDeleteBlocked(true) : setShowDeleteConfirm(true)}
+                                className="gh-icon-btn"
+                                title={data.linkedGroupId ? 'Unlink before deleting' : `Delete ${t.group}`}
+                                aria-label={`Delete ${t.group}`}
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* The roll-ups sit here only while the group is collapsed; open, they are on the card's foot */}
+                {isCollapsed && (columns || []).map(col => (
+                    <div key={col.id} className="gh-summary" style={{ width: `${col.width || 150}px` }}>
+                        <SummaryCell col={col} agg={data.aggregates?.[col.id]} totalCount={data.count || 0} color={color} />
+                    </div>
+                ))}
+                <div style={{ width: '50px', flexShrink: 0 }} />
+
+                <ConfirmModal
+                    isOpen={showDeleteConfirm}
+                    title={`Delete ${t.Group}`}
+                    message={`Are you sure you want to delete "${data.title}"? You can restore it (and its ${t.items}) later from this ${t.board}'s Archive/Trash.`}
+                    confirmText="Delete"
+                    onConfirm={() => { deleteGroup(data.id); setShowDeleteConfirm(false); }}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                />
+                <ConfirmModal
+                    isOpen={showLinkedDeleteBlocked}
+                    title={`This ${t.Group} is Linked`}
+                    message={`"${data.title}" is linked to another ${t.group}. Unlink it first, then you can delete it.`}
+                    confirmText="Unlink Now"
+                    onConfirm={() => { unlinkGroup(data.id); setShowLinkedDeleteBlocked(false); }}
+                    onCancel={() => setShowLinkedDeleteBlocked(false)}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className={newUi ? 'nhg-group-head' : undefined} style={{

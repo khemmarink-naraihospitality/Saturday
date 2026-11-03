@@ -105,7 +105,10 @@ const groupIdOfRow = (vi: VirtualItemData | undefined): string | null => {
 // Header.tsx's row height. The item header lives outside the virtualizer (it's
 // one frozen bar now, not one per group — see the scrollMargin/translateY note
 // below), so this has to be known up front rather than read off a measured row.
-const ITEM_HEADER_HEIGHT = 34;
+const BASE_HEADER_HEIGHT = 34;
+
+// Row types drawn as the sides of a group's card (NHG: styles/nhg_board.css)
+const CARD_MIDDLE = new Set(['item', 'subitem', 'subitem-header', 'subitem-summary', 'subitem-footer']);
 
 export const Table = ({ boardId }: { boardId: string }) => {
     const board = useBoardStore(state => state.boards.find(b => b.id === boardId));
@@ -118,6 +121,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
     // that say "Total: 9 tasks", and its own words (src/lib/terms.ts)
     const newUi = useNewUi();
     const t = useTerms();
+    // NHG's frozen header bar is a little taller (the pill-shaped bar of the group cards)
+    const ITEM_HEADER_HEIGHT = newUi ? 36 : BASE_HEADER_HEIGHT;
 
     const searchQuery = useBoardStore(state => state.searchQuery);
     const showHiddenItems = useBoardStore(state => state.showHiddenItems);
@@ -150,6 +155,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
         estimateSize: (index) => {
             const type = virtualItems[index]?.type;
             const gap = 32; // var(--spacing-group-gap)
+            if (newUi) {
+                // A group is a card: its header, its rows, a foot with the quick add and roll-ups
+                if (type === 'group') return 44 + (index === 0 ? 14 : 20);
+                if (type === 'footer') return 44;
+            }
             if (type === 'group') return (index === 0 ? 44 : 44 + gap); 
             if (type === 'subitem-header') return 34;
             if (type === 'subitem-footer' || type === 'subitem-summary') return 40;
@@ -285,6 +295,16 @@ export const Table = ({ boardId }: { boardId: string }) => {
                 // Every menu the table opens is portaled to <body>, so nothing
                 // inside needs to escape.
                 style={{ height: '100%', overflow: 'auto', width: '100%', isolation: 'isolate' }}
+                // NHG: the cards' chrome starts at the horizontal scroll offset so they
+                // keep their rounded left edge in view, and data-scrolled-x switches on
+                // the frozen column's edge shadow. Set on the DOM node, never through
+                // state, so scrolling doesn't re-render.
+                onScroll={newUi ? (e) => {
+                    const sx = e.currentTarget.scrollLeft;
+                    e.currentTarget.style.setProperty('--table-sx', `${sx}px`);
+                    if (sx > 0) e.currentTarget.setAttribute('data-scrolled-x', 'true');
+                    else e.currentTarget.removeAttribute('data-scrolled-x');
+                } : undefined}
             >
                 {/* The item columns' header. One bar for the whole table rather than one
                     per group — item columns are the same set everywhere — pinned to the
@@ -293,7 +313,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                     position: 'sticky',
                     top: 0,
                     zIndex: 100,
-                    backgroundColor: 'hsl(var(--color-table-header-bg))'
+                    backgroundColor: newUi ? 'transparent' : 'hsl(var(--color-table-header-bg))'
                 }}>
                     <Header columns={itemCols} />
                 </div>
@@ -320,6 +340,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                             return (
                                 <div
                                     key={vItem.id}
+                                    className={newUi && CARD_MIDDLE.has(vItem.type) ? 'gcard' : undefined}
                                     style={{
                                         position: 'absolute',
                                         top: 0,
@@ -350,7 +371,7 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                         display: 'flex', 
                                                         flexDirection: 'column', 
                                                         justifyContent: 'flex-end',
-                                                        paddingTop: virtualRow.index === 0 ? 0 : '32px' 
+                                                        paddingTop: newUi ? (virtualRow.index === 0 ? 14 : 20) : (virtualRow.index === 0 ? 0 : '32px')
                                                     }}>
                                                         <GroupRow
                                                             data={vItem.data as any}
@@ -358,7 +379,45 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                                             isCollapsed={(board.collapsedGroups || []).includes(vItem.id)}
                                                             onToggle={() => toggleGroup(board.id, vItem.id)}
                                                             dragHandleProps={listeners}
+                                                            columns={itemCols}
+                                                            itemColumnWidth={itemColumnWidth}
                                                         />
+                                                    </div>
+                                                ) : isFooter && newUi ? (
+                                                    // The foot of the group's card: the quick-add line in the sticky
+                                                    // first column, the per-column roll-ups across the rest.
+                                                    <div className="gcard gcard-bottom" style={{ display: 'flex', alignItems: 'center', height: '100%', boxSizing: 'border-box' }}>
+                                                        <div className="gf-add" style={{ width: `${itemColumnWidth}px` }}>
+                                                            <Plus size={15} aria-hidden="true" />
+                                                            {can('edit_items') ? (
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder={`Add ${t.item}`}
+                                                                    aria-label={`Add ${t.item} to this ${t.group}`}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            const input = e.currentTarget;
+                                                                            const val = input.value.trim();
+                                                                            if (val) {
+                                                                                useBoardStore.getState().addItem(val, vItem.data.groupId);
+                                                                                input.value = '';
+                                                                            }
+                                                                        } else if (e.key === 'Escape') {
+                                                                            e.currentTarget.value = '';
+                                                                            e.currentTarget.blur();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <span style={{ fontSize: '13px' }}>{countOf(vItem.data.count || 0, t.item, t.items)}</span>
+                                                            )}
+                                                        </div>
+                                                        {itemCols.map(col => (
+                                                            <div key={col.id} className="gh-summary" style={{ width: `${col.width || 150}px` }}>
+                                                                <SummaryCell col={col} agg={vItem.data.aggregates?.[col.id]} totalCount={vItem.data.count || 0} color={vItem.groupColor} />
+                                                            </div>
+                                                        ))}
+                                                        <div style={{ width: '50px', flexShrink: 0 }} />
                                                     </div>
                                                 ) : isFooter ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -694,10 +753,11 @@ export const Table = ({ boardId }: { boardId: string }) => {
                 }}>
                     {can('group_ungroup') && (
                         <button
+                            className={newUi ? 'new-group-btn glass-chip' : undefined}
                             onClick={() => {
                                 useBoardStore.getState().addGroup(`${t.Group} Title`);
                             }}
-                            style={{
+                            style={newUi ? undefined : {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
@@ -711,8 +771,8 @@ export const Table = ({ boardId }: { boardId: string }) => {
                                 fontWeight: 400,
                                 fontSize: '14px'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-row-hover)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--card-solid)'}
+                            onMouseEnter={newUi ? undefined : (e) => e.currentTarget.style.backgroundColor = 'var(--card-row-hover)'}
+                            onMouseLeave={newUi ? undefined : (e) => e.currentTarget.style.backgroundColor = 'var(--card-solid)'}
                         >
                             <Plus size={16} strokeWidth={1.5} />
                             <span>{`Add new ${t.group}`}</span>

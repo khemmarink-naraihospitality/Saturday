@@ -389,6 +389,9 @@ html[data-palette='narai'] .admin-console {
        a different place from the app's Narai Green */
     --nhg-admin-sidebar: linear-gradient(172deg, #3f1230 0%, #2f0b22 42%, #250719 100%);
     --nhg-admin-sidebar-shadow: rgba(37, 7, 25, 0.62);
+    /* The Daily Active Users bars: Lemongrass #AAA024 (PMS 7745C) */
+    --admin-bar: #AAA024;
+    --admin-bar-soft: #d6cf6a;
     background: var(--nhg-backdrop) !important;
     font-family: var(--font-family) !important;
     --card-bg: #fffdf8;

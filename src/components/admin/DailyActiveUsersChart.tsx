@@ -74,8 +74,8 @@ export const DailyActiveUsersChart = () => {
         <div className="card-surface" style={{ padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="admin-tile" style={{ width: '36px', height: '36px', '--tile-color': '#6366f1' } as React.CSSProperties}>
-                        <Activity size={18} color="#6366f1" />
+                    <div className="admin-tile" style={{ width: '36px', height: '36px', '--tile-color': 'var(--admin-bar, #6366f1)' } as React.CSSProperties}>
+                        <Activity size={18} style={{ color: 'var(--admin-bar, #6366f1)' }} />
                     </div>
                     <div>
                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>
@@ -142,9 +142,8 @@ export const DailyActiveUsersChart = () => {
                                         x={x} y={y}
                                         width={barWidth} height={barHeight}
                                         rx={4} ry={4}
-                                        fill={bucket.count > 0 ? '#6366f1' : '#e2e8f0'}
                                         opacity={isHovered ? 1 : bucket.count > 0 ? 0.9 : 1}
-                                        style={{ transition: 'opacity 0.15s', pointerEvents: 'none' }}
+                                        style={{ fill: bucket.count > 0 ? 'var(--admin-bar, #6366f1)' : '#e2e8f0', transition: 'opacity 0.15s', pointerEvents: 'none' }}
                                     />
                                     {showLabel && (
                                         <text
@@ -198,7 +197,7 @@ export const DailyActiveUsersChart = () => {
                                 pointerEvents: 'none'
                             }}>
                                 <div style={{ fontWeight: 600, marginBottom: '2px' }}>{bucket.fullLabel}</div>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#a5b4fc', marginBottom: bucket.users.length ? '6px' : 0 }}>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--admin-bar-soft, #a5b4fc)', marginBottom: bucket.users.length ? '6px' : 0 }}>
                                     {bucket.count} active {bucket.count === 1 ? 'user' : 'users'}
                                 </div>
                                 {bucket.users.length > 0 && (

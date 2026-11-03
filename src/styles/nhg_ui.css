@@ -138,6 +138,25 @@ html[data-palette='narai'] .sidebar :is([style*="position: fixed"], .nhg-on-page
     background: hsl(var(--color-border));
 }
 
+/* An open Space Folder draws the same line down its boards, under the
+   folder's icon (WorkspaceList's .tree-node-children) */
+html[data-palette='narai'] .sidebar .tree-node-children::before {
+    content: '';
+    position: absolute;
+    left: 21.5px;
+    top: 2px;
+    bottom: 6px;
+    width: 1px;
+    background: hsl(var(--color-border));
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* …stopping above the "+ Add" row, whose plus sits where the line would run */
+html[data-palette='narai'] .sidebar .tree-node-children:has(> .tree-node-leaf.last-child)::before {
+    bottom: 43px;
+}
+
 .nhg-dash__board {
     display: flex;
     align-items: center;

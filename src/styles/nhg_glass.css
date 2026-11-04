@@ -565,7 +565,7 @@ html[data-palette='narai'] .app-popup--bare .app-popup__body :is([style*="backgr
     background-color: transparent !important;
 }
 
-/* Contact support: the form in the popup */
+/* Contact Support Team: the form in the popup (popup.css has the frame) */
 html[data-palette='narai'] .app-support {
     flex: 1;
     min-height: 0;
@@ -639,4 +639,24 @@ html[data-palette='narai'] .rte-toolbar {
 html[data-palette='narai'] .app-popup:focus,
 html[data-palette='narai'] .app-popup:focus-visible {
     outline: none !important;
+}
+
+/* Contact Support Team: the popup is the form itself, edge to edge */
+html[data-palette='narai'] .app-support--frame .app-support__form {
+    border: none;
+    border-radius: 0;
+    background: #f0ebf8;
+}
+
+html[data-palette='narai'] .app-support--frame .app-support__open {
+    align-self: stretch;
+    justify-content: center;
+    padding: 8px 12px;
+    background: hsl(var(--paper));
+    border-top: 1px solid var(--paper-edge);
+}
+
+html[data-palette='narai'] .app-support.app-support--frame {
+    padding: 0;
+    gap: 0;
 }

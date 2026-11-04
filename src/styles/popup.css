@@ -157,3 +157,50 @@
     .app-popup-veil, .app-popup { animation: none; }
     .app-popup-veil.is-closing { transition: none; }
 }
+
+/* Contact Support Team: the popup is the form itself */
+.app-popup--bare:has(.app-support--frame) {
+    height: min(92vh, 1040px);
+    max-width: 680px;
+}
+
+.app-support--frame {
+    position: relative;
+    padding: 0;
+    gap: 0;
+    height: 100%;
+}
+
+.app-support--frame .app-support__form {
+    border: none;
+    border-radius: 0;
+    background: #f0ebf8; /* the form's own page colour, so there is no flash while it loads */
+}
+
+.app-support__close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #3c4043;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+}
+
+.app-support__close:hover {
+    background: #fff;
+}
+
+.app-support--frame .app-support__open {
+    align-self: stretch;
+    justify-content: center;
+    padding: 8px 12px;
+    background: hsl(var(--color-bg-surface));
+    border-top: 1px solid hsl(var(--color-border));
+}

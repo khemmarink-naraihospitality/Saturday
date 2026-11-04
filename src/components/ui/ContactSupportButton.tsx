@@ -30,17 +30,22 @@ export const ContactSupportButton = () => {
 
     return (
         <>
-        <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact Support Team" width={760}>
-                <div className="app-support">
-                    <iframe
-                        className="app-support__form"
-                        title="Support request form"
-                        src={SUPPORT_FORM.replace('usp=header', 'embedded=true')}
-                    />
-                    <a className="app-support__open" href={SUPPORT_FORM} target="_blank" rel="noopener noreferrer">
-                        Form not loading? Open it in a new tab <ExternalLink size={14} aria-hidden="true" />
-                    </a>
-                </div>
+        {/* The popup is the form's own size: just the form, a close button over its corner
+            and a small link underneath in case the form does not load in the frame */}
+        <PopupPanel isOpen={showForm} bare onClose={() => setShowForm(false)} title="Contact Support Team" width={680}>
+            <div className="app-support app-support--frame">
+                <iframe
+                    className="app-support__form"
+                    title="Contact Support Team — request form"
+                    src={SUPPORT_FORM.replace('usp=header', 'embedded=true')}
+                />
+                <button type="button" className="app-support__close" onClick={() => setShowForm(false)} aria-label="Close">
+                    <X size={18} />
+                </button>
+                <a className="app-support__open" href={SUPPORT_FORM} target="_blank" rel="noopener noreferrer">
+                    Form not loading? Open it in a new tab <ExternalLink size={13} aria-hidden="true" />
+                </a>
+            </div>
         </PopupPanel>
         <AnimatePresence>
             {isVisible && (

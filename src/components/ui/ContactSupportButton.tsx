@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink, X } from 'lucide-react';
+import { ClipboardPenLine, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useThemeStore } from '../../store/useThemeStore';
 import { PopupPanel } from './PopupPanel';
-
-// The support cat: the original is purple (hosted by the guideline site); under
-// Narai it is the same picture recoloured white with brown patches.
-const SUPPORT_CAT = 'https://guideline.lubd.com/wp-content/uploads/2026/05/Momaru.png';
-const SUPPORT_CAT_NARAI = '/support-cat-narai.png';
 
 // The support request form (a Google Form); NHG shows it inside a popup
 const SUPPORT_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header';
@@ -15,7 +9,6 @@ const SUPPORT_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18r
 export const ContactSupportButton = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-    const palette = useThemeStore(state => state.palette);
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
@@ -37,7 +30,7 @@ export const ContactSupportButton = () => {
 
     return (
         <>
-        <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact support" width={760}>
+        <PopupPanel isOpen={showForm} onClose={() => setShowForm(false)} eyebrow="We read every request" title="Contact Support Team" width={760}>
                 <div className="app-support">
                     <iframe
                         className="app-support__form"
@@ -106,21 +99,11 @@ export const ContactSupportButton = () => {
                             marginRight: '8px',
                             overflow: 'hidden'
                         }}>
-                            <img 
-                                src={palette === 'narai' ? SUPPORT_CAT_NARAI : SUPPORT_CAT}
-                                alt="Support" 
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const parent = e.currentTarget.parentElement;
-                                    if(parent) {
-                                        parent.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
-                                    }
-                                }}
-                            />
+                            {/* A request form being filled in */}
+                            <ClipboardPenLine size={18} strokeWidth={1.8} aria-hidden="true" />
                         </div>
                         
-                        <span style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.2px', marginRight: '8px' }}>Contact support</span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.2px', marginRight: '8px' }}>Contact Support Team</span>
                         
                         <AnimatePresence>
                             {isHovered && (

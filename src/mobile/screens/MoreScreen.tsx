@@ -94,7 +94,7 @@ export const MoreScreen = () => {
                         />
                         <MenuItem
                             icon={<LifeBuoy size={20} />}
-                            label="Contact support"
+                            label="Contact Support Team"
                             onClick={() => window.open(SUPPORT_FORM_URL, '_blank', 'noopener')}
                         />
                     </Card>

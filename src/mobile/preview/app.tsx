@@ -42,16 +42,31 @@ const chain: any = new Proxy(function () { /* callable */ }, {
     apply: () => chain,
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const chainOf = (result: unknown): any => new Proxy(function () { /* callable */ }, {
+    get(_target, prop) {
+        if (prop === 'then') {
+            return (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => Promise.resolve(result).then(resolve, reject);
+        }
+        return () => chainOf(result);
+    },
+});
+
+const gemini = fx.geminiPreview(params.get('gemini'));
+
 const fakeUser = { id: fx.ME.id, email: fx.ME.email, user_metadata: { full_name: fx.ME.name }, app_metadata: { provider: new URLSearchParams(window.location.search).get('provider') || 'google' } };
 const fakeSession = { user: fakeUser, access_token: 'preview', refresh_token: 'preview', expires_in: 3600, token_type: 'bearer' };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const client = supabase as any;
-client.from = () => chain;
+client.from = (table: string) => {
+    const answer = gemini.table(table);
+    return answer ? chainOf({ ...emptyResult, ...answer }) : chain;
+};
 client.rpc = () => chain;
 client.channel = () => chain;
 client.removeChannel = async () => 'ok';
-Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async () => ({ data: null, error: null }) } });
+Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async (name: string) => (await gemini.invoke(name)) ?? { data: null, error: null } } });
 Object.defineProperty(client, 'storage', { configurable: true, value: { from: () => chain } });
 client.auth.getSession = async () => ({ data: { session: fakeSession }, error: null });
 client.auth.getUser = async () => ({ data: { user: fakeUser }, error: null });

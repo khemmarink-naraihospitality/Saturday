@@ -9,6 +9,7 @@
 @import './nhg_glass.css';
 @import './nhg_board.css';
 @import './formula.css';
+@import './ai_summary.css';
 
 @variant dark (&:where(.dark, .dark *));
 

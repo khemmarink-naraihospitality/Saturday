@@ -1,0 +1,784 @@
+/*
+ * The AI Summary tab (src/components/board/AISummaryView.tsx): two sections
+ * side by side when the board is wide enough — A, worked out from the board's
+ * own numbers, and B, written by Gemini on Google's free tier — one under the
+ * other when it isn't (and on a phone). Both are .card-surface cards, so they
+ * take each palette's card; every colour here is a token, so Saturday, NHG,
+ * light and dark all follow. NHG's own touches are at the end.
+ */
+
+.ais {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    container-type: inline-size;
+    padding: 2px 2px 32px;
+}
+
+.ais__inner {
+    max-width: 1320px;
+    margin: 0 auto;
+}
+
+/* ── The tab's own heading ────────────────────────────────────────────── */
+
+.ais-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 2px 2px 16px;
+}
+
+.ais-head__tile {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 28%;
+    background: var(--card-tile);
+    color: var(--card-tile-ink);
+    box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px var(--card-tile-ring), var(--card-tile-shadow);
+}
+
+.ais-head h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-head p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: hsl(var(--color-text-secondary));
+}
+
+/* ── The two sections ─────────────────────────────────────────────────── */
+
+.ais-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+@container (min-width: 980px) {
+    .ais-grid {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
+    }
+}
+
+.ais-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    padding: 20px 22px 18px;
+}
+
+.ais-sec__head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ais-sec__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+}
+
+/* The section's letter, as in the comparison it came from: A and B */
+.ais-sec__letter {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--card-tile-ink);
+    background: var(--card-tile);
+    box-shadow: inset 0 0 0 1px var(--card-tile-ring);
+}
+
+.ais-sec__titlerow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+}
+
+.ais-sec h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    line-height: 1.3;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ais-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: hsl(var(--color-text-secondary));
+    background: var(--card-tray);
+    border: 1px solid var(--card-grid);
+}
+
+.ais-chip--ok {
+    color: hsl(var(--color-success));
+    background: hsl(var(--color-success-bg) / 0.7);
+    border-color: hsl(var(--color-success) / 0.18);
+}
+
+.ais-chip--warn {
+    color: hsl(var(--color-warning));
+    background: hsl(var(--color-warning-bg) / 0.8);
+    border-color: hsl(var(--color-warning) / 0.22);
+}
+
+/* A small heading inside a section, with a hairline running on after it */
+.ais-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.ais-h::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--card-grid);
+}
+
+.ais-h__aside {
+    order: 2;
+    font-size: 11.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.ais-h > .ais-seg {
+    order: 3;
+}
+
+.ais-note,
+.ais-limit {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.ais-limit {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--card-grid);
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+}
+
+.ais-limit svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* ── A: the figures across the top ─────────────────────────────────────── */
+
+.ais-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    margin: 0;
+    border-radius: var(--radius-md);
+    background: var(--card-tray);
+    border: 1px solid var(--card-grid);
+    overflow: hidden;
+}
+
+/* Hairlines between the figures, also between rows when they wrap; the ones
+   on the outer edge fall outside and are clipped */
+/* A label may wrap on a narrow card; the figures stay level along the bottom */
+.ais-stat {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 11px 14px 10px;
+    min-width: 0;
+    box-shadow: -1px 0 0 var(--card-grid), 0 -1px 0 var(--card-grid);
+}
+
+.ais-stat dt {
+    font-size: 11.5px;
+    line-height: 1.3;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-stat dd {
+    margin: 3px 0 0;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-stat dd small {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.ais-stat.is-good dd { color: hsl(var(--color-success)); }
+.ais-stat.is-bad dd { color: hsl(var(--color-danger)); }
+.ais-stat.is-warn dd { color: hsl(var(--color-warning)); }
+
+/* ── A: what the numbers say ───────────────────────────────────────────── */
+
+.ais-findings {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.ais-findings li {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-findings li::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin: 6px 0 0 3px;
+    border-radius: 50%;
+    background: hsl(var(--color-text-tertiary));
+    box-shadow: 0 0 0 3px hsl(var(--color-text-tertiary) / 0.14);
+}
+
+.ais-findings li.is-bad::before { background: hsl(var(--color-danger)); box-shadow: 0 0 0 3px hsl(var(--color-danger) / 0.16); }
+.ais-findings li.is-warn::before { background: hsl(var(--color-warning)); box-shadow: 0 0 0 3px hsl(var(--color-warning) / 0.18); }
+.ais-findings li.is-good::before { background: hsl(var(--color-success)); box-shadow: 0 0 0 3px hsl(var(--color-success) / 0.16); }
+.ais-findings li.is-info::before { background: hsl(var(--color-brand-primary)); box-shadow: 0 0 0 3px hsl(var(--color-brand-primary) / 0.14); }
+
+.ais-findings strong {
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+/* ── A: the status bar ─────────────────────────────────────────────────── */
+
+.ais-bar {
+    display: flex;
+    gap: 2px;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--card-tray);
+}
+
+.ais-bar span {
+    min-width: 4px;
+}
+
+.ais-legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 0 0;
+    padding: 0;
+    font-size: 12.5px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ais-legend i {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+}
+
+.ais-legend b {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-pick select {
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 500;
+    color: hsl(var(--color-text-primary));
+    background: var(--card-tray);
+    border: 1px solid var(--card-grid);
+    cursor: pointer;
+}
+
+/* ── A: tables by group, by person, by period ──────────────────────────── */
+
+.ais-table-wrap {
+    overflow-x: auto;
+    margin: 0 -4px;
+    padding: 0 4px;
+}
+
+.ais-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-table th {
+    padding: 0 8px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+    color: hsl(var(--color-text-tertiary));
+    border-bottom: 1px solid var(--card-grid);
+}
+
+.ais-table td {
+    padding: 7px 8px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--card-grid);
+}
+
+.ais-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ais-table :is(th, td):first-child {
+    padding-left: 0;
+    text-align: left;
+}
+
+.ais-table :is(th, td):last-child {
+    padding-right: 0;
+}
+
+.ais-table td:first-child {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: hsl(var(--color-text-primary));
+    font-weight: 500;
+}
+
+.ais-table .ais-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    vertical-align: 1px;
+}
+
+.ais-table .is-zero {
+    color: hsl(var(--color-text-tertiary) / 0.7);
+}
+
+.ais-table .is-bad { color: hsl(var(--color-danger)); font-weight: 600; }
+.ais-table .is-warn { color: hsl(var(--color-warning)); font-weight: 600; }
+.ais-table .is-good { color: hsl(var(--color-success)); font-weight: 600; }
+
+.ais-progress {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.ais-progress__track {
+    width: 64px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--card-tray);
+    box-shadow: inset 0 0 0 1px var(--card-grid);
+    overflow: hidden;
+}
+
+.ais-progress__fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: hsl(var(--color-success));
+}
+
+.ais-progress b {
+    min-width: 34px;
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.ais-more {
+    margin-top: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: hsl(var(--color-brand-primary));
+    cursor: pointer;
+}
+
+.ais-more:hover {
+    text-decoration: underline;
+}
+
+/* ── Segmented choices (period, language, week / month) ─────────────────── */
+
+.ais-seg {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--card-tray);
+    border: 1px solid var(--card-grid);
+}
+
+.ais-seg button {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: hsl(var(--color-text-secondary));
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.ais-seg button:hover {
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-seg button[aria-pressed='true'] {
+    color: hsl(var(--color-text-primary));
+    background: var(--card-solid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--card-grid);
+}
+
+.ais-seg button:focus-visible,
+.ais-btn:focus-visible,
+.ais-ghost:focus-visible,
+.ais-more:focus-visible {
+    outline: 2px solid hsl(var(--color-brand-primary));
+    outline-offset: 2px;
+}
+
+/* ── B: Gemini ─────────────────────────────────────────────────────────── */
+
+.ais-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+}
+
+.ais-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-callout {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 9px;
+    padding: 11px 13px;
+    border-radius: var(--radius-md);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: hsl(var(--color-text-secondary));
+    background: hsl(var(--color-warning-bg) / 0.55);
+    border: 1px solid hsl(var(--color-warning) / 0.2);
+}
+
+.ais-callout svg {
+    margin-top: 2px;
+    color: hsl(var(--color-warning));
+}
+
+.ais-callout strong {
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-callout--plain {
+    background: var(--card-tray);
+    border-color: var(--card-grid);
+}
+
+.ais-callout--plain svg {
+    color: hsl(var(--color-text-tertiary));
+}
+
+.ais-callout--error {
+    background: hsl(var(--color-danger-bg) / 0.6);
+    border-color: hsl(var(--color-danger) / 0.22);
+}
+
+.ais-callout--error svg {
+    color: hsl(var(--color-danger));
+}
+
+.ais-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.ais-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--nhg-on-ink, #ffffff);
+    background: var(--nhg-ink, hsl(var(--color-brand-primary)));
+    box-shadow: 0 6px 16px -8px hsl(var(--color-brand-primary) / 0.7);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+}
+
+.ais-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -10px hsl(var(--color-brand-primary) / 0.8);
+}
+
+.ais-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.ais-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+    border: 1px solid var(--card-grid);
+    background: var(--card-tray);
+}
+
+.ais-ghost:hover {
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-spin {
+    animation: ais-spin 0.9s linear infinite;
+}
+
+@keyframes ais-spin {
+    to { transform: rotate(360deg); }
+}
+
+.ais-wait {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: hsl(var(--color-text-secondary));
+}
+
+/* The written summary */
+.ais-result {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ais-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    font-size: 12px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.ais-meta b {
+    font-weight: 600;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-overview {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: hsl(var(--color-text-primary));
+}
+
+.ais-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    counter-reset: ais;
+}
+
+.ais-list li {
+    position: relative;
+    padding-left: 18px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: hsl(var(--color-text-secondary));
+}
+
+.ais-list li::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    background: var(--ais-list-mark, hsl(var(--color-brand-primary)));
+}
+
+.ais-list--issues { --ais-list-mark: hsl(var(--color-danger)); }
+.ais-list--trends { --ais-list-mark: hsl(var(--color-warning)); }
+.ais-list--steps { --ais-list-mark: hsl(var(--color-success)); }
+
+.ais-empty {
+    font-size: 13px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ais-spin { animation-duration: 2.4s; }
+    .ais-btn, .ais-btn:hover:not(:disabled) { transform: none; transition: none; }
+}
+
+/* ── Phones ───────────────────────────────────────────────────────────── */
+
+.m-board-view .ais {
+    padding: 12px 12px 28px;
+}
+
+.m-board-view .ais-head {
+    margin: 0 2px 12px;
+}
+
+.m-board-view .ais-sec {
+    padding: 16px 16px 14px;
+}
+
+/* ── NHG ──────────────────────────────────────────────────────────────── */
+
+html[data-palette='narai'] .ais-head h2 {
+    font-size: 24px;
+}
+
+html[data-palette='narai'] .ais-sec h3 {
+    font-size: 21px;
+}
+
+html[data-palette='narai'] :is(.ais-sec__eyebrow, .ais-h) {
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+}
+
+html[data-palette='narai'] .ais-sec__letter {
+    border-radius: 999px;
+    letter-spacing: 0;
+}
+
+html[data-palette='narai'] :is(.ais-seg, .ais-chip) {
+    border-radius: 999px;
+}
+
+html[data-palette='narai'] .ais-seg button {
+    border-radius: 999px;
+}
+
+html[data-palette='narai'] .ais-btn {
+    border-radius: 999px;
+    box-shadow: 0 10px 22px -12px rgba(21, 42, 0, 0.55);
+}
+
+html[data-palette='narai'] .ais-ghost {
+    border-radius: 999px;
+}
+
+html[data-palette='narai'] .ais-stats {
+    border-radius: 14px;
+}

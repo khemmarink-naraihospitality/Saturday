@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { setAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
+import { setGeminiEnabled } from '../../hooks/useGeminiEnabled';
 
 export const AISettings = () => {
     const [apiKey, setApiKey] = useState('');
     const [showKey, setShowKey] = useState(false);
     const [hasExistingKey, setHasExistingKey] = useState(false);
+    // A Gemini key starts "AIza"; anything else saved here is passed over for the server's own key.
+    const [keyLooksReal, setKeyLooksReal] = useState(true);
     const [enabled, setEnabled] = useState(false);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
@@ -19,16 +21,18 @@ export const AISettings = () => {
             .select('key,value')
             .in('key', ['google_ai_key', 'ai_summary_enabled'])
             .then(({ data }) => {
-                setHasExistingKey(!!data?.find(r => r.key === 'google_ai_key')?.value);
-                setEnabled(data?.find(r => r.key === 'ai_summary_enabled')?.value === 'true');
+                const saved = String(data?.find(r => r.key === 'google_ai_key')?.value ?? '').trim();
+                setHasExistingKey(!!saved);
+                setKeyLooksReal(!saved || /^AIza[\w-]{30,}$/.test(saved));
+                setEnabled(String(data?.find(r => r.key === 'ai_summary_enabled')?.value) === 'true');
             });
     }, []);
 
     const handleToggle = async () => {
         const next = !enabled;
         setEnabled(next);
-        // Open boards (desktop tabs, the phone's Views sheet) follow straight away.
-        setAiSummaryEnabled(next);
+        // Open boards' AI Summary follows straight away.
+        setGeminiEnabled(next);
         await supabase.from('system_settings').upsert({
             key: 'ai_summary_enabled',
             value: String(next),
@@ -46,6 +50,7 @@ export const AISettings = () => {
                 .upsert({ key: 'google_ai_key', value: apiKey.trim(), updated_at: new Date().toISOString() });
             if (error) throw error;
             setHasExistingKey(true);
+            setKeyLooksReal(/^AIza[\w-]{30,}$/.test(apiKey.trim()));
             setApiKey('');
             setSaveResult('success');
         } catch {
@@ -61,7 +66,7 @@ export const AISettings = () => {
         setTestResult(null);
         try {
             const { data, error } = await supabase.functions.invoke('ai-summary', {
-                body: { testOnly: true },
+                body: { mode: 'test', testOnly: true },
             });
             if (error) {
                 let detail = error.message;
@@ -76,7 +81,7 @@ export const AISettings = () => {
             } else if (data?.error) {
                 setTestResult({ ok: false, message: data.error });
             } else {
-                setTestResult({ ok: true, message: 'Connection successful — Gemini API is working.' });
+                setTestResult({ ok: true, message: data?.modelName ? `Connection works: ${data.modelName} answered, on the free tier.` : 'Connection works.' });
             }
         } catch (err) {
             setTestResult({ ok: false, message: err instanceof Error ? err.message : 'Unknown error' });
@@ -100,7 +105,7 @@ export const AISettings = () => {
                             <Sparkles size={18} color="white" />
                         </div>
                         <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                            AI Summary Feature
+                            Gemini in AI Summary
                         </h2>
                     </div>
 
@@ -133,7 +138,7 @@ export const AISettings = () => {
                     </div>
                 </div>
                 <p style={{ fontSize: '13.5px', color: '#64748b', margin: '0 0 24px' }}>
-                    When enabled, the <strong>✦ AI Summary</strong> tab appears in all board views. The API key is stored securely and never exposed to the browser.
+                    Every board has an <strong>AI Summary</strong> tab. Its first section is worked out in the app and sends nothing anywhere. When this is on, its second section can send a board's tasks and comments to Google's Gemini API (free tier) to write a summary. Private boards are never sent. The key is used only on the server.
                 </p>
 
                 {/* Status badge */}
@@ -141,13 +146,15 @@ export const AISettings = () => {
                     display: 'inline-flex', alignItems: 'center', gap: '6px',
                     fontSize: '13px',
                     padding: '6px 12px', borderRadius: '20px', marginBottom: '20px',
-                    backgroundColor: hasExistingKey ? '#f0fdf4' : '#f8fafc',
-                    border: `1px solid ${hasExistingKey ? '#bbf7d0' : '#e2e8f0'}`,
-                    color: hasExistingKey ? '#16a34a' : '#94a3b8',
+                    backgroundColor: hasExistingKey && keyLooksReal ? '#f0fdf4' : hasExistingKey ? '#fffbeb' : '#f8fafc',
+                    border: `1px solid ${hasExistingKey && keyLooksReal ? '#bbf7d0' : hasExistingKey ? '#fde68a' : '#e2e8f0'}`,
+                    color: hasExistingKey && keyLooksReal ? '#16a34a' : hasExistingKey ? '#b45309' : '#94a3b8',
                 }}>
-                    {hasExistingKey
+                    {hasExistingKey && keyLooksReal
                         ? <><CheckCircle size={13} /> API key is saved</>
-                        : <><XCircle size={13} /> No API key saved</>}
+                        : hasExistingKey
+                            ? <><XCircle size={13} /> The saved key isn't a Gemini key (they start with AIza), so the server's own key is used</>
+                            : <><XCircle size={13} /> No API key saved here: the server's own key is used, if it has one</>}
                 </div>
 
                 {/* Key input */}
@@ -202,14 +209,14 @@ export const AISettings = () => {
 
                     <button
                         onClick={handleTest}
-                        disabled={!hasExistingKey || testing}
+                        disabled={testing}
                         style={{
                             padding: '9px 20px', borderRadius: '8px',
                             backgroundColor: 'white',
-                            color: hasExistingKey ? '#374151' : '#94a3b8',
+                            color: '#374151',
                             border: '1px solid #e2e8f0',
                             fontSize: '14px', fontWeight: 500,
-                            cursor: hasExistingKey && !testing ? 'pointer' : 'not-allowed',
+                            cursor: !testing ? 'pointer' : 'not-allowed',
                             display: 'flex', alignItems: 'center', gap: '6px',
                         }}
                     >
@@ -248,8 +255,8 @@ export const AISettings = () => {
                 )}
             </div>
 
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>
-                Get your API key at <strong>aistudio.google.com</strong> → Get API Key → Create API key in new project
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px', lineHeight: 1.6 }}>
+                Free tier: get a key at <strong>aistudio.google.com</strong> → Get API key → Create API key, in a Google Cloud project with no billing account linked. That keeps it free, within Google's limits (if they are reached, people are asked to try again later). On the free tier Google may use what is sent to improve its products.
             </p>
 
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

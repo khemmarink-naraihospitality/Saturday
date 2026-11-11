@@ -286,3 +286,45 @@ export const buildLargeBoard = (): Board => {
         expandedItemIds: [],
     });
 };
+
+// ── AI Summary's Gemini section: ?gemini=on (switched on) or ?gemini=written
+// (on, with a summary kept for the board), on either preview page ──────────
+
+export const geminiSummaryRow = {
+    summary: {
+        overview: 'IT BO เสร็จแล้ว 2 จาก 5 งาน (40%) งานที่ค้างส่วนใหญ่อยู่ในกลุ่ม Overall โดย “New employee” รายการหนึ่งติดอยู่และยังไม่มีผู้รับผิดชอบ ส่วน “Laptop setup” เลยกำหนดมาแล้วและยังอยู่ระหว่างทำ',
+        issues: [
+            '“Laptop setup” เลยกำหนดวันที่ 20 ต.ค. แล้ว ยังอยู่ในสถานะ Working on it และมี Kitti Boriphan รับผิดชอบอยู่คนเดียว',
+            '“New employee” รายการที่สองอยู่ในสถานะ Stuck และยังไม่มีใครรับผิดชอบ จึงไม่มีคนตามงานต่อ',
+        ],
+        trends: [
+            'ช่วง 30 วันที่ผ่านมามีความคิดเห็นใหม่น้อย งานที่ค้างจึงแทบไม่มีความเคลื่อนไหวให้เห็น',
+        ],
+        suggestions: [
+            'มอบหมายผู้รับผิดชอบให้ “New employee” ที่ติดอยู่ แล้วเขียนไว้ว่ากำลังรออะไร',
+            'ให้ Kitti Boriphan กำหนดวันเสร็จใหม่ของ “Laptop setup” หรือแยกเป็นงานย่อยที่ปิดได้ภายในสัปดาห์นี้',
+        ],
+    },
+    model: 'gemini-3.6-flash',
+    language: 'th',
+    period: '30d',
+    generated_at: daysAgo(0.2),
+    generated_by_name: ME.name,
+};
+
+/** What the network stubs answer for the Gemini section, or null to leave a request to them. */
+export const geminiPreview = (mode: string | null) => ({
+    table: (table: string): { data: unknown } | null =>
+        !mode ? null
+            : table === 'system_settings' ? { data: { value: 'true' } }
+                : table === 'board_ai_summaries' && mode === 'written' ? { data: geminiSummaryRow }
+                    : null,
+    invoke: async (name: string): Promise<{ data: unknown; error: null } | null> => {
+        if (!mode || name !== 'ai-summary') return null;
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return {
+            data: { summary: geminiSummaryRow.summary, model: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash', generatedAt: new Date().toISOString(), generatedByName: ME.name, language: 'th', period: '30d' },
+            error: null,
+        };
+    },
+});

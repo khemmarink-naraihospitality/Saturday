@@ -1,5 +1,4 @@
 import { useBoardStore } from '../../store/useBoardStore';
-import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 import { useTerms } from '../../lib/terms';
 import { useNewUi } from '../../lib/brand';
 import { Calendar, Columns3, GanttChart, Sparkles, Table2, type LucideIcon } from 'lucide-react';
@@ -7,26 +6,25 @@ import { Calendar, Columns3, GanttChart, Sparkles, Table2, type LucideIcon } fro
 // NHG draws each view as a pill with its symbol
 const VIEW_ICON: Record<string, LucideIcon> = { main_table: Table2, timeline: GanttChart, kanban: Columns3, calendar: Calendar, ai_summary: Sparkles };
 
-const BASE_VIEWS = [
+// AI Summary is on every board: its first section is worked out here and sends
+// nothing anywhere (Admin › AI Settings switches only its Gemini section).
+const VIEWS = [
     { id: 'main_table', label: 'Main table' },
     { id: 'timeline', label: 'Timeline' },
     { id: 'kanban', label: 'Kanban' },
     { id: 'calendar', label: 'Calendar' },
+    { id: 'ai_summary', label: '✦ AI Summary' },
 ];
-
-const AI_SUMMARY_VIEW = { id: 'ai_summary', label: '✦ AI Summary' };
 
 export const BoardViewsTabs = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
     const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
     const setActiveView = useBoardStore(state => state.setActiveView);
-    // Offered only when switched on in Admin › AI Settings (the backend needs its key).
-    const aiEnabled = useAiSummaryEnabled();
     const t = useTerms();
     const newUi = useNewUi();
 
-    const views = aiEnabled ? [...BASE_VIEWS, AI_SUMMARY_VIEW] : BASE_VIEWS;
-    const activeViewId = shownViewId(activeBoard?.activeViewId, aiEnabled);
+    const views = VIEWS;
+    const activeViewId = activeBoard?.activeViewId || 'main_table';
 
     if (!activeBoardId) return null;
 

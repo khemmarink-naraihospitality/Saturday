@@ -18,13 +18,20 @@ import { EmailSettings } from '../components/admin/EmailSettings';
 import { StatusMappingSettings } from '../components/admin/StatusMappingSettings';
 import { DueDateReminderSettings } from '../components/admin/DueDateReminderSettings';
 import { AISettings } from '../components/admin/AISettings';
+import { takeAdminTab } from '../lib/adminTab';
 import { TrashManagement } from '../components/admin/TrashManagement';
+
+const ADMIN_TABS = ['dashboard', 'users', 'workspaces', 'boards', 'trash', 'email_templates', 'status_mapping', 'due_date_reminders', 'settings', 'ai_settings'] as const;
+type AdminTab = typeof ADMIN_TABS[number];
 
 export const AdminPage = () => {
     const { currentUser } = useUserStore();
     const { navigateTo } = useBoardStore();
     const newUi = useNewUi();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'workspaces' | 'boards' | 'trash' | 'email_templates' | 'status_mapping' | 'due_date_reminders' | 'settings' | 'ai_settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+        const asked = takeAdminTab();
+        return (ADMIN_TABS as readonly string[]).includes(asked ?? '') ? asked as AdminTab : 'dashboard';
+    });
 
     // Real Stats State
     const [stats, setStats] = useState([

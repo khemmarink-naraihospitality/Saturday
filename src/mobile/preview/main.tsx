@@ -9,7 +9,8 @@
  * Screens (?screen=): home, home-scrolled, workspace, board, item-updates,
  * board-scrolled, sheet-status, sheet-date, sheet-files, sheet-date2,
  * sheet-timeline, sheet-views, workspaces, favorites, notifications, more,
- * dashboard, item-columns, item-files, board-large (4,800 rows, for speed).
+ * dashboard, item-columns, item-files, board-large (4,800 rows, for speed), ai-summary
+ * (IT BO's AI Summary tab; &gemini=on or &gemini=written for its Gemini section).
  * Add &theme=dark for the dark theme, &palette=narai for the Narai palette (shown as "NHG").
  */
 import React from 'react';
@@ -51,9 +52,13 @@ const dbUpdatesOf = (itemId: string) => {
 };
 
 /** A query on one table: everything succeeds empty, except items.updates, which is remembered. */
+const gemini = fx.geminiPreview(new URLSearchParams(window.location.search).get('gemini'));
+
 const tableChain = (table: string) => {
     const q: { op: string; columns?: string; filters: Record<string, unknown>; payload?: Record<string, unknown> } = { op: 'select', filters: {} };
     const result = () => {
+        const geminiAnswer = gemini.table(table);
+        if (geminiAnswer) return { ...emptyResult, ...geminiAnswer };
         const id = q.filters.id as string | undefined;
         if (table === 'items' && id) {
             if (q.op === 'select' && q.columns === 'updates') return { ...emptyResult, data: { updates: dbUpdatesOf(id) } };
@@ -92,7 +97,7 @@ client.rpc = () => chain;
 client.channel = () => chain;
 client.removeChannel = async () => 'ok';
 // functions / storage are getters on the client: shadow them on the instance.
-Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async () => ({ data: null, error: null }) } });
+Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async (name: string) => (await gemini.invoke(name)) ?? { data: null, error: null } } });
 Object.defineProperty(client, 'storage', { configurable: true, value: { from: () => chain } });
 client.auth.getSession = async () => ({ data: { session: fakeSession }, error: null });
 client.auth.getUser = async () => ({ data: { user: fakeUser }, error: null });
@@ -192,6 +197,10 @@ const scenarios: Record<string, () => void> = {
         store().navigateTo('dashboard');
     },
     board: openTech,
+    'ai-summary': () => {
+        store().setActiveBoard('b-it-bo');
+        store().setActiveView('b-it-bo', 'ai_summary');
+    },
     'board-scrolled': () => {
         openTech();
         // Updates scrolled under the name column, as in reference 20.

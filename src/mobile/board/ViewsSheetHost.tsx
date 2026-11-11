@@ -5,7 +5,6 @@ import { useBoardStore } from '../../store/useBoardStore';
 import { useMobileUI } from '../state/mobileStore';
 import { BottomSheet } from '../ui';
 import { VIEW_OPTIONS } from './views';
-import { shownViewId, useAiSummaryEnabled } from '../../hooks/useAiSummaryEnabled';
 
 import { useTerms } from '../../lib/terms';
 import { useNewUi } from '../../lib/brand';
@@ -21,8 +20,7 @@ export const ViewsSheetHost = () => {
     const boardId = useMobileUI(state => state.viewsSheetBoardId);
     const close = useMobileUI(state => state.closeViewsSheet);
     const storedViewId = useBoardStore(state => state.boards.find(b => b.id === boardId)?.activeViewId);
-    const aiEnabled = useAiSummaryEnabled();
-    const activeViewId = shownViewId(storedViewId, aiEnabled);
+    const activeViewId = storedViewId || 'main_table';
     const setActiveView = useBoardStore(state => state.setActiveView);
     const [query, setQuery] = useState('');
 
@@ -31,10 +29,9 @@ export const ViewsSheetHost = () => {
     }, [boardId]);
 
     const q = query.trim().toLowerCase();
-    // AI Summary only when switched on in Admin › AI Settings, as on desktop.
     // NHG calls the first view Table (src/lib/terms.ts)
     const viewLabel = (v: { id: string; label: string }) => (v.id === 'main_table' && newUi ? t.mainTable : v.label);
-    const views = VIEW_OPTIONS.filter(v => (v.id !== 'ai_summary' || aiEnabled === true) && (!q || viewLabel(v).toLowerCase().includes(q)));
+    const views = VIEW_OPTIONS.filter(v => !q || viewLabel(v).toLowerCase().includes(q));
 
     return (
         <BottomSheet open={!!boardId} onClose={close} title="Views" size="tall" testId="m-views-sheet">

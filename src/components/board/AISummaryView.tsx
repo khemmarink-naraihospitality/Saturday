@@ -1,464 +1,118 @@
-import { useState } from 'react';
-import { Sparkles, RefreshCw, AlertCircle, Clock, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { useBoardStore } from '../../store/useBoardStore';
 import { supabase } from '../../lib/supabase';
-import type { Column, Item } from '../../types';
-import { itemColumns } from '../../lib/columnScope';
-
 import { useTerms } from '../../lib/terms';
-type Period = '1w' | '1m' | '1y' | 'all';
+import { useToday } from '../../hooks/useToday';
+import { summarizeBoard, type SummaryLog } from '../../lib/boardSummary';
+import { CalculatedSection } from './aiSummary/CalculatedSection';
+import { GeminiSection } from './aiSummary/GeminiSection';
 
-const PERIODS: { id: Period; label: string; ms: number | null }[] = [
-    { id: '1w',  label: '1 Week',  ms: 7 * 24 * 60 * 60 * 1000 },
-    { id: '1m',  label: '1 Month', ms: 30 * 24 * 60 * 60 * 1000 },
-    { id: '1y',  label: '1 Year',  ms: 365 * 24 * 60 * 60 * 1000 },
-    { id: 'all', label: 'All Time', ms: null },
-];
+/*
+ * The AI Summary tab, in two sections (src/styles/ai_summary.css):
+ *  A. worked out here from the board's own numbers and its activity log, free
+ *     and with nothing sent anywhere (src/lib/boardSummary.ts);
+ *  B. written by Gemini on Google's free tier, through the ai-summary edge
+ *     function, while Admin › AI Settings has it switched on.
+ * Both palettes, desktop and phone.
+ */
 
-function periodLabel(id: Period) {
-    return PERIODS.find(p => p.id === id)?.label ?? '1 Month';
-}
+const LOG_DAYS = 60;
+const PAGE = 1000;
 
-function resolveStatusLabel(item: Item, columns: Column[]): string {
-    for (const col of columns) {
-        if (col.type !== 'status' && col.type !== 'dropdown') continue;
-        const val = item.values[col.id];
-        if (!val) continue;
-        const opt = col.options?.find(o => o.id === val || o.label === val);
-        if (opt) return opt.label;
+/** This board's status changes and comments over the last 60 days; null when they can't be read. */
+const fetchBoardLogs = async (boardId: string): Promise<SummaryLog[] | null> => {
+    const since = new Date(Date.now() - LOG_DAYS * 86400000).toISOString();
+    const out: SummaryLog[] = [];
+    for (let page = 0; page < 8; page++) {
+        const { data, error } = await supabase
+            .from('activity_logs')
+            .select('action_type, created_at, target_id, new_value:metadata->>new_value')
+            .eq('metadata->>board_id', boardId)
+            .in('action_type', ['item_status_updated', 'item_comment_added'])
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .range(page * PAGE, page * PAGE + PAGE - 1);
+        if (error) {
+            console.error('AI Summary: activity log not read', error);
+            return null;
+        }
+        const rows = (data || []) as unknown as { action_type: string; created_at: string; target_id: string | null; new_value: string | null }[];
+        rows.forEach(r => out.push({ action: r.action_type, at: r.created_at, itemId: r.target_id, newValue: r.new_value }));
+        if (rows.length < PAGE) break;
     }
-    return '';
-}
+    return out;
+};
 
-function getCutoff(period: Period): number | null {
-    const p = PERIODS.find(x => x.id === period);
-    return p?.ms != null ? Date.now() - p.ms : null;
-}
+const storedChoice = (key: string): string | null => {
+    try { return localStorage.getItem(key); } catch { return null; }
+};
 
-function buildPayload(
-    activeBoard: NonNullable<ReturnType<typeof useBoardStore.getState>['boards'][number]>,
-    period: Period
-) {
-    const cutoff = getCutoff(period);
-
-    const groups = activeBoard.groups.map(group => {
-        const filteredItems = group.items.filter(item => {
-            if (cutoff === null) return true;
-            const createdRecently = item.createdAt && new Date(item.createdAt).getTime() >= cutoff;
-            const hasRecentUpdate = item.updates?.some(u => new Date(u.createdAt).getTime() >= cutoff);
-            return createdRecently || hasRecentUpdate;
-        });
-
-        return {
-            title: group.title,
-            items: filteredItems.map(item => ({
-                title: item.title,
-                statusLabel: resolveStatusLabel(item, itemColumns(activeBoard.columns)),
-                updates: (item.updates ?? [])
-                    .filter(u => cutoff === null || new Date(u.createdAt).getTime() >= cutoff)
-                    .map(u => u.content)
-                    .slice(0, 5),
-            })),
-        };
-    }).filter(g => g.items.length > 0);
-
-    return {
-        boardTitle: activeBoard.title,
-        period: periodLabel(period),
-        // The board's own columns; each group's sub-item columns would list the same names many times over.
-        columns: itemColumns(activeBoard.columns).map(c => ({ title: c.title, type: c.type })),
-        groups,
-    };
-}
+const storeChoice = (key: string, value: string) => {
+    try { localStorage.setItem(key, value); } catch { /* private mode: not remembered */ }
+};
 
 export const AISummaryView = () => {
     const t = useTerms();
-    const activeBoardId = useBoardStore(state => state.activeBoardId);
-    const activeBoard = useBoardStore(state => state.boards.find(b => b.id === activeBoardId));
+    const boardId = useBoardStore(state => state.activeBoardId);
+    const board = useBoardStore(state => state.boards.find(b => b.id === state.activeBoardId));
+    const members = useBoardStore(state => state.activeBoardMembers);
+    const today = useToday();
 
-    const [period, setPeriod] = useState<Period>('1m');
-    const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-    const [summary, setSummary] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
-    const [summaryPeriod, setSummaryPeriod] = useState<Period>('1m');
+    const statusKey = `aiSummaryStatusColumn:${boardId}`;
+    const [statusColumnId, setStatusColumnId] = useState<string | null>(() => storedChoice(statusKey));
+    // undefined while loading, null when it couldn't be read
+    const [logs, setLogs] = useState<SummaryLog[] | null | undefined>(undefined);
 
-    if (!activeBoard) return null;
+    useEffect(() => {
+        setStatusColumnId(storedChoice(statusKey));
+    }, [statusKey]);
 
-    const cutoff = getCutoff(period);
-    const activeItemCount = activeBoard.groups.reduce((sum, g) =>
-        sum + g.items.filter(i => {
-            if (cutoff === null) return true;
-            return (i.createdAt && new Date(i.createdAt).getTime() >= cutoff) ||
-                i.updates?.some(u => new Date(u.createdAt).getTime() >= cutoff);
-        }).length, 0
+    useEffect(() => {
+        if (!boardId) return;
+        let live = true;
+        setLogs(undefined);
+        fetchBoardLogs(boardId).then(rows => { if (live) setLogs(rows); });
+        return () => { live = false; };
+    }, [boardId]);
+
+    const personName = useMemo(() => {
+        const names = new Map<string, string>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (members || []).forEach((m: any) => {
+            const profile = Array.isArray(m?.profiles) ? m.profiles[0] : m?.profiles;
+            const name = profile?.full_name || profile?.email;
+            if (m?.user_id && name) names.set(m.user_id, name);
+        });
+        return (id: string) => names.get(id);
+    }, [members]);
+
+    const summary = useMemo(
+        () => (board ? summarizeBoard(board, { terms: t, today, statusColumnId, personName, logs: logs ?? null }) : null),
+        [board, t, today, statusColumnId, personName, logs]
     );
 
-    const handleGenerate = async () => {
-        setStatus('loading');
-        setSummary('');
-        setErrorMsg('');
-        try {
-            const payload = buildPayload(activeBoard as any, period);
-            const { data, error } = await supabase.functions.invoke('ai-summary', { body: payload });
-            if (error) {
-                let detail = error.message;
-                try {
-                    const ctx = (error as any).context;
-                    if (ctx) {
-                        const body = await (ctx as Response).json();
-                        detail = body?.error ?? body?.message ?? JSON.stringify(body);
-                    }
-                } catch { /* ignore parse failure */ }
-                throw new Error(detail);
-            }
-            if (data?.error) throw new Error(data.error);
-            setSummary(data?.summary ?? '');
-            setGeneratedAt(new Date());
-            setSummaryPeriod(period);
-            setStatus('done');
-        } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'An unknown error occurred.');
-            setStatus('error');
-        }
-    };
+    if (!board || !summary) return null;
 
-    const handlePeriodChange = (p: Period) => {
-        setPeriod(p);
-        if (status === 'done') setStatus('idle');
+    const pickStatusColumn = (id: string) => {
+        setStatusColumnId(id);
+        storeChoice(statusKey, id);
     };
 
     return (
-        <div style={{
-            flex: 1,
-            overflow: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '20px 24px 48px',
-            backgroundColor: 'hsl(var(--color-bg-canvas))',
-        }}>
-            <style>{`
-                @keyframes spin { to { transform: rotate(360deg); } }
-                .ai-gen-btn { transition: transform 0.15s ease, box-shadow 0.15s ease !important; }
-                .ai-gen-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(107,76,195,0.42) !important; }
-                .ai-gen-btn:active { transform: translateY(0) !important; }
-                .ai-period-btn:hover { opacity: 0.8; }
-                .ai-regen-btn:hover { border-color: hsl(var(--color-border)) !important; background-color: hsl(var(--color-bg-surface)) !important; }
-            `}</style>
-
-            <div style={{
-                width: '100%',
-                maxWidth: '820px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-            }}>
-                {/* Premium header row: title+subtitle left, period selector right */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    gap: '24px',
-                }}>
-                    {/* Title + subtitle stacked */}
+        <div className="ais">
+            <div className="ais__inner">
+                <header className="ais-head">
+                    <span className="ais-head__tile" aria-hidden="true"><Sparkles size={18} /></span>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                            <div style={{
-                                width: '34px', height: '34px',
-                                borderRadius: '9px',
-                                background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0,
-                                boxShadow: '0 2px 8px rgba(107,76,195,0.3)',
-                            }}>
-                                <Sparkles size={16} color="white" />
-                            </div>
-                            <h2 style={{
-                                fontSize: '22px',
-                                fontWeight: 700,
-                                color: 'hsl(var(--color-text-primary))',
-                                margin: 0,
-                                letterSpacing: '-0.3px',
-                            }}>
-                                AI Summary
-                            </h2>
-                        </div>
-                        <p style={{
-                            fontSize: '13.5px',
-                            color: 'hsl(var(--color-text-secondary))',
-                            margin: '0 0 0 44px',
-                            lineHeight: 1.5,
-                        }}>
-                            {`Summarize ${t.board} activity`}
-                            <span style={{ margin: '0 5px', color: 'hsl(var(--color-text-tertiary))' }}>·</span>
-                            <span style={{ fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>
-                                {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
-                            </span>
-                            {' '}in the selected period
-                        </p>
+                        <h2>AI Summary</h2>
+                        <p>{`Two ways to sum up “${board.title}”: from the ${t.board}'s own numbers, or written by Gemini.`}</p>
                     </div>
-
-                    {/* Period selector pill */}
-                    <div style={{
-                        display: 'flex',
-                        gap: '3px',
-                        padding: '4px',
-                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '10px',
-                        flexShrink: 0,
-                    }}>
-                        {PERIODS.map(p => (
-                            <button
-                                key={p.id}
-                                className="ai-period-btn"
-                                onClick={() => handlePeriodChange(p.id)}
-                                style={{
-                                    padding: '6px 15px',
-                                    borderRadius: '7px',
-                                    fontSize: '13px',
-                                    fontWeight: period === p.id ? 600 : 400,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    backgroundColor: period === p.id ? 'hsl(var(--color-brand-primary))' : 'transparent',
-                                    color: period === p.id ? 'white' : 'hsl(var(--color-text-secondary))',
-                                }}
-                            >
-                                {p.label}
-                            </button>
-                        ))}
-                    </div>
+                </header>
+                <div className="ais-grid">
+                    <CalculatedSection summary={summary} logsLoading={logs === undefined} onPickStatusColumn={pickStatusColumn} />
+                    <GeminiSection board={board} summary={summary} personName={personName} />
                 </div>
-
-                {/* Main card */}
-                {status === 'idle' || status === 'error' ? (
-                    <div style={{
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '16px',
-                        padding: '72px 56px',
-                        textAlign: 'center',
-                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '22px',
-                        boxShadow: '0 2px 20px rgba(0,0,0,0.04)',
-                        position: 'relative',
-                        overflow: 'hidden',
-                    }}>
-                        {/* Decorative blobs */}
-                        <div style={{
-                            position: 'absolute', top: '-70px', right: '-70px',
-                            width: '240px', height: '240px', borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%)',
-                            pointerEvents: 'none',
-                        }} />
-                        <div style={{
-                            position: 'absolute', bottom: '-50px', left: '-50px',
-                            width: '200px', height: '200px', borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(107,76,195,0.07) 0%, transparent 70%)',
-                            pointerEvents: 'none',
-                        }} />
-
-                        {status === 'error' && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                color: '#ef4444', fontSize: '13px',
-                                padding: '12px 18px', borderRadius: '10px',
-                                backgroundColor: 'rgba(239,68,68,0.07)',
-                                border: '1px solid rgba(239,68,68,0.18)',
-                                width: '100%', maxWidth: '500px',
-                                boxSizing: 'border-box',
-                                textAlign: 'left',
-                                zIndex: 1,
-                            }}>
-                                <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                                <span>{errorMsg}</span>
-                            </div>
-                        )}
-
-                        {/* Icon */}
-                        <div style={{
-                            width: '68px', height: '68px',
-                            borderRadius: '18px',
-                            background: 'linear-gradient(135deg, rgba(107,76,195,0.1), rgba(168,85,247,0.16))',
-                            border: '1px solid rgba(168,85,247,0.22)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            zIndex: 1,
-                        }}>
-                            <Sparkles size={30} color="#a855f7" />
-                        </div>
-
-                        <div style={{ maxWidth: '440px', zIndex: 1 }}>
-                            <p style={{
-                                fontSize: '18px', fontWeight: 700,
-                                color: 'hsl(var(--color-text-primary))',
-                                margin: '0 0 10px', letterSpacing: '-0.2px',
-                            }}>
-                                Generate AI Summary
-                            </p>
-                            <p style={{
-                                fontSize: '14px', color: 'hsl(var(--color-text-secondary))',
-                                margin: 0, lineHeight: 1.65,
-                            }}>
-                                Gemini AI will analyze{' '}
-                                <strong style={{ color: 'hsl(var(--color-text-primary))' }}>
-                                    {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
-                                </strong>
-                                {' '}and their updates from the past{' '}
-                                <strong style={{ color: 'hsl(var(--color-text-primary))' }}>
-                                    {periodLabel(period).toLowerCase()}
-                                </strong>
-                                {' '}in{' '}
-                                <em>"{activeBoard.title}"</em>
-                            </p>
-                        </div>
-
-                        <button
-                            className="ai-gen-btn"
-                            onClick={handleGenerate}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                padding: '13px 36px', borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #6b4cc3, #a855f7)',
-                                color: 'white', fontSize: '14px', fontWeight: 600,
-                                border: 'none', cursor: 'pointer',
-                                boxShadow: '0 4px 16px rgba(107,76,195,0.35)',
-                                letterSpacing: '0.1px',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Zap size={15} />
-                            {status === 'error' ? 'Try Again' : 'Generate Summary'}
-                        </button>
-                    </div>
-
-                ) : status === 'loading' ? (
-                    <div style={{
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '16px',
-                        padding: '88px 56px',
-                        textAlign: 'center',
-                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '20px',
-                        boxShadow: '0 2px 20px rgba(0,0,0,0.04)',
-                    }}>
-                        <div style={{ position: 'relative', width: '54px', height: '54px' }}>
-                            <div style={{
-                                width: '54px', height: '54px',
-                                border: '3px solid rgba(168,85,247,0.15)',
-                                borderTopColor: '#a855f7',
-                                borderRadius: '50%',
-                                animation: 'spin 0.85s linear infinite',
-                            }} />
-                            <div style={{
-                                position: 'absolute', top: '50%', left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                            }}>
-                                <Sparkles size={18} color="#a855f7" />
-                            </div>
-                        </div>
-                        <div>
-                            <p style={{
-                                fontSize: '15px', fontWeight: 600,
-                                color: 'hsl(var(--color-text-primary))',
-                                margin: '0 0 5px',
-                            }}>
-                                {`Analyzing ${t.board} activity...`}
-                            </p>
-                            <p style={{ fontSize: '13px', color: 'hsl(var(--color-text-secondary))', margin: 0 }}>
-                                Gemini is reading {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} and their updates
-                            </p>
-                        </div>
-                    </div>
-
-                ) : (
-                    /* Result card */
-                    <div style={{
-                        border: '1px solid hsl(var(--color-border))',
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        backgroundColor: 'hsl(var(--color-bg-surface))',
-                        boxShadow: '0 2px 20px rgba(0,0,0,0.05)',
-                    }}>
-                        {/* Result header */}
-                        <div style={{
-                            padding: '18px 32px',
-                            borderBottom: '1px solid hsl(var(--color-border))',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'linear-gradient(to right, rgba(107,76,195,0.06), transparent)',
-                        }}>
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                fontSize: '13px', color: 'hsl(var(--color-text-secondary))',
-                            }}>
-                                <Clock size={14} color="#a855f7" />
-                                <span style={{ fontWeight: 600, color: 'hsl(var(--color-text-primary))' }}>
-                                    {periodLabel(summaryPeriod)}
-                                </span>
-                                <span style={{ color: 'hsl(var(--color-text-tertiary))' }}>·</span>
-                                <span>Generated {generatedAt?.toLocaleString('en-GB')}</span>
-                            </div>
-                            <button
-                                className="ai-regen-btn"
-                                onClick={handleGenerate}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '7px 16px', borderRadius: '8px',
-                                    border: '1px solid hsl(var(--color-border))',
-                                    backgroundColor: 'hsl(var(--color-bg-canvas))',
-                                    color: 'hsl(var(--color-text-secondary))',
-                                    fontSize: '13px', fontWeight: 500,
-                                    cursor: 'pointer',
-                                    transition: 'background-color 0.15s ease',
-                                }}
-                            >
-                                <RefreshCw size={13} />
-                                Regenerate
-                            </button>
-                        </div>
-
-                        {/* Summary body */}
-                        <div style={{
-                            padding: '40px 44px',
-                            fontSize: '15px',
-                            lineHeight: 1.9,
-                            color: 'hsl(var(--color-text-primary))',
-                            whiteSpace: 'pre-wrap',
-                            letterSpacing: '0.1px',
-                        }}>
-                            {summary}
-                        </div>
-
-                        {/* Inner footer */}
-                        <div style={{
-                            padding: '14px 44px',
-                            borderTop: '1px solid hsl(var(--color-border))',
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            backgroundColor: 'hsl(var(--color-bg-canvas))',
-                        }}>
-                            <Sparkles size={11} color="#a855f7" />
-                            <span style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))' }}>
-                                Powered by Google Gemini 1.5 Flash
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Footer — only on idle/error states */}
-                {(status === 'idle' || status === 'error') && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <Sparkles size={11} color="#a855f7" />
-                        <p style={{ fontSize: '12px', color: 'hsl(var(--color-text-tertiary))', margin: 0 }}>
-                            Powered by Google Gemini 1.5 Flash
-                        </p>
-                    </div>
-                )}
             </div>
         </div>
     );

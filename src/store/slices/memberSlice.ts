@@ -255,7 +255,9 @@ export const createMemberSlice: StateCreator<
     updateMemberRole: async (memberId, newRole, type) => {
         const table = type === 'workspace' ? 'workspace_members' : 'board_members';
         await supabase.from(table).update({ role: newRole }).eq('id', memberId);
-        if (type === 'board' && get().activeBoardId) {
+        // A folder owner is made owner of the folder's boards by the database
+        // (20261111_folder_owners_own_boards.sql), so the open board's list changes too.
+        if ((type === 'board' || newRole === 'owner') && get().activeBoardId) {
             set({ activeBoardMembers: await get().getBoardMembers(get().activeBoardId!) });
         }
         get().logActivity('member_role_updated', type, memberId, { member_id: memberId, new_role: newRole });

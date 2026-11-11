@@ -37,6 +37,9 @@ const ACTION_LABELS: Record<string, string> = {
     workspace_duplicated: 'Workspace Duplicated',
     workspace_invite_sent: 'Workspace Invite Sent',
     workspace_ownership_transferred: 'Ownership Transferred',
+    // Written by the database (supabase/migrations/20261111_folder_owners_own_boards.sql)
+    // when someone becomes a folder's owner and is made owner of its boards.
+    workspace_owner_applied_to_boards: 'Owner Added to Boards',
     board_created: 'Board Created',
     board_deleted: 'Board Deleted',
     board_restored: 'Board Restored',
@@ -232,6 +235,8 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 return <span>Removed a member</span>;
             case 'workspace_ownership_transferred':
                 return <span>{`Transferred ${t.workspace} ownership`}</span>;
+            case 'workspace_owner_applied_to_boards':
+                return <span>Made <strong>{meta.user_name || 'the new owner'}</strong>{` owner of ${meta.boards} ${meta.boards === 1 ? t.board : t.boards}`}</span>;
             case 'column_renamed':
                 return <span>Renamed column <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
             case 'column_formula_changed':

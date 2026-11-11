@@ -613,6 +613,14 @@ export const createWorkspaceSlice: StateCreator<
                 previous_owner_user_id: previousOwnerId,
                 new_owner_user_id: newOwnerUserId
             });
+
+            // The database has made the new owner owner of every board in the folder
+            // and its sub-folders (20261111_folder_owners_own_boards.sql): show it on
+            // the open board's member list.
+            const activeBoardId = get().activeBoardId;
+            if (activeBoardId) {
+                set({ activeBoardMembers: await get().getBoardMembers(activeBoardId) });
+            }
         } catch (err) {
             console.error('[TransferOwnership] Failed, reverting:', err);
             await get().loadUserData(true);

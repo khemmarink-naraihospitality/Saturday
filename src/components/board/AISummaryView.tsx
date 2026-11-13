@@ -9,11 +9,11 @@ import { CalculatedSection } from './aiSummary/CalculatedSection';
 import { GeminiSection } from './aiSummary/GeminiSection';
 
 /*
- * The AI Summary tab, in two sections (src/styles/ai_summary.css):
- *  A. worked out here from the board's own numbers and its activity log, free
- *     and with nothing sent anywhere (src/lib/boardSummary.ts);
- *  B. written by Gemini on Google's free tier, through the ai-summary edge
- *     function, while Admin › AI Settings has it switched on.
+ * The AI Summary tab, in two sections one under the other (src/styles/ai_summary.css):
+ *  - on top, written by Gemini on Google's free tier, through the ai-summary
+ *    edge function, while Admin › AI Settings has it switched on;
+ *  - below, worked out here from the board's own numbers and its activity log,
+ *    free and with nothing sent anywhere (src/lib/boardSummary.ts).
  * Both palettes, desktop and phone.
  */
 
@@ -106,12 +106,12 @@ export const AISummaryView = () => {
                     <span className="ais-head__tile" aria-hidden="true"><Sparkles size={18} /></span>
                     <div>
                         <h2>AI Summary</h2>
-                        <p>{`Two ways to sum up “${board.title}”: from the ${t.board}'s own numbers, or written by Gemini.`}</p>
+                        <p>{`Two ways to sum up “${board.title}”: written by Gemini, or from the ${t.board}'s own numbers.`}</p>
                     </div>
                 </header>
                 <div className="ais-grid">
-                    <CalculatedSection summary={summary} logsLoading={logs === undefined} onPickStatusColumn={pickStatusColumn} />
                     <GeminiSection board={board} summary={summary} personName={personName} />
+                    <CalculatedSection summary={summary} logsLoading={logs === undefined} onPickStatusColumn={pickStatusColumn} />
                 </div>
             </div>
         </div>

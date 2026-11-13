@@ -10,12 +10,14 @@ import { useTerms } from '../../../lib/terms';
 import type { Board } from '../../../types';
 
 /*
- * Section B of the AI Summary tab: Gemini, on Google's free tier, writes the
+ * The AI Summary tab's top section: Gemini, on Google's free tier, writes the
  * board up in Thai or English — overview, issues, trends, suggestions — from
- * section A's facts plus each task's details and the period's comments
- * (geminiPayload). The ai-summary edge function holds the key, refuses private
- * boards and keeps the last summary per board (board_ai_summaries), which
- * everyone on the board sees here until someone writes a new one.
+ * the calculated section's facts plus each task's details and the period's
+ * comments (geminiPayload). The ai-summary edge function holds the key, refuses
+ * private boards and keeps the last summary per board (board_ai_summaries),
+ * which everyone on the board sees here until someone writes a new one. On a
+ * wide card the note on what is sent sits beside the button (.ais-send) and
+ * the issues, trends and suggestions sit side by side (.ais-trio).
  */
 
 interface Written { overview: string; issues: string[]; trends: string[]; suggestions: string[] }
@@ -185,7 +187,7 @@ export const GeminiSection = ({ board, summary, personName }: {
         body = (
             <div className="ais-callout ais-callout--plain">
                 <Lock size={15} aria-hidden="true" />
-                <span>{`Private ${t.boards} are never sent to Gemini: on the free tier Google may use what it is sent to improve its products. The numbers in section A still cover this ${t.board}.`}</span>
+                <span>{`Private ${t.boards} are never sent to Gemini: on the free tier Google may use what it is sent to improve its products. The numbers below still cover this ${t.board}.`}</span>
             </div>
         );
     } else if (enabled === false) {
@@ -225,22 +227,24 @@ export const GeminiSection = ({ board, summary, personName }: {
                     </span>
                 </div>
 
-                <div className="ais-callout">
-                    <Send size={15} aria-hidden="true" />
-                    <span>
-                        <strong>Sent to Google: </strong>
-                        {`the ${t.items}' names, statuses, people, deadlines and other filled-in columns, and the ${t.updates} from ${periodWords}, as text. On the free tier Google may use them to improve its products.`}
-                        {commentsLoading > 0 && ` (${t.Updates} on ${commentsLoading} ${commentsLoading === 1 ? t.item : t.items} are still loading.)`}
-                    </span>
-                </div>
+                <div className="ais-send">
+                    <div className="ais-callout">
+                        <Send size={15} aria-hidden="true" />
+                        <span>
+                            <strong>Sent to Google: </strong>
+                            {`the ${t.items}' names, statuses, people, deadlines and other filled-in columns, and the ${t.updates} from ${periodWords}, as text. On the free tier Google may use them to improve its products.`}
+                            {commentsLoading > 0 && ` (${t.Updates} on ${commentsLoading} ${commentsLoading === 1 ? t.item : t.items} are still loading.)`}
+                        </span>
+                    </div>
 
-                <div className="ais-actions">
-                    <button type="button" className="ais-btn" onClick={write} disabled={busy || enabled !== true || taskCount === 0}>
-                        {busy ? <Loader2 size={15} className="ais-spin" aria-hidden="true" /> : <Sparkles size={15} aria-hidden="true" />}
-                        {busy ? 'Writing…' : result ? 'Write a new summary' : 'Write summary'}
-                    </button>
-                    {busy && <span className="ais-wait" role="status">{`Gemini is reading ${taskCount} ${taskCount === 1 ? t.item : t.items}…`}</span>}
-                    {!busy && taskCount === 0 && <span className="ais-wait">{`Nothing from ${periodWords} to send.`}</span>}
+                    <div className="ais-actions">
+                        <button type="button" className="ais-btn" onClick={write} disabled={busy || enabled !== true || taskCount === 0}>
+                            {busy ? <Loader2 size={15} className="ais-spin" aria-hidden="true" /> : <Sparkles size={15} aria-hidden="true" />}
+                            {busy ? 'Writing…' : result ? 'Write a new summary' : 'Write summary'}
+                        </button>
+                        {busy && <span className="ais-wait" role="status">{`Gemini is reading ${taskCount} ${taskCount === 1 ? t.item : t.items}…`}</span>}
+                        {!busy && taskCount === 0 && <span className="ais-wait">{`Nothing from ${periodWords} to send.`}</span>}
+                    </div>
                 </div>
 
                 {error && (
@@ -254,11 +258,11 @@ export const GeminiSection = ({ board, summary, personName }: {
     }
 
     return (
-        <section className="ais-sec card-surface" aria-labelledby="ais-b-title">
+        <section className="ais-sec card-surface" aria-labelledby="ais-gemini-title">
             <div className="ais-sec__head">
-                <div className="ais-sec__eyebrow"><span className="ais-sec__letter">B</span>Gemini API · free tier</div>
+                <div className="ais-sec__eyebrow"><span className="ais-sec__mark" aria-hidden="true"><Sparkles size={12} /></span>Gemini API · free tier</div>
                 <div className="ais-sec__titlerow">
-                    <h3 id="ais-b-title">Written by Gemini</h3>
+                    <h3 id="ais-gemini-title">Written by Gemini</h3>
                     <div className="ais-chips">
                         <span className="ais-chip ais-chip--ok"><Check size={12} aria-hidden="true" />Free, within Google's limits</span>
                         <span className="ais-chip ais-chip--warn"><Send size={12} aria-hidden="true" />Sent to Google</span>
@@ -280,22 +284,26 @@ export const GeminiSection = ({ board, summary, personName }: {
                         <span>{PERIODS.find(p => p.id === result.period)?.words}</span>
                     </div>
                     {result.summary.overview && <p className="ais-overview">{result.summary.overview}</p>}
-                    {result.summary.issues.length > 0 && (
-                        <div>
-                            <h4 className="ais-h">Issues and risks</h4>
-                            <ul className="ais-list ais-list--issues">{result.summary.issues.map((x, i) => <li key={i}>{x}</li>)}</ul>
-                        </div>
-                    )}
-                    {result.summary.trends.length > 0 && (
-                        <div>
-                            <h4 className="ais-h">Trends</h4>
-                            <ul className="ais-list ais-list--trends">{result.summary.trends.map((x, i) => <li key={i}>{x}</li>)}</ul>
-                        </div>
-                    )}
-                    {result.summary.suggestions.length > 0 && (
-                        <div>
-                            <h4 className="ais-h">Suggestions</h4>
-                            <ul className="ais-list ais-list--steps">{result.summary.suggestions.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                    {(result.summary.issues.length > 0 || result.summary.trends.length > 0 || result.summary.suggestions.length > 0) && (
+                        <div className="ais-trio">
+                            {result.summary.issues.length > 0 && (
+                                <div>
+                                    <h4 className="ais-h">Issues and risks</h4>
+                                    <ul className="ais-list ais-list--issues">{result.summary.issues.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                                </div>
+                            )}
+                            {result.summary.trends.length > 0 && (
+                                <div>
+                                    <h4 className="ais-h">Trends</h4>
+                                    <ul className="ais-list ais-list--trends">{result.summary.trends.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                                </div>
+                            )}
+                            {result.summary.suggestions.length > 0 && (
+                                <div>
+                                    <h4 className="ais-h">Suggestions</h4>
+                                    <ul className="ais-list ais-list--steps">{result.summary.suggestions.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                                </div>
+                            )}
                         </div>
                     )}
                     <div className="ais-actions">

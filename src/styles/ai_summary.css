@@ -1,17 +1,18 @@
 /*
- * The AI Summary tab (src/components/board/AISummaryView.tsx): two sections
- * side by side when the board is wide enough — A, worked out from the board's
- * own numbers, and B, written by Gemini on Google's free tier — one under the
- * other when it isn't (and on a phone). Both are .card-surface cards, so they
- * take each palette's card; every colour here is a token, so Saturday, NHG,
- * light and dark all follow. NHG's own touches are at the end.
+ * The AI Summary tab (src/components/board/AISummaryView.tsx): two sections,
+ * one under the other at every width — on top the one written by Gemini on
+ * Google's free tier, below it the one worked out from the board's own
+ * numbers. Each card is a size container (ais-sec) and puts its blocks side by
+ * side when it is wide enough (.ais-send, .ais-trio, .ais-pair). Both are
+ * .card-surface cards, so they take each palette's card; every colour here is
+ * a token, so Saturday, NHG, light and dark all follow. NHG's own touches are
+ * at the end.
  */
 
 .ais {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    container-type: inline-size;
     padding: 2px 2px 32px;
 }
 
@@ -57,22 +58,16 @@
     color: hsl(var(--color-text-secondary));
 }
 
-/* ── The two sections ─────────────────────────────────────────────────── */
+/* ── The two sections, Gemini's on top ──────────────────────────────────── */
 
 .ais-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
-    align-items: start;
-}
-
-@container (min-width: 980px) {
-    .ais-grid {
-        grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
-    }
 }
 
 .ais-sec {
+    container: ais-sec / inline-size;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -97,16 +92,13 @@
     color: hsl(var(--color-text-tertiary));
 }
 
-/* The section's letter, as in the comparison it came from: A and B */
-.ais-sec__letter {
+/* The section's mark: Gemini's sparkle, or a calculator for the numbers */
+.ais-sec__mark {
     width: 20px;
     height: 20px;
     display: grid;
     place-items: center;
     border-radius: 6px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0;
     color: var(--card-tile-ink);
     background: var(--card-tile);
     box-shadow: inset 0 0 0 1px var(--card-tile-ring);
@@ -214,6 +206,40 @@
 .ais-limit svg {
     flex-shrink: 0;
     margin-top: 2px;
+}
+
+/* The calculated section's details. One under the other on a narrow card:
+   the status and the week / month comparison, then the tables by group and by
+   person. On a wide card the tables take the wider column on the left and the
+   status sits beside them; with no table to show, the status keeps to that
+   column rather than spreading its figures out. */
+.ais-pair,
+.ais-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.ais-pair > * {
+    min-width: 0;
+}
+
+@container ais-sec (min-width: 900px) {
+    .ais-pair {
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        gap: 20px 36px;
+        align-items: start;
+    }
+
+    .ais-pair > :nth-child(2) {
+        grid-area: 1 / 1;
+    }
+
+    .ais-pair > :first-child:not(:only-child) {
+        grid-area: 1 / 2;
+    }
 }
 
 /* ── A: the figures across the top ─────────────────────────────────────── */
@@ -590,6 +616,35 @@
     color: hsl(var(--color-danger));
 }
 
+/* The note on what is sent, then the button that sends it. Side by side on a
+   wide card, the button's column a fixed width so the note doesn't reflow
+   while Gemini is writing. */
+.ais-send {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@container ais-sec (min-width: 720px) {
+    .ais-send {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 232px;
+        align-items: center;
+        gap: 12px 24px;
+    }
+
+    .ais-send > .ais-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .ais-send :is(.ais-btn, .ais-wait) {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
 .ais-actions {
     display: flex;
     flex-wrap: wrap;
@@ -723,6 +778,27 @@
     color: hsl(var(--color-text-tertiary));
 }
 
+/* Issues, trends and suggestions: one under the other, side by side on a wide card */
+.ais-trio {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@container ais-sec (min-width: 900px) {
+    .ais-trio {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        gap: 16px 32px;
+        align-items: start;
+    }
+
+    .ais-overview {
+        max-width: 62em;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .ais-spin { animation-duration: 2.4s; }
     .ais-btn, .ais-btn:hover:not(:disabled) { transform: none; transition: none; }
@@ -757,9 +833,8 @@ html[data-palette='narai'] :is(.ais-sec__eyebrow, .ais-h) {
     letter-spacing: 0.14em;
 }
 
-html[data-palette='narai'] .ais-sec__letter {
+html[data-palette='narai'] .ais-sec__mark {
     border-radius: 999px;
-    letter-spacing: 0;
 }
 
 html[data-palette='narai'] :is(.ais-seg, .ais-chip) {

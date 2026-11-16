@@ -8,8 +8,19 @@
                     "value": "saturdaycom.vercel.app"
                 }
             ],
-            "destination": "https://saturday.naraihospitalitygroup.com/$1",
-            "permanent": true
+            "destination": "https://work.nhgspace.com/$1",
+            "permanent": false
+        },
+        {
+            "source": "/(.*)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "saturday.naraihospitalitygroup.com"
+                }
+            ],
+            "destination": "https://work.nhgspace.com/$1",
+            "permanent": false
         },
         {
             "source": "/favicon.ico",

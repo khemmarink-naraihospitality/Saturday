@@ -685,8 +685,8 @@ export const Header = ({ columns, groupColor, groupId, scope = 'item' }: { colum
                     isOpen={!!confirmDeleteColId}
                     title="Delete Column"
                     message={scope === 'subitem'
-                        ? "Delete this column from this group's subitems? Items, and subitems in other groups, are not affected."
-                        : 'Are you sure you want to delete this column?'}
+                        ? "Delete this column from this group's subitems? Items, and subitems in other groups, are not affected. It goes to the Trash, where you can restore it."
+                        : 'Delete this column? It goes to the Trash with its values, where you can restore it.'}
                     onConfirm={() => {
                         if (confirmDeleteColId) deleteColumn(confirmDeleteColId);
                         setConfirmDeleteColId(null);

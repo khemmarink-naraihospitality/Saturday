@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useUserStore } from '../../../store/useUserStore';
 import { ProfileMenu } from '../../layout/ProfileMenu';
 import { ProfileSettingsModal } from '../../layout/ProfileSettingsModal';
-import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
+import { TrashPanel } from '../../trash/TrashPanel';
 
 const ROLE_LABEL: Record<string, string> = {
     super_admin: 'Super admin',
@@ -74,7 +74,7 @@ export const SidebarProfile = ({ compact = false }: { compact?: boolean }) => {
             )}
 
             {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
-            {showTrash && <ArchiveTrashModal onClose={() => setShowTrash(false)} />}
+            <TrashPanel isOpen={showTrash} onClose={() => setShowTrash(false)} />
         </div>
     );
 };

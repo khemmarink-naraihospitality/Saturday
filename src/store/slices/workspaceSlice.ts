@@ -297,11 +297,28 @@ export const createWorkspaceSlice: StateCreator<
 
     deleteWorkspace: async (id) => {
         const workspace = get().workspaces.find(w => w.id === id);
+        // To the Trash, not gone: the folder is marked and everything under it
+        // (sub-folders, their boards) just drops out of sight, so restoring it
+        // from the Trash brings all of it back as it was.
+        const gone = new Set([id]);
+        let grew = true;
+        while (grew) {
+            grew = false;
+            for (const w of get().workspaces) {
+                if (w.parentId && gone.has(w.parentId) && !gone.has(w.id)) { gone.add(w.id); grew = true; }
+            }
+        }
         set(state => ({
-            workspaces: state.workspaces.filter(w => w.id !== id),
-            boards: state.boards.filter(b => b.workspaceId !== id)
+            workspaces: state.workspaces.filter(w => !gone.has(w.id)),
+            boards: state.boards.filter(b => !b.workspaceId || !gone.has(b.workspaceId))
         }));
-        await supabase.from('workspaces').delete().eq('id', id);
+        const { data, error } = await supabase.from('workspaces').update({ is_archived: true }).eq('id', id).select('id');
+        if (error || !data?.length) {
+            // Only a folder's owner may write it; anything else puts it back on screen.
+            console.error('Could not move the workspace to the Trash', error);
+            get().loadUserData(true);
+            return;
+        }
         get().logActivity('workspace_deleted', 'workspace', id, { workspace_title: workspace?.title || 'Unknown' });
     },
 

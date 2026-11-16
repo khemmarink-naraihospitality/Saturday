@@ -1,0 +1,434 @@
+/*
+ * The Trash (profile menu › Trash, TrashPanel). Inside PopupPanel, so the
+ * sheet itself is popup.css / NHG's glass; everything here is drawn from the
+ * colour tokens every palette defines, light and dark.
+ */
+
+.trash {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* The popup's body scrolls; nothing in here shrinks to fit it */
+.trash > * {
+    flex-shrink: 0;
+}
+
+.trash__intro {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: hsl(var(--color-text-secondary));
+}
+
+.trash__bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.trash__search {
+    flex: 1 1 260px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid hsl(var(--color-border));
+    border-radius: var(--radius-md, 8px);
+    background: hsl(var(--color-bg-surface));
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash__search:focus-within {
+    border-color: hsl(var(--color-brand-primary));
+    box-shadow: 0 0 0 3px hsl(var(--color-brand-primary) / 0.15);
+}
+
+.trash__search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    color: hsl(var(--color-text-primary));
+}
+
+.trash__mine {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: hsl(var(--color-text-secondary));
+    cursor: pointer;
+    user-select: none;
+}
+
+.trash__mine input {
+    accent-color: hsl(var(--color-brand-primary));
+}
+
+.trash__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.trash-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid hsl(var(--color-border));
+    border-radius: 999px;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(var(--color-text-secondary));
+    cursor: pointer;
+}
+
+.trash-chip:hover:not(:disabled) {
+    border-color: hsl(var(--color-border-hover, var(--color-border)));
+    color: hsl(var(--color-text-primary));
+}
+
+.trash-chip[aria-pressed='true'] {
+    border-color: hsl(var(--color-brand-primary));
+    background: hsl(var(--color-brand-primary) / 0.1);
+    color: hsl(var(--color-brand-primary));
+}
+
+.trash-chip:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.trash-chip__n {
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.trash__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid hsl(var(--color-border));
+    border-radius: var(--radius-lg, 10px);
+    overflow: hidden;
+    background: hsl(var(--color-bg-surface));
+}
+
+.trash__list[aria-busy='true'] {
+    opacity: 0.7;
+}
+
+.trash-row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding: 12px 14px;
+    border-top: 1px solid hsl(var(--color-border));
+}
+
+.trash-row:first-child {
+    border-top: 0;
+}
+
+.trash-row.is-restored {
+    background: hsl(var(--color-success) / 0.07);
+}
+
+.trash-row__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: hsl(var(--color-bg-subtle, var(--color-bg-canvas)));
+    color: hsl(var(--color-text-secondary));
+}
+
+.trash-row.is-restored .trash-row__icon {
+    background: hsl(var(--color-success) / 0.15);
+    color: hsl(var(--color-success));
+}
+
+.trash-row__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trash-row__head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.trash-row__kind {
+    flex: none;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-row__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.trash-row__inner {
+    flex: none;
+    font-size: 12px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-where {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
+    font-size: 12.5px;
+    color: hsl(var(--color-text-secondary));
+}
+
+.trash-where__label {
+    margin-right: 4px;
+    font-weight: 500;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-row.is-restored .trash-where__label {
+    color: hsl(var(--color-success));
+}
+
+.trash-where__step {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.trash-where__part {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: hsl(var(--color-text-primary));
+}
+
+.trash-where__part svg {
+    flex: none;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-where__sep {
+    flex: none;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-where__dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.trash-where__tag {
+    flex: none;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 999px;
+    color: hsl(var(--color-warning));
+    background: hsl(var(--color-warning) / 0.14);
+}
+
+.trash-row.is-restored .trash-where__tag {
+    display: none;
+}
+
+.trash-row__meta,
+.trash-row__note {
+    font-size: 12px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash-row__done {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 12.5px;
+    color: hsl(var(--color-success));
+}
+
+.trash-row__done svg {
+    flex: none;
+    margin-top: 2px;
+}
+
+.trash-row__done strong {
+    font-weight: 600;
+}
+
+.trash-row__error {
+    font-size: 12.5px;
+    color: hsl(var(--color-danger));
+}
+
+.trash-row__actions {
+    display: flex;
+    align-items: center;
+    padding-top: 2px;
+}
+
+.trash-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid hsl(var(--color-border));
+    border-radius: var(--radius-md, 8px);
+    background: hsl(var(--color-bg-surface));
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--color-text-primary));
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.trash-btn:hover:not(:disabled) {
+    border-color: hsl(var(--color-brand-primary));
+    color: hsl(var(--color-brand-primary));
+}
+
+.trash-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.trash-btn:focus-visible,
+.trash-chip:focus-visible {
+    outline: 2px solid hsl(var(--color-brand-primary));
+    outline-offset: 2px;
+}
+
+.trash-btn--open {
+    border-color: transparent;
+    background: hsl(var(--color-brand-primary));
+    color: #fff;
+}
+
+.trash-btn--open:hover:not(:disabled) {
+    color: #fff;
+    filter: brightness(1.08);
+}
+
+.trash-btn--quiet {
+    border-style: dashed;
+}
+
+.trash__foot {
+    display: flex;
+    justify-content: center;
+    min-height: 32px;
+    align-items: center;
+    font-size: 12px;
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash__loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trash__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 36px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: hsl(var(--color-text-secondary));
+    border: 1px dashed hsl(var(--color-border));
+    border-radius: var(--radius-lg, 10px);
+}
+
+.trash__empty p {
+    margin: 0;
+    max-width: 440px;
+}
+
+.trash__empty-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: hsl(var(--color-bg-subtle, var(--color-bg-canvas)));
+    color: hsl(var(--color-text-tertiary));
+}
+
+.trash__empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+}
+
+.trash__empty--error {
+    color: hsl(var(--color-danger));
+}
+
+.trash-spin {
+    animation: trash-spin 0.9s linear infinite;
+}
+
+@keyframes trash-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .trash-spin { animation: none; }
+}
+
+@media (max-width: 560px) {
+    .trash-row {
+        grid-template-columns: 28px minmax(0, 1fr);
+    }
+    .trash-row__actions {
+        grid-column: 2;
+    }
+}
+
+/* NHG: warm paper rows on the glass sheet, Narai Green actions */
+html[data-palette='narai'] .trash__list {
+    background: hsl(var(--paper, var(--color-bg-surface)));
+}

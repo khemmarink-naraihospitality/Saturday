@@ -517,7 +517,15 @@ export const createMemberSlice: StateCreator<
                                     newItems.push(mapDbItemToLocal(item));
                                 }
                             } else if (payload.eventType === 'UPDATE') {
-                                newItems = newItems.map(i => i.id === item.id ? { ...i, ...mapDbItemToLocal(item, i) } : i);
+                                if (item.is_archived === true) {
+                                    // Moved to the Trash
+                                    newItems = newItems.filter(i => i.id !== item.id);
+                                } else if (item.is_archived === false && !newItems.some(i => i.id === item.id)) {
+                                    // Restored from the Trash
+                                    newItems.push(mapDbItemToLocal(item));
+                                } else {
+                                    newItems = newItems.map(i => i.id === item.id ? { ...i, ...mapDbItemToLocal(item, i) } : i);
+                                }
                             } else if (payload.eventType === 'DELETE') {
                                 newItems = newItems.filter(i => i.id !== item.id);
                             }
@@ -571,6 +579,11 @@ export const createMemberSlice: StateCreator<
                                 if (!newGroups.find(g => g.id === group.id)) {
                                     newGroups.push({ ...group, items: [] });
                                 }
+                            } else if (payload.eventType === 'UPDATE' && group.is_archived === true) {
+                                newGroups = newGroups.filter(g => g.id !== group.id);
+                            } else if (payload.eventType === 'UPDATE' && group.is_archived === false && !newGroups.some(g => g.id === group.id)) {
+                                // Back from the Trash, with the items that stayed in it
+                                newGroups.push({ id: group.id, title: group.title, color: group.color, order: group.order, items: b.items.filter(i => i.groupId === group.id && !i.parentId) } as any);
                             } else if (payload.eventType === 'UPDATE') {
                                 newGroups = newGroups.map(g => g.id === group.id ? { 
                                     ...g, 
@@ -606,7 +619,8 @@ export const createMemberSlice: StateCreator<
                             let newColumns = [...b.columns];
                             const options = typeof column.options === 'string' ? JSON.parse(column.options) : (column.options || []);
                             
-                            if (payload.eventType === 'INSERT') {
+                            const restored = payload.eventType === 'UPDATE' && column.is_archived === false && !newColumns.some(c => c.id === column.id);
+                            if (payload.eventType === 'INSERT' || restored) {
                                 if (!newColumns.find(c => c.id === column.id)) {
                                     newColumns.push({
                                         id: column.id,
@@ -623,6 +637,8 @@ export const createMemberSlice: StateCreator<
                                         formula: formulaFromRow(column.formula)
                                     });
                                 }
+                            } else if (payload.eventType === 'UPDATE' && column.is_archived === true) {
+                                newColumns = newColumns.filter(c => c.id !== column.id);
                             } else if (payload.eventType === 'UPDATE') {
                                 newColumns = newColumns.map(c => c.id === column.id ? {
                                     ...c,
@@ -700,6 +716,11 @@ export const createMemberSlice: StateCreator<
                     table: 'workspaces'
                 }, (payload) => {
                     const ws = (payload.new || payload.old) as any;
+                    if (payload.eventType === 'UPDATE' && typeof ws.is_archived === 'boolean'
+                        && ws.is_archived === get().workspaces.some(w => w.id === ws.id)) {
+                        get().loadUserData(true);
+                        return;
+                    }
                     set(state => {
                         let newWorkspaces = [...state.workspaces];
                         if (payload.eventType === 'INSERT') {

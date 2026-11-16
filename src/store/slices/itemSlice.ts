@@ -13,6 +13,7 @@ import { useUserStore } from '../useUserStore';
 import { describeChange } from '../../lib/itemChangeText';
 import { peopleToNotify } from '../../lib/itemPeople';
 import { terms } from '../../lib/terms';
+import { threadOf } from '../../lib/updates';
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -833,17 +834,55 @@ export const createItemSlice: StateCreator<
 
     deleteUpdate: async (itemId, updateId) => {
         const { activeBoardId } = get();
+        // The update and its replies go together, and wait in the Trash
+        // (trashed_updates) until someone restores them.
+        const before = get().boards.find(b => b.id === activeBoardId)?.items.find(i => i.id === itemId)?.updates;
+        const localThread = new Set(threadOf(before || [], updateId).map(u => u.id));
+        const putBack = () => set(state => ({
+            boards: state.boards.map(b => b.id !== activeBoardId ? b : {
+                ...b,
+                items: b.items.map(i => i.id !== itemId || !before ? i : { ...i, updates: before })
+            })
+        }));
         set(state => ({
             boards: state.boards.map(b => {
                 if (b.id !== activeBoardId) return b;
                 return {
                     ...b,
-                    items: b.items.map(i => i.id !== itemId ? i : { ...i, updates: (i.updates || []).filter(u => u.id !== updateId) })
+                    items: b.items.map(i => i.id !== itemId ? i : { ...i, updates: (i.updates || []).filter(u => !localThread.has(u.id)) })
                 };
             })
         }));
 
-        await rewriteUpdates(set, activeBoardId, itemId, current => current.filter(u => u.id !== updateId));
+        // The thread as the database holds it, so what is kept is what was there
+        const { data: row, error: readError } = await supabase.from('items').select('updates, board_id').eq('id', itemId).single();
+        const stored: Comment[] = Array.isArray(row?.updates) ? row.updates : [];
+        const thread = threadOf(stored, updateId);
+        if (readError || !row || thread.length === 0) {
+            console.error('Could not read the update before deleting it', readError);
+            putBack();
+            return;
+        }
+        const { data: trashed, error: trashError } = await supabase.from('trashed_updates')
+            .insert({ item_id: itemId, board_id: row.board_id, update_id: updateId, thread })
+            .select('id').single();
+        if (trashError || !trashed) {
+            console.error('Could not move the update to the Trash — nothing was deleted', trashError);
+            putBack();
+            return;
+        }
+
+        const ids = new Set(thread.map(u => u.id));
+        const written = await rewriteUpdates(set, activeBoardId, itemId, current => current.filter(u => !ids.has(u.id)));
+        if (!written) {
+            await supabase.from('trashed_updates').delete().eq('id', trashed.id);
+            putBack();
+            return;
+        }
+        if (row.board_id) {
+            const itemTitle = get().boards.find(b => b.id === row.board_id)?.items.find(i => i.id === itemId)?.title;
+            get().logActivity('update_deleted', 'board', row.board_id, { board_id: row.board_id, item_id: itemId, item_title: itemTitle || 'Unknown' });
+        }
     },
 
     toggleUpdateLike: async (itemId, updateId, user) => {

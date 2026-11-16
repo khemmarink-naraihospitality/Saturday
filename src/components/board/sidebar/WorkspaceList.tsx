@@ -743,7 +743,7 @@ export const WorkspaceList = ({ searchQuery, top }: WorkspaceListProps) => {
             <ConfirmModal
                 isOpen={!!workspaceToDelete}
                 title={`Delete ${t.Workspace}`}
-                message={`Are you sure you want to delete this ${t.workspace}? All ${t.boards} inside it will be deleted! This action cannot be undone.`}
+                message={`Delete this ${t.workspace}? It goes to the Trash with every ${t.board} inside it, and can be restored from there (your profile menu › Trash).`}
                 confirmText={`Delete ${t.Workspace}`}
                 onConfirm={() => {
                     if (workspaceToDelete) deleteWorkspace(workspaceToDelete);

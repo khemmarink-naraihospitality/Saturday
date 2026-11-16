@@ -216,14 +216,15 @@ export const backupService = {
             const { data: board, error: boardError } = await supabase.from('boards').select('title, description').eq('id', boardId).single();
             if (boardError) throw new Error('Failed to fetch board: ' + boardError.message);
 
-            const { data: columns, error: colsError } = await supabase.from('columns').select('*').eq('board_id', boardId).order('order');
+            const { data: columns, error: colsError } = await supabase.from('columns').select('*').eq('board_id', boardId).eq('is_archived', false).order('order');
             if (colsError) throw new Error('Failed to fetch columns: ' + colsError.message);
 
             // Fetch items ordered by their position so groups/sub-items stay in board order
-            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId).order('order', { ascending: true }).order('created_at', { ascending: true });
+            // What is on the board: nothing that waits in the Trash
+            const { data: items, error: itemsError } = await supabase.from('items').select('*').eq('board_id', boardId).eq('is_archived', false).order('order', { ascending: true }).order('created_at', { ascending: true });
             if (itemsError) throw new Error('Failed to fetch items: ' + itemsError.message);
 
-            const { data: groups, error: groupsError } = await supabase.from('groups').select('id, title, order').eq('board_id', boardId).order('order');
+            const { data: groups, error: groupsError } = await supabase.from('groups').select('id, title, order').eq('board_id', boardId).eq('is_archived', false).order('order');
             if (groupsError) throw new Error('Failed to fetch groups: ' + groupsError.message);
 
             // Fetch profiles for name mapping

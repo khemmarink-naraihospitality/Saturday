@@ -34,6 +34,7 @@ const ACTION_LABELS: Record<string, string> = {
     workspace_created: 'Workspace Created',
     workspace_deleted: 'Workspace Deleted',
     workspace_renamed: 'Workspace Renamed',
+    workspace_restored: 'Workspace Restored',
     workspace_duplicated: 'Workspace Duplicated',
     workspace_invite_sent: 'Workspace Invite Sent',
     workspace_ownership_transferred: 'Ownership Transferred',
@@ -67,6 +68,7 @@ const ACTION_LABELS: Record<string, string> = {
     column_created: 'Column Added',
     column_deleted: 'Column Deleted',
     column_renamed: 'Column Renamed',
+    column_restored: 'Column Restored',
     column_formula_changed: 'Formula Changed',
 
     item_created: 'Task Created',
@@ -76,6 +78,8 @@ const ACTION_LABELS: Record<string, string> = {
     item_status_updated: 'Status Changed',
     item_value_updated: 'Item Updated',
     item_comment_added: 'Update Posted',
+    update_deleted: 'Update Deleted',
+    update_restored: 'Update Restored',
     item_mention: 'Mentioned',
     item_assigned: 'Task Assigned',
 };
@@ -93,7 +97,10 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
     const { action_type, metadata, actor_name, actor_email, actor_avatar, created_at } = log;
     // const Icon = ACTION_ICONS[action_type] || User; // Default fallback? Activity symbol maybe
     const label = reword(
-        newUi && action_type === 'item_comment_added' ? 'Comment Posted' : ACTION_LABELS[action_type] || action_type.replace(/_/g, ' '),
+        newUi && action_type === 'item_comment_added' ? 'Comment Posted'
+            : newUi && action_type === 'update_deleted' ? 'Comment Deleted'
+            : newUi && action_type === 'update_restored' ? 'Comment Restored'
+            : ACTION_LABELS[action_type] || action_type.replace(/_/g, ' '),
         t
     );
 
@@ -237,6 +244,14 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 return <span>{`Transferred ${t.workspace} ownership`}</span>;
             case 'workspace_owner_applied_to_boards':
                 return <span>Made <strong>{meta.user_name || 'the new owner'}</strong>{` owner of ${meta.boards} ${meta.boards === 1 ? t.board : t.boards}`}</span>;
+            case 'workspace_restored':
+                return <span>{`Restored ${t.workspace} `}<strong>{meta.workspace_title}</strong> from the Trash</span>;
+            case 'column_restored':
+                return <span>Restored column <strong>{meta.column_title}</strong> from the Trash</span>;
+            case 'update_deleted':
+                return <span>{newUi ? 'Deleted a comment on ' : 'Deleted an update on '}<strong>{itemTitle}</strong></span>;
+            case 'update_restored':
+                return <span>{newUi ? 'Restored a comment on ' : 'Restored an update on '}<strong>{itemTitle}</strong> from the Trash</span>;
             case 'column_renamed':
                 return <span>Renamed column <strong>{meta.old_title}</strong> to <strong>{meta.new_title}</strong></span>;
             case 'column_formula_changed':

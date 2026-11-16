@@ -63,7 +63,9 @@ client.from = (table: string) => {
     const answer = gemini.table(table);
     return answer ? chainOf({ ...emptyResult, ...answer }) : chain;
 };
-client.rpc = () => chain;
+client.rpc = (name: string) => name === 'trash_list' ? chainOf({ ...emptyResult, data: fx.trashPreviewRows })
+    : name === 'trash_counts' ? chainOf({ ...emptyResult, data: fx.trashPreviewCounts })
+        : chain;
 client.channel = () => chain;
 client.removeChannel = async () => 'ok';
 Object.defineProperty(client, 'functions', { configurable: true, value: { invoke: async (name: string) => (await gemini.invoke(name)) ?? { data: null, error: null } } });

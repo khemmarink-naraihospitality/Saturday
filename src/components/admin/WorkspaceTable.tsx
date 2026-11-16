@@ -21,6 +21,7 @@ interface WorkspaceRow {
     owner_id: string;
     owner_name: string;
     owner_email: string;
+    is_archived?: boolean;
     members: WorkspaceMemberSummary[];
 }
 
@@ -47,6 +48,7 @@ export const WorkspaceTable = () => {
                     title,
                     created_at,
                     owner_id,
+                    is_archived,
                     profiles!workspaces_owner_id_fkey (
                         full_name,
                         email
@@ -89,6 +91,7 @@ export const WorkspaceTable = () => {
                     title: ws.title,
                     created_at: ws.created_at,
                     owner_id: ws.owner_id,
+                    is_archived: !!ws.is_archived,
                     owner_name: ws.profiles?.full_name || 'Unknown',
                     owner_email: ws.profiles?.email || 'N/A',
                     members
@@ -201,7 +204,12 @@ export const WorkspaceTable = () => {
                                 filteredWorkspaces.map((ws) => (
                                     <tr key={ws.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '16px 20px' }}>
-                                            <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>{ws.title}</div>
+                                            <div style={{ fontWeight: 500, color: '#0f172a', fontSize: '14px' }}>
+                                                {ws.title}
+                                                {ws.is_archived && (
+                                                    <span title="Deleted by its owner; it can be restored from the Trash" style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fef3c7', borderRadius: 999, padding: '2px 8px', verticalAlign: 'middle' }}>In Trash</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td style={{ padding: '16px 20px' }}>
                                             <div style={{ fontSize: '14px', color: '#0f172a' }}>{ws.owner_name}</div>

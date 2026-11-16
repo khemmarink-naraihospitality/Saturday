@@ -101,7 +101,7 @@ export const BoardHeader = ({ boardId }: BoardHeaderProps) => {
 
     const handleDeleteBoard = async () => {
         if (!board) return;
-        if (confirm(`Are you sure you want to delete this ${t.board}? This action cannot be undone.`)) {
+        if (confirm(`Delete this ${t.board}? It goes to the Trash, where you can restore it (your profile menu › Trash).`)) {
             await deleteBoard(board.id);
             // Navigation should be handled by the store or parent, but strictly we are checking logic here
         }

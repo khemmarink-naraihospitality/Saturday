@@ -114,7 +114,9 @@ export const createColumnSlice: StateCreator<
                 { ...b, columns: b.columns.filter(c => c.id !== columnId) } : b
             )
         }));
-        await supabase.from('columns').delete().eq('id', columnId);
+        // To the Trash: the row stays (and so do the values items hold under its
+        // id), so restoring it brings the column back with everything in it.
+        await supabase.from('columns').update({ is_archived: true }).eq('id', columnId);
 
         if (activeBoardId) {
             get().logActivity('column_deleted', 'board', activeBoardId, {

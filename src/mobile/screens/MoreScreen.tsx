@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Check, ChevronRight, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, Palette as PaletteIcon, ShieldCheck } from 'lucide-react';
+import { Check, ChevronRight, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, Palette as PaletteIcon, ShieldCheck, Trash2 } from 'lucide-react';
 import './screens.css';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
@@ -13,6 +13,7 @@ import { isNewUi } from '../../lib/brand';
 import { termsFor } from '../../lib/terms';
 import { chooseAccountPalette } from '../../lib/uiTheme';
 import { ThemeSwatch } from '../../components/common/ThemeChoice';
+import { TrashPanel } from '../../components/trash/TrashPanel';
 
 // The same form as the desktop's floating "Contact support" button.
 const SUPPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header';
@@ -44,6 +45,7 @@ export const MoreScreen = () => {
     const newUi = isNewUi(palette);
     const t = termsFor(palette);
     const [themeOpen, setThemeOpen] = useState(false);
+    const [trashOpen, setTrashOpen] = useState(false);
     const navigateTo = useBoardStore(state => state.navigateTo);
     const { signOut } = useAuth();
     const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -68,6 +70,7 @@ export const MoreScreen = () => {
 
                     <Card className="m-menu">
                         <MenuItem icon={<LayoutGrid size={20} />} label={t.Workspaces} onClick={openWorkspaces} />
+                        <MenuItem icon={<Trash2 size={20} />} label="Trash" onClick={() => setTrashOpen(true)} />
                         <MenuItem
                             icon={<PaletteIcon size={20} />}
                             label="Theme"
@@ -104,6 +107,8 @@ export const MoreScreen = () => {
                     </Card>
                 </div>
             </div>
+
+            <TrashPanel isOpen={trashOpen} onClose={() => setTrashOpen(false)} />
 
             <BottomSheet open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme">
                 <div className="m-theme-list">

@@ -328,3 +328,25 @@ export const geminiPreview = (mode: string | null) => ({
         };
     },
 });
+
+/** The Trash as trash_list / trash_counts answer it (profile menu › Trash), one row of each kind. */
+const trashRow = (r: Record<string, unknown>) => ({
+    inner_count: null, folder_id: 'ws-btd', folder_title: 'Business Tech Department', folder_path: 'Business Tech › Business Tech Department', folder_trashed: false,
+    board_id: 'b-it-bo', board_title: 'IT BO', board_trashed: false, group_id: null, group_title: null, group_color: null, group_trashed: false,
+    parent_id: null, parent_title: null, parent_trashed: false, item_id: null, item_title: null, item_trashed: false,
+    column_scope: null, deleted_by: ME.id, deleted_by_name: ME.name, total: 8, ...r,
+});
+const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
+export const trashPreviewRows = [
+    trashRow({ kind: 'update', id: 't-up', title: 'Laptop ordered, waiting for the delivery date from the vendor', inner_count: 2, group_id: 'g-tech', group_title: 'Tech', group_color: '#a25ddc', item_id: 'bo-4', item_title: 'Laptop setup', deleted_at: hoursAgo(0.2) }),
+    trashRow({ kind: 'item', id: 't-item', title: 'Order second monitor', inner_count: 3, group_id: 'g-tech', group_title: 'Tech', group_color: '#a25ddc', deleted_at: hoursAgo(1), deleted_by: 'u-kit', deleted_by_name: 'Kitti Boriphan' }),
+    trashRow({ kind: 'subitem', id: 't-sub', title: 'HDMI cable', group_id: 'g-tech', group_title: 'Tech', group_color: '#a25ddc', parent_id: 'bo-4', parent_title: 'Laptop setup', deleted_at: hoursAgo(3) }),
+    trashRow({ kind: 'column', id: 't-col', title: 'Budget', column_scope: 'item', deleted_at: hoursAgo(5) }),
+    trashRow({ kind: 'group', id: 't-group', title: 'Onboarding 2025', inner_count: 12, group_id: 't-group', group_title: 'Onboarding 2025', group_color: '#579bfc', group_trashed: true, deleted_at: hoursAgo(26), deleted_by: 'u-pat', deleted_by_name: 'Pattaravadee N.' }),
+    trashRow({ kind: 'item', id: 't-item2', title: 'Return old badge', group_id: 't-group', group_title: 'Onboarding 2025', group_color: '#579bfc', group_trashed: true, deleted_at: hoursAgo(30), deleted_by: 'u-jir', deleted_by_name: 'Jirayu Chaichana' }),
+    trashRow({ kind: 'board', id: 't-board', title: 'IT Asset Register 2024', inner_count: 48, board_id: 't-board', board_title: 'IT Asset Register 2024', board_trashed: true, deleted_at: hoursAgo(72) }),
+    trashRow({ kind: 'workspace', id: 't-ws', title: 'Old projects', inner_count: 5, folder_id: null, folder_title: null, folder_path: null, board_id: null, board_title: null, deleted_at: null, deleted_by: null, deleted_by_name: null }),
+];
+export const trashPreviewCounts = [
+    { kind: 'update', n: 1 }, { kind: 'item', n: 3 }, { kind: 'column', n: 1 }, { kind: 'group', n: 1 }, { kind: 'board', n: 1 }, { kind: 'workspace', n: 1 },
+];

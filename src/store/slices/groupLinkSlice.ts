@@ -72,6 +72,7 @@ export const createGroupLinkSlice: StateCreator<
             .from('columns')
             .select('id, title, type, width, order, options, aggregation, number_format, currency_code, number_align, scope, group_id, formula')
             .eq('board_id', sourceBoardId)
+            .eq('is_archived', false)
             .order('order');
 
         if (sourceColumnsError) {
@@ -81,7 +82,8 @@ export const createGroupLinkSlice: StateCreator<
         const { data: currentColumns, error: currentColumnsError } = await supabase
             .from('columns')
             .select('id, title, type, options, scope')
-            .eq('board_id', activeBoardId);
+            .eq('board_id', activeBoardId)
+            .eq('is_archived', false);
 
         if (currentColumnsError) {
             return { success: false, error: `Failed to read this board's columns: ${currentColumnsError.message}` };

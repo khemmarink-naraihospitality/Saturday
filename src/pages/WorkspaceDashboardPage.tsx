@@ -1141,7 +1141,7 @@ export const WorkspaceDashboardPage = () => {
             try {
                 // Batch fetch columns and items for all boards in the workspace
                 const [colsRes, itemsRes, groupsRes] = await Promise.all([
-                    supabase.from('columns').select('*').in('board_id', boardIds).order('order'),
+                    supabase.from('columns').select('*').in('board_id', boardIds).eq('is_archived', false).order('order'),
                     // title is what each cat's hover tooltip shows. It was missing from
                     // this list, so every cat said "Untitled Task".
                     // Deleted tasks sit in items with is_archived set until they're

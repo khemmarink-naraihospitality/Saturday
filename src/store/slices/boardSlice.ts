@@ -167,13 +167,15 @@ export const createBoardSlice: StateCreator<
 
             // None of these queries depend on each other's results, so fire them together
             // instead of awaiting one round-trip at a time.
-            let [workspacesRes, { data: boards }, { data: sharedBoardsData }, { data: sharedWorkspacesData }, { data: userFavoritesData }, { data: existingProfile }]: [any, any, any, any, any, any] = await Promise.all([
+            let [workspacesRes, { data: boards }, { data: sharedBoardsData }, { data: sharedWorkspacesData }, { data: userFavoritesData }, { data: existingProfile }, { data: trashedFolderIds }]: [any, any, any, any, any, any, any] = await Promise.all([
                 supabase.from('workspaces').select('id, title, order, owner_id, parent_id').order('order'),
                 supabase.from('boards').select('*, is_archived, is_favorite').order('order'),
                 supabase.from('board_members').select('board_id, role, last_viewed_at, settings').eq('user_id', user.id),
                 supabase.from('workspace_members').select('workspace_id, role').eq('user_id', user.id),
                 supabase.from('user_favorites').select('board_id').eq('user_id', user.id),
-                supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url, auth_type, ui_theme').eq('id', user.id).single()
+                supabase.from('profiles').select('id, system_role, is_approved, full_name, email, avatar_url, auth_type, ui_theme').eq('id', user.id).single(),
+                // Folders in the Trash and every folder under them (ids only)
+                supabase.rpc('trashed_workspace_ids')
             ]);
 
             // parent_id (sub-workspace support) may not exist yet on every environment's
@@ -183,7 +185,10 @@ export const createBoardSlice: StateCreator<
                 console.warn('[loadUserData] workspaces.parent_id unavailable, retrying without it:', workspacesRes.error.message);
                 workspacesRes = await supabase.from('workspaces').select('id, title, order, owner_id').order('order');
             }
-            const workspaces: any[] | null = workspacesRes.data;
+            // A folder in the Trash (or under one) is out of sight, and so are its boards
+            const trashedFolders = new Set<string>((trashedFolderIds || []).map((r: any) => (typeof r === 'string' ? r : r?.trashed_workspace_ids ?? r?.id)));
+            const workspaces: any[] | null = workspacesRes.data ? workspacesRes.data.filter((w: any) => !trashedFolders.has(w.id)) : null;
+            if (boards && trashedFolders.size) boards = boards.filter((b: any) => !trashedFolders.has(b.workspace_id));
 
             // --- SELF HEALING: Fix 'Person' columns that are somehow 'text' type ---
             // Removed global sweep to save time, logic moved to loadBoardData if needed
@@ -593,7 +598,7 @@ export const createBoardSlice: StateCreator<
                 { data: dependencies }
             ] = await Promise.all([
                 supabase.from('groups').select('id, title, color, order, board_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
-                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id, formula').eq('board_id', boardId).order('order'),
+                supabase.from('columns').select('id, title, type, width, order, options, board_id, aggregation, number_format, currency_code, number_align, scope, group_id, formula').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('items').select('id, title, board_id, group_id, values, updates_count, last_update_at, files, order, is_hidden, notify_muted_user_ids, created_at, parent_id').eq('board_id', boardId).eq('is_archived', false).order('order'),
                 supabase.from('group_links').select('id, board_a_id, group_a_id, board_b_id, group_b_id').or(`board_a_id.eq.${boardId},board_b_id.eq.${boardId}`),
                 supabase.from('item_dependencies').select('id, board_id, predecessor_item_id, successor_item_id, type, lag_days, created_by, created_at').eq('board_id', boardId)

@@ -92,3 +92,29 @@ export const splitThreads = (updates: any[]): { topLevel: any[]; replies: any[] 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const repliesTo = (replies: any[], update: any): any[] =>
     replies.filter(r => r.parentId === update.postId || r.parentId === update.id);
+
+/**
+ * An update and everything under it (replies, and replies to those), the update
+ * first — what goes to the Trash together. A reply names its post by id, or by
+ * the post's Monday id (postId) for imported ones, as repliesOf reads them.
+ */
+export const threadOf = <U extends { id: string; parentId?: string; postId?: string }>(updates: U[], rootId: string): U[] => {
+    const ids = new Set([rootId]);
+    const keys = new Set([rootId]);
+    const rootPost = updates.find(u => u.id === rootId)?.postId;
+    if (rootPost) keys.add(rootPost);
+    let grew = true;
+    while (grew) {
+        grew = false;
+        for (const u of updates) {
+            if (u.parentId && keys.has(u.parentId) && !ids.has(u.id)) {
+                ids.add(u.id);
+                keys.add(u.id);
+                if (u.postId) keys.add(u.postId);
+                grew = true;
+            }
+        }
+    }
+    const root = updates.filter(u => u.id === rootId);
+    return [...root, ...updates.filter(u => u.id !== rootId && ids.has(u.id))];
+};

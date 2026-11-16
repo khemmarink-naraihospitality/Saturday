@@ -7,9 +7,9 @@ import { useTerms, type Terms } from '../../../lib/terms';
 import type { Board } from '../../../types';
 import { BoardIcon } from './SidebarIcons';
 
-type SectionId = 'favorites' | 'recent' | 'mine' | 'shared';
+export type SectionId = 'favorites' | 'recent' | 'mine' | 'shared';
 
-const SECTIONS: { id: SectionId; Icon: LucideIcon; label: (t: Terms) => string; empty: (t: Terms) => string }[] = [
+export const SECTIONS: { id: SectionId; Icon: LucideIcon; label: (t: Terms) => string; empty: (t: Terms) => string }[] = [
     { id: 'favorites', Icon: Star, label: () => 'Favorites', empty: t => `Star a ${t.board} to keep it here.` },
     { id: 'recent', Icon: Clock3, label: () => 'Recently visited', empty: t => `${t.Boards} you open show up here.` },
     { id: 'mine', Icon: UserRound, label: t => `My ${t.boards}`, empty: t => `${t.Boards} you own show up here.` },
@@ -28,37 +28,23 @@ const readOpen = (): SectionId[] => {
 };
 
 // Longer lists show this many until "Show all".
-const SHOWN = 5;
+export const SHOWN = 5;
 const RECENT_MAX = 10;
 
 /**
- * NHG's Dashboard area at the top of the sidebar: the boards someone starred,
- * opened lately, owns, and has been given by others — each a list that folds
- * away. Mine and shared split every board they can reach: theirs when they
- * own it or the workspace it is in, shared otherwise.
+ * The boards someone starred, opened lately, owns, and has been given by
+ * others. Mine and shared split every board they can reach: theirs when they
+ * own it or the workspace it is in, shared otherwise. NHG's Dashboard area and
+ * Saturday's lists under Favorites (SidebarBoardLists) both read this.
  */
-export const SidebarDashboard = () => {
+export const useSidebarBoardLists = (): Record<SectionId, Board[]> => {
     const boards = useBoardStore(state => state.boards);
     const workspaces = useBoardStore(state => state.workspaces);
     const userBoardRoles = useBoardStore(state => state.userBoardRoles);
     const userWorkspaceRoles = useBoardStore(state => state.userWorkspaceRoles);
     const sharedBoardIds = useBoardStore(state => state.sharedBoardIds);
-    const activeBoardId = useBoardStore(state => state.activeBoardId);
-    const activePage = useBoardStore(state => state.activePage);
-    const setActiveBoard = useBoardStore(state => state.setActiveBoard);
     const userId = useUserStore(state => state.currentUser?.id);
-    const t = useTerms();
-
-    const [open, setOpen] = useState<SectionId[]>(readOpen);
-    const [showAll, setShowAll] = useState<SectionId[]>([]);
-
-    const toggle = (id: SectionId) => {
-        const next = open.includes(id) ? open.filter(s => s !== id) : [...open, id];
-        setOpen(next);
-        try { localStorage.setItem(OPEN_KEY, JSON.stringify(next)); } catch { /* private mode */ }
-    };
-
-    const lists = useMemo(() => {
+    return useMemo(() => {
         const live = boards.filter(b => !b.is_archived);
         const workspaceOwner = new Map(workspaces.map(w => [w.id, w.owner_id]));
         const isMine = (b: Board) =>
@@ -73,6 +59,28 @@ export const SidebarDashboard = () => {
             shared: live.filter(b => !isMine(b) && reachable(b)),
         } satisfies Record<SectionId, Board[]>;
     }, [boards, workspaces, userBoardRoles, userWorkspaceRoles, sharedBoardIds, userId]);
+};
+
+/**
+ * NHG's Dashboard area at the top of the sidebar: the four lists above, each
+ * folding away.
+ */
+export const SidebarDashboard = () => {
+    const workspaces = useBoardStore(state => state.workspaces);
+    const activeBoardId = useBoardStore(state => state.activeBoardId);
+    const activePage = useBoardStore(state => state.activePage);
+    const setActiveBoard = useBoardStore(state => state.setActiveBoard);
+    const t = useTerms();
+    const lists = useSidebarBoardLists();
+
+    const [open, setOpen] = useState<SectionId[]>(readOpen);
+    const [showAll, setShowAll] = useState<SectionId[]>([]);
+
+    const toggle = (id: SectionId) => {
+        const next = open.includes(id) ? open.filter(s => s !== id) : [...open, id];
+        setOpen(next);
+        try { localStorage.setItem(OPEN_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+    };
 
     const workspaceTitle = (b: Board) => workspaces.find(w => w.id === b.workspaceId)?.title;
 

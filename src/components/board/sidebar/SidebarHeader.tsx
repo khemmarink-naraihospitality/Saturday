@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Archive, Home, Star, Menu } from 'lucide-react';
+import { SidebarBoardLists } from './SidebarBoardLists';
 import { useBoardStore } from '../../../store/useBoardStore';
 import { ArchiveTrashModal } from '../../workspace/ArchiveTrashModal';
 import { NHG_LOGO, productName, useNewUi } from '../../../lib/brand';
@@ -153,6 +154,9 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
                     <Star size={18} color="#ffcb00" fill={activePage === 'favorites' ? "#ffcb00" : "none"} />
                     <span className="sidebar-nav-label" style={{ fontSize: '12px', fontWeight: activePage === 'favorites' ? 600 : 400 }}>Favorites</span>
                 </button>}
+
+                {/* Saturday: Recently visited, My boards, Shared with me (NHG has them in its Dashboard area) */}
+                {!newUi && <SidebarBoardLists />}
             </div>
 
             {!newUi && <WorkspacesBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}

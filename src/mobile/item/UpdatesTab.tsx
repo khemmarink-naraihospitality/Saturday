@@ -18,7 +18,8 @@ interface Me {
 }
 
 /** Desktop's rule: you may edit or delete what you posted. */
-const isMine = (update: Comment, me: Me) => update.userId === me.id || update.author === me.name;
+/** Only the author may edit or delete an update; the name stands in only for old updates stored without an id. */
+const isMine = (update: Comment, me: Me) => (update.userId ? update.userId === me.id : update.author === me.name);
 
 /** An update's words, with its paragraphs and line breaks, for the clipboard. */
 const htmlToText = (html: string) => {

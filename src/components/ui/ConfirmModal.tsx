@@ -35,7 +35,10 @@ export const ConfirmModal = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 9999
+            // Above the popups (PopupPanel's veil is 10000, the formula editor 10050):
+            // an update's delete is confirmed from inside the item popup, and at
+            // 9999 the question opened behind it, unseen, so Delete did nothing.
+            zIndex: 10100
         }}>
             <div style={{
                 backgroundColor: 'hsl(var(--color-bg-surface))',

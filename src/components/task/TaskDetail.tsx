@@ -806,7 +806,10 @@ export const TaskDetail = ({ itemId, onClose }: { itemId: string; onClose: () =>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {(update.userId === currentUser.id || update.author === currentUser.name) && (
+                                                {/* Only the update's author may edit or delete it. The name is the
+                                                    fallback only for old updates stored without an id, never a
+                                                    second way in for someone who shares the author's name. */}
+                                                {(update.userId ? update.userId === currentUser.id : update.author === currentUser.name) && (
                                                     <div style={{ position: 'relative', display: 'flex', gap: '4px' }}>
                                                         <button
                                                             onClick={() => {

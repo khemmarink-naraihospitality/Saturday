@@ -88,8 +88,9 @@ export const SidebarHeader = ({ searchQuery, setSearchQuery, onToggleCollapse }:
             </div>
 
             {/* Main Navigation */}
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1px', padding: '0 8px', marginBottom: '6px' }}>
+            <div className="sidebar-main-nav" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1px', padding: '0 8px', marginBottom: '6px' }}>
                 <button
+                    className="sidebar-nav-item"
                     onClick={() => navigateTo('home')}
                     style={{
                         display: 'flex',

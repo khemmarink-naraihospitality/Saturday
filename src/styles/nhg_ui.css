@@ -65,10 +65,6 @@ html[data-palette='narai'] .sidebar :is([style*="position: fixed"], .nhg-on-page
     margin-bottom: 16px;
 }
 
-.nhg-dash__label {
-    padding: 4px 4px 8px;
-}
-
 .nhg-dash__head {
     display: flex;
     align-items: center;

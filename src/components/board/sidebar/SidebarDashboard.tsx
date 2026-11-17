@@ -34,7 +34,7 @@ const RECENT_MAX = 10;
 /**
  * The boards someone starred, opened lately, owns, and has been given by
  * others. Mine and shared split every board they can reach: theirs when they
- * own it or the workspace it is in, shared otherwise. NHG's Dashboard area and
+ * own it or the workspace it is in, shared otherwise. NHG's lists under Home and
  * Saturday's lists under Favorites (SidebarBoardLists) both read this.
  */
 export const useSidebarBoardLists = (): Record<SectionId, Board[]> => {
@@ -62,8 +62,8 @@ export const useSidebarBoardLists = (): Record<SectionId, Board[]> => {
 };
 
 /**
- * NHG's Dashboard area at the top of the sidebar: the four lists above, each
- * folding away.
+ * NHG's lists at the top of the sidebar, under Home: the four above, each
+ * folding away. They have no heading of their own.
  */
 export const SidebarDashboard = () => {
     const workspaces = useBoardStore(state => state.workspaces);
@@ -85,8 +85,8 @@ export const SidebarDashboard = () => {
     const workspaceTitle = (b: Board) => workspaces.find(w => w.id === b.workspaceId)?.title;
 
     return (
-        <nav className="nhg-dash" aria-label="Dashboard">
-            <div className="nhg-dash__label sidebar-section-label">Dashboard</div>
+        // No "Dashboard" heading over the lists (user request 17-Nov-2026)
+        <nav className="nhg-dash" aria-label="Your boards">
             {SECTIONS.map(({ id, Icon, label, empty }) => {
                 const list = lists[id];
                 const isOpen = open.includes(id);

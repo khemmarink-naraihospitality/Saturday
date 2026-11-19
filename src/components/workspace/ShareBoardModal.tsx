@@ -138,8 +138,8 @@ export const ShareBoardModal = ({ boardId, onClose }: ShareBoardModalProps) => {
                     <PrivateBoardSection boardId={boardId} isPrivate={!!board.is_private} showToast={showToast} />
                 )}
 
-                {/* Invite Form */}
-                {(isOwner || currentUserRole === 'admin' || isSuperAdmin) && (
+                {/* Invite Form: any owner or admin of the board — the folder's owner, or an owner/admin in board_members */}
+                {(currentUserRole === 'owner' || currentUserRole === 'admin' || isSuperAdmin) && (
                     <InviteMemberForm onInvite={handleInvite} type="board" />
                 )}
 

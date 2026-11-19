@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'react';
-import { LogOut, ShieldCheck, UserCog, Trash2 } from 'lucide-react';
+import { Building2, ExternalLink, LogOut, ShieldCheck, UserCog, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
 
 /**
  * The account menu: who is signed in, Profile Settings, Trash, the Admin
- * Console for admins, Log out. It opens from the profile at the bottom of the
+ * Console for admins, the Virtual Office, Log out. It opens from the profile at the bottom of the
  * sidebar (SidebarProfile): upwards, or to the right of the collapsed rail.
  * 'below' is for an avatar at the top of a page.
  */
@@ -112,6 +112,23 @@ export const ProfileMenu = ({ placement = 'below', onClose, onOpenSettings, onOp
                 </button>
             )}
 
+            {/* The NHG Agents Ecosystem on OneSpace, for every account, in its own tab:
+                the same entry OneSpace's account menu has (19-Nov-2026). */}
+            <a
+                href={VIRTUAL_OFFICE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                aria-label="Virtual Office (opens in a new tab)"
+                style={{ ...menuItemStyle, textDecoration: 'none' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--color-bg-hover))'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+                <Building2 size={16} style={{ color: 'var(--color-icon-accent, #6366f1)' }} />
+                <span style={{ fontWeight: 500 }}>Virtual Office</span>
+                <ExternalLink size={13} aria-hidden="true" style={{ marginLeft: 'auto', color: 'hsl(var(--color-text-tertiary))' }} />
+            </a>
+
             <div style={{ height: '1px', backgroundColor: 'hsl(var(--color-border))', margin: '4px 0' }} />
 
             {/* Logout Button */}
@@ -127,6 +144,10 @@ export const ProfileMenu = ({ placement = 'below', onClose, onOpenSettings, onOp
         </div>
     );
 };
+
+/** OneSpace's Virtual Office (NHG Agents Ecosystem). It asks for a OneSpace sign-in,
+ * which the shared nhgspace.com session already is for anyone who came through the portal. */
+export const VIRTUAL_OFFICE_URL = 'https://one.nhgspace.com/virtual-office';
 
 const menuItemStyle: CSSProperties = {
     width: '100%',

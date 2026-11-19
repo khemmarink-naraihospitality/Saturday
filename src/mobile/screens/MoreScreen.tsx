@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Check, ChevronRight, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, Palette as PaletteIcon, ShieldCheck, Trash2 } from 'lucide-react';
+import { Building2, Check, ChevronRight, ExternalLink, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, Palette as PaletteIcon, ShieldCheck, Trash2 } from 'lucide-react';
 import './screens.css';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useUserStore } from '../../store/useUserStore';
@@ -14,6 +14,7 @@ import { termsFor } from '../../lib/terms';
 import { chooseAccountPalette } from '../../lib/uiTheme';
 import { ThemeSwatch } from '../../components/common/ThemeChoice';
 import { TrashPanel } from '../../components/trash/TrashPanel';
+import { VIRTUAL_OFFICE_URL } from '../../components/layout/ProfileMenu';
 
 // The same form as the desktop's floating "Contact support" button.
 const SUPPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSej_72lQitnkvE18rIHRwtkBud6fe5Hn48pRWCnbpFlmETQSg/viewform?usp=header';
@@ -86,6 +87,12 @@ export const MoreScreen = () => {
                         {isAdmin && (
                             <MenuItem icon={<ShieldCheck size={20} />} label="Admin console" onClick={() => navigateTo('admin')} />
                         )}
+                        <MenuItem
+                            icon={<Building2 size={20} />}
+                            label="Virtual Office"
+                            onClick={() => window.open(VIRTUAL_OFFICE_URL, '_blank', 'noopener')}
+                            right={<ExternalLink size={16} color="hsl(var(--m-text-3))" aria-hidden="true" />}
+                        />
                     </Card>
 
                     <Card className="m-menu">

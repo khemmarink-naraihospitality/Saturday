@@ -4,6 +4,8 @@
  * cream, Nib Pro for headlines, IBM Plex Sans for text and IBM Plex Mono for
  * code; the code blocks are Narai Green with Galangal type. Light and dark
  * follow the reader's system setting. Everything is scoped to this page.
+ * Class names start with ref-, never ad-: ad blockers hide anything named ad-…
+ * (a reader with one saw only the menu).
  */
 
 @font-face {
@@ -15,54 +17,54 @@
 }
 
 html.apidocs-root {
-    --ad-page: #fffaf0;
-    --ad-sheet: #ffffff;
-    --ad-galangal: #ffefd2;
-    --ad-ink: #152a00;
-    --ad-ink-2: rgba(21, 42, 0, 0.7);
-    --ad-ink-3: rgba(21, 42, 0, 0.5);
-    --ad-line: rgba(21, 42, 0, 0.12);
-    --ad-line-soft: rgba(21, 42, 0, 0.07);
-    --ad-green: #152a00;
-    --ad-lemongrass: #8a8318;
-    --ad-lemongrass-soft: rgba(170, 160, 36, 0.16);
-    --ad-ginger: #a85d12;
-    --ad-code-bg: #152a00;
-    --ad-code-bar: #0e1d00;
-    --ad-code-ink: #ffefd2;
-    --ad-code-dim: rgba(255, 239, 210, 0.55);
-    --ad-inline-code: rgba(21, 42, 0, 0.07);
-    --ad-hero: #152a00;
-    --ad-hero-ink: #ffefd2;
-    --ad-hero-dim: rgba(255, 239, 210, 0.72);
-    --ad-focus: #aaa024;
-    --ad-display: "Nib Pro", Georgia, "Times New Roman", serif;
-    --ad-text: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --ad-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    background: var(--ad-page);
+    --ref-page: #fffaf0;
+    --ref-sheet: #ffffff;
+    --ref-galangal: #ffefd2;
+    --ref-ink: #152a00;
+    --ref-ink-2: rgba(21, 42, 0, 0.7);
+    --ref-ink-3: rgba(21, 42, 0, 0.5);
+    --ref-line: rgba(21, 42, 0, 0.12);
+    --ref-line-soft: rgba(21, 42, 0, 0.07);
+    --ref-green: #152a00;
+    --ref-lemongrass: #8a8318;
+    --ref-lemongrass-soft: rgba(170, 160, 36, 0.16);
+    --ref-ginger: #a85d12;
+    --ref-code-bg: #152a00;
+    --ref-code-bar: #0e1d00;
+    --ref-code-ink: #ffefd2;
+    --ref-code-dim: rgba(255, 239, 210, 0.55);
+    --ref-inline-code: rgba(21, 42, 0, 0.07);
+    --ref-hero: #152a00;
+    --ref-hero-ink: #ffefd2;
+    --ref-hero-dim: rgba(255, 239, 210, 0.72);
+    --ref-focus: #aaa024;
+    --ref-display: "Nib Pro", Georgia, "Times New Roman", serif;
+    --ref-text: "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --ref-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--ref-page);
     scroll-behavior: smooth;
     scroll-padding-top: 24px;
 }
 
 @media (prefers-color-scheme: dark) {
     html.apidocs-root {
-        --ad-page: #101f02;
-        --ad-sheet: #152a00;
-        --ad-galangal: #24380f;
-        --ad-ink: #ffefd2;
-        --ad-ink-2: rgba(255, 239, 210, 0.74);
-        --ad-ink-3: rgba(255, 239, 210, 0.52);
-        --ad-line: rgba(255, 239, 210, 0.14);
-        --ad-line-soft: rgba(255, 239, 210, 0.08);
-        --ad-green: #ffefd2;
-        --ad-lemongrass: #cfc54a;
-        --ad-lemongrass-soft: rgba(207, 197, 74, 0.16);
-        --ad-ginger: #e9a25a;
-        --ad-code-bg: #0a1500;
-        --ad-code-bar: #060e00;
-        --ad-inline-code: rgba(255, 239, 210, 0.09);
-        --ad-hero: #0a1500;
-        --ad-focus: #cfc54a;
+        --ref-page: #101f02;
+        --ref-sheet: #152a00;
+        --ref-galangal: #24380f;
+        --ref-ink: #ffefd2;
+        --ref-ink-2: rgba(255, 239, 210, 0.74);
+        --ref-ink-3: rgba(255, 239, 210, 0.52);
+        --ref-line: rgba(255, 239, 210, 0.14);
+        --ref-line-soft: rgba(255, 239, 210, 0.08);
+        --ref-green: #ffefd2;
+        --ref-lemongrass: #cfc54a;
+        --ref-lemongrass-soft: rgba(207, 197, 74, 0.16);
+        --ref-ginger: #e9a25a;
+        --ref-code-bg: #0a1500;
+        --ref-code-bar: #060e00;
+        --ref-inline-code: rgba(255, 239, 210, 0.09);
+        --ref-hero: #0a1500;
+        --ref-focus: #cfc54a;
     }
 }
 
@@ -71,15 +73,15 @@ html.apidocs-root {
 }
 
 html.apidocs-root body {
-    background: var(--ad-page);
-    color: var(--ad-ink);
+    background: var(--ref-page);
+    color: var(--ref-ink);
 }
 
 .apidocs {
     min-height: 100vh;
-    background: var(--ad-page);
-    color: var(--ad-ink);
-    font-family: var(--ad-text);
+    background: var(--ref-page);
+    color: var(--ref-ink);
+    font-family: var(--ref-text);
     font-size: 15.5px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
@@ -87,64 +89,107 @@ html.apidocs-root body {
 
 .apidocs a {
     color: inherit;
-    text-decoration-color: var(--ad-lemongrass);
+    text-decoration-color: var(--ref-lemongrass);
     text-underline-offset: 3px;
 }
 
 .apidocs :focus-visible {
-    outline: 2px solid var(--ad-focus);
+    outline: 2px solid var(--ref-focus);
     outline-offset: 2px;
     border-radius: 4px;
 }
 
 .apidocs code {
-    font-family: var(--ad-mono);
+    font-family: var(--ref-mono);
     font-size: 0.88em;
     padding: 1px 5px;
     border-radius: 5px;
-    background: var(--ad-inline-code);
+    background: var(--ref-inline-code);
     overflow-wrap: anywhere;
 }
 
 /* ── Hero ── */
 
-.ad-hero {
-    background: var(--ad-hero);
-    color: var(--ad-hero-ink);
+.ref-hero {
+    background: var(--ref-hero);
+    color: var(--ref-hero-ink);
 }
 
-.ad-hero__inner {
+.ref-hero__inner {
     max-width: 1120px;
     margin: 0 auto;
     padding: 28px 24px 44px;
 }
 
-.apidocs .ad-brand {
+.ref-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.apidocs .ref-brand {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    font-size: 15px;
+    gap: 12px;
     text-decoration: none;
-    color: var(--ad-hero-ink);
+    color: var(--ref-hero-ink);
 }
 
-.ad-brand img {
-    border-radius: 7px;
+.ref-brand img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
 }
 
-.apidocs .ad-eyebrow {
+.ref-brand__name {
+    font-family: var(--ref-display);
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: -0.005em;
+}
+
+.ref-brand__name span {
+    color: var(--ref-hero-dim);
+}
+
+.ref-brand__tag {
+    padding: 3px 9px;
+    border: 1px solid rgba(255, 239, 210, 0.35);
+    border-radius: 999px;
+    font-family: var(--ref-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    color: var(--ref-hero-ink);
+}
+
+.apidocs .ref-open {
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--ref-hero-ink);
+    color: #152a00;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.apidocs .ref-open:hover {
+    background: #fff6e4;
+}
+
+.apidocs .ref-eyebrow {
     margin: 48px 0 10px;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--ad-hero-dim);
+    color: var(--ref-hero-dim);
 }
 
 .apidocs h1 {
     margin: 0;
-    font-family: var(--ad-display);
+    font-family: var(--ref-display);
     font-weight: 400;
     font-size: clamp(36px, 6vw, 60px);
     line-height: 1.05;
@@ -152,14 +197,14 @@ html.apidocs-root body {
     font-synthesis: none;
 }
 
-.apidocs .ad-lede {
+.apidocs .ref-lede {
     max-width: 640px;
     margin: 18px 0 28px;
     font-size: 17px;
-    color: var(--ad-hero-dim);
+    color: var(--ref-hero-dim);
 }
 
-.ad-base {
+.ref-base {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -171,29 +216,29 @@ html.apidocs-root body {
     background: rgba(255, 239, 210, 0.06);
 }
 
-.ad-base__label {
+.ref-base__label {
     font-size: 11.5px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--ad-hero-dim);
+    color: var(--ref-hero-dim);
 }
 
-.apidocs .ad-base code {
+.apidocs .ref-base code {
     flex: 1;
     min-width: 0;
     padding: 0;
     background: none;
     font-size: 15px;
-    color: var(--ad-hero-ink);
+    color: var(--ref-hero-ink);
 }
 
-.ad-base .ad-copy {
+.ref-base .ref-copy {
     border-color: rgba(255, 239, 210, 0.3);
-    color: var(--ad-hero-ink);
+    color: var(--ref-hero-ink);
 }
 
-.ad-facts {
+.ref-facts {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -202,17 +247,17 @@ html.apidocs-root body {
     list-style: none;
 }
 
-.ad-facts li {
+.ref-facts li {
     padding: 4px 12px;
     border-radius: 999px;
     background: rgba(255, 239, 210, 0.1);
     font-size: 13px;
-    color: var(--ad-hero-ink);
+    color: var(--ref-hero-ink);
 }
 
 /* ── Layout ── */
 
-.ad-layout {
+.ref-layout {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 56px;
@@ -221,7 +266,7 @@ html.apidocs-root body {
     padding: 40px 24px 80px;
 }
 
-.ad-nav {
+.ref-nav {
     position: sticky;
     top: 24px;
     align-self: start;
@@ -230,56 +275,56 @@ html.apidocs-root body {
     font-size: 14px;
 }
 
-.ad-nav__title {
+.ref-nav__title {
     display: block;
     margin-bottom: 10px;
     font-size: 11.5px;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--ad-ink-3);
+    color: var(--ref-ink-3);
 }
 
-.ad-nav ul {
+.ref-nav ul {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.ad-nav ul ul {
+.ref-nav ul ul {
     margin: 2px 0 6px 12px;
     padding-left: 10px;
-    border-left: 1px solid var(--ad-line);
+    border-left: 1px solid var(--ref-line);
     font-size: 13px;
 }
 
-.apidocs .ad-nav a {
+.apidocs .ref-nav a {
     display: block;
     padding: 4px 0;
     text-decoration: none;
-    color: var(--ad-ink-2);
+    color: var(--ref-ink-2);
 }
 
-.apidocs .ad-nav a:hover {
-    color: var(--ad-ink);
+.apidocs .ref-nav a:hover {
+    color: var(--ref-ink);
 }
 
-.ad-main {
+.ref-main {
     min-width: 0;
     max-width: 780px;
 }
 
 /* ── Sections ── */
 
-.ad-section {
+.ref-section {
     padding-bottom: 40px;
     margin-bottom: 40px;
-    border-bottom: 1px solid var(--ad-line-soft);
+    border-bottom: 1px solid var(--ref-line-soft);
 }
 
 .apidocs h2 {
     margin: 0 0 14px;
-    font-family: var(--ad-display);
+    font-family: var(--ref-display);
     font-weight: 400;
     font-size: 30px;
     line-height: 1.15;
@@ -288,7 +333,7 @@ html.apidocs-root body {
 
 .apidocs h3 {
     margin: 0 0 6px;
-    font-family: var(--ad-text);
+    font-family: var(--ref-text);
     font-size: 17px;
     font-weight: 600;
     line-height: 1.35;
@@ -296,48 +341,48 @@ html.apidocs-root body {
 
 .apidocs p {
     margin: 0 0 14px;
-    color: var(--ad-ink-2);
+    color: var(--ref-ink-2);
 }
 
 .apidocs strong {
-    color: var(--ad-ink);
+    color: var(--ref-ink);
     font-weight: 600;
 }
 
-.ad-note {
+.ref-note {
     padding: 12px 16px;
-    border-left: 3px solid var(--ad-lemongrass);
+    border-left: 3px solid var(--ref-lemongrass);
     border-radius: 0 10px 10px 0;
-    background: var(--ad-lemongrass-soft);
+    background: var(--ref-lemongrass-soft);
 }
 
-.apidocs .ad-note {
-    color: var(--ad-ink);
+.apidocs .ref-note {
+    color: var(--ref-ink);
 }
 
-.ad-list {
+.ref-list {
     margin: 0 0 14px;
     padding-left: 20px;
-    color: var(--ad-ink-2);
+    color: var(--ref-ink-2);
 }
 
-.ad-list li {
+.ref-list li {
     margin-bottom: 8px;
     padding-left: 4px;
 }
 
-.ad-list--numbered {
+.ref-list--numbered {
     padding-left: 22px;
 }
 
 /* Getting access: three steps */
-.ad-steps {
+.ref-steps {
     margin: 22px 0 18px;
     padding: 0;
     list-style: none;
 }
 
-.ad-steps > li {
+.ref-steps > li {
     position: relative;
     display: grid;
     grid-template-columns: 40px minmax(0, 1fr);
@@ -345,105 +390,105 @@ html.apidocs-root body {
     padding-bottom: 22px;
 }
 
-.ad-steps > li:not(:last-child)::before {
+.ref-steps > li:not(:last-child)::before {
     content: '';
     position: absolute;
     left: 19px;
     top: 40px;
     bottom: 4px;
     width: 1px;
-    background: var(--ad-line);
+    background: var(--ref-line);
 }
 
-.ad-steps__n {
+.ref-steps__n {
     display: grid;
     place-items: center;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--ad-green);
-    color: var(--ad-page);
-    font-family: var(--ad-display);
+    background: var(--ref-green);
+    color: var(--ref-page);
+    font-family: var(--ref-display);
     font-size: 19px;
 }
 
-.ad-steps p:last-child {
+.ref-steps p:last-child {
     margin-bottom: 0;
 }
 
 /* Tables */
-.ad-table {
+.ref-table {
     width: 100%;
     margin: 6px 0 16px;
     border-collapse: collapse;
     font-size: 14px;
 }
 
-.ad-table th {
+.ref-table th {
     padding: 8px 12px 8px 0;
-    border-bottom: 1px solid var(--ad-line);
+    border-bottom: 1px solid var(--ref-line);
     text-align: left;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--ad-ink-3);
+    color: var(--ref-ink-3);
 }
 
-.ad-table td {
+.ref-table td {
     padding: 9px 12px 9px 0;
-    border-bottom: 1px solid var(--ad-line-soft);
+    border-bottom: 1px solid var(--ref-line-soft);
     vertical-align: top;
-    color: var(--ad-ink-2);
+    color: var(--ref-ink-2);
 }
 
-.ad-table td:first-child {
+.ref-table td:first-child {
     white-space: nowrap;
-    color: var(--ad-ink);
+    color: var(--ref-ink);
 }
 
-.apidocs .ad-table code {
+.apidocs .ref-table code {
     white-space: nowrap;
     overflow-wrap: normal;
 }
 
-.ad-table--params td:first-child code {
-    background: var(--ad-lemongrass-soft);
+.ref-table--params td:first-child code {
+    background: var(--ref-lemongrass-soft);
 }
 
-.ad-muted {
-    color: var(--ad-ink-3);
+.ref-muted {
+    color: var(--ref-ink-3);
 }
 
-.ad-status {
+.ref-status {
     display: inline-block;
     min-width: 40px;
     padding: 1px 8px;
     border-radius: 6px;
-    font-family: var(--ad-mono);
+    font-family: var(--ref-mono);
     font-size: 13px;
     text-align: center;
-    background: var(--ad-inline-code);
+    background: var(--ref-inline-code);
 }
 
-.ad-status--4 { color: var(--ad-ginger); }
-.ad-status--5 { color: #c0392b; }
+.ref-status--4 { color: var(--ref-ginger); }
+.ref-status--5 { color: #c0392b; }
 
 @media (prefers-color-scheme: dark) {
-    .ad-status--5 { color: #f08070; }
+    .ref-status--5 { color: #f08070; }
 }
 
 /* Endpoints */
-.ad-endpoint {
+.ref-endpoint {
     margin: 26px 0 0;
     padding: 22px 22px 16px;
-    border: 1px solid var(--ad-line);
+    border: 1px solid var(--ref-line);
     border-radius: 14px;
-    background: var(--ad-sheet);
+    background: var(--ref-sheet);
     scroll-margin-top: 24px;
 }
 
-.ad-route {
+.ref-route {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -451,93 +496,93 @@ html.apidocs-root body {
     margin: 0 0 12px;
 }
 
-.apidocs .ad-route code {
+.apidocs .ref-route code {
     padding: 0;
     background: none;
     font-size: 14.5px;
-    color: var(--ad-ink);
+    color: var(--ref-ink);
 }
 
-.ad-method {
+.ref-method {
     padding: 2px 8px;
     border-radius: 6px;
-    background: var(--ad-lemongrass-soft);
-    color: var(--ad-lemongrass);
-    font-family: var(--ad-mono);
+    background: var(--ref-lemongrass-soft);
+    color: var(--ref-lemongrass);
+    font-family: var(--ref-mono);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.04em;
 }
 
-.ad-example summary {
+.ref-example summary {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 0;
     font-size: 13.5px;
     font-weight: 600;
-    color: var(--ad-ink);
+    color: var(--ref-ink);
     cursor: pointer;
     list-style: none;
 }
 
-.ad-example summary::-webkit-details-marker { display: none; }
+.ref-example summary::-webkit-details-marker { display: none; }
 
-.ad-example summary::before {
+.ref-example summary::before {
     content: '▸';
     font-size: 11px;
     transition: transform 0.15s;
 }
 
-.ad-example[open] summary::before {
+.ref-example[open] summary::before {
     transform: rotate(90deg);
 }
 
 /* Code */
-.ad-code {
+.ref-code {
     margin: 10px 0 14px;
     border-radius: 12px;
     overflow: hidden;
-    background: var(--ad-code-bg);
+    background: var(--ref-code-bg);
 }
 
-.ad-code__bar {
+.ref-code__bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     padding: 6px 8px 6px 14px;
-    background: var(--ad-code-bar);
-    font-family: var(--ad-mono);
+    background: var(--ref-code-bar);
+    font-family: var(--ref-mono);
     font-size: 11.5px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--ad-code-dim);
+    color: var(--ref-code-dim);
 }
 
-.ad-code pre {
+.ref-code pre {
     margin: 0;
     padding: 14px 16px 16px;
     overflow-x: auto;
 }
 
-.apidocs .ad-code pre code {
+.apidocs .ref-code pre code {
     padding: 0;
     background: none;
-    color: var(--ad-code-ink);
+    color: var(--ref-code-ink);
     font-size: 13px;
     line-height: 1.6;
     white-space: pre;
     overflow-wrap: normal;
 }
 
-.ad-copy {
+.ref-copy {
     padding: 3px 10px;
     border: 1px solid rgba(255, 239, 210, 0.25);
     border-radius: 7px;
     background: transparent;
-    color: var(--ad-code-ink);
-    font-family: var(--ad-text);
+    color: var(--ref-code-ink);
+    font-family: var(--ref-text);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0;
@@ -545,87 +590,104 @@ html.apidocs-root body {
     cursor: pointer;
 }
 
-.ad-copy:hover {
+.ref-copy:hover {
     background: rgba(255, 239, 210, 0.1);
 }
 
 /* Example tabs */
-.ad-tabs {
+.ref-tabs {
     display: inline-flex;
     gap: 2px;
     padding: 3px;
     border-radius: 10px;
-    background: var(--ad-inline-code);
+    background: var(--ref-inline-code);
 }
 
-.ad-tabs button {
+.ref-tabs button {
     padding: 6px 14px;
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: var(--ad-ink-2);
-    font-family: var(--ad-text);
+    color: var(--ref-ink-2);
+    font-family: var(--ref-text);
     font-size: 13.5px;
     font-weight: 500;
     cursor: pointer;
 }
 
-.ad-tabs button.is-on {
-    background: var(--ad-sheet);
-    color: var(--ad-ink);
+.ref-tabs button.is-on {
+    background: var(--ref-sheet);
+    color: var(--ref-ink);
     box-shadow: 0 1px 3px rgba(21, 42, 0, 0.14);
 }
 
-.ad-foot p {
+.ref-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ref-foot img {
+    padding: 6px;
+    border-radius: 8px;
+    background: #152a00;
+    box-sizing: content-box;
+}
+
+.apidocs .ref-foot p {
+    margin: 0;
+}
+
+.ref-foot p {
     font-size: 13.5px;
-    color: var(--ad-ink-3);
+    color: var(--ref-ink-3);
 }
 
 /* ── Narrow screens: one column, the contents as a row of links ── */
 
 @media (max-width: 860px) {
-    .ad-layout {
+    .ref-layout {
         grid-template-columns: minmax(0, 1fr);
         gap: 24px;
         padding: 24px 16px 64px;
     }
 
-    .ad-hero__inner {
+    .ref-hero__inner {
         padding: 22px 16px 36px;
     }
 
-    .apidocs .ad-eyebrow {
+    .apidocs .ref-eyebrow {
         margin-top: 32px;
     }
 
-    .ad-nav {
+    .ref-nav {
         position: static;
         max-height: none;
         overflow: visible;
     }
 
-    .ad-nav > ul {
+    .ref-nav > ul {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
     }
 
-    .ad-nav ul ul {
+    .ref-nav ul ul {
         display: none;
     }
 
-    .apidocs .ad-nav > ul > li > a {
+    .apidocs .ref-nav > ul > li > a {
         padding: 4px 10px;
-        border: 1px solid var(--ad-line);
+        border: 1px solid var(--ref-line);
         border-radius: 999px;
         font-size: 13px;
     }
 
-    .ad-endpoint {
+    .ref-endpoint {
         padding: 18px 16px 12px;
     }
 
-    .ad-table {
+    .ref-table {
         display: block;
         overflow-x: auto;
     }

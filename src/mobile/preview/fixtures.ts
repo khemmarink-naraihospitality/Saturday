@@ -350,3 +350,15 @@ export const trashPreviewRows = [
 export const trashPreviewCounts = [
     { kind: 'update', n: 1 }, { kind: 'item', n: 3 }, { kind: 'column', n: 1 }, { kind: 'group', n: 1 }, { kind: 'board', n: 1 }, { kind: 'workspace', n: 1 },
 ];
+
+// Admin › API Keys in the preview: one key in use, one revoked.
+export const apiKeyPreviewRows = [
+    {
+        id: 'key-1', name: 'Power Automate — IT requests', key_prefix: 'nhg_Q7f2xK9a', workspace_ids: ['ws-bt'], board_ids: [],
+        created_by: ME.id, created_at: daysAgo(12), expires_at: null, last_used_at: daysAgo(0.02), request_count: 1843, revoked_at: null, revoked_by: null,
+    },
+    {
+        id: 'key-2', name: 'Old reporting script', key_prefix: 'nhg_b3LmP0wz', workspace_ids: [], board_ids: ['b-it-bo', 'b-tech'],
+        created_by: ME.id, created_at: daysAgo(40), expires_at: null, last_used_at: daysAgo(9), request_count: 212, revoked_at: daysAgo(8), revoked_by: ME.id,
+    },
+];

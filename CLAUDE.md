@@ -177,6 +177,17 @@ Boards with `is_private: true` are gated by a 6-digit PIN before any board data 
 - `ai-summary` — the AI Summary tab's Gemini section (see AI Summary tab above): writes a board's summary on Gemini's free tier and keeps it in `board_ai_summaries`; also AI Settings' Test connection (admins). JWT verification is on at the gateway; a CLI deploy keeps the function's existing setting, so it was set with the Management API (`PATCH /v1/projects/{ref}/functions/ai-summary` `{"verify_jwt": true}`).
 - `test-smtp` — sends a test email to verify SMTP settings from `EmailSettings` (admin).
 - `admin-create-user` — creates a user account server-side (service-role key, re-verifies caller's `system_role` against the target role's `ROLE_HIERARCHY`); called from `CreateUserModal` (admin).
+- `api` — the NHG WorkSpace API, read only, for other systems (see below). Verify JWT off (`--no-verify-jwt`): it checks its own keys.
+
+### NHG WorkSpace API (Admin › API Keys)
+
+Other systems read Spaces, their tasks and their comments as JSON (user request 25-Nov-2026: keys made by admins, read only, for developers and automation). The address is `https://work.nhgspace.com/api/v1/…`; `vercel.json` proxies `/api/v1/*` to the `api` Edge Function.
+
+- **Keys.** A key is `nhg_` plus 40 characters. Only admins make and revoke them, in `ApiKeys` (`src/components/admin/ApiKeys.tsx`), through `create_api_key` / `revoke_api_key` (security definer, `is_admin()`, logged as `api_key_created` / `api_key_revoked`). `api_keys` keeps only a SHA-256 of each key, so the key is shown once. `authenticated` may read every column except `key_hash`, so select columns by name.
+- **Scope.** A key reaches its `workspace_ids`, every folder under them (including ones added later), and its `board_ids`. The function runs with the service role and works the scope out on each request in `loadScope`. It never serves a private (PIN) board, or a folder, board, group, item or column in the Trash. The service role skips RLS, so every query in the function must filter by that scope.
+- **Server-only helpers.** `api_authenticate` finds a key by its hash, with its request count for the last minute (limit 120 a minute). `api_record_request` writes `api_request_log`, which the `api-request-log-cleanup` cron job keeps to 90 days.
+- **Output.** There is no CORS. The API's words are folders, spaces, groups, tasks and comments. Values come twice: `values` keyed by column title, and `fields` with id, type, value and text. Formula results are not served.
+- **Docs and preview.** `docs/api.md` is the reference for developers. To see the page locally: `/app-preview.html?layout=desktop&page=admin&tab=api_keys` (the preview's profile reads as a super admin there).
 
 ### Admin Console
 

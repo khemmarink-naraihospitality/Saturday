@@ -20,6 +20,7 @@ import { useUserStore } from '../../store/useUserStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import App from '../../App';
 import * as fx from './fixtures';
+import { requestAdminTab } from '../../lib/adminTab';
 
 const params = new URLSearchParams(window.location.search);
 
@@ -59,9 +60,21 @@ const fakeSession = { user: fakeUser, access_token: 'preview', refresh_token: 'p
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const client = supabase as any;
+// Admin › API Keys: the folders and boards to pick from, and two keys.
+const adminTables: Record<string, unknown[]> = {
+    workspaces: fx.workspaces.map(w => ({ id: w.id, title: w.title, parent_id: w.parentId ?? null, is_archived: false })),
+    boards: fx.boards.map(b => ({ id: b.id, title: b.title, workspace_id: b.workspaceId, is_private: !!b.is_private, is_archived: false })),
+    api_keys: fx.apiKeyPreviewRows,
+};
+// ?page=admin: the signed-in profile reads as a super admin, as the console asks.
+const adminProfile = params.get('page') === 'admin'
+    ? { id: fx.ME.id, full_name: fx.ME.name, email: fx.ME.email, system_role: 'super_admin', is_approved: true, is_active: true }
+    : null;
 client.from = (table: string) => {
     const answer = gemini.table(table);
-    return answer ? chainOf({ ...emptyResult, ...answer }) : chain;
+    if (answer) return chainOf({ ...emptyResult, ...answer });
+    if (table === 'profiles' && adminProfile) return chainOf({ ...emptyResult, data: adminProfile });
+    return adminTables[table] ? chainOf({ ...emptyResult, data: adminTables[table] }) : chain;
 };
 client.rpc = (name: string) => name === 'trash_list' ? chainOf({ ...emptyResult, data: fx.trashPreviewRows })
     : name === 'trash_counts' ? chainOf({ ...emptyResult, data: fx.trashPreviewCounts })
@@ -77,6 +90,7 @@ client.auth.signOut = async () => ({ error: null });
 
 // ── Stores ──────────────────────────────────────────────────────────────────
 
+if (params.get('tab')) requestAdminTab(params.get('tab')!);
 useThemeStore.getState().setTheme(params.get('theme') === 'dark' ? 'dark' : 'light');
 useThemeStore.getState().setPalette(params.get('palette') === 'narai' ? 'narai' : 'saturday');
 
@@ -89,7 +103,8 @@ useBoardStore.setState({
     boards: fx.boards,
     notifications: fx.notifications,
     activeWorkspaceId: 'ws-bt',
-    activePage: 'home',
+    // ?page=admin opens the Admin Console (with ?tab=, e.g. api_keys).
+    activePage: params.get('page') === 'admin' ? 'admin' : 'home',
     isLoading: false,
     isInitializing: false,
     userWorkspaceRoles: { 'ws-bt': 'owner', 'ws-btd': 'owner', 'ws-main': 'owner', 'ws-mkt': 'member', 'ws-fin': 'owner', 'ws-ops': 'member' },

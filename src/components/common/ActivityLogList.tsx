@@ -48,6 +48,11 @@ const ACTION_LABELS: Record<string, string> = {
     board_moved: 'Board Moved',
     board_move_undone: 'Board Move Undone',
     items_moved: 'Tasks Moved',
+    api_key_created: 'API Key Created',
+    api_key_updated: 'API Key Changed',
+    api_key_rotated: 'API Key Regenerated',
+    api_key_copied: 'API Key Copied',
+    api_key_revoked: 'API Key Revoked',
     items_move_undone: 'Move Undone',
     item_notifications_on: 'Notifications On',
     item_notifications_off: 'Notifications Off',
@@ -270,6 +275,17 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                 );
 
             // ... system events ...
+            case 'api_key_created':
+            case 'api_key_updated':
+            case 'api_key_rotated':
+            case 'api_key_copied':
+            case 'api_key_revoked': {
+                const verb = { api_key_created: 'Created', api_key_updated: 'Changed', api_key_rotated: 'Regenerated', api_key_copied: 'Copied', api_key_revoked: 'Revoked' }[action_type];
+                const reads = action_type === 'api_key_created' || action_type === 'api_key_updated'
+                    ? [meta.folder_count ? `${meta.folder_count} workspace${meta.folder_count === 1 ? '' : 's'}` : '', meta.space_count ? `${meta.space_count} board${meta.space_count === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ')
+                    : '';
+                return <span>{`${verb} the API key `}<strong>{meta.name || 'an API key'}</strong>{reads ? `, which reads ${reads}` : ''}</span>;
+            }
             default:
                 return <span>{action_type.replace(/_/g, ' ')}</span>;
         }

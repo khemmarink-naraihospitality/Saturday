@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactElement } from 'react';
-import { BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, KeyRound, Lock, Plus, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
+import { BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, KeyRound, Lock, Plus, RefreshCw, Search, Settings2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
@@ -7,7 +7,9 @@ import { ConfirmModal } from '../ui/ConfirmModal';
  * Admin › API Keys: keys for the NHG WorkSpace API (supabase/functions/api),
  * which lets another system read Spaces, tasks and comments. A key reaches the
  * workspaces picked for it (and every workspace under them) and the boards
- * picked for it; it is shown once, when made, since only its hash is kept.
+ * picked for it. Requests are checked against a hash of the key; the key itself
+ * is kept encrypted in Supabase Vault so an admin can Copy it again (logged).
+ * Manage changes a key's name, what it reads and its expiry, or regenerates it.
  */
 
 const BASE_URL = 'https://work.nhgspace.com/api/v1';
@@ -27,16 +29,33 @@ interface KeyRow {
     request_count: number;
     revoked_at: string | null;
     revoked_by: string | null;
+    /** Kept in the Vault, so Copy can include it (keys made before 25-Nov-2026 aren't). */
+    copyable: boolean;
 }
 interface FolderRow { id: string; title: string; parent_id: string | null; is_archived: boolean }
 interface BoardRow { id: string; title: string; workspace_id: string; is_private: boolean; is_archived: boolean }
 
-const EXPIRY: { label: string; days: number | null }[] = [
-    { label: 'Never expires', days: null },
-    { label: 'Expires in 30 days', days: 30 },
-    { label: 'Expires in 90 days', days: 90 },
-    { label: 'Expires in 1 year', days: 365 },
+/** Expiry choices: 'keep' (Manage only), 'never', or a number of days from now. */
+const EXPIRY: { label: string; value: string }[] = [
+    { label: 'Never expires', value: 'never' },
+    { label: 'Expires in 30 days', value: '30' },
+    { label: 'Expires in 90 days', value: '90' },
+    { label: 'Expires in 1 year', value: '365' },
 ];
+
+const expiresFor = (choice: string, current: string | null): string | null =>
+    choice === 'keep' ? current : choice === 'never' ? null : new Date(Date.now() + Number(choice) * 86400000).toISOString();
+
+/** Put text on the clipboard that is still being fetched (Safari wants the write started inside the click). */
+const writeClipboard = async (text: Promise<string>) => {
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+        try {
+            await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then(t => new Blob([t], { type: 'text/plain' })) })]);
+            return;
+        } catch { /* the plain way below */ }
+    }
+    await navigator.clipboard.writeText(await text);
+};
 
 const card: CSSProperties = { padding: '24px', marginBottom: '24px' };
 const muted: CSSProperties = { color: '#64748b', fontSize: '13.5px' };
@@ -85,16 +104,18 @@ const CopyButton = ({ text, label: what = 'Copy' }: { text: string; label?: stri
 };
 
 /** Workspaces as a folding tree with their boards: tick a workspace (with all under it) or single boards. */
-const AccessPicker = ({ folders, boards, chosenFolders, chosenBoards, onFolders, onBoards }: {
+const AccessPicker = ({ folders, boards, chosenFolders, chosenBoards, onFolders, onBoards, defaultOpen }: {
     folders: FolderRow[];
     boards: BoardRow[];
     chosenFolders: Set<string>;
     chosenBoards: Set<string>;
     onFolders: (next: Set<string>) => void;
     onBoards: (next: Set<string>) => void;
+    /** Folders shown open at first: those holding what the key already reads. */
+    defaultOpen?: Set<string>;
 }) => {
     const [query, setQuery] = useState('');
-    const [open, setOpen] = useState<Set<string>>(new Set());
+    const [open, setOpen] = useState<Set<string>>(() => new Set(defaultOpen));
     const live = useMemo(() => folders.filter(f => !f.is_archived), [folders]);
     const byId = useMemo(() => new Map(live.map(f => [f.id, f])), [live]);
     const children = useMemo(() => {
@@ -181,6 +202,8 @@ const AccessPicker = ({ folders, boards, chosenFolders, chosenBoards, onFolders,
     );
 };
 
+type FormState = null | { mode: 'create' } | { mode: 'edit'; key: KeyRow; notice?: string };
+
 export const ApiKeys = () => {
     const [keys, setKeys] = useState<KeyRow[]>([]);
     const [folders, setFolders] = useState<FolderRow[]>([]);
@@ -189,20 +212,23 @@ export const ApiKeys = () => {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
 
-    const [formOpen, setFormOpen] = useState(false);
+    const [form, setForm] = useState<FormState>(null);
     const [name, setName] = useState('');
-    const [expiry, setExpiry] = useState<number | null>(null);
+    const [expiry, setExpiry] = useState('never');
     const [chosenFolders, setChosenFolders] = useState<Set<string>>(new Set());
     const [chosenBoards, setChosenBoards] = useState<Set<string>>(new Set());
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
-    const [made, setMade] = useState<{ name: string; key: string } | null>(null);
+    const [made, setMade] = useState<{ title: string; key: string; share: string } | null>(null);
     const [revoking, setRevoking] = useState<KeyRow | null>(null);
+    const [rotating, setRotating] = useState<KeyRow | null>(null);
+    const [copying, setCopying] = useState<{ id: string; state: 'busy' | 'done' } | null>(null);
+    const topRef = useRef<HTMLDivElement>(null);
 
     const load = useCallback(async () => {
         setLoadError(null);
         const [k, w, b] = await Promise.all([
-            supabase.from('api_keys').select('id, name, key_prefix, workspace_ids, board_ids, created_by, created_at, expires_at, last_used_at, request_count, revoked_at, revoked_by').order('created_at', { ascending: false }),
+            supabase.from('api_keys').select('id, name, key_prefix, workspace_ids, board_ids, created_by, created_at, expires_at, last_used_at, request_count, revoked_at, revoked_by, copyable').order('created_at', { ascending: false }),
             supabase.from('workspaces').select('id, title, parent_id, is_archived').limit(5000),
             supabase.from('boards').select('id, title, workspace_id, is_private, is_archived').limit(10000),
         ]);
@@ -227,26 +253,87 @@ export const ApiKeys = () => {
 
     const folderTitle = useMemo(() => new Map(folders.map(f => [f.id, f.title])), [folders]);
     const boardTitle = useMemo(() => new Map(boards.map(b => [b.id, b.title])), [boards]);
+    const folderParent = useMemo(() => new Map(folders.map(f => [f.id, f.parent_id])), [folders]);
+    const boardFolder = useMemo(() => new Map(boards.map(b => [b.id, b.workspace_id])), [boards]);
 
-    const resetForm = () => {
-        setFormOpen(false);
+    /** What a key reads, as the developer will read it (the API's words). */
+    const readsText = (folderIds: string[], boardIds: string[]) => [
+        ...folderIds.map(id => `${folderTitle.get(id) ?? 'a deleted folder'} (Space Folder, with everything in it)`),
+        ...boardIds.map(id => `${boardTitle.get(id) ?? 'a deleted space'} (Space)`),
+    ].join('; ');
+
+    /** The message Copy puts on the clipboard: everything a developer needs to start. */
+    const shareText = (k: Pick<KeyRow, 'name' | 'workspace_ids' | 'board_ids' | 'expires_at'>, key: string) => [
+        `NHG WorkSpace API key — ${k.name}`,
+        '',
+        `Key: ${key}`,
+        `Reads: ${readsText(k.workspace_ids, k.board_ids)}`,
+        `Expires: ${k.expires_at ? new Date(k.expires_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : 'never'}`,
+        '',
+        `API documentation: ${DOCS_URL}`,
+        `Base URL: ${BASE_URL}`,
+        '',
+        'Keep the key secret: store it on the server that calls the API, never in a web page, a repository or a shared document.',
+    ].join('\n');
+
+    const closeForm = () => {
+        setForm(null);
         setName('');
-        setExpiry(null);
+        setExpiry('never');
         setChosenFolders(new Set());
         setChosenBoards(new Set());
         setFormError(null);
     };
 
+    const openCreate = () => {
+        closeForm();
+        setMade(null);
+        setForm({ mode: 'create' });
+    };
+
+    const openManage = (k: KeyRow, notice?: string) => {
+        setMade(null);
+        setForm({ mode: 'edit', key: k, notice });
+        setName(k.name);
+        setExpiry(k.expires_at ? 'keep' : 'never');
+        setChosenFolders(new Set(k.workspace_ids));
+        setChosenBoards(new Set(k.board_ids));
+        setFormError(null);
+        requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    };
+
+    // Open, in Manage, the folders that hold what the key reads.
+    const openFolders = useMemo(() => {
+        const out = new Set<string>();
+        if (form?.mode !== 'edit') return out;
+        const climb = (id: string | null | undefined) => {
+            const seen = new Set<string>();
+            for (let f = id; f && !seen.has(f); f = folderParent.get(f) ?? null) {
+                out.add(f);
+                seen.add(f);
+            }
+        };
+        form.key.board_ids.forEach(b => climb(boardFolder.get(b)));
+        form.key.workspace_ids.forEach(f => climb(folderParent.get(f)));
+        return out;
+    }, [form, folderParent, boardFolder]);
+
+    const check = () => {
+        if (!name.trim()) { setFormError('Give the key a name — say which system will use it.'); return false; }
+        if (chosenFolders.size + chosenBoards.size === 0) { setFormError('Tick at least one workspace or board the key may read.'); return false; }
+        return true;
+    };
+
     const create = async () => {
-        if (!name.trim()) { setFormError('Give the key a name — say which system will use it.'); return; }
-        if (chosenFolders.size + chosenBoards.size === 0) { setFormError('Tick at least one workspace or board the key may read.'); return; }
+        if (!check()) return;
         setSaving(true);
         setFormError(null);
+        const expiresAt = expiresFor(expiry, null);
         const { data, error } = await supabase.rpc('create_api_key', {
             p_name: name.trim(),
             p_workspace_ids: [...chosenFolders],
             p_board_ids: [...chosenBoards],
-            p_expires_at: expiry ? new Date(Date.now() + expiry * 86400000).toISOString() : null,
+            p_expires_at: expiresAt,
         });
         setSaving(false);
         const row = Array.isArray(data) ? data[0] : null;
@@ -254,15 +341,73 @@ export const ApiKeys = () => {
             setFormError(error?.message || 'Couldn’t create the key. Try again.');
             return;
         }
-        setMade({ name: name.trim(), key: row.api_key });
-        resetForm();
+        setMade({
+            title: `“${name.trim()}” is ready.`,
+            key: row.api_key,
+            share: shareText({ name: name.trim(), workspace_ids: [...chosenFolders], board_ids: [...chosenBoards], expires_at: expiresAt }, row.api_key),
+        });
+        closeForm();
         void load();
+    };
+
+    const save = async () => {
+        if (form?.mode !== 'edit' || !check()) return;
+        setSaving(true);
+        setFormError(null);
+        const { data, error } = await supabase.rpc('update_api_key', {
+            p_id: form.key.id,
+            p_name: name.trim(),
+            p_workspace_ids: [...chosenFolders],
+            p_board_ids: [...chosenBoards],
+            p_expires_at: expiresFor(expiry, form.key.expires_at),
+        });
+        setSaving(false);
+        if (error || data !== true) {
+            setFormError(error?.message || 'This key has been revoked, so it can’t be changed.');
+            return;
+        }
+        closeForm();
+        void load();
+    };
+
+    const rotate = async (k: KeyRow) => {
+        setRotating(null);
+        const { data, error } = await supabase.rpc('rotate_api_key', { p_id: k.id });
+        if (error || typeof data !== 'string') {
+            setFormError(error?.message || 'Couldn’t regenerate the key. Try again.');
+            return;
+        }
+        setMade({ title: `A new key for “${k.name}”. The one before it has stopped working.`, key: data, share: shareText(k, data) });
+        closeForm();
+        void load();
+    };
+
+    const copyShare = async (k: KeyRow) => {
+        if (!k.copyable) {
+            openManage(k, 'This key was made before keys could be copied again, so it isn’t kept anywhere. Regenerate it to get a key you can copy and send — the system using the old one will need the new one.');
+            return;
+        }
+        setCopying({ id: k.id, state: 'busy' });
+        const text = (async () => {
+            const { data, error } = await supabase.rpc('reveal_api_key', { p_id: k.id });
+            if (error || typeof data !== 'string') throw new Error(error?.message || 'not available');
+            return shareText(k, data);
+        })();
+        try {
+            await writeClipboard(text);
+            setCopying({ id: k.id, state: 'done' });
+            setTimeout(() => setCopying(c => (c?.id === k.id ? null : c)), 2000);
+        } catch {
+            setCopying(null);
+            setLoadError(`Couldn’t copy “${k.name}”. Try again.`);
+        }
     };
 
     const revoke = async (k: KeyRow) => {
         setRevoking(null);
         const { error } = await supabase.rpc('revoke_api_key', { p_id: k.id });
         if (error) setLoadError(`Couldn’t revoke “${k.name}”: ${error.message}`);
+        if (form?.mode === 'edit' && form.key.id === k.id) closeForm();
         void load();
     };
 
@@ -279,10 +424,12 @@ export const ApiKeys = () => {
     };
 
     const curl = `curl -H "Authorization: Bearer nhg_…" ${BASE_URL}/spaces`;
+    const editing = form?.mode === 'edit' ? form.key : null;
+    const expiredKeep = !!editing?.expires_at && Date.parse(editing.expires_at) <= Date.now();
 
     return (
         <div style={{ maxWidth: '1000px' }}>
-            <div className="card-surface" style={card}>
+            <div ref={topRef} className="card-surface" style={{ ...card, scrollMarginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 420px' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -297,8 +444,8 @@ export const ApiKeys = () => {
                         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" style={{ ...secondary, textDecoration: 'none' }}>
                             <BookOpen size={15} /> API documentation <ExternalLink size={13} />
                         </a>
-                        {!formOpen && (
-                            <button type="button" style={primary} onClick={() => { setMade(null); setFormOpen(true); }}>
+                        {!form && (
+                            <button type="button" style={primary} onClick={openCreate}>
                                 <Plus size={16} /> Create API key
                             </button>
                         )}
@@ -308,24 +455,32 @@ export const ApiKeys = () => {
                 {made && (
                     <div style={{ marginTop: '20px', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-                            <strong style={{ fontSize: '14px', color: '#166534' }}>{`“${made.name}” is ready. Copy its key now — it won’t be shown again.`}</strong>
+                            <strong style={{ fontSize: '14px', color: '#166534' }}>{made.title}</strong>
                             <button type="button" onClick={() => setMade(null)} aria-label="Done" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#166534', display: 'flex' }}><X size={16} /></button>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <code style={{ ...code, flex: '1 1 380px', padding: '10px 12px', fontSize: '13.5px', backgroundColor: 'white', border: '1px solid #bbf7d0', wordBreak: 'break-all' }}>{made.key}</code>
                             <CopyButton text={made.key} label="Copy key" />
+                            <CopyButton text={made.share} label="Copy name, key and documentation" />
                         </div>
                         <p style={{ ...muted, margin: '10px 0 0', fontSize: '12.5px' }}>
-                            Hand it to the system’s developer privately, with the API documentation. They keep it on that system’s server (an environment variable or a secret store), never in a web page or a shared document. If it leaks, revoke it below and create a new one.
+                            Send it to the system’s developer privately. They keep it on that system’s server (an environment variable or a secret store), never in a web page or a shared document.
+                            You can copy it again later with <strong>Copy</strong> in the list; if it leaks, revoke it there or regenerate it under <strong>Manage</strong>.
                         </p>
-                        <div style={{ marginTop: '10px' }}>
-                            <CopyButton text={DOCS_URL} label="Copy documentation link" />
-                        </div>
                     </div>
                 )}
 
-                {formOpen && (
+                {form && (
                     <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', display: 'grid', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>
+                                {editing ? <>Manage “{editing.name}” <code style={{ ...code, marginLeft: '6px', fontWeight: 400 }}>{editing.key_prefix}…</code></> : 'New API key'}
+                            </h3>
+                            {editing && <span style={{ ...muted, fontSize: '12.5px' }}>Changes apply to the next request the system makes.</span>}
+                        </div>
+                        {form.mode === 'edit' && form.notice && (
+                            <p style={{ margin: 0, padding: '10px 14px', borderRadius: '8px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontSize: '13px', lineHeight: 1.5 }}>{form.notice}</p>
+                        )}
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '12px' }}>
                             <div>
                                 <label style={label} htmlFor="api-key-name">Name</label>
@@ -333,8 +488,11 @@ export const ApiKeys = () => {
                             </div>
                             <div>
                                 <label style={label} htmlFor="api-key-expiry">Expiry</label>
-                                <select id="api-key-expiry" value={expiry ?? ''} onChange={e => setExpiry(e.target.value ? Number(e.target.value) : null)} style={input}>
-                                    {EXPIRY.map(o => <option key={o.label} value={o.days ?? ''}>{o.label}</option>)}
+                                <select id="api-key-expiry" value={expiry} onChange={e => setExpiry(e.target.value)} style={input}>
+                                    {editing?.expires_at && (
+                                        <option value="keep">{`${expiredKeep ? 'Expired on' : 'Keep: until'} ${new Date(editing.expires_at).toLocaleDateString()}`}</option>
+                                    )}
+                                    {EXPIRY.map(o => <option key={o.value} value={o.value}>{editing && o.value !== 'never' ? `${o.label} from today` : o.label}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -344,19 +502,28 @@ export const ApiKeys = () => {
                                 Tick a workspace to include every board in it and in the workspaces under it, now and later; or tick single boards.
                             </p>
                             <AccessPicker
+                                key={editing?.id ?? 'new'}
                                 folders={folders}
                                 boards={boards}
                                 chosenFolders={chosenFolders}
                                 chosenBoards={chosenBoards}
                                 onFolders={setChosenFolders}
                                 onBoards={setChosenBoards}
+                                defaultOpen={openFolders}
                             />
                         </div>
                         {formError && <p style={{ margin: 0, color: '#b91c1c', fontSize: '13px' }}>{formError}</p>}
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                            <button type="button" style={secondary} onClick={resetForm}>Cancel</button>
-                            <button type="button" style={{ ...primary, opacity: saving ? 0.7 : 1 }} onClick={create} disabled={saving}>
-                                <KeyRound size={15} /> {saving ? 'Creating…' : 'Create key'}
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            {editing && (
+                                <button type="button" style={{ ...secondary, marginRight: 'auto', color: '#b45309', borderColor: '#fde68a' }} onClick={() => setRotating(editing)} title="A new key in place of this one; the system using it needs the new one">
+                                    <RefreshCw size={14} /> Regenerate key
+                                </button>
+                            )}
+                            <button type="button" style={secondary} onClick={closeForm}>Cancel</button>
+                            <button type="button" style={{ ...primary, opacity: saving ? 0.7 : 1 }} onClick={editing ? save : create} disabled={saving}>
+                                {editing
+                                    ? <><Check size={15} /> {saving ? 'Saving…' : 'Save changes'}</>
+                                    : <><KeyRound size={15} /> {saving ? 'Creating…' : 'Create key'}</>}
                             </button>
                         </div>
                     </div>
@@ -375,22 +542,24 @@ export const ApiKeys = () => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                    {['Name', 'Key', 'Reads', 'Created', 'Last used', 'Status', ''].map(h => <th key={h} style={{ padding: '10px 16px', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>)}
+                                    {['Name', 'Reads', 'Last used', 'Status', ''].map(h => <th key={h} style={{ padding: '10px 16px', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>)}
                                 </tr>
                             </thead>
                             <tbody>
                                 {keys.map(k => {
                                     const s = statusOf(k);
                                     const a = access(k);
+                                    const copyState = copying?.id === k.id ? copying.state : null;
                                     return (
-                                        <tr key={k.id} style={{ borderTop: '1px solid #f1f5f9', opacity: k.revoked_at ? 0.65 : 1 }}>
-                                            <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>{k.name}</td>
-                                            <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}><code style={code}>{k.key_prefix}…</code></td>
-                                            <td style={{ padding: '12px 16px', color: '#334155' }} title={a.detail}>{a.summary}</td>
-                                            <td style={{ padding: '12px 16px', color: '#475569', whiteSpace: 'nowrap' }}>
-                                                {when(k.created_at)}
-                                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{(k.created_by && names.get(k.created_by)) || '—'}{k.expires_at ? ` · until ${new Date(k.expires_at).toLocaleDateString()}` : ''}</div>
+                                        <tr key={k.id} style={{ borderTop: '1px solid #f1f5f9', opacity: k.revoked_at ? 0.65 : 1, backgroundColor: editing?.id === k.id ? '#f5f3ff' : undefined }}>
+                                            <td style={{ padding: '12px 16px', minWidth: '220px' }}>
+                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{k.name}</div>
+                                                <div style={{ marginTop: '4px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
+                                                    <code style={{ ...code, fontSize: '11.5px', marginRight: '6px' }}>{k.key_prefix}…</code>
+                                                    {`Created ${new Date(k.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}${k.created_by && names.get(k.created_by) ? ` by ${names.get(k.created_by)}` : ''}${k.expires_at ? ` · until ${new Date(k.expires_at).toLocaleDateString()}` : ''}`}
+                                                </div>
                                             </td>
+                                            <td style={{ padding: '12px 16px', color: '#334155', whiteSpace: 'nowrap' }} title={a.detail}>{a.summary}</td>
                                             <td style={{ padding: '12px 16px', color: '#475569', whiteSpace: 'nowrap' }}>
                                                 {k.last_used_at ? when(k.last_used_at) : 'Never'}
                                                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>{`${Number(k.request_count).toLocaleString()} request${Number(k.request_count) === 1 ? '' : 's'}`}</div>
@@ -400,7 +569,22 @@ export const ApiKeys = () => {
                                             </td>
                                             <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                                                 {!k.revoked_at && (
-                                                    <button type="button" onClick={() => setRevoking(k)} style={{ ...secondary, color: '#b91c1c', borderColor: '#fecaca' }}>Revoke</button>
+                                                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyShare(k)}
+                                                            disabled={copyState === 'busy'}
+                                                            style={{ ...secondary, color: '#4338ca', borderColor: '#c7d2fe', whiteSpace: 'nowrap' }}
+                                                            title={k.copyable ? 'Copy the name, key and API documentation link, to send to the system’s developer' : 'This key isn’t kept: regenerate it under Manage to copy it'}
+                                                        >
+                                                            {copyState === 'done' ? <Check size={14} /> : <Copy size={14} />}
+                                                            {copyState === 'busy' ? 'Copying…' : copyState === 'done' ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                        <button type="button" onClick={() => openManage(k)} style={{ ...secondary, whiteSpace: 'nowrap' }}>
+                                                            <Settings2 size={14} /> Manage
+                                                        </button>
+                                                        <button type="button" onClick={() => setRevoking(k)} style={{ ...secondary, color: '#b91c1c', borderColor: '#fecaca' }}>Revoke</button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>
@@ -424,8 +608,8 @@ export const ApiKeys = () => {
                 </div>
                 <ol style={{ margin: '0 0 16px', padding: 0, listStyle: 'none', display: 'grid', gap: '12px' }}>
                     {[
-                        ['Create a key here for that system', 'Name it after the system, and tick only the workspaces and boards it needs. A ticked workspace includes everything under it, and boards added to it later. Private (PIN) boards and the Trash are never included.'],
-                        ['Give the key to its developer, privately', 'It is shown only once. Send it with the documentation link; they keep it on that system’s server. Browsers can’t call the API, so it can’t end up in a web page.'],
+                        ['Create a key here for that system', 'Name it after the system, and tick only the workspaces and boards it needs. A ticked workspace includes everything under it, and boards added to it later. Private (PIN) boards and the Trash are never included. Manage changes that later.'],
+                        ['Send it to its developer, privately', 'Copy puts the key’s name, the key and the documentation link in one message. They keep the key on that system’s server; browsers can’t call the API, so it can’t end up in a web page.'],
                         ['The system reads with it', `It sends the key in the Authorization header of a GET request to ${BASE_URL}. It can read, never change; at most 120 requests a minute. Each request shows up in this key’s Last used.`],
                         ['Revoke it when it’s no longer needed', 'Revoke stops the key at once. A system that still uses it gets 401 until it is given a new key.'],
                     ].map(([title, text], i) => (
@@ -452,6 +636,15 @@ export const ApiKeys = () => {
                 variant="danger"
                 onConfirm={() => revoking && revoke(revoking)}
                 onCancel={() => setRevoking(null)}
+            />
+            <ConfirmModal
+                isOpen={!!rotating}
+                title="Regenerate this API key?"
+                message={rotating ? `“${rotating.name}” gets a new key, and the one it has now stops working at once. The system using it needs the new key — you can copy it straight after.` : ''}
+                confirmText="Regenerate key"
+                variant="danger"
+                onConfirm={() => rotating && rotate(rotating)}
+                onCancel={() => setRotating(null)}
             />
         </div>
     );

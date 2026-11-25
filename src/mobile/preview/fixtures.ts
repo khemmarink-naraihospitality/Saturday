@@ -351,14 +351,18 @@ export const trashPreviewCounts = [
     { kind: 'update', n: 1 }, { kind: 'item', n: 3 }, { kind: 'column', n: 1 }, { kind: 'group', n: 1 }, { kind: 'board', n: 1 }, { kind: 'workspace', n: 1 },
 ];
 
-// Admin › API Keys in the preview: one key in use, one revoked.
+// Admin › API Keys in the preview: one key in use, one made before keys were kept (Copy sends it to Manage), one revoked.
 export const apiKeyPreviewRows = [
     {
         id: 'key-1', name: 'Power Automate — IT requests', key_prefix: 'nhg_Q7f2xK9a', workspace_ids: ['ws-bt'], board_ids: [],
-        created_by: ME.id, created_at: daysAgo(12), expires_at: null, last_used_at: daysAgo(0.02), request_count: 1843, revoked_at: null, revoked_by: null,
+        created_by: ME.id, created_at: daysAgo(12), expires_at: null, last_used_at: daysAgo(0.02), request_count: 1843, revoked_at: null, revoked_by: null, copyable: true,
+    },
+    {
+        id: 'key-3', name: 'Olivier', key_prefix: 'nhg_ENIxk_8g', workspace_ids: ['ws-btd', 'ws-fin'], board_ids: [],
+        created_by: ME.id, created_at: daysAgo(0.1), expires_at: null, last_used_at: null, request_count: 0, revoked_at: null, revoked_by: null, copyable: false,
     },
     {
         id: 'key-2', name: 'Old reporting script', key_prefix: 'nhg_b3LmP0wz', workspace_ids: [], board_ids: ['b-it-bo', 'b-tech'],
-        created_by: ME.id, created_at: daysAgo(40), expires_at: null, last_used_at: daysAgo(9), request_count: 212, revoked_at: daysAgo(8), revoked_by: ME.id,
+        created_by: ME.id, created_at: daysAgo(40), expires_at: null, last_used_at: daysAgo(9), request_count: 212, revoked_at: daysAgo(8), revoked_by: ME.id, copyable: false,
     },
 ];

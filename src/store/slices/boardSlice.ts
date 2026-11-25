@@ -912,7 +912,7 @@ export const createBoardSlice: StateCreator<
             });
         // A formula names its columns by id; the copy's point at the copy's columns.
         newColumns.forEach(c => {
-            if (c.formula) c.formula = remapFormula(c.formula, id => columnIdMap[id]);
+            if (c.formula) c.formula = remapFormula(c.formula, id => columnIdMap[id], undefined, g => groupIdMap[g]);
         });
 
         // Sub-items point at their parent by id, and every item gets a new one, so

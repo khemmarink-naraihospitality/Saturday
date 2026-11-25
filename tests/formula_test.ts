@@ -10,6 +10,7 @@ import {
     parseFormula, evaluate, todayDay, dayFromISO, isoFromDay, fDate, toText,
     evaluateColumn, formulaCell, formulaDisplay, summarizeFormula, remapFormula, checkExpression, checkRules,
     toEditable, fromEditable, compareFormulaDisplays, formulaExportValue, formulaColumnIds,
+    hasMoveRules, ruleMoveTarget, ruleMoveFor,
     type FValue, type FormulaContext,
 } from '../src/lib/formula';
 import { RULE_COLORS, calcExamples, ruleTemplates, suggestLabelColor } from '../src/lib/formula/catalog';
@@ -368,6 +369,42 @@ check('templates are checked complete', checkRules({ mode: 'rules', ...templates
 check('no templates without the columns', ruleTemplates([NOTES]).length === 0);
 check('examples use the board\'s titles', calcExamples([...BASE]).some(e => e.expr.includes('{Timeline#End}')));
 check('example formulas read fine', calcExamples([...BASE]).every(e => checkExpression(e.expr, BASE) === null), JSON.stringify(calcExamples([...BASE]).map(e => [e.expr, checkExpression(e.expr, BASE)])));
+
+// ---- moving a task to a group ------------------------------------------------------
+const moveConfig: FormulaConfig = {
+    mode: 'rules',
+    rules: [
+        { id: 'm1', match: 'all', conditions: [{ id: 'a', columnId: 'c-status', op: 'is', value: ['o-done'] }], then: { kind: 'empty' }, moveToGroup: 'g-done' },
+        { id: 'm2', match: 'all', conditions: [{ id: 'a', columnId: 'c-tl', part: 'end', op: 'past' }], then: { kind: 'label', text: 'Overdue', color: '#E53935' }, moveToGroup: 'g-late' },
+        { id: 'm3', match: 'all', conditions: [{ id: 'a', columnId: 'c-price', op: 'gt', value: 100 }], then: { kind: 'label', text: 'Big', color: '#E53935' } },
+    ],
+    otherwise: { kind: 'empty' },
+};
+const MOVER = col('c-move', 'Route', 'formula', { formula: moveConfig });
+const SIB = [...BASE, MOVER];
+const groups = new Set(['g-todo', 'g-done', 'g-late']);
+check('a rules column with a move', hasMoveRules(MOVER));
+check('a sub-item column never moves', !hasMoveRules({ ...MOVER, scope: 'subitem', groupId: 'g-todo' }));
+check('a calc column never moves', !hasMoveRules(calcCol('1')));
+check('done → its group', ruleMoveTarget(MOVER, row({ 'c-status': 'o-done' }), SIB, ctx) === 'g-done');
+check('the first rule that holds decides the group', ruleMoveTarget(MOVER, row({ ...late, 'c-status': 'o-done' }), SIB, ctx) === 'g-done');
+check('a holding rule with no group moves nothing', ruleMoveTarget(MOVER, row({ 'c-price': 500 }), SIB, ctx) === undefined);
+check('no rule holds → stays', ruleMoveTarget(MOVER, row({ 'c-status': 'o-work' }), SIB, ctx) === undefined);
+const edit = (before: Record<string, unknown>, after: Record<string, unknown>, groupId = 'g-todo') =>
+    ruleMoveFor([STATUS, MOVER], { row: row(before), ctx }, { row: row(after), ctx, groupId }, SIB, groups);
+check('an edit that makes it hold moves it', edit({ 'c-status': 'o-work' }, { 'c-status': 'o-done' })?.groupId === 'g-done');
+check('an edit that leaves it holding does not', edit({ 'c-status': 'o-done' }, { 'c-status': 'o-done', 'c-price': 3 }) === undefined);
+check('already in the group: nothing to do', edit({ 'c-status': 'o-work' }, { 'c-status': 'o-done' }, 'g-done') === undefined);
+check('no longer holding: it stays where it is', edit({ 'c-status': 'o-done' }, { 'c-status': 'o-work' }, 'g-done') === undefined);
+check('a deleted group is never a target', ruleMoveFor([MOVER], { row: row({}), ctx }, { row: row({ 'c-status': 'o-done' }), ctx, groupId: 'g-todo' }, SIB, new Set(['g-todo'])) === undefined);
+const dueToday = { 'c-tl': { from: '2026-10-01', to: '2026-10-31' }, 'c-status': 'o-work' };
+const yesterday = { ...ctx, today: TODAY - 1 };
+check('a date passing moves it', ruleMoveFor([MOVER], { row: row(dueToday), ctx: yesterday }, { row: row(dueToday), ctx, groupId: 'g-todo' }, SIB, groups)?.groupId === 'g-late');
+check('the same day twice moves nothing', ruleMoveFor([MOVER], { row: row(dueToday), ctx }, { row: row(dueToday), ctx, groupId: 'g-todo' }, SIB, groups) === undefined);
+const copied = remapFormula(moveConfig, id => id, undefined, g => (g === 'g-done' ? 'n-done' : undefined))!;
+check('a copy moves to the copy\'s group', copied.rules![0].moveToGroup === 'n-done');
+check('a group the copy lacks is dropped', copied.rules![1].moveToGroup === undefined);
+check('without a group map the group stays', remapFormula(moveConfig, id => id)!.rules![1].moveToGroup === 'g-late');
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

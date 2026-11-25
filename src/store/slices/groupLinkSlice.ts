@@ -169,7 +169,9 @@ export const createGroupLinkSlice: StateCreator<
             const formula = remapFormula(
                 formulaFromRow(source.formula),
                 id => columnMapSourceToCurrent[id]?.targetColumnId,
-                (columnId, optionId) => sourceById.has(columnId) ? columnMapSourceToCurrent[columnId]?.optionMap?.[optionId] : undefined
+                (columnId, optionId) => sourceById.has(columnId) ? columnMapSourceToCurrent[columnId]?.optionMap?.[optionId] : undefined,
+                // The source board's groups aren't this board's: no "move to" comes along.
+                () => undefined
             );
             return { ...row, formula: formula ?? null };
         };

@@ -14,6 +14,13 @@ import { describeChange } from '../../lib/itemChangeText';
 import { peopleToNotify } from '../../lib/itemPeople';
 import { terms } from '../../lib/terms';
 import { threadOf } from '../../lib/updates';
+import { formulaContext, hasMoveRules, ruleMoveFor } from '../../lib/formula';
+
+/** Moving given rows instead of the ticked ones, and why (a Formula rule's column). */
+export interface MoveOptions {
+    itemIds?: string[];
+    byRule?: string;
+}
 
 // Rows changing place: `rows` leave the columns `from` for the item columns
 // (scope 'item') or a group's sub-item columns, and with `regroup` their
@@ -252,7 +259,11 @@ export interface ItemSlice {
     duplicateSelectedItems: () => Promise<void>;
     hideSelectedItems: () => Promise<void>;
     unhideSelectedItems: () => Promise<void>;
-    moveSelectedItemsToTarget: (groupId: string, targetBoardId: string, parentId?: string | null) => Promise<void>;
+    moveSelectedItemsToTarget: (groupId: string, targetBoardId: string, parentId?: string | null, options?: MoveOptions) => Promise<void>;
+    /** Formula rules that move a task (THEN … move to a group): run on the rows an edit just changed, as they were before it. */
+    applyRuleMoves: (before: Item[]) => Promise<void>;
+    /** The same for a date passing: once a day per Formula column, by the first editor's browser to open the board. */
+    checkDailyRuleMoves: (boardId: string, today: number) => Promise<void>;
 
     // UI/Drafts
     drafts: Record<string, string>;
@@ -400,6 +411,8 @@ export const createItemSlice: StateCreator<
         const currentItem = get().boards.find(b => b.id === activeBoardId)?.items.find(i => i.id === itemId);
         if (currentItem) {
             await supabase.from('items').update({ values: currentItem.values }).eq('id', itemId);
+            // A Formula rule this edit makes hold may move the task to another group.
+            if (item && !item.parentId) void get().applyRuleMoves([item]);
             if (logMeta) {
                 if (column?.type === 'status') {
                     get().logActivity('item_status_updated', 'item', itemId, logMeta);
@@ -515,6 +528,7 @@ export const createItemSlice: StateCreator<
         }));
 
         await supabase.from('items').update({ title: newTitle }).eq('id', itemId);
+        if (oldItem && !oldItem.parentId && oldTitle !== newTitle) void get().applyRuleMoves([oldItem]);
 
         if (shouldLog && oldTitle && oldTitle !== newTitle) {
             get().logActivity('item_renamed', 'item', itemId, {
@@ -1203,9 +1217,12 @@ export const createItemSlice: StateCreator<
         await supabase.from('items').update({ is_hidden: false }).in('id', selectedItemIds);
     },
 
-    moveSelectedItemsToTarget: async (groupId, targetBoardId, parentId = null) => {
-        const { activeBoardId, selectedItemIds, boards } = get();
+    moveSelectedItemsToTarget: async (groupId, targetBoardId, parentId = null, options) => {
+        const { activeBoardId, boards } = get();
         if (!activeBoardId) return;
+        // Given rows (a Formula rule's) leave the ticked ones ticked.
+        const selectedItemIds = options?.itemIds ?? get().selectedItemIds;
+        const clearSelection = options?.itemIds ? {} : { selectedItemIds: [] as string[] };
 
         const isCrossBoard = targetBoardId !== activeBoardId;
 
@@ -1303,7 +1320,7 @@ export const createItemSlice: StateCreator<
                     }
                     return b;
                 }),
-                selectedItemIds: []
+                ...clearSelection
             }));
 
             // Parents first: a sub-item's group/board are those of the parent it
@@ -1373,7 +1390,7 @@ export const createItemSlice: StateCreator<
                         return { ...g, items: g.items.filter(i => !selectedItemIds.includes(i.id)) };
                     })
                 } : b),
-                selectedItemIds: []
+                ...clearSelection
             }));
 
             await supabase.from('items').update({ group_id: groupId, parent_id: parentId }).in('id', selectedItemIds);
@@ -1397,6 +1414,7 @@ export const createItemSlice: StateCreator<
             count,
             item_titles: movedTitles.slice(0, 5),
             as_subitems: !!parentId,
+            ...(options?.byRule ? { by_rule: options.byRule } : {}),
         };
         // One entry on each board it touches: the Activity panel and the access rule
         // for who may read an entry both go by the board it is filed under.
@@ -1406,13 +1424,84 @@ export const createItemSlice: StateCreator<
         };
         logMove('items_moved');
         const what = count === 1 ? `"${movedTitles[0]}"` : `${count} tasks`;
+        const why = options?.byRule ? ` by the rule in "${options.byRule}"` : '';
         offerUndo(
-            isCrossBoard ? `Moved ${what} to ${toBoardTitle ? `"${toBoardTitle}"` : `another ${terms().board}`}` : `Moved ${what} to ${toGroupTitle ? `"${toGroupTitle}"` : `another ${terms().group}`}`,
+            isCrossBoard ? `Moved ${what} to ${toBoardTitle ? `"${toBoardTitle}"` : `another ${terms().board}`}` : `Moved ${what} to ${toGroupTitle ? `"${toGroupTitle}"` : `another ${terms().group}`}${why}`,
             async () => {
                 await restoreMovedRows(set, get, originals);
                 logMove('items_move_undone');
             }
         );
+    },
+
+    applyRuleMoves: async (before) => {
+        const { activeBoardId } = get();
+        const board = get().boards.find(b => b.id === activeBoardId);
+        if (!activeBoardId || !board) return;
+        const movers = board.columns.filter(hasMoveRules);
+        if (movers.length === 0) return;
+        const siblings = itemColumns(board.columns);
+        const groupIds = new Set(board.groups.map(g => g.id));
+        const ctx = formulaContext();
+        const plan = new Map<string, { ids: string[]; rule: string }>();
+        before.forEach(old => {
+            const now = board.items.find(i => i.id === old.id);
+            if (!now || now.parentId) return;
+            const move = ruleMoveFor(movers, { row: old, ctx }, { row: now, ctx, groupId: now.groupId }, siblings, groupIds);
+            if (!move) return;
+            const entry = plan.get(move.groupId) || { ids: [], rule: move.column.title };
+            entry.ids.push(now.id);
+            plan.set(move.groupId, entry);
+        });
+        for (const [groupId, { ids, rule }] of plan) {
+            await get().moveSelectedItemsToTarget(groupId, activeBoardId, null, { itemIds: ids, byRule: rule });
+        }
+    },
+
+    checkDailyRuleMoves: async (boardId, today) => {
+        if (boardId !== get().activeBoardId) return;
+        const board = get().boards.find(b => b.id === boardId);
+        if (!board?.isDataLoaded) return;
+        const plan = new Map<string, { ids: string[]; rule: string }>();
+        const planned = new Set<string>();
+        for (const column of board.columns.filter(hasMoveRules)) {
+            const config = column.formula!;
+            const last = config.movesCheckedDay;
+            if (typeof last === 'number' && last >= today) continue;
+            // Claim the day first, so only one browser acts on it: the write
+            // lands only while the day stored is still the one read here.
+            const next = { ...config, movesCheckedDay: today };
+            const claim = supabase.from('columns').update({ formula: next }).eq('id', column.id);
+            const { data, error } = await (typeof last === 'number'
+                ? claim.filter('formula->>movesCheckedDay', 'eq', String(last))
+                : claim.is('formula->movesCheckedDay', null)
+            ).select('id');
+            if (error || !data?.length) continue;
+            set(state => ({
+                boards: state.boards.map(b => b.id === boardId ? { ...b, columns: b.columns.map(c => c.id === column.id ? { ...c, formula: next } : c) } : b),
+                lastOptimisticUpdate: { ...state.lastOptimisticUpdate, [column.id]: Date.now() }
+            }));
+            // Never checked before (a rule saved before this existed): from today on.
+            if (typeof last !== 'number') continue;
+            const current = get().boards.find(b => b.id === boardId);
+            if (!current) return;
+            const siblings = itemColumns(current.columns);
+            const groupIds = new Set(current.groups.map(g => g.id));
+            const then = formulaContext(last);
+            const now = formulaContext(today);
+            current.items.forEach(item => {
+                if (item.parentId || planned.has(item.id)) return;
+                const move = ruleMoveFor([column], { row: item, ctx: then }, { row: item, ctx: now, groupId: item.groupId }, siblings, groupIds);
+                if (!move) return;
+                planned.add(item.id);
+                const entry = plan.get(move.groupId) || { ids: [], rule: column.title };
+                entry.ids.push(item.id);
+                plan.set(move.groupId, entry);
+            });
+        }
+        for (const [groupId, { ids, rule }] of plan) {
+            await get().moveSelectedItemsToTarget(groupId, boardId, null, { itemIds: ids, byRule: rule });
+        }
     },
 
     setDraft: (itemId, content) => set(state => ({ drafts: { ...state.drafts, [itemId]: content } })),

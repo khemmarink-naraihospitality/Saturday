@@ -3,6 +3,7 @@ import { ChevronDown, MoreHorizontal, Plus, Star } from 'lucide-react';
 import './board.css';
 import { useBoardStore } from '../../store/useBoardStore';
 import { usePermission } from '../../hooks/usePermission';
+import { useDailyRuleMoves } from '../../hooks/useDailyRuleMoves';
 import { isBoardUnlocked } from '../../lib/boardPinUnlock';
 import { PinLockScreen } from '../../components/board/PinLockScreen';
 import { CenteredSpinner, EmptyState, IconButton, PrimaryButton, ScreenHeader } from '../ui';
@@ -39,6 +40,7 @@ export const BoardScreen = ({ boardId }: { boardId: string }) => {
     const openViewsSheet = useMobileUI(state => state.openViewsSheet);
     const { can } = usePermission();
     const canEdit = can('edit_items');
+    useDailyRuleMoves();
 
     const [isUnlocked, setIsUnlocked] = useState(() => isBoardUnlocked(boardId));
     const [sheet, setSheet] = useState<'actions' | 'new' | null>(null);

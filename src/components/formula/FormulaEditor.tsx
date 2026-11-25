@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Calculator, CircleAlert, GitBranch, Sigma, X, CalendarDays } from 'lucide-react';
+import { ArrowRight, Calculator, CircleAlert, GitBranch, Sigma, X, CalendarDays } from 'lucide-react';
 import type { Column, FormulaConfig, FormulaOutcome, FormulaRule } from '../../types';
 import { useBoardStore } from '../../store/useBoardStore';
 import { useToday } from '../../hooks/useToday';
@@ -9,11 +9,11 @@ import { useTerms } from '../../lib/terms';
 import { siblingColumns } from '../../lib/columnScope';
 import { CURRENCY_OPTIONS } from '../../utils/format';
 import {
-    checkExpression, checkRules, formatDay, formulaCell, formulaContext, formulaRows, fromEditable, toEditable,
+    checkExpression, checkRules, formatDay, formulaCell, formulaContext, formulaRows, fromEditable, hasMoveRules, ruleMoveTarget, toEditable,
     type FormulaDisplay,
 } from '../../lib/formula';
 import { CalcEditor } from './CalcEditor';
-import { RulesEditor, type Person } from './RulesEditor';
+import { RulesEditor, type MoveGroup, type Person } from './RulesEditor';
 import { ColorButton, ResultChip, Select } from './parts';
 import { RULE_COLORS, suggestLabelColor } from '../../lib/formula/catalog';
 
@@ -38,6 +38,7 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
     const members = useBoardStore(state => state.activeBoardMembers);
     const setColumnFormula = useBoardStore(state => state.setColumnFormula);
     const updateColumnTitle = useBoardStore(state => state.updateColumnTitle);
+    const moveItems = useBoardStore(state => state.moveSelectedItemsToTarget);
     const today = useToday();
     const newUi = useNewUi();
     const t = useTerms();
@@ -56,6 +57,8 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
     const [numberFormat, setNumberFormat] = useState<NumberFormat>(column?.numberFormat ?? 'number');
     const [currencyCode, setCurrencyCode] = useState(column?.currencyCode ?? 'THB');
     const [saving, setSaving] = useState(false);
+    // Rules that move tasks: also move the ones that already match when saved.
+    const [moveNow, setMoveNow] = useState(true);
     const [saveFailed, setSaveFailed] = useState(false);
     // A formula is wrong half the time it is being typed: say so only once
     // typing pauses.
@@ -74,8 +77,13 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
         return { id: m.user_id, name: p?.full_name || p?.email || 'Someone' };
     }).sort((a, b) => a.name.localeCompare(b.name)), [members]);
 
+    // Where a rule can move a task: the board's groups (an item column only).
+    const groups = useMemo<MoveGroup[] | undefined>(() => (board && column && column.scope !== 'subitem'
+        ? board.groups.map(g => ({ id: g.id, title: g.title, color: g.color }))
+        : undefined), [board, column]);
+
     // What would be saved, and what still stops it.
-    const { config, problem } = useMemo(() => {
+    const { config, problem: ruleProblem } = useMemo(() => {
         const cleanColors = Object.fromEntries(Object.entries(labelColors).filter(([k]) => k.trim()));
         const base = { decimals, labelColors: Object.keys(cleanColors).length ? cleanColors : undefined };
         if (mode === 'calc') {
@@ -94,6 +102,11 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
             problem: checkRules(editable, siblings, columnId),
         };
     }, [mode, text, rules, otherwise, decimals, labelColors, siblings, columnId]);
+    // A rule can't move tasks to a group that has since been deleted.
+    const lostGroup = mode === 'rules' && groups ? rules.findIndex(r => r.moveToGroup && !groups.some(g => g.id === r.moveToGroup)) : -1;
+    const problem = ruleProblem ?? (lostGroup >= 0
+        ? { message: `${rules.length > 1 ? `IF ${lostGroup + 1}` : 'IF'} → THEN: the ${t.group} to move to was deleted — choose another` }
+        : null);
 
     const snapshot = JSON.stringify({ title, config, numberFormat, currencyCode });
     if (!initial.current) initial.current = snapshot;
@@ -108,6 +121,21 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
         return rows.map(r => ({ id: r.id, title: r.title, display: formulaCell(draftColumn, r, siblings, ctx) }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [draftColumn, rows, siblings, today, members]);
+    // Tasks the rules would move if saved now: shown on the preview's rows, and
+    // moved on save unless that is switched off.
+    const pending = useMemo(() => {
+        const moves = new Map<string, string>();
+        if (!board || !column || !draftColumn || mode !== 'rules' || ruleProblem || !groups || !hasMoveRules(draftColumn)) return moves;
+        const ctx = formulaContext(today);
+        const groupIds = new Set(groups.map(g => g.id));
+        formulaRows(board, column).forEach(item => {
+            const target = ruleMoveTarget(draftColumn, item, siblings, ctx);
+            if (target && target !== item.groupId && groupIds.has(target)) moves.set(item.id, target);
+        });
+        return moves;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [board, column, draftColumn, mode, ruleProblem, groups, siblings, today, members]);
+    const groupTitle = (id: string) => groups?.find(g => g.id === id)?.title || t.group;
     const hasNumbers = results.some(r => r.display.kind === 'number');
     const textResults = useMemo(() => {
         const seen = new Map<string, number>();
@@ -126,8 +154,18 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
         if (problem || saving || !column) return;
         setSaving(true);
         setSaveFailed(false);
-        const ok = await setColumnFormula(columnId, config, { numberFormat, currencyCode: numberFormat === 'currency' ? currencyCode : undefined });
+        // Rules that move tasks start their daily date check from today; what
+        // matches already is moved here (or left, if switched off).
+        const saved = hasMoveRules({ ...column, formula: config }) ? { ...config, movesCheckedDay: today } : config;
+        const ok = await setColumnFormula(columnId, saved, { numberFormat, currencyCode: numberFormat === 'currency' ? currencyCode : undefined });
         if (ok && title.trim() && title.trim() !== column.title) await updateColumnTitle(columnId, title.trim());
+        if (ok && moveNow && pending.size > 0) {
+            const byGroup = new Map<string, string[]>();
+            pending.forEach((groupId, itemId) => byGroup.set(groupId, [...(byGroup.get(groupId) || []), itemId]));
+            for (const [groupId, itemIds] of byGroup) {
+                await moveItems(groupId, boardId, null, { itemIds, byRule: title.trim() || column.title });
+            }
+        }
         setSaving(false);
         if (ok) onClose();
         else setSaveFailed(true);
@@ -247,7 +285,7 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
                         </CalcEditor>
                     ) : (
                         <>
-                            <RulesEditor rules={rules} onRules={setRules} otherwise={otherwise} onOtherwise={setOtherwise} columns={siblings} selfId={columnId} people={people} />
+                            <RulesEditor rules={rules} onRules={setRules} otherwise={otherwise} onOtherwise={setOtherwise} columns={siblings} selfId={columnId} people={people} groups={groups} />
                             {formatPanel()}
                         </>
                     )}
@@ -269,11 +307,27 @@ export const FormulaEditor = ({ boardId, columnId, onClose }: { boardId: string;
                                 <li key={r.id} className="fx-preview__row">
                                     <span className="fx-preview__name" title={r.title}>{r.title || 'Untitled'}</span>
                                     <span className="fx-preview__value"><ResultChip display={r.display} newUi={newUi} /></span>
+                                    {pending.has(r.id) && (
+                                        <span className="fx-preview__move" title={`Moves to ${groupTitle(pending.get(r.id)!)}`}>
+                                            <ArrowRight size={12} aria-hidden="true" />{groupTitle(pending.get(r.id)!)}
+                                        </span>
+                                    )}
                                 </li>
                             ))}
                         </ul>
                     ) : (
                         <p className="fx-preview__none">{`Results appear here as soon as this ${t.board} has ${scopeWords}.`}</p>
+                    )}
+                    {pending.size > 0 && (
+                        <label className="fx-move-now">
+                            <input type="checkbox" checked={moveNow} onChange={e => setMoveNow(e.target.checked)} />
+                            <span>{`Also move the ${pending.size} ${pending.size === 1 ? t.item : t.items} that match now`}</span>
+                            <span className="fx-hint">{(() => {
+                                const counts = new Map<string, number>();
+                                pending.forEach(g => counts.set(g, (counts.get(g) || 0) + 1));
+                                return [...counts].map(([g, n]) => `${n} to ${groupTitle(g)}`).join(' · ');
+                            })()}</span>
+                        </label>
                     )}
                 </section>
 

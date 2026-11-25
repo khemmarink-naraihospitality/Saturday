@@ -1,5 +1,5 @@
 import type {
-    Board, Column, FormulaColumnRef, FormulaCondition, FormulaConditionOp, FormulaConfig, FormulaOutcome, FormulaPart, Item,
+    Board, Column, FormulaColumnRef, FormulaCondition, FormulaConditionOp, FormulaConfig, FormulaOutcome, FormulaPart, FormulaRule, Item,
 } from '../../types';
 import {
     dayFromISO, evaluate, fDate, fError, fLabel, formatDay, isBlank, isDate, isError, isLabel, isoFromDay, parseFormula,
@@ -384,14 +384,20 @@ const outcomeValue = (outcome: FormulaOutcome | undefined, env: RowEnv): FValue 
     }
 };
 
-const evaluateRules = (config: FormulaConfig, env: RowEnv): FValue => {
+/** The first rule whose conditions hold, or undefined (ELSE). */
+const holdingRule = (config: FormulaConfig, env: RowEnv): FormulaRule | undefined => {
     for (const rule of config.rules || []) {
         const results = rule.conditions.map(c => conditionHolds(c, env)).filter((r): r is boolean => r !== null);
         if (results.length === 0) continue;
         const holds = rule.match === 'any' ? results.some(Boolean) : results.every(Boolean);
-        if (holds) return outcomeValue(rule.then, env);
+        if (holds) return rule;
     }
-    return outcomeValue(config.otherwise, env);
+    return undefined;
+};
+
+const evaluateRules = (config: FormulaConfig, env: RowEnv): FValue => {
+    const rule = holdingRule(config, env);
+    return rule ? outcomeValue(rule.then, env) : outcomeValue(config.otherwise, env);
 };
 
 // ---- a column's result -------------------------------------------------------------
@@ -416,6 +422,46 @@ function evaluateColumnIn(column: Column, row: FormulaRow, siblings: Column[], c
  */
 export const evaluateColumn = (column: Column, row: FormulaRow, siblings: Column[], ctx: FormulaContext = formulaContext()): FValue =>
     evaluateColumnIn(column, row, siblings, ctx, new Set());
+
+// ---- moving a task to a group ---------------------------------------------------
+
+/** Whether a Formula column has a rule that moves tasks: If / Then / Else on the item columns. */
+export const hasMoveRules = (column: Pick<Column, 'formula' | 'scope'>): boolean =>
+    column.scope !== 'subitem' && column.formula?.mode === 'rules' && !!column.formula.rules?.some(r => r.moveToGroup);
+
+/**
+ * The group a row's rules send it to: that of the first rule that holds, when
+ * it has one. A rule further down never moves a row an earlier one holds for,
+ * just as it never decides what the cell shows.
+ */
+export const ruleMoveTarget = (column: Column, row: FormulaRow, siblings: Column[], ctx: FormulaContext = formulaContext()): string | undefined => {
+    if (!hasMoveRules(column)) return undefined;
+    const visiting = new Set([column.id]);
+    return holdingRule(column.formula!, { row, siblings, ctx, visiting })?.moveToGroup || undefined;
+};
+
+/**
+ * Where a row has just come to be sent: the first move-rule column (in board
+ * order) whose target is different from what it was, while the row is not in
+ * that group already. `before` and `after` can be the row before and after an
+ * edit, or the same row on two days.
+ */
+export const ruleMoveFor = (
+    columns: Column[],
+    before: { row: FormulaRow; ctx: FormulaContext },
+    after: { row: FormulaRow; ctx: FormulaContext; groupId: string },
+    siblings: Column[],
+    groupIds: Set<string>,
+): { groupId: string; column: Column } | undefined => {
+    for (const column of columns) {
+        if (!hasMoveRules(column)) continue;
+        const target = ruleMoveTarget(column, after.row, siblings, after.ctx);
+        if (!target || target === ruleMoveTarget(column, before.row, siblings, before.ctx)) continue;
+        if (target === after.groupId || !groupIds.has(target)) return undefined;
+        return { groupId: target, column };
+    }
+    return undefined;
+};
 
 // ---- how a result reads -----------------------------------------------------------
 
@@ -550,6 +596,8 @@ export const remapFormula = (
     config: FormulaConfig | undefined | null,
     map: (columnId: string) => string | undefined,
     optionMap?: (columnId: string, optionId: string) => string | undefined,
+    /** The copy's group for a rule's "move to"; given, a group it has no copy of is dropped. */
+    groupMap?: (groupId: string) => string | undefined,
 ): FormulaConfig | undefined => {
     if (!config) return undefined;
     const id = (x: string) => (x === NAME_REF ? x : map(x) ?? x);
@@ -572,6 +620,7 @@ export const remapFormula = (
                         : c.value,
             })),
             then: outcome(rule.then),
+            moveToGroup: rule.moveToGroup && groupMap ? groupMap(rule.moveToGroup) : rule.moveToGroup,
         })),
         otherwise: config.otherwise ? outcome(config.otherwise) : config.otherwise,
     };

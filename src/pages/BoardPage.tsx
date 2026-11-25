@@ -12,6 +12,7 @@ import { LoadingScreen } from '../components/common/LoadingScreen';
 import { PinLockScreen } from '../components/board/PinLockScreen';
 import { isBoardUnlocked } from '../lib/boardPinUnlock';
 import { useTerms } from '../lib/terms';
+import { useDailyRuleMoves } from '../hooks/useDailyRuleMoves';
 
 export const BoardPage = () => {
     const activeBoardId = useBoardStore(state => state.activeBoardId);
@@ -19,6 +20,7 @@ export const BoardPage = () => {
     const loadBoardData = useBoardStore(state => state.loadBoardData);
     const t = useTerms();
     const activeBoard = boards.find(b => b.id === activeBoardId);
+    useDailyRuleMoves();
 
     const [isUnlocked, setIsUnlocked] = useState(() => !activeBoardId || isBoardUnlocked(activeBoardId));
 

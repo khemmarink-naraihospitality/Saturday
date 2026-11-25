@@ -100,7 +100,7 @@ export const backupService = {
                     });
                     // A Formula column names its columns by id: point it at the new ones.
                     mappedColumns.forEach((c: any) => {
-                        if (c.formula) c.formula = remapFormula(formulaFromRow(c.formula), id => columnIdMap.get(id)) ?? null;
+                        if (c.formula) c.formula = remapFormula(formulaFromRow(c.formula), id => columnIdMap.get(id), undefined, g => groupIdMap.get(g)) ?? null;
                     });
 
                     // Sub-items point at their parent by id, and every item gets a new

@@ -214,7 +214,7 @@ export const ActivityLogItem = ({ log, onClickTask, boardName }: { log: Activity
                         {undone
                             ? (sameBoard ? <> to {fromGroups ? <>{`${t.group} `}<strong>{fromGroups}</strong></> : `their previous ${t.group}`}</> : <> to <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null}, from <strong>{meta.to_board_title}</strong></>)
                             : (sameBoard
-                                ? <> {fromGroups ? <>{`from ${t.group} `}<strong>{fromGroups}</strong> </> : null}to {meta.as_subitems ? reword('sub-items', t) : <>{`${t.group} `}<strong>{meta.to_group_title}</strong></>}</>
+                                ? <> {fromGroups ? <>{`from ${t.group} `}<strong>{fromGroups}</strong> </> : null}to {meta.as_subitems ? reword('sub-items', t) : <>{`${t.group} `}<strong>{meta.to_group_title}</strong></>}{meta.by_rule ? <>, by the rule in <strong>{meta.by_rule}</strong></> : null}</>
                                 : <> from <strong>{meta.from_board_title}</strong>{fromGroups ? <> › <strong>{fromGroups}</strong></> : null} to <strong>{meta.to_board_title}</strong>{meta.to_group_title ? <> › <strong>{meta.to_group_title}</strong></> : null}</>)}
                     </span>
                 );

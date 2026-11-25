@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { ArrowDown, ArrowUp, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, FolderInput, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import type { Column, FormulaColumnRef, FormulaCondition, FormulaConditionOp, FormulaOutcome, FormulaPart, FormulaRule } from '../../types';
 import { NAME_REF, isColumnRef, nameRefName, refName, subjectKind } from '../../lib/formula';
 import { DEFAULT_DAYS, RULE_COLORS, daysSuffix, newConditionId, newRuleId, opInfo, opsFor, ruleTemplates } from '../../lib/formula/catalog';
@@ -7,13 +7,19 @@ import { tintLabel, LABEL_TEXT } from '../../lib/labelTint';
 import { FormulaInput } from './FormulaInput';
 import { makeSuggest, refEntries } from './CalcEditor';
 import { ColorButton, Select, TypeIcon } from './parts';
+import { useTerms } from '../../lib/terms';
 
 export interface Person { id: string; name: string }
+
+/** A group a rule can move a task to. */
+export interface MoveGroup { id: string; title: string; color: string }
 
 interface Ctx {
     /** The columns a rule can read: the set without the formula itself. */
     readable: Column[];
     people: Person[];
+    /** The board's groups, for "move to"; undefined on a sub-item column, which never moves rows. */
+    groups?: MoveGroup[];
 }
 
 const columnById = (ctx: Ctx, id: string) => ctx.readable.find(c => c.id === id);
@@ -390,6 +396,37 @@ export const OutcomeEditor = ({ ctx, outcome, onChange, statusLabels }: {
     );
 };
 
+// ---- and move the task ------------------------------------------------------------------
+
+/** THEN's second half: leave the task where it is, or move it to one of the board's groups. */
+const MoveToGroup = ({ groups, value, onChange }: {
+    groups: MoveGroup[];
+    value: string | undefined;
+    onChange: (groupId: string | undefined) => void;
+}) => {
+    const t = useTerms();
+    const chosen = value ? groups.find(g => g.id === value) : undefined;
+    return (
+        <div className={`fx-move${value ? ' is-on' : ''}`}>
+            <span className="fx-move__icon" aria-hidden="true"><FolderInput size={15} /></span>
+            <span className="fx-move__lead">{`and move the ${t.item} to`}</span>
+            <span className="fx-move__pick">
+                {chosen && <span className="fx-move__dot" style={{ backgroundColor: chosen.color }} aria-hidden="true" />}
+                <Select value={value || ''} onChange={v => onChange(v || undefined)} label={`Move the ${t.item} to a ${t.group}`} className={value ? '' : 'is-placeholder'}>
+                    <option value="">{`— stays in its ${t.group} —`}</option>
+                    {groups.map(g => <option key={g.id} value={g.id}>{g.title || `Untitled ${t.group}`}</option>)}
+                    {value && !chosen && <option value={value}>{`Deleted ${t.group}`}</option>}
+                </Select>
+            </span>
+            {value && (
+                <span className="fx-hint fx-move__hint">
+                    {`when this IF comes to hold: a change to the ${t.item}, or a date passing`}
+                </span>
+            )}
+        </div>
+    );
+};
+
 // ---- one IF -------------------------------------------------------------------------------
 
 const RuleCard = ({ ctx, rule, index, count, onChange, onRemove, onMove, statusLabels }: {
@@ -440,7 +477,16 @@ const RuleCard = ({ ctx, rule, index, count, onChange, onRemove, onMove, statusL
             </div>
             <div className="fx-rule__then">
                 <span className="fx-then-tag">THEN show</span>
-                <OutcomeEditor ctx={ctx} outcome={rule.then} onChange={then => onChange({ ...rule, then })} statusLabels={statusLabels} />
+                <div className="fx-then-body">
+                    <OutcomeEditor ctx={ctx} outcome={rule.then} onChange={then => onChange({ ...rule, then })} statusLabels={statusLabels} />
+                    {ctx.groups && (
+                        <MoveToGroup
+                            groups={ctx.groups}
+                            value={rule.moveToGroup}
+                            onChange={groupId => onChange({ ...rule, moveToGroup: groupId })}
+                        />
+                    )}
+                </div>
             </div>
         </section>
     );
@@ -454,7 +500,7 @@ const ordinal = (n: number) => (n === 2 ? 'second' : n === 3 ? 'third' : `${n}th
  * columns, comparisons and values from the board, labels in the Status
  * palette, and ready-made rules to start from.
  */
-export const RulesEditor = ({ rules, onRules, otherwise, onOtherwise, columns, selfId, people }: {
+export const RulesEditor = ({ rules, onRules, otherwise, onOtherwise, columns, selfId, people, groups }: {
     rules: FormulaRule[];
     onRules: (rules: FormulaRule[]) => void;
     otherwise: FormulaOutcome;
@@ -462,9 +508,11 @@ export const RulesEditor = ({ rules, onRules, otherwise, onOtherwise, columns, s
     columns: Column[];
     selfId: string;
     people: Person[];
+    /** Offered as "and move the task to"; left out for a sub-item column. */
+    groups?: MoveGroup[];
 }) => {
     const readable = useMemo(() => columns.filter(c => c.id !== selfId), [columns, selfId]);
-    const ctx: Ctx = useMemo(() => ({ readable, people }), [readable, people]);
+    const ctx: Ctx = useMemo(() => ({ readable, people, groups }), [readable, people, groups]);
     const templates = useMemo(() => ruleTemplates(columns, selfId), [columns, selfId]);
     const statusLabels = useMemo(() => {
         const seen = new Set<string>();

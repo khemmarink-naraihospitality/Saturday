@@ -83,6 +83,12 @@ export interface FormulaRule {
     match: 'all' | 'any';
     conditions: FormulaCondition[];
     then: FormulaOutcome;
+    /**
+     * Also move the task to this group (an id on the same board) when the rule
+     * comes to hold: when an edit makes it hold, or a date passing does (checked
+     * once a day, see movesCheckedDay). Item columns only.
+     */
+    moveToGroup?: string;
 }
 
 export interface FormulaConfig {
@@ -96,6 +102,12 @@ export interface FormulaConfig {
     decimals?: number;
     /** Colours for text results, drawn as labels: { "Overdue": "#E53935" }. */
     labelColors?: Record<string, string>;
+    /**
+     * The last day (todayDay()) whose date changes have been acted on for
+     * moveToGroup: the first editor to open the board on a later day moves
+     * the tasks a rule came to hold for since, then writes the day.
+     */
+    movesCheckedDay?: number;
 }
 
 // ItemValue stores dynamic column data

@@ -76,7 +76,7 @@ client.from = (table: string) => {
     if (table === 'profiles' && adminProfile) return chainOf({ ...emptyResult, data: adminProfile });
     return adminTables[table] ? chainOf({ ...emptyResult, data: adminTables[table] }) : chain;
 };
-client.rpc = (name: string) => name === 'reveal_api_key' ? chainOf({ ...emptyResult, data: 'nhg_PreviewOnlyKey0000000000000000000000000' })
+client.rpc = (name: string) => name === 'reveal_api_key' || name === 'rotate_api_key' ? chainOf({ ...emptyResult, data: 'nhg_PreviewOnlyKey0000000000000000000000000' })
     : name === 'trash_list' ? chainOf({ ...emptyResult, data: fx.trashPreviewRows })
     : name === 'trash_counts' ? chainOf({ ...emptyResult, data: fx.trashPreviewCounts })
         : chain;

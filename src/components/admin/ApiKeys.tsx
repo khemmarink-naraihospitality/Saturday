@@ -223,6 +223,10 @@ export const ApiKeys = () => {
     const [revoking, setRevoking] = useState<KeyRow | null>(null);
     const [rotating, setRotating] = useState<KeyRow | null>(null);
     const [copying, setCopying] = useState<{ id: string; state: 'busy' | 'done' } | null>(null);
+    // What Copy put on the clipboard (shown with the key masked), or, when the
+    // browser refused, the whole message to copy by hand.
+    const [shared, setShared] = useState<{ title: string; text: string; key: string; ok: boolean } | null>(null);
+    const [regenCopy, setRegenCopy] = useState<KeyRow | null>(null);
     const topRef = useRef<HTMLDivElement>(null);
 
     const load = useCallback(async () => {
@@ -382,25 +386,53 @@ export const ApiKeys = () => {
         void load();
     };
 
-    const copyShare = async (k: KeyRow) => {
-        if (!k.copyable) {
-            openManage(k, 'This key was made before keys could be copied again, so it isn’t kept anywhere. Regenerate it to get a key you can copy and send — the system using the old one will need the new one.');
-            return;
-        }
+    /**
+     * Fetch the message (the key comes from the server) and put it on the
+     * clipboard; the write starts inside the click so every browser allows it.
+     * Whatever happens, the Keys card then says what was copied, or shows the
+     * message to copy by hand.
+     */
+    const copyMessage = (k: KeyRow, fetchKey: () => Promise<string>, title: (ok: boolean) => string) => {
         setCopying({ id: k.id, state: 'busy' });
+        setShared(null);
+        let key = '';
         const text = (async () => {
-            const { data, error } = await supabase.rpc('reveal_api_key', { p_id: k.id });
-            if (error || typeof data !== 'string') throw new Error(error?.message || 'not available');
-            return shareText(k, data);
+            key = await fetchKey();
+            return shareText(k, key);
         })();
-        try {
-            await writeClipboard(text);
-            setCopying({ id: k.id, state: 'done' });
-            setTimeout(() => setCopying(c => (c?.id === k.id ? null : c)), 2000);
-        } catch {
-            setCopying(null);
-            setLoadError(`Couldn’t copy “${k.name}”. Try again.`);
-        }
+        void (async () => {
+            let ok = true;
+            try { await writeClipboard(text); } catch { ok = false; }
+            try {
+                const message = await text;
+                setShared({ title: title(ok), text: message, key, ok });
+                setCopying(ok ? { id: k.id, state: 'done' } : null);
+                if (ok) setTimeout(() => setCopying(c => (c?.id === k.id ? null : c)), 2000);
+            } catch (e) {
+                setCopying(null);
+                setLoadError(`Couldn’t copy “${k.name}”: ${(e as Error).message}`);
+            }
+        })();
+    };
+
+    const copyShare = (k: KeyRow) => {
+        // Made before keys were kept: nothing to copy until it gets a new key.
+        if (!k.copyable) { setRegenCopy(k); return; }
+        copyMessage(k, async () => {
+            const { data, error } = await supabase.rpc('reveal_api_key', { p_id: k.id });
+            if (error || typeof data !== 'string') throw new Error(error?.message || 'the key isn’t available');
+            return data;
+        }, ok => (ok ? `Copied “${k.name}”` : `Copy “${k.name}” from here`));
+    };
+
+    const regenerateAndCopy = (k: KeyRow) => {
+        setRegenCopy(null);
+        copyMessage(k, async () => {
+            const { data, error } = await supabase.rpc('rotate_api_key', { p_id: k.id });
+            if (error || typeof data !== 'string') throw new Error(error?.message || 'couldn’t make a new key');
+            void load();
+            return data;
+        }, ok => (ok ? `New key for “${k.name}” copied — the one before it has stopped working` : `New key for “${k.name}” — copy it from here; the one before it has stopped working`));
     };
 
     const revoke = async (k: KeyRow) => {
@@ -533,6 +565,27 @@ export const ApiKeys = () => {
             <div className="card-surface" style={{ ...card, padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', fontWeight: 600, fontSize: '15px' }}>Keys</div>
                 {loadError && <p style={{ margin: 0, padding: '12px 24px', color: '#b91c1c', fontSize: '13px' }}>{loadError}</p>}
+                {shared && (
+                    <div role="status" style={{ margin: '16px 24px 4px', padding: '14px 16px', borderRadius: '10px', border: `1px solid ${shared.ok ? '#bbf7d0' : '#fde68a'}`, backgroundColor: shared.ok ? '#f0fdf4' : '#fffbeb' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                            <strong style={{ fontSize: '14px', color: shared.ok ? '#166534' : '#92400e', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                {shared.ok && <Check size={16} />} {shared.title}
+                            </strong>
+                            <button type="button" onClick={() => setShared(null)} aria-label="Close" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', display: 'flex' }}><X size={16} /></button>
+                        </div>
+                        <p style={{ ...muted, margin: '6px 0 10px', fontSize: '12.5px' }}>
+                            {shared.ok
+                                ? 'The name, the key, what it reads and the documentation link are on your clipboard. Paste them into a private message to the system’s developer.'
+                                : 'Your browser didn’t allow copying. Select the message below and copy it, or use the button.'}
+                        </p>
+                        <pre style={{ ...code, display: 'block', margin: 0, padding: '10px 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: 'white', border: '1px solid #e2e8f0', fontSize: '12px', lineHeight: 1.55, userSelect: 'all' }}>
+                            {shared.ok && shared.key ? shared.text.replace(shared.key, `${shared.key.slice(0, 12)}${'•'.repeat(16)}`) : shared.text}
+                        </pre>
+                        <div style={{ marginTop: '10px' }}>
+                            <CopyButton text={shared.text} label={shared.ok ? 'Copy again' : 'Copy message'} />
+                        </div>
+                    </div>
+                )}
                 {loading ? (
                     <p style={{ ...muted, padding: '24px', margin: 0 }}>Loading…</p>
                 ) : keys.length === 0 ? (
@@ -575,7 +628,7 @@ export const ApiKeys = () => {
                                                             onClick={() => copyShare(k)}
                                                             disabled={copyState === 'busy'}
                                                             style={{ ...secondary, color: '#4338ca', borderColor: '#c7d2fe', whiteSpace: 'nowrap' }}
-                                                            title={k.copyable ? 'Copy the name, key and API documentation link, to send to the system’s developer' : 'This key isn’t kept: regenerate it under Manage to copy it'}
+                                                            title={k.copyable ? 'Copy the name, key and API documentation link, to send to the system’s developer' : 'This key isn’t kept: Copy regenerates it first'}
                                                         >
                                                             {copyState === 'done' ? <Check size={14} /> : <Copy size={14} />}
                                                             {copyState === 'busy' ? 'Copying…' : copyState === 'done' ? 'Copied' : 'Copy'}
@@ -636,6 +689,14 @@ export const ApiKeys = () => {
                 variant="danger"
                 onConfirm={() => revoking && revoke(revoking)}
                 onCancel={() => setRevoking(null)}
+            />
+            <ConfirmModal
+                isOpen={!!regenCopy}
+                title="Regenerate this key to copy it?"
+                message={regenCopy ? `“${regenCopy.name}” was made before keys could be copied again, so its key isn’t kept anywhere. Regenerating gives it a new key and copies it with the documentation link; the key it has now stops working at once${regenCopy.request_count > 0 ? `, and the system using it (${Number(regenCopy.request_count).toLocaleString()} requests so far) will need the new one` : ' (it has never been used)'}.` : ''}
+                confirmText="Regenerate and copy"
+                onConfirm={() => regenCopy && regenerateAndCopy(regenCopy)}
+                onCancel={() => setRegenCopy(null)}
             />
             <ConfirmModal
                 isOpen={!!rotating}

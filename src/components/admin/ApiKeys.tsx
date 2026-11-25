@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactElement } from 'react';
-import { Check, ChevronDown, ChevronRight, Copy, KeyRound, Lock, Plus, Search, X } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, KeyRound, Lock, Plus, Search, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
@@ -11,6 +11,8 @@ import { ConfirmModal } from '../ui/ConfirmModal';
  */
 
 const BASE_URL = 'https://work.nhgspace.com/api/v1';
+/** The API's documentation (src/pages/ApiDocsPage.tsx), public. */
+const DOCS_URL = 'https://work.nhgspace.com/api-docs';
 
 interface KeyRow {
     id: string;
@@ -34,16 +36,6 @@ const EXPIRY: { label: string; days: number | null }[] = [
     { label: 'Expires in 30 days', days: 30 },
     { label: 'Expires in 90 days', days: 90 },
     { label: 'Expires in 1 year', days: 365 },
-];
-
-const ENDPOINTS: [string, string][] = [
-    ['GET /api/v1', 'What this key can reach'],
-    ['GET /api/v1/folders', 'Workspaces (folders) the key reaches'],
-    ['GET /api/v1/spaces', 'Boards (spaces); ?folder_id= for one folder'],
-    ['GET /api/v1/spaces/{id}', 'A board with its groups and columns'],
-    ['GET /api/v1/spaces/{id}/tasks', 'Its items with values and sub-items, 50 a page: ?cursor=, ?limit= (up to 200), ?updated_since=, ?group_id=, ?include=comments'],
-    ['GET /api/v1/tasks/{id}', 'One item (?include=comments)'],
-    ['GET /api/v1/tasks/{id}/comments', 'Its updates with their replies'],
 ];
 
 const card: CSSProperties = { padding: '24px', marginBottom: '24px' };
@@ -301,11 +293,16 @@ export const ApiKeys = () => {
                             and only what you pick for it. Private (PIN) boards and anything in the Trash are never served. Each key may make 120 requests a minute, and every request is logged.
                         </p>
                     </div>
-                    {!formOpen && (
-                        <button type="button" style={primary} onClick={() => { setMade(null); setFormOpen(true); }}>
-                            <Plus size={16} /> Create API key
-                        </button>
-                    )}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" style={{ ...secondary, textDecoration: 'none' }}>
+                            <BookOpen size={15} /> API documentation <ExternalLink size={13} />
+                        </a>
+                        {!formOpen && (
+                            <button type="button" style={primary} onClick={() => { setMade(null); setFormOpen(true); }}>
+                                <Plus size={16} /> Create API key
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {made && (
@@ -319,8 +316,11 @@ export const ApiKeys = () => {
                             <CopyButton text={made.key} label="Copy key" />
                         </div>
                         <p style={{ ...muted, margin: '10px 0 0', fontSize: '12.5px' }}>
-                            Keep it on the server of the system that uses it (an environment variable or a secret store), never in a web page or a shared document. If it leaks, revoke it below and create a new one.
+                            Hand it to the system’s developer privately, with the API documentation. They keep it on that system’s server (an environment variable or a secret store), never in a web page or a shared document. If it leaks, revoke it below and create a new one.
                         </p>
+                        <div style={{ marginTop: '10px' }}>
+                            <CopyButton text={DOCS_URL} label="Copy documentation link" />
+                        </div>
                     </div>
                 )}
 
@@ -413,29 +413,35 @@ export const ApiKeys = () => {
             </div>
 
             <div className="card-surface" style={card}>
-                <h3 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 8px' }}>How another system uses it</h3>
-                <p style={{ ...muted, margin: '0 0 12px', lineHeight: 1.55 }}>
-                    Send the key in the <code style={code}>Authorization</code> header of a GET request. Answers are JSON. In the API’s words a workspace is a <em>folder</em>, a board a <em>space</em>, a group a <em>group</em>, an item a <em>task</em> (a sub-item is a task with a <code style={code}>parent_id</code>) and an update a <em>comment</em>.
-                </p>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 4px' }}>How another system gets access</h3>
+                        <p style={{ ...muted, margin: 0 }}>Every system gets a key of its own, so each can be limited, followed and revoked on its own.</p>
+                    </div>
+                    <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" style={{ ...primary, textDecoration: 'none' }}>
+                        <BookOpen size={15} /> Open the API documentation <ExternalLink size={13} />
+                    </a>
+                </div>
+                <ol style={{ margin: '0 0 16px', padding: 0, listStyle: 'none', display: 'grid', gap: '12px' }}>
+                    {[
+                        ['Create a key here for that system', 'Name it after the system, and tick only the workspaces and boards it needs. A ticked workspace includes everything under it, and boards added to it later. Private (PIN) boards and the Trash are never included.'],
+                        ['Give the key to its developer, privately', 'It is shown only once. Send it with the documentation link; they keep it on that system’s server. Browsers can’t call the API, so it can’t end up in a web page.'],
+                        ['The system reads with it', `It sends the key in the Authorization header of a GET request to ${BASE_URL}. It can read, never change; at most 120 requests a minute. Each request shows up in this key’s Last used.`],
+                        ['Revoke it when it’s no longer needed', 'Revoke stops the key at once. A system that still uses it gets 401 until it is given a new key.'],
+                    ].map(([title, text], i) => (
+                        <li key={title} style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr)', gap: '12px', alignItems: 'start' }}>
+                            <span style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eef2ff', color: '#4f46e5', display: 'grid', placeItems: 'center', fontSize: '13px', fontWeight: 700 }}>{i + 1}</span>
+                            <div>
+                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '2px' }}>{title}</div>
+                                <div style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.55 }}>{text}</div>
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <code style={{ ...code, flex: '1 1 420px', padding: '10px 12px', wordBreak: 'break-all' }}>{curl}</code>
                     <CopyButton text={curl} />
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <tbody>
-                        {ENDPOINTS.map(([route, what]) => (
-                            <tr key={route} style={{ borderTop: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '8px 12px 8px 0', whiteSpace: 'nowrap', verticalAlign: 'top' }}><code style={code}>{route}</code></td>
-                                <td style={{ padding: '8px 0', color: '#475569' }}>{what}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <p style={{ ...muted, margin: '14px 0 0', fontSize: '12.5px', lineHeight: 1.55 }}>
-                    Each task has <code style={code}>values</code> (column title → value, a status as its label, people by name) and <code style={code}>fields</code> (every column with its id, type, full value and text).
-                    To keep another system in step, ask for <code style={code}>?updated_since=</code> the time of the last pull — a new update on an item counts as a change. Formula columns’ results aren’t in the API yet.
-                    The full reference is <code style={code}>docs/api.md</code> in the repository.
-                </p>
             </div>
 
             <ConfirmModal
